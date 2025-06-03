@@ -132,7 +132,7 @@ export function ChartEditModal() {
 
               {/* Parameters Section */}
               {activeTab === "parameters" && (
-                <div className="space-y-4">
+                <div className="flex flex-col space-y-4 h-full">
                   {/* X Parameter Settings */}
                   <div className="border rounded-lg p-3 bg-muted/30">
                     <h4 className="font-medium text-sm mb-2">X Parameter Settings</h4>
@@ -323,7 +323,7 @@ export function ChartEditModal() {
                           </div>
                           
                           {/* Y Parameter List */}
-                          <div className="flex-1 overflow-y-auto max-h-80">
+                          <div className="flex-1 overflow-y-auto min-h-0">
                             <div className="space-y-1">
                               {editingChart.yAxisParams?.map((param, index) => (
                               <div key={index} className="flex gap-2 p-1">
