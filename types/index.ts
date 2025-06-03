@@ -27,6 +27,7 @@ export interface ChartComponent {
   }
   yAxisParams?: Array<{
     parameter: string
+    axisNo?: number
     axisName: string
     range?: {
       auto?: boolean
