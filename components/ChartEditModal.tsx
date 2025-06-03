@@ -20,7 +20,7 @@ import {
 
 export function ChartEditModal() {
   const { editingChart, editModalOpen, setEditingChart, setEditModalOpen } = useAnalysisStore()
-  const [activeTab, setActiveTab] = useState<"appearance" | "parameters">("appearance")
+  const [activeTab, setActiveTab] = useState<"parameters" | "datasource">("parameters")
   const [lastAddedParamIndex, setLastAddedParamIndex] = useState<number | null>(null)
   const parameterInputRefs = useRef<(HTMLInputElement | null)[]>([])
 
@@ -43,20 +43,10 @@ export function ChartEditModal() {
         </DialogHeader>
 
         <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
-          {/* Left Side - Appearance and Parameters */}
+          {/* Left Side - Parameters and DataSource */}
           <div className="border rounded-lg p-4 overflow-hidden h-full flex flex-col">
             {/* Tab Navigation */}
             <div className="flex gap-2 mb-4">
-              <button
-                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
-                  activeTab === "appearance"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted hover:bg-muted/80"
-                }`}
-                onClick={() => setActiveTab("appearance")}
-              >
-                Appearance
-              </button>
               <button
                 className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
                   activeTab === "parameters"
@@ -67,77 +57,45 @@ export function ChartEditModal() {
               >
                 Parameters
               </button>
+              <button
+                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === "datasource"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted hover:bg-muted/80"
+                }`}
+                onClick={() => setActiveTab("datasource")}
+              >
+                DataSource
+              </button>
             </div>
 
             {/* Tab Content */}
             <div className="flex-1 overflow-y-auto">
-              {/* Appearance Section */}
-              {activeTab === "appearance" && (
+              {/* DataSource Section */}
+              {activeTab === "datasource" && (
                 <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="chart-title" className="text-sm">Title</Label>
-                    <Input
-                      id="chart-title"
-                      value={editingChart.title}
-                      onChange={(e) => {
-                        setEditingChart({
-                          ...editingChart,
-                          title: e.target.value,
-                        })
-                      }}
-                      className="h-9 text-base"
-                    />
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="show-legend"
-                      checked={editingChart.legend ?? true}
-                      onChange={(e) => {
-                        setEditingChart({
-                          ...editingChart,
-                          legend: e.target.checked,
-                        })
-                      }}
-                      className="rounded"
-                    />
-                    <Label htmlFor="show-legend" className="text-sm">Show Legend</Label>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label htmlFor="x-label" className="text-sm">X-axis Label</Label>
-                      <Input
-                        id="x-label"
-                        value={editingChart.xLabel || ""}
-                        onChange={(e) => {
-                          setEditingChart({
-                            ...editingChart,
-                            xLabel: e.target.value,
-                          })
-                        }}
-                        placeholder="X-axis label"
-                        className="h-9 text-base"
-                      />
+                  {editingChart.dataSource ? (
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-sm font-medium">Source Name</p>
+                        <p className="text-sm text-muted-foreground">{editingChart.dataSource.name}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Table</p>
+                        <p className="text-sm text-muted-foreground">{editingChart.dataSource.table}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Columns</p>
+                        <p className="text-sm text-muted-foreground">{editingChart.dataSource.columns.join(", ")}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Last Updated</p>
+                        <p className="text-sm text-muted-foreground">{editingChart.dataSource.lastUpdated}</p>
+                      </div>
                     </div>
-
-                    <div>
-                      <Label htmlFor="y-label" className="text-sm">Y-axis Label</Label>
-                      <Input
-                        id="y-label"
-                        value={editingChart.yLabel || ""}
-                        onChange={(e) => {
-                          setEditingChart({
-                            ...editingChart,
-                            yLabel: e.target.value,
-                          })
-                        }}
-                        placeholder="Y-axis label"
-                        className="h-9 text-base"
-                      />
-                    </div>
-                  </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No data source configured</p>
+                  )}
                 </div>
               )}
 
@@ -187,93 +145,6 @@ export function ChartEditModal() {
                         />
                       </div>
 
-                      {/* X Range */}
-                      <div className="min-w-0">
-                        <Label className="text-sm mb-1 block">X Range</Label>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="outline" size="sm" className="h-8 px-2 text-sm whitespace-nowrap">
-                              {editingChart.xAxisRange?.auto !== false ? 
-                                "Auto" : 
-                                `${editingChart.xAxisRange?.min || "0"} - ${editingChart.xAxisRange?.max || "100"}`
-                              }
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-80" align="end">
-                            <div className="space-y-4">
-                              <h4 className="font-medium text-sm">X Range Settings</h4>
-                              
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="checkbox"
-                                  id="x-range-auto"
-                                  checked={editingChart.xAxisRange?.auto ?? true}
-                                  onChange={(e) => {
-                                    setEditingChart({
-                                      ...editingChart,
-                                      xAxisRange: {
-                                        ...editingChart.xAxisRange,
-                                        auto: e.target.checked,
-                                        min: editingChart.xAxisRange?.min || "",
-                                        max: editingChart.xAxisRange?.max || ""
-                                      }
-                                    })
-                                  }}
-                                  className="rounded"
-                                />
-                                <Label htmlFor="x-range-auto" className="text-sm">Auto Range</Label>
-                              </div>
-                              
-                              <div className="space-y-3">
-                                <div>
-                                  <Label htmlFor="x-range-min" className="text-sm">Min Value</Label>
-                                  <Input
-                                    id="x-range-min"
-                                    type="text"
-                                    value={editingChart.xAxisRange?.min || ""}
-                                    onChange={(e) => {
-                                      setEditingChart({
-                                        ...editingChart,
-                                        xAxisRange: {
-                                          ...editingChart.xAxisRange,
-                                          auto: false,
-                                          min: e.target.value,
-                                          max: editingChart.xAxisRange?.max || ""
-                                        }
-                                      })
-                                    }}
-                                    placeholder="Enter min value"
-                                    disabled={editingChart.xAxisRange?.auto ?? true}
-                                    className="h-8 text-sm"
-                                  />
-                                </div>
-                                <div>
-                                  <Label htmlFor="x-range-max" className="text-sm">Max Value</Label>
-                                  <Input
-                                    id="x-range-max"
-                                    type="text"
-                                    value={editingChart.xAxisRange?.max || ""}
-                                    onChange={(e) => {
-                                      setEditingChart({
-                                        ...editingChart,
-                                        xAxisRange: {
-                                          ...editingChart.xAxisRange,
-                                          auto: false,
-                                          min: editingChart.xAxisRange?.min || "",
-                                          max: e.target.value
-                                        }
-                                      })
-                                    }}
-                                    placeholder="Enter max value"
-                                    disabled={editingChart.xAxisRange?.auto ?? true}
-                                    className="h-8 text-sm"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
                     </div>
                   </div>
 
@@ -313,180 +184,69 @@ export function ChartEditModal() {
                       </Button>
                     </div>
                     
-                    {/* Calculate max Y Range width */}
-                    {(() => {
-                      const maxYRangeWidth = Math.max(
-                        48, // minimum width for "Auto"
-                        ...(editingChart.yAxisParams?.map(param => {
-                          const text = param.range?.auto !== false ? 
-                            "Auto" : 
-                            `${param.range?.min || 0} - ${param.range?.max || 100}`;
-                          return Math.max(48, text.length * 8 + 16); // approximate width calculation
-                        }) || [48])
-                      );
-                      
-                      return (
-                        <>
-                          {/* Table Header */}
-                          <div className="flex gap-2 mb-2 px-1 pb-1 border-b flex-shrink-0">
-                            <div className="flex-1 text-xs font-medium text-muted-foreground">Parameter</div>
-                            <div className="w-16 text-xs font-medium text-muted-foreground">Axis No</div>
-                            <div className="text-xs font-medium text-muted-foreground text-center" style={{ width: maxYRangeWidth }}>Y Range</div>
-                            <div className="w-7"></div>
+                    {/* Table Header */}
+                    <div className="flex gap-2 mb-2 px-1 pb-1 border-b flex-shrink-0">
+                      <div className="flex-1 text-xs font-medium text-muted-foreground">Parameter</div>
+                      <div className="w-16 text-xs font-medium text-muted-foreground">Axis No</div>
+                      <div className="w-7"></div>
+                    </div>
+                    
+                    {/* Y Parameter List */}
+                    <div className="flex-1 overflow-y-auto min-h-0">
+                      <div className="space-y-1">
+                        {editingChart.yAxisParams?.map((param, index) => (
+                          <div key={index} className="flex gap-2 p-1">
+                            {/* Parameter */}
+                            <div className="flex-1">
+                              <Input
+                                ref={(el) => {
+                                  parameterInputRefs.current[index] = el
+                                }}
+                                value={param.parameter}
+                                onChange={(e) => {
+                                  const newParams = [...(editingChart.yAxisParams || [])]
+                                  newParams[index] = { ...newParams[index], parameter: e.target.value }
+                                  setEditingChart({ ...editingChart, yAxisParams: newParams })
+                                }}
+                                placeholder="Parameter"
+                                className="h-7 text-sm"
+                              />
+                            </div>
+                            
+                            {/* Axis No */}
+                            <div className="w-16">
+                              <Input
+                                type="number"
+                                min="1"
+                                max="10"
+                                value={param.axisNo || 1}
+                                onChange={(e) => {
+                                  const newParams = [...(editingChart.yAxisParams || [])]
+                                  newParams[index] = { ...newParams[index], axisNo: parseInt(e.target.value) || 1 }
+                                  setEditingChart({ ...editingChart, yAxisParams: newParams })
+                                }}
+                                className="h-7 text-sm"
+                              />
+                            </div>
+                            
+                            {/* Delete Button */}
+                            <div className="w-7">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 p-0"
+                                onClick={() => {
+                                  const newParams = editingChart.yAxisParams?.filter((_, i) => i !== index) || []
+                                  setEditingChart({ ...editingChart, yAxisParams: newParams })
+                                }}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </div>
-                          
-                          {/* Y Parameter List */}
-                          <div className="flex-1 overflow-y-auto min-h-0">
-                            <div className="space-y-1">
-                              {editingChart.yAxisParams?.map((param, index) => (
-                              <div key={index} className="flex gap-2 p-1">
-                                {/* Parameter */}
-                                <div className="flex-1">
-                                  <Input
-                                    ref={(el) => {
-                                      parameterInputRefs.current[index] = el
-                                    }}
-                                    value={param.parameter}
-                                    onChange={(e) => {
-                                      const newParams = [...(editingChart.yAxisParams || [])]
-                                      newParams[index] = { ...newParams[index], parameter: e.target.value }
-                                      setEditingChart({ ...editingChart, yAxisParams: newParams })
-                                    }}
-                                    placeholder="Parameter"
-                                    className="h-7 text-sm"
-                                  />
-                                </div>
-                                
-                                {/* Axis No */}
-                                <div className="w-16">
-                                  <Input
-                                    type="number"
-                                    min="1"
-                                    max="10"
-                                    value={param.axisNo || 1}
-                                    onChange={(e) => {
-                                      const newParams = [...(editingChart.yAxisParams || [])]
-                                      newParams[index] = { ...newParams[index], axisNo: parseInt(e.target.value) || 1 }
-                                      setEditingChart({ ...editingChart, yAxisParams: newParams })
-                                    }}
-                                    className="h-7 text-sm"
-                                  />
-                                </div>
-                                
-                                {/* Y Range */}
-                                <div style={{ width: maxYRangeWidth }}>
-                                  <Popover>
-                                    <PopoverTrigger asChild>
-                                      <Button variant="outline" size="sm" className="w-full h-7 px-1 text-xs">
-                                        {param.range?.auto !== false ? 
-                                          "Auto" : 
-                                          `${param.range?.min || 0} - ${param.range?.max || 100}`
-                                        }
-                                      </Button>
-                                    </PopoverTrigger>
-                              <PopoverContent className="w-80" align="end">
-                                <div className="space-y-4">
-                                  <h4 className="font-medium text-sm">Y Range Settings</h4>
-                                  
-                                  <div className="flex items-center gap-2">
-                                    <input
-                                      type="checkbox"
-                                      id={`y-range-auto-${index}`}
-                                      checked={param.range?.auto ?? true}
-                                      onChange={(e) => {
-                                        const newParams = [...(editingChart.yAxisParams || [])]
-                                        newParams[index] = {
-                                          ...newParams[index],
-                                          range: {
-                                            ...newParams[index].range,
-                                            auto: e.target.checked,
-                                            min: newParams[index].range?.min || 0,
-                                            max: newParams[index].range?.max || 100
-                                          }
-                                        }
-                                        setEditingChart({ ...editingChart, yAxisParams: newParams })
-                                      }}
-                                      className="rounded"
-                                    />
-                                    <Label htmlFor={`y-range-auto-${index}`} className="text-sm">Auto Range</Label>
-                                  </div>
-                                  
-                                  <div className="space-y-3">
-                                    <div>
-                                      <Label htmlFor={`y-range-min-${index}`} className="text-sm">Min Value</Label>
-                                      <Input
-                                        id={`y-range-min-${index}`}
-                                        type="number"
-                                        value={param.range?.min || 0}
-                                        onChange={(e) => {
-                                          const newParams = [...(editingChart.yAxisParams || [])]
-                                          newParams[index] = {
-                                            ...newParams[index],
-                                            range: {
-                                              ...newParams[index].range,
-                                              auto: false,
-                                              min: parseFloat(e.target.value) || 0,
-                                              max: newParams[index].range?.max || 100
-                                            }
-                                          }
-                                          setEditingChart({ ...editingChart, yAxisParams: newParams })
-                                        }}
-                                        placeholder="Enter min value"
-                                        disabled={param.range?.auto ?? true}
-                                        className="h-8 text-sm"
-                                      />
-                                    </div>
-                                    <div>
-                                      <Label htmlFor={`y-range-max-${index}`} className="text-sm">Max Value</Label>
-                                      <Input
-                                        id={`y-range-max-${index}`}
-                                        type="number"
-                                        value={param.range?.max || 100}
-                                        onChange={(e) => {
-                                          const newParams = [...(editingChart.yAxisParams || [])]
-                                          newParams[index] = {
-                                            ...newParams[index],
-                                            range: {
-                                              ...newParams[index].range,
-                                              auto: false,
-                                              min: newParams[index].range?.min || 0,
-                                              max: parseFloat(e.target.value) || 100
-                                            }
-                                          }
-                                          setEditingChart({ ...editingChart, yAxisParams: newParams })
-                                        }}
-                                        placeholder="Enter max value"
-                                        disabled={param.range?.auto ?? true}
-                                        className="h-8 text-sm"
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                              </PopoverContent>
-                            </Popover>
-                          </div>
-                          
-                          {/* Delete Button */}
-                          <div className="w-7">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 w-7 p-0"
-                              onClick={() => {
-                                const newParams = editingChart.yAxisParams?.filter((_, i) => i !== index) || []
-                                setEditingChart({ ...editingChart, yAxisParams: newParams })
-                              }}
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                      )) || <p className="text-sm text-muted-foreground px-1">No Y parameters added yet.</p>}
+                        )) || <p className="text-sm text-muted-foreground px-1">No Y parameters added yet.</p>}
                       </div>
                     </div>
-                          </>
-                      );
-                    })()}
                   </div>
                 </div>
               )}
@@ -501,31 +261,304 @@ export function ChartEditModal() {
               <p className="text-base text-muted-foreground">Additional chart settings can be configured here.</p>
             </div>
 
-            {/* Bottom Right - Data Source Information */}
+            {/* Bottom Right - Appearance Settings */}
             <div className="border rounded-lg p-4 overflow-y-auto">
-              <h3 className="text-base font-semibold border-b pb-1 mb-2">Data Source</h3>
-              {editingChart.dataSource ? (
-                <div className="space-y-2">
-                  <div>
-                    <p className="text-sm font-medium">Source Name</p>
-                    <p className="text-sm text-muted-foreground">{editingChart.dataSource.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Table</p>
-                    <p className="text-sm text-muted-foreground">{editingChart.dataSource.table}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Columns</p>
-                    <p className="text-sm text-muted-foreground">{editingChart.dataSource.columns.join(", ")}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Last Updated</p>
-                    <p className="text-sm text-muted-foreground">{editingChart.dataSource.lastUpdated}</p>
+              <h3 className="text-base font-semibold border-b pb-1 mb-2">Appearance Settings</h3>
+              <div className="space-y-2">
+                <div>
+                  <Label htmlFor="chart-title" className="text-sm">Title</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="chart-title"
+                      value={editingChart.title}
+                      onChange={(e) => {
+                        setEditingChart({
+                          ...editingChart,
+                          title: e.target.value,
+                        })
+                      }}
+                      className="h-8 text-sm flex-1"
+                    />
+                    <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="show-title"
+                          checked={editingChart.showTitle ?? true}
+                          onChange={(e) => {
+                            setEditingChart({
+                              ...editingChart,
+                              showTitle: e.target.checked,
+                            })
+                          }}
+                          className="rounded"
+                        />
+                        <Label htmlFor="show-title" className="text-sm whitespace-nowrap">Show Title</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="show-legend"
+                          checked={editingChart.legend ?? true}
+                          onChange={(e) => {
+                            setEditingChart({
+                              ...editingChart,
+                              legend: e.target.checked,
+                            })
+                          }}
+                          className="rounded"
+                        />
+                        <Label htmlFor="show-legend" className="text-sm whitespace-nowrap">Show Legend</Label>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No data source configured</p>
-              )}
+
+                <div>
+                  <Label htmlFor="x-label" className="text-sm">X-axis Label</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="x-label"
+                      value={editingChart.xLabel || ""}
+                      onChange={(e) => {
+                        setEditingChart({
+                          ...editingChart,
+                          xLabel: e.target.value,
+                        })
+                      }}
+                      placeholder="X-axis label"
+                      className="h-8 text-sm flex-1"
+                    />
+                    <div className="min-w-0">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="outline" size="sm" className="h-8 px-2 text-sm whitespace-nowrap">
+                            {editingChart.xAxisRange?.auto !== false ? 
+                              "Auto" : 
+                              `${editingChart.xAxisRange?.min || "0"} - ${editingChart.xAxisRange?.max || "100"}`
+                            }
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80" align="end">
+                          <div className="space-y-4">
+                            <h4 className="font-medium text-sm">X Range Settings</h4>
+                            
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                id="x-range-auto"
+                                checked={editingChart.xAxisRange?.auto ?? true}
+                                onChange={(e) => {
+                                  setEditingChart({
+                                    ...editingChart,
+                                    xAxisRange: {
+                                      ...editingChart.xAxisRange,
+                                      auto: e.target.checked,
+                                      min: editingChart.xAxisRange?.min || "",
+                                      max: editingChart.xAxisRange?.max || ""
+                                    }
+                                  })
+                                }}
+                                className="rounded"
+                              />
+                              <Label htmlFor="x-range-auto" className="text-sm">Auto Range</Label>
+                            </div>
+                            
+                            <div className="space-y-3">
+                              <div>
+                                <Label htmlFor="x-range-min" className="text-sm">Min Value</Label>
+                                <Input
+                                  id="x-range-min"
+                                  type="text"
+                                  value={editingChart.xAxisRange?.min || ""}
+                                  onChange={(e) => {
+                                    setEditingChart({
+                                      ...editingChart,
+                                      xAxisRange: {
+                                        ...editingChart.xAxisRange,
+                                        auto: false,
+                                        min: e.target.value,
+                                        max: editingChart.xAxisRange?.max || ""
+                                      }
+                                    })
+                                  }}
+                                  placeholder="Enter min value"
+                                  disabled={editingChart.xAxisRange?.auto ?? true}
+                                  className="h-8 text-sm"
+                                />
+                              </div>
+                              <div>
+                                <Label htmlFor="x-range-max" className="text-sm">Max Value</Label>
+                                <Input
+                                  id="x-range-max"
+                                  type="text"
+                                  value={editingChart.xAxisRange?.max || ""}
+                                  onChange={(e) => {
+                                    setEditingChart({
+                                      ...editingChart,
+                                      xAxisRange: {
+                                        ...editingChart.xAxisRange,
+                                        auto: false,
+                                        min: editingChart.xAxisRange?.min || "",
+                                        max: e.target.value
+                                      }
+                                    })
+                                  }}
+                                  placeholder="Enter max value"
+                                  disabled={editingChart.xAxisRange?.auto ?? true}
+                                  className="h-8 text-sm"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-sm">Y-axis Labels</Label>
+                  <div className="mt-1 h-24 overflow-y-auto border rounded-md p-2">
+                    <div className="space-y-2">
+                      {(() => {
+                        // Get unique axis numbers from Y parameters
+                        const axisNumbers = [...new Set(
+                          editingChart.yAxisParams?.map(param => param.axisNo || 1) || [1]
+                        )].sort((a, b) => a - b)
+                        
+                        return axisNumbers.map(axisNo => {
+                          // Find the first parameter with this axis number to get its range
+                          const axisParam = editingChart.yAxisParams?.find(param => param.axisNo === axisNo)
+                          
+                          return (
+                            <div key={axisNo} className="flex items-center gap-2">
+                              <Label className="text-xs w-16 text-muted-foreground">Axis {axisNo}:</Label>
+                              <Input
+                                value={editingChart.yAxisLabels?.[axisNo] || ""}
+                                onChange={(e) => {
+                                  setEditingChart({
+                                    ...editingChart,
+                                    yAxisLabels: {
+                                      ...editingChart.yAxisLabels,
+                                      [axisNo]: e.target.value,
+                                    },
+                                  })
+                                }}
+                                placeholder={`Y-axis ${axisNo} label`}
+                                className="h-8 text-sm flex-1"
+                              />
+                              <div className="min-w-0">
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button variant="outline" size="sm" className="h-8 px-2 text-xs whitespace-nowrap">
+                                      {axisParam?.range?.auto !== false ? 
+                                        "Auto" : 
+                                        `${axisParam?.range?.min || 0} - ${axisParam?.range?.max || 100}`
+                                      }
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-80" align="end">
+                                    <div className="space-y-4">
+                                      <h4 className="font-medium text-sm">Y Range Settings (Axis {axisNo})</h4>
+                                      
+                                      <div className="flex items-center gap-2">
+                                        <input
+                                          type="checkbox"
+                                          id={`y-range-auto-${axisNo}`}
+                                          checked={axisParam?.range?.auto ?? true}
+                                          onChange={(e) => {
+                                            const newParams = [...(editingChart.yAxisParams || [])]
+                                            const paramIndex = newParams.findIndex(param => param.axisNo === axisNo)
+                                            if (paramIndex >= 0) {
+                                              newParams[paramIndex] = {
+                                                ...newParams[paramIndex],
+                                                range: {
+                                                  ...newParams[paramIndex].range,
+                                                  auto: e.target.checked,
+                                                  min: newParams[paramIndex].range?.min || 0,
+                                                  max: newParams[paramIndex].range?.max || 100
+                                                }
+                                              }
+                                              setEditingChart({ ...editingChart, yAxisParams: newParams })
+                                            }
+                                          }}
+                                          className="rounded"
+                                        />
+                                        <Label htmlFor={`y-range-auto-${axisNo}`} className="text-sm">Auto Range</Label>
+                                      </div>
+                                      
+                                      <div className="space-y-3">
+                                        <div>
+                                          <Label htmlFor={`y-range-min-${axisNo}`} className="text-sm">Min Value</Label>
+                                          <Input
+                                            id={`y-range-min-${axisNo}`}
+                                            type="number"
+                                            value={axisParam?.range?.min || 0}
+                                            onChange={(e) => {
+                                              const newParams = [...(editingChart.yAxisParams || [])]
+                                              const paramIndex = newParams.findIndex(param => param.axisNo === axisNo)
+                                              if (paramIndex >= 0) {
+                                                newParams[paramIndex] = {
+                                                  ...newParams[paramIndex],
+                                                  range: {
+                                                    ...newParams[paramIndex].range,
+                                                    auto: false,
+                                                    min: parseFloat(e.target.value) || 0,
+                                                    max: newParams[paramIndex].range?.max || 100
+                                                  }
+                                                }
+                                                setEditingChart({ ...editingChart, yAxisParams: newParams })
+                                              }
+                                            }}
+                                            placeholder="Enter min value"
+                                            disabled={axisParam?.range?.auto ?? true}
+                                            className="h-8 text-sm"
+                                          />
+                                        </div>
+                                        <div>
+                                          <Label htmlFor={`y-range-max-${axisNo}`} className="text-sm">Max Value</Label>
+                                          <Input
+                                            id={`y-range-max-${axisNo}`}
+                                            type="number"
+                                            value={axisParam?.range?.max || 100}
+                                            onChange={(e) => {
+                                              const newParams = [...(editingChart.yAxisParams || [])]
+                                              const paramIndex = newParams.findIndex(param => param.axisNo === axisNo)
+                                              if (paramIndex >= 0) {
+                                                newParams[paramIndex] = {
+                                                  ...newParams[paramIndex],
+                                                  range: {
+                                                    ...newParams[paramIndex].range,
+                                                    auto: false,
+                                                    min: newParams[paramIndex].range?.min || 0,
+                                                    max: parseFloat(e.target.value) || 100
+                                                  }
+                                                }
+                                                setEditingChart({ ...editingChart, yAxisParams: newParams })
+                                              }
+                                            }}
+                                            placeholder="Enter max value"
+                                            disabled={axisParam?.range?.auto ?? true}
+                                            className="h-8 text-sm"
+                                          />
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
+                              </div>
+                            </div>
+                          )
+                        })
+                      })()} 
+                      {(!editingChart.yAxisParams || editingChart.yAxisParams.length === 0) && (
+                        <p className="text-xs text-muted-foreground">Add Y parameters to configure axis labels</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

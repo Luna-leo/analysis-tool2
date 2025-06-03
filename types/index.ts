@@ -3,11 +3,13 @@ export type ActiveView = "explorer" | "search" | "database" | "settings"
 export interface ChartComponent {
   id: string
   title: string
+  showTitle?: boolean
   chartType: "bar" | "line" | "pie"
   data: Array<{ name: string; value: number }>
   legend?: boolean
   xLabel?: string
   yLabel?: string
+  yAxisLabels?: Record<number, string>
   xParameter?: string
   yParameters?: string[]
   verticalLines?: Array<{ value: number; label?: string; color?: string }>
