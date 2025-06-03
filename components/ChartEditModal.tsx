@@ -267,7 +267,7 @@ export function ChartEditModal() {
                   </div>
 
                   {/* Y Parameters Settings */}
-                  <div className="flex flex-col h-full border rounded-lg p-3 bg-muted/30">
+                  <div className="flex flex-col border rounded-lg p-3 bg-muted/30 min-h-0 flex-1">
                     <div className="flex justify-between items-center mb-2 flex-shrink-0">
                       <h4 className="font-medium text-sm">Y Parameters Settings</h4>
                       <Button
@@ -300,60 +300,74 @@ export function ChartEditModal() {
                       </Button>
                     </div>
                     
-                    {/* Table Header */}
-                    <div className="flex gap-2 mb-2 px-1 pb-1 border-b flex-shrink-0">
-                      <div className="flex-1 text-xs font-medium text-muted-foreground">Parameter</div>
-                      <div className="w-16 text-xs font-medium text-muted-foreground">Axis No</div>
-                      <div className="min-w-0 text-xs font-medium text-muted-foreground">Y Range</div>
-                      <div className="w-7"></div>
-                    </div>
-                    
-                    {/* Y Parameter List */}
-                    <div className="flex-1 overflow-y-auto">
-                      <div className="space-y-1">
-                        {editingChart.yAxisParams?.map((param, index) => (
-                        <div key={index} className="flex gap-2 p-1">
-                          {/* Parameter */}
-                          <div className="flex-1">
-                            <Input
-                              value={param.parameter}
-                              onChange={(e) => {
-                                const newParams = [...(editingChart.yAxisParams || [])]
-                                newParams[index] = { ...newParams[index], parameter: e.target.value }
-                                setEditingChart({ ...editingChart, yAxisParams: newParams })
-                              }}
-                              placeholder="Parameter"
-                              className="h-7 text-sm"
-                            />
+                    {/* Calculate max Y Range width */}
+                    {(() => {
+                      const maxYRangeWidth = Math.max(
+                        48, // minimum width for "Auto"
+                        ...(editingChart.yAxisParams?.map(param => {
+                          const text = param.range?.auto !== false ? 
+                            "Auto" : 
+                            `${param.range?.min || 0} - ${param.range?.max || 100}`;
+                          return Math.max(48, text.length * 8 + 16); // approximate width calculation
+                        }) || [48])
+                      );
+                      
+                      return (
+                        <>
+                          {/* Table Header */}
+                          <div className="flex gap-2 mb-2 px-1 pb-1 border-b flex-shrink-0">
+                            <div className="flex-1 text-xs font-medium text-muted-foreground">Parameter</div>
+                            <div className="w-16 text-xs font-medium text-muted-foreground">Axis No</div>
+                            <div className="text-xs font-medium text-muted-foreground text-center" style={{ width: maxYRangeWidth }}>Y Range</div>
+                            <div className="w-7"></div>
                           </div>
                           
-                          {/* Axis No */}
-                          <div className="w-16">
-                            <Input
-                              type="number"
-                              min="1"
-                              max="10"
-                              value={param.axisNo || 1}
-                              onChange={(e) => {
-                                const newParams = [...(editingChart.yAxisParams || [])]
-                                newParams[index] = { ...newParams[index], axisNo: parseInt(e.target.value) || 1 }
-                                setEditingChart({ ...editingChart, yAxisParams: newParams })
-                              }}
-                              className="h-7 text-sm"
-                            />
-                          </div>
-                          
-                          {/* Y Range */}
-                          <div className="min-w-0">
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button variant="outline" size="sm" className="h-7 px-1 text-xs whitespace-nowrap">
-                                  {param.range?.auto !== false ? 
-                                    "Auto" : 
-                                    `${param.range?.min || 0} - ${param.range?.max || 100}`
-                                  }
-                                </Button>
-                              </PopoverTrigger>
+                          {/* Y Parameter List */}
+                          <div className="flex-1 overflow-y-auto max-h-80">
+                            <div className="space-y-1">
+                              {editingChart.yAxisParams?.map((param, index) => (
+                              <div key={index} className="flex gap-2 p-1">
+                                {/* Parameter */}
+                                <div className="flex-1">
+                                  <Input
+                                    value={param.parameter}
+                                    onChange={(e) => {
+                                      const newParams = [...(editingChart.yAxisParams || [])]
+                                      newParams[index] = { ...newParams[index], parameter: e.target.value }
+                                      setEditingChart({ ...editingChart, yAxisParams: newParams })
+                                    }}
+                                    placeholder="Parameter"
+                                    className="h-7 text-sm"
+                                  />
+                                </div>
+                                
+                                {/* Axis No */}
+                                <div className="w-16">
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    max="10"
+                                    value={param.axisNo || 1}
+                                    onChange={(e) => {
+                                      const newParams = [...(editingChart.yAxisParams || [])]
+                                      newParams[index] = { ...newParams[index], axisNo: parseInt(e.target.value) || 1 }
+                                      setEditingChart({ ...editingChart, yAxisParams: newParams })
+                                    }}
+                                    className="h-7 text-sm"
+                                  />
+                                </div>
+                                
+                                {/* Y Range */}
+                                <div style={{ width: maxYRangeWidth }}>
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button variant="outline" size="sm" className="w-full h-7 px-1 text-xs">
+                                        {param.range?.auto !== false ? 
+                                          "Auto" : 
+                                          `${param.range?.min || 0} - ${param.range?.max || 100}`
+                                        }
+                                      </Button>
+                                    </PopoverTrigger>
                               <PopoverContent className="w-80" align="end">
                                 <div className="space-y-4">
                                   <h4 className="font-medium text-sm">Y Range Settings</h4>
@@ -454,6 +468,9 @@ export function ChartEditModal() {
                       )) || <p className="text-sm text-muted-foreground px-1">No Y parameters added yet.</p>}
                       </div>
                     </div>
+                          </>
+                      );
+                    })()}
                   </div>
                 </div>
               )}
