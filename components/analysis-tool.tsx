@@ -1225,7 +1225,7 @@ export default function Component() {
     }
 
     return (
-      <div className="h-full flex flex-col" ref={contentRef}>
+      <div className="h-full flex flex-col">
         <div className={cn("flex-1", currentSettings.pagination ? "overflow-hidden" : "overflow-auto")}>
           {/* パディングを調整 */}
           <div className="p-6 h-full flex flex-col">
@@ -1920,36 +1920,37 @@ export default function Component() {
                                         />
                                       </div>
                                     </div>
-                                    <div className="mt-2">
+                                  </div>
+                                  <div className="mt-2">
+                                    <div
+                                      className="bg-muted p-2 rounded-md flex items-center justify-center"
+                                      style={{ height: "60px" }}
+                                    >
                                       <div
-                                        className="bg-muted p-2 rounded-md flex items-center justify-center"
-                                        style={{ height: "60px" }}
-                                      >
-                                        <div
-                                          style={{
-                                            width: `${param.marker?.size || 6}px`,
-                                            height: `${param.marker?.size || 6}px`,
-                                            backgroundColor: param.marker?.fillColor || "#ffffff",
-                                            borderColor: param.marker?.borderColor || "#000000",
-                                            borderWidth: "1px",
-                                            borderStyle: "solid",
-                                            borderRadius:
-                                              param.marker?.type === "circle"
-                                                ? "50%"
-                                                : param.marker?.type === "square"
-                                                  ? "0"
-                                                  : "0",
-                                            transform:
-                                              param.marker?.type === "triangle"
+                                        style={{
+                                          width: `${param.marker?.size || 6}px`,
+                                          height: `${param.marker?.size || 6}px`,
+                                          backgroundColor: param.marker?.fillColor || "#ffffff",
+                                          borderColor: param.marker?.borderColor || "#000000",
+                                          borderWidth: "1px",
+                                          borderStyle: "solid",
+                                          borderRadius:
+                                            param.marker?.type === "circle"
+                                              ? "50%"
+                                              : param.marker?.type === "square"
+                                                ? "0"
+                                                : "0",
+                                          transform:
+                                            param.marker?.type === "triangle"
+                                              ? "rotate(45deg)"
+                                              : param.marker?.type === "diamond"
                                                 ? "rotate(45deg)"
-                                                : param.marker?.type === "diamond"
-                                                  ? "rotate(45deg)"
-                                                  : "none",
-                                          }}
-                                        ></div>
-                                      </div>
+                                                : "none",
+                                        }}
+                                      ></div>
                                     </div>
                                   </div>
+                                </div>
                                 </DialogContent>
                               </Dialog>
                             </div>

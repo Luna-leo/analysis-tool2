@@ -1,4 +1,4 @@
-import Component from "../analysis-tool"
+import Component from "@/components/analysis-tool"
 
 export default function Page() {
   return <Component />
