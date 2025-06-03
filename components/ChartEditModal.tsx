@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useRef, useEffect } from "react"
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,17 @@ import {
 export function ChartEditModal() {
   const { editingChart, editModalOpen, setEditingChart, setEditModalOpen } = useAnalysisStore()
   const [activeTab, setActiveTab] = useState<"appearance" | "parameters">("appearance")
+  const [lastAddedParamIndex, setLastAddedParamIndex] = useState<number | null>(null)
+  const parameterInputRefs = useRef<(HTMLInputElement | null)[]>([])
+
+  useEffect(() => {
+    if (lastAddedParamIndex !== null && parameterInputRefs.current[lastAddedParamIndex]) {
+      const inputElement = parameterInputRefs.current[lastAddedParamIndex]
+      inputElement?.focus()
+      inputElement?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      setLastAddedParamIndex(null)
+    }
+  }, [lastAddedParamIndex, editingChart?.yAxisParams?.length])
 
   if (!editingChart) return null
 
@@ -138,7 +149,7 @@ export function ChartEditModal() {
                     <h4 className="font-medium text-sm mb-2">X Parameter Settings</h4>
                     <div className="flex gap-2">
                       {/* Axis Type */}
-                      <div className="w-32">
+                      <div className="w-38">
                         <Label htmlFor="x-axis-type" className="text-sm mb-1 block">Axis Type</Label>
                         <select
                           id="x-axis-type"
@@ -290,10 +301,12 @@ export function ChartEditModal() {
                               style: "solid" as const
                             }
                           }
+                          const newParams = [...(editingChart.yAxisParams || []), newParam]
                           setEditingChart({
                             ...editingChart,
-                            yAxisParams: [...(editingChart.yAxisParams || []), newParam]
+                            yAxisParams: newParams
                           })
+                          setLastAddedParamIndex(newParams.length - 1)
                         }}
                       >
                         Add Y Parameter
@@ -330,6 +343,9 @@ export function ChartEditModal() {
                                 {/* Parameter */}
                                 <div className="flex-1">
                                   <Input
+                                    ref={(el) => {
+                                      parameterInputRefs.current[index] = el
+                                    }}
                                     value={param.parameter}
                                     onChange={(e) => {
                                       const newParams = [...(editingChart.yAxisParams || [])]
