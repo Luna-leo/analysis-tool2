@@ -17,6 +17,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 export function ChartEditModal() {
   const { editingChart, editModalOpen, setEditingChart, setEditModalOpen } = useAnalysisStore()
@@ -88,29 +96,52 @@ export function ChartEditModal() {
             <div className="flex-1 overflow-y-auto">
               {/* DataSource Section */}
               {activeTab === "datasource" && (
-                <div className="space-y-3">
-                  {editingChart.dataSource ? (
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-sm font-medium">Source Name</p>
-                        <p className="text-sm text-muted-foreground">{editingChart.dataSource.name}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">Table</p>
-                        <p className="text-sm text-muted-foreground">{editingChart.dataSource.table}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">Columns</p>
-                        <p className="text-sm text-muted-foreground">{editingChart.dataSource.columns.join(", ")}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium">Last Updated</p>
-                        <p className="text-sm text-muted-foreground">{editingChart.dataSource.lastUpdated}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">No data source configured</p>
-                  )}
+                <div className="space-y-4">
+                  {/* Event Information Section */}
+                  <div>
+                    <h4 className="text-sm font-medium mb-3">Event Information</h4>
+                        <div className="border rounded-lg overflow-hidden">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="h-8 text-xs">Plant</TableHead>
+                                <TableHead className="h-8 text-xs">Machine No</TableHead>
+                                <TableHead className="h-8 text-xs">Label</TableHead>
+                                <TableHead className="h-8 text-xs">Event</TableHead>
+                                <TableHead className="h-8 text-xs">Start</TableHead>
+                                <TableHead className="h-8 text-xs">End</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {/* Sample event data - replace with actual data */}
+                              <TableRow>
+                                <TableCell className="p-2 text-xs">Plant A</TableCell>
+                                <TableCell className="p-2 text-xs">M001</TableCell>
+                                <TableCell className="p-2 text-xs">Maintenance</TableCell>
+                                <TableCell className="p-2 text-xs">Scheduled Stop</TableCell>
+                                <TableCell className="p-2 text-xs">2024-01-15 10:00</TableCell>
+                                <TableCell className="p-2 text-xs">2024-01-15 12:00</TableCell>
+                              </TableRow>
+                              <TableRow>
+                                <TableCell className="p-2 text-xs">Plant A</TableCell>
+                                <TableCell className="p-2 text-xs">M002</TableCell>
+                                <TableCell className="p-2 text-xs">Production</TableCell>
+                                <TableCell className="p-2 text-xs">Normal Operation</TableCell>
+                                <TableCell className="p-2 text-xs">2024-01-15 08:00</TableCell>
+                                <TableCell className="p-2 text-xs">2024-01-15 16:00</TableCell>
+                              </TableRow>
+                              <TableRow>
+                                <TableCell className="p-2 text-xs">Plant B</TableCell>
+                                <TableCell className="p-2 text-xs">M003</TableCell>
+                                <TableCell className="p-2 text-xs">Alert</TableCell>
+                                <TableCell className="p-2 text-xs">Temperature Warning</TableCell>
+                                <TableCell className="p-2 text-xs">2024-01-15 14:30</TableCell>
+                                <TableCell className="p-2 text-xs">2024-01-15 14:45</TableCell>
+                              </TableRow>
+                            </TableBody>
+                          </Table>
+                        </div>
+                  </div>
                 </div>
               )}
 
