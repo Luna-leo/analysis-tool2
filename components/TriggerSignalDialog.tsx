@@ -21,7 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { EventInfo } from "@/types"
-import { Search, Plus, Minus, ChevronDown, ChevronRight, Edit2 } from "lucide-react"
+import { Search, Plus, Minus, ChevronDown, ChevronRight, Edit2, Save } from "lucide-react"
 
 interface TriggerSignalDialogProps {
   isOpen: boolean
@@ -90,6 +90,76 @@ const formatConditionExpression = (conditions: SearchCondition[]): string => {
       return `${logicalOp} ${condStr}`
     })
     .join(' ')
+}
+
+// Function to convert conditions to colored JSX expression
+const formatConditionExpressionToJSX = (conditions: SearchCondition[]): React.ReactNode => {
+  if (conditions.length === 0) return <span className="text-muted-foreground">No conditions set</span>
+  
+  const formatCondition = (condition: SearchCondition, key: string): React.ReactNode[] => {
+    if (condition.type === 'condition') {
+      const param = condition.parameter || '[parameter]'
+      const op = operatorLabels[condition.operator || 'gt']
+      const value = condition.value || '[value]'
+      return [
+        <span key={`${key}-param`} className="text-slate-700 font-medium">{param}</span>,
+        <span key={`${key}-space1`}> </span>,
+        <span key={`${key}-op`} className="text-teal-600 font-semibold">{op}</span>,
+        <span key={`${key}-space2`}> </span>,
+        <span key={`${key}-value`} className="text-indigo-600 font-medium">{value}</span>
+      ]
+    } else if (condition.type === 'group' && condition.conditions) {
+      const inner: React.ReactNode[] = []
+      condition.conditions.forEach((cond, index) => {
+        if (index > 0) {
+          const logicalOp = cond.logicalOperator || 'AND'
+          inner.push(<span key={`${key}-logical-${index}`} className="text-rose-600 font-semibold mx-1">{logicalOp}</span>)
+        }
+        inner.push(...formatCondition(cond, `${key}-${index}`))
+      })
+      
+      return [
+        <span key={`${key}-open`} className="text-amber-600 font-semibold">(</span>,
+        ...inner,
+        <span key={`${key}-close`} className="text-amber-600 font-semibold">)</span>
+      ]
+    }
+    return []
+  }
+  
+  const result: React.ReactNode[] = []
+  conditions.forEach((condition, index) => {
+    if (index > 0) {
+      const logicalOp = condition.logicalOperator || 'AND'
+      result.push(<span key={`logical-${index}`} className="text-rose-600 font-semibold mx-1">{logicalOp}</span>)
+    }
+    result.push(...formatCondition(condition, `cond-${index}`))
+  })
+  
+  return <>{result}</>
+}
+
+// Function to color code expression strings (for saved conditions)
+const colorCodeExpressionString = (expression: string): React.ReactNode => {
+  return expression
+    .split(/(\bAND\b|\bOR\b|\(|\)|>=|<=|>|<|!=|=)/)
+    .map((part, index) => {
+      const trimmed = part.trim()
+      if (trimmed === 'AND' || trimmed === 'OR') {
+        return <span key={index} className="text-rose-600 font-semibold mx-1">{part}</span>
+      } else if (trimmed === '(' || trimmed === ')') {
+        return <span key={index} className="text-amber-600 font-semibold">{part}</span>
+      } else if (['>=', '<=', '>', '<', '!=', '='].includes(trimmed)) {
+        return <span key={index} className="text-teal-600 font-semibold">{part}</span>
+      } else if (trimmed && /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(trimmed)) {
+        // Parameter names
+        return <span key={index} className="text-slate-700 font-medium">{part}</span>
+      } else if (trimmed && /^\d+(\.\d+)?$/.test(trimmed)) {
+        // Numeric values
+        return <span key={index} className="text-indigo-600 font-medium">{part}</span>
+      }
+      return <span key={index}>{part}</span>
+    })
 }
 
 // Predefined conditions
@@ -402,13 +472,13 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
   availableEvents
 }) => {
   const [searchPeriodType, setSearchPeriodType] = useState<'events' | 'manual'>('events')
-  const [selectedEventId, setSelectedEventId] = useState<string>('')
+  const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set())
+  const [eventSearchQuery, setEventSearchQuery] = useState('')
   const [manualPeriod, setManualPeriod] = useState({
     start: '',
     end: '',
     plant: '',
-    machineNo: '',
-    legend: ''
+    machineNo: ''
   })
   const [conditionMode, setConditionMode] = useState<'predefined' | 'manual'>('predefined')
   const [selectedPredefinedCondition, setSelectedPredefinedCondition] = useState<string>('')
@@ -460,13 +530,13 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
     )
     
     // Convert search results to EventInfo format
-    const selectedEvent = availableEvents.find(e => e.id === selectedEventId)
+    const selectedEvents = availableEvents.filter(e => selectedEventIds.has(e.id))
     const eventsToAdd: EventInfo[] = selectedResults.map(result => ({
       id: `trigger_${result.id}_${Date.now()}`,
-      plant: searchPeriodType === 'manual' ? manualPeriod.plant : (selectedEvent?.plant || 'Signal Detection'),
-      machineNo: searchPeriodType === 'manual' ? manualPeriod.machineNo : (selectedEvent?.machineNo || 'AUTO'),
-      label: searchPeriodType === 'manual' ? manualPeriod.legend : eventLegend,
-      labelDescription: `Conditions: ${result.matchedConditions.join(', ')}`,
+      plant: searchPeriodType === 'manual' ? manualPeriod.plant : 'Signal Detection',
+      machineNo: searchPeriodType === 'manual' ? manualPeriod.machineNo : 'AUTO',
+      label: triggerLegend,
+      labelDescription: `Conditions: ${result.matchedConditions.join(', ')} | Search period: ${searchPeriodType === 'manual' ? 'Manual' : `${selectedEvents.length} events`}`,
       event: 'Trigger Event',
       eventDetail: `Auto-detected at ${result.timestamp}`,
       start: result.timestamp,
@@ -481,7 +551,16 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
     onClose()
   }
 
-  const [eventLegend, setEventLegend] = useState('')
+  const [triggerLegend, setTriggerLegend] = useState('')
+  const [savedConditions, setSavedConditions] = useState<Array<{
+    id: string
+    name: string
+    expression: string
+    conditions: SearchCondition[]
+    createdAt: string
+  }>>([])
+  const [showSaveDialog, setShowSaveDialog] = useState(false)
+  const [saveConditionName, setSaveConditionName] = useState('')
 
   const validateConditions = (conditions: SearchCondition[]): boolean => {
     return conditions.some(condition => {
@@ -496,14 +575,16 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
 
   const isSearchValid = () => {
     const hasValidPeriod = searchPeriodType === 'events' 
-      ? selectedEventId && eventLegend
-      : manualPeriod.start && manualPeriod.end && manualPeriod.plant && manualPeriod.machineNo && manualPeriod.legend
+      ? selectedEventIds.size > 0
+      : manualPeriod.start && manualPeriod.end && manualPeriod.plant && manualPeriod.machineNo
     
     const hasValidConditions = conditionMode === 'predefined' 
       ? selectedPredefinedCondition !== ''
       : validateConditions(searchConditions)
     
-    return hasValidPeriod && hasValidConditions
+    const hasValidLegend = triggerLegend.trim() !== ''
+    
+    return hasValidPeriod && hasValidConditions && hasValidLegend
   }
 
   const getCurrentConditions = (): SearchCondition[] => {
@@ -522,6 +603,37 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
     return formatConditionExpression(searchConditions)
   }
 
+  const getCurrentExpressionJSX = (): React.ReactNode => {
+    if (conditionMode === 'predefined') {
+      const predefined = predefinedConditions.find(c => c.id === selectedPredefinedCondition)
+      if (!predefined) return <span className="text-muted-foreground">No condition selected</span>
+      
+      // Parse the predefined expression for color coding
+      const expression = predefined.expression
+      const coloredExpression = expression
+        .split(/(\bAND\b|\bOR\b|\(|\)|>|<|>=|<=|=|!=)/)
+        .map((part, index) => {
+          if (part === 'AND' || part === 'OR') {
+            return <span key={index} className="text-rose-600 font-semibold mx-1">{part}</span>
+          } else if (part === '(' || part === ')') {
+            return <span key={index} className="text-amber-600 font-semibold">{part}</span>
+          } else if (['>', '<', '>=', '<=', '=', '!='].includes(part)) {
+            return <span key={index} className="text-teal-600 font-semibold">{part}</span>
+          } else if (part.trim() && /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(part.trim())) {
+            // Parameter names
+            return <span key={index} className="text-slate-700 font-medium">{part}</span>
+          } else if (part.trim() && /^\d+(\.\d+)?$/.test(part.trim())) {
+            // Numeric values
+            return <span key={index} className="text-indigo-600 font-medium">{part}</span>
+          }
+          return <span key={index}>{part}</span>
+        })
+      
+      return <>{coloredExpression}</>
+    }
+    return formatConditionExpressionToJSX(searchConditions)
+  }
+
   const loadPredefinedCondition = (conditionId: string) => {
     const predefined = predefinedConditions.find(c => c.id === conditionId)
     if (predefined) {
@@ -533,7 +645,54 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
     }
   }
 
+  // Filter events based on search query
+  const filteredEvents = availableEvents.filter(event => {
+    if (!eventSearchQuery) return true
+    
+    const query = eventSearchQuery.toLowerCase()
+    return (
+      event.plant.toLowerCase().includes(query) ||
+      event.machineNo.toLowerCase().includes(query) ||
+      event.label.toLowerCase().includes(query) ||
+      (event.labelDescription && event.labelDescription.toLowerCase().includes(query)) ||
+      event.event.toLowerCase().includes(query) ||
+      (event.eventDetail && event.eventDetail.toLowerCase().includes(query))
+    )
+  })
+
+  const saveCurrentCondition = () => {
+    if (!saveConditionName.trim()) return
+    
+    const currentConditions = getCurrentConditions()
+    const currentExpression = getCurrentExpression()
+    
+    const newSavedCondition = {
+      id: `saved_${Date.now()}`,
+      name: saveConditionName.trim(),
+      expression: currentExpression,
+      conditions: JSON.parse(JSON.stringify(currentConditions)), // Deep clone
+      createdAt: new Date().toISOString()
+    }
+    
+    setSavedConditions([...savedConditions, newSavedCondition])
+    setSaveConditionName('')
+    setShowSaveDialog(false)
+  }
+
+  const loadSavedCondition = (savedCondition: typeof savedConditions[0]) => {
+    // Load the saved conditions
+    setSearchConditions(JSON.parse(JSON.stringify(savedCondition.conditions)))
+    setConditionMode('manual')
+    setLoadedFromPredefined(null)
+    setSelectedPredefinedCondition('')
+  }
+
+  const deleteSavedCondition = (conditionId: string) => {
+    setSavedConditions(savedConditions.filter(c => c.id !== conditionId))
+  }
+
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl w-[95vw] h-[90vh] flex flex-col">
         <DialogHeader>
@@ -559,6 +718,7 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
                   <RadioGroup
                     value={searchPeriodType}
                     onValueChange={(value) => setSearchPeriodType(value as 'events' | 'manual')}
+                    className="flex gap-6"
                   >
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="events" id="events" />
@@ -572,37 +732,119 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
                   
                   {searchPeriodType === 'events' && (
                     <div className="space-y-4">
-                      <div className="border rounded-lg p-3 max-h-48 overflow-y-auto">
-                        <Label className="text-sm font-medium mb-2 block">Select Event for Period Range:</Label>
-                        <RadioGroup
-                          value={selectedEventId}
-                          onValueChange={setSelectedEventId}
-                          className="space-y-2"
-                        >
-                          {availableEvents.map((event) => (
-                            <div key={event.id} className="flex items-center space-x-2">
-                              <RadioGroupItem value={event.id} id={`event-${event.id}`} />
-                              <Label htmlFor={`event-${event.id}`} className="text-sm flex-1 cursor-pointer">
-                                {event.plant} - {event.machineNo} | {event.label} 
-                                <span className="text-muted-foreground ml-2">
-                                  ({event.start} ~ {event.end})
-                                </span>
-                              </Label>
+                      <div className="border rounded-lg overflow-hidden max-h-64">
+                        <div className="p-3 bg-muted/30 border-b">
+                          <div className="flex items-center justify-between gap-4">
+                            <Label className="text-sm font-medium">Select Events for Period Range:</Label>
+                            <div className="flex items-center gap-2">
+                              <Input
+                                placeholder="Search events..."
+                                value={eventSearchQuery}
+                                onChange={(e) => setEventSearchQuery(e.target.value)}
+                                className="h-7 w-48 text-xs"
+                              />
+                              <div className="text-xs text-muted-foreground whitespace-nowrap">
+                                {selectedEventIds.size} of {filteredEvents.length} selected
+                              </div>
                             </div>
-                          ))}
-                        </RadioGroup>
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="event-legend">
-                          Legend <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="event-legend"
-                          value={eventLegend}
-                          onChange={(e) => setEventLegend(e.target.value)}
-                          placeholder="Enter legend for trigger signals"
-                        />
+                          </div>
+                        </div>
+                        <div className="overflow-y-auto max-h-48">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="w-12">
+                                  <Checkbox
+                                    checked={filteredEvents.length > 0 && filteredEvents.every(e => selectedEventIds.has(e.id))}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        const newSelected = new Set(selectedEventIds)
+                                        filteredEvents.forEach(e => newSelected.add(e.id))
+                                        setSelectedEventIds(newSelected)
+                                      } else {
+                                        const newSelected = new Set(selectedEventIds)
+                                        filteredEvents.forEach(e => newSelected.delete(e.id))
+                                        setSelectedEventIds(newSelected)
+                                      }
+                                    }}
+                                    className="h-3 w-3"
+                                  />
+                                </TableHead>
+                                <TableHead className="h-8 text-xs px-2">Plant</TableHead>
+                                <TableHead className="h-8 text-xs px-2">Machine</TableHead>
+                                <TableHead className="h-8 text-xs px-2">Label</TableHead>
+                                <TableHead className="h-8 text-xs px-2">Event</TableHead>
+                                <TableHead className="h-8 text-xs px-2">Start</TableHead>
+                                <TableHead className="h-8 text-xs px-2">End</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {filteredEvents.length > 0 ? filteredEvents.map((event) => (
+                                <TableRow 
+                                  key={event.id}
+                                  className={`cursor-pointer ${selectedEventIds.has(event.id) ? "bg-primary/10" : ""}`}
+                                  onClick={() => {
+                                    const newSelectedIds = new Set(selectedEventIds)
+                                    if (selectedEventIds.has(event.id)) {
+                                      newSelectedIds.delete(event.id)
+                                    } else {
+                                      newSelectedIds.add(event.id)
+                                    }
+                                    setSelectedEventIds(newSelectedIds)
+                                  }}
+                                >
+                                  <TableCell className="px-1 py-1">
+                                    <Checkbox
+                                      checked={selectedEventIds.has(event.id)}
+                                      onCheckedChange={(checked) => {
+                                        const newSelectedIds = new Set(selectedEventIds)
+                                        if (checked) {
+                                          newSelectedIds.add(event.id)
+                                        } else {
+                                          newSelectedIds.delete(event.id)
+                                        }
+                                        setSelectedEventIds(newSelectedIds)
+                                      }}
+                                      className="h-3 w-3"
+                                    />
+                                  </TableCell>
+                                  <TableCell className="px-2 py-1 text-xs">{event.plant}</TableCell>
+                                  <TableCell className="px-2 py-1 text-xs">{event.machineNo}</TableCell>
+                                  <TableCell className="px-2 py-1 text-xs">
+                                    <div className="leading-tight">
+                                      <div>{event.label}</div>
+                                      <div className="text-muted-foreground">{event.labelDescription || ""}</div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="px-2 py-1 text-xs">
+                                    <div className="leading-tight">
+                                      <div>{event.event}</div>
+                                      <div className="text-muted-foreground">{event.eventDetail || ""}</div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="px-2 py-1 text-xs">
+                                    <div>
+                                      <div>{event.start.split("T")[0]}</div>
+                                      <div>{event.start.split("T")[1]}</div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="px-2 py-1 text-xs">
+                                    <div>
+                                      <div>{event.end.split("T")[0]}</div>
+                                      <div>{event.end.split("T")[1]}</div>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              )) : (
+                                <TableRow>
+                                  <TableCell colSpan={7} className="text-center py-4 text-muted-foreground text-xs">
+                                    {eventSearchQuery ? 'No events found matching your search.' : 'No events available.'}
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </TableBody>
+                          </Table>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -657,17 +899,6 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
                           />
                         </div>
                       </div>
-                      <div>
-                        <Label htmlFor="manual-legend">
-                          Legend <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="manual-legend"
-                          value={manualPeriod.legend}
-                          onChange={(e) => setManualPeriod({ ...manualPeriod, legend: e.target.value })}
-                          placeholder="Enter legend for trigger signals"
-                        />
-                      </div>
                     </div>
                   )}
                 </CardContent>
@@ -679,6 +910,23 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
                   <CardTitle className="text-lg">Search Conditions</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Legend Setting */}
+                  <div className="border rounded-lg p-3 bg-muted/20">
+                    <Label htmlFor="trigger-legend" className="text-sm font-medium">
+                      Trigger Signal Legend <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="trigger-legend"
+                      value={triggerLegend}
+                      onChange={(e) => setTriggerLegend(e.target.value)}
+                      placeholder="Enter legend for trigger signals"
+                      className="mt-2"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      This legend will be used for all detected trigger signal events.
+                    </p>
+                  </div>
+
                   {/* Condition Mode Selection */}
                   <RadioGroup
                     value={conditionMode}
@@ -727,7 +975,7 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
                                   <h5 className="font-medium text-sm">{condition.name}</h5>
                                   <p className="text-xs text-muted-foreground mt-1">{condition.description}</p>
                                   <div className="font-mono text-xs mt-2 p-2 bg-muted/30 rounded">
-                                    {condition.expression}
+                                    {colorCodeExpressionString(condition.expression)}
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2 mt-1">
@@ -797,15 +1045,27 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
                     
                     {/* Expression Preview */}
                     <div>
-                      <h4 className="text-sm font-medium mb-3 text-muted-foreground">
-                        Current Expression
-                        {conditionMode === 'manual' && loadedFromPredefined && (
-                          <span className="ml-2 text-xs text-blue-600">(Modified from preset)</span>
-                        )}
-                      </h4>
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm font-medium text-muted-foreground">
+                          Current Expression
+                          {conditionMode === 'manual' && loadedFromPredefined && (
+                            <span className="ml-2 text-xs text-blue-600">(Modified from preset)</span>
+                          )}
+                        </h4>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => setShowSaveDialog(true)}
+                          disabled={getCurrentExpression() === 'No conditions set' || getCurrentExpression() === 'No condition selected'}
+                        >
+                          <Save className="h-3 w-3 mr-1" />
+                          条件登録
+                        </Button>
+                      </div>
                       <div className="border rounded-lg p-4 bg-muted/20 min-h-[100px]">
                         <div className="font-mono text-sm break-words">
-                          {getCurrentExpression()}
+                          {getCurrentExpressionJSX()}
                         </div>
                         
                         {/* Show predefined condition info if selected */}
@@ -822,24 +1082,62 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
                           </div>
                         )}
                         
-                        {/* Expression explanation */}
+                        {/* Expression explanation with color coding */}
                         <div className="mt-4 pt-3 border-t border-muted">
                           <div className="text-xs text-muted-foreground space-y-1">
                             <div className="flex items-center gap-2">
-                              <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                              <span>AND: All conditions must be true</span>
+                              <span className="text-slate-700 font-medium">parameters</span>
+                              <span className="text-teal-600 font-semibold">&gt; &lt; =</span>
+                              <span className="text-indigo-600 font-medium">values</span>
+                              <span className="text-rose-600 font-semibold">AND OR</span>
+                              <span className="text-amber-600 font-semibold">( )</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                              <span>OR: Any condition can be true</span>
+                              <span className="w-2 h-2 bg-rose-600 rounded-full"></span>
+                              <span>AND: All conditions must be true, OR: Any condition can be true</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="w-2 h-2 bg-orange-500 rounded-full"></span>
-                              <span>( ): Grouped conditions</span>
+                              <span className="w-2 h-2 bg-amber-600 rounded-full"></span>
+                              <span>( ): Grouped conditions for complex logic</span>
                             </div>
                           </div>
                         </div>
                       </div>
+                      
+                      {/* Saved Conditions Section */}
+                      {savedConditions.length > 0 && (
+                        <div className="mt-4">
+                          <h5 className="text-xs font-medium text-muted-foreground mb-2">保存済み条件</h5>
+                          <div className="space-y-2 max-h-32 overflow-y-auto">
+                            {savedConditions.map((saved) => (
+                              <div key={saved.id} className="flex items-center gap-2 p-2 border rounded text-xs">
+                                <div className="flex-1">
+                                  <div className="font-medium">{saved.name}</div>
+                                  <div className="text-muted-foreground font-mono text-[10px] truncate">
+                                    {colorCodeExpressionString(saved.expression)}
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-6 px-2 text-xs"
+                                  onClick={() => loadSavedCondition(saved)}
+                                >
+                                  読込
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() => deleteSavedCondition(saved.id)}
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
@@ -953,5 +1251,44 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* Save Condition Dialog */}
+    <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>トリガー信号条件を登録</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="condition-name">条件名 <span className="text-red-500">*</span></Label>
+            <Input
+              id="condition-name"
+              value={saveConditionName}
+              onChange={(e) => setSaveConditionName(e.target.value)}
+              placeholder="条件に名前を付けてください"
+              className="mt-1"
+            />
+          </div>
+          <div>
+            <Label className="text-sm">保存される条件式:</Label>
+            <div className="mt-1 p-3 border rounded bg-muted/20 font-mono text-xs break-words">
+              {getCurrentExpressionJSX()}
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 pt-4">
+          <Button variant="outline" onClick={() => setShowSaveDialog(false)}>
+            キャンセル
+          </Button>
+          <Button 
+            onClick={saveCurrentCondition}
+            disabled={!saveConditionName.trim()}
+          >
+            登録
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   )
 }
