@@ -33,30 +33,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { ManualEntryDialog } from "./ManualEntryDialog"
+import { useManualEntry } from "@/hooks/useManualEntry"
+import { EventInfo } from "@/types"
 
-interface EventInfo {
-  id: string
-  plant: string
-  machineNo: string
-  label: string
-  labelDescription?: string
-  event: string
-  eventDetail?: string
-  start: string
-  end: string
-}
-
-// Helper function to format date for datetime-local input
-const formatDateTimeLocal = (date: Date): string => {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-  const seconds = String(date.getSeconds()).padStart(2, '0')
-  
-  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
-}
 
 export function ChartEditModal() {
   const { editingChart, editModalOpen, setEditingChart, setEditModalOpen } = useAnalysisStore()
@@ -72,23 +52,43 @@ export function ChartEditModal() {
   ])
   const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set())
   const [selectedDataSourceItems, setSelectedDataSourceItems] = useState<EventInfo[]>([])
-  const [manualEntryOpen, setManualEntryOpen] = useState(false)
-  const [manualEntryData, setManualEntryData] = useState<EventInfo & { legend?: string }>({
-    id: "",
-    plant: "",
-    machineNo: "",
-    label: "",
-    labelDescription: "",
-    event: "",
-    eventDetail: "",
-    start: "",
-    end: "",
-    legend: ""
-  })
-  const [addToEventTable, setAddToEventTable] = useState(false)
-  const [editingItemId, setEditingItemId] = useState<string | null>(null)
-  const [timeAdjustmentTarget, setTimeAdjustmentTarget] = useState<'start' | 'end'>('start')
-  const [timeAdjustmentUnit, setTimeAdjustmentUnit] = useState<'d' | 'h' | 'm' | 's'>('s')
+  
+  // Manual entry management
+  const manualEntry = useManualEntry()
+
+  const handleSaveManualEntry = (data: any, editingItemId: string | null) => {
+    if (editingItemId) {
+      // Update existing entry (only in Selected Data Source, not in Event Information)
+      // Parse legend back to label and labelDescription if editing
+      const updatedItem = { ...data }
+      if (data.legend) {
+        const legendMatch = data.legend.match(/^(.+?)\s*\((.+)\)$/)
+        if (legendMatch) {
+          updatedItem.label = legendMatch[1].trim()
+          updatedItem.labelDescription = legendMatch[2].trim()
+        } else {
+          updatedItem.label = data.legend
+          updatedItem.labelDescription = ""
+        }
+      }
+      setSelectedDataSourceItems(
+        selectedDataSourceItems.map(item => 
+          item.id === editingItemId ? updatedItem : item
+        )
+      )
+    } else {
+      // Add new entry
+      const newEntry: EventInfo = {
+        ...data,
+        id: Date.now().toString()
+      }
+      
+      // Add to selected data source items
+      setSelectedDataSourceItems([...selectedDataSourceItems, newEntry])
+    }
+    
+    manualEntry.close()
+  }
 
   useEffect(() => {
     if (lastAddedParamIndex !== null && parameterInputRefs.current[lastAddedParamIndex]) {
@@ -164,24 +164,7 @@ export function ChartEditModal() {
                         variant="outline"
                         size="sm"
                         className="h-7 text-xs"
-                        onClick={() => {
-                          const now = new Date()
-                          const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
-                          
-                          setManualEntryData({
-                            id: "",
-                            plant: "",
-                            machineNo: "",
-                            label: "",
-                            labelDescription: "",
-                            event: "",
-                            eventDetail: "",
-                            start: formatDateTimeLocal(oneHourAgo),
-                            end: formatDateTimeLocal(now),
-                            legend: ""
-                          })
-                          setManualEntryOpen(true)
-                        }}
+                        onClick={manualEntry.openForNew}
                       >
                         <Plus className="h-3 w-3 mr-1" />
                         Add Manual Entry
@@ -226,12 +209,7 @@ export function ChartEditModal() {
                                       variant="ghost"
                                       size="sm"
                                       className="h-6 w-6 p-0"
-                                      onClick={() => {
-                                        const legend = item.labelDescription ? `${item.label} (${item.labelDescription})` : item.label
-                                        setManualEntryData({...item, legend})
-                                        setEditingItemId(item.id)
-                                        setManualEntryOpen(true)
-                                      }}
+                                      onClick={() => manualEntry.openForEdit(item)}
                                     >
                                       <Settings className="h-3 w-3" />
                                     </Button>
@@ -964,340 +942,15 @@ export function ChartEditModal() {
       </DialogContent>
     </Dialog>
 
-    {/* Manual Entry Dialog */}
-    <Dialog open={manualEntryOpen} onOpenChange={setManualEntryOpen}>
-      <DialogContent className="max-w-lg h-[80vh] flex flex-col">
-        <DialogHeader className="flex-shrink-0">
-          <DialogTitle>{editingItemId ? "Edit Data Entry" : "Add Manual Data Entry"}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 flex-1 overflow-y-auto p-2">
-          {/* Required Fields */}
-          <div className="space-y-3">
-            <h5 className="text-sm font-medium text-muted-foreground">Required Fields</h5>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="manual-plant" className="text-sm">
-                  Plant <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="manual-plant"
-                  value={manualEntryData.plant}
-                  onChange={(e) => setManualEntryData({ ...manualEntryData, plant: e.target.value })}
-                  className="mt-1"
-                  placeholder="Enter plant name"
-                  disabled={!!editingItemId}
-                />
-              </div>
-              <div>
-                <Label htmlFor="manual-machine" className="text-sm">
-                  Machine No <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="manual-machine"
-                  value={manualEntryData.machineNo}
-                  onChange={(e) => setManualEntryData({ ...manualEntryData, machineNo: e.target.value })}
-                  className="mt-1"
-                  placeholder="Enter machine number"
-                  disabled={!!editingItemId}
-                />
-              </div>
-            </div>
-            
-            {/* Legend Field */}
-            <div>
-              <Label htmlFor="manual-legend" className="text-sm">Legend <span className="text-red-500">*</span></Label>
-              <Input
-                id="manual-legend"
-                value={editingItemId ? manualEntryData.legend : manualEntryData.label}
-                onChange={(e) => {
-                  if (editingItemId) {
-                    setManualEntryData({ ...manualEntryData, legend: e.target.value })
-                  } else {
-                    setManualEntryData({ ...manualEntryData, label: e.target.value })
-                  }
-                }}
-                className="mt-1"
-                placeholder="Enter legend"
-              />
-            </div>
-            
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="manual-start" className="text-sm">Start <span className="text-red-500">*</span></Label>
-                  <Input
-                    id="manual-start"
-                    type="datetime-local"
-                    step="1"
-                    value={manualEntryData.start}
-                    onChange={(e) => setManualEntryData({ ...manualEntryData, start: e.target.value })}
-                    className="mt-1"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="manual-end" className="text-sm">End <span className="text-red-500">*</span></Label>
-                  <Input
-                    id="manual-end"
-                    type="datetime-local"
-                    step="1"
-                    value={manualEntryData.end}
-                    onChange={(e) => setManualEntryData({ ...manualEntryData, end: e.target.value })}
-                    className="mt-1"
-                  />
-                </div>
-              </div>
-              
-              {/* Time Adjustment */}
-              {manualEntryData.start && manualEntryData.end && (
-                <div className="border rounded-lg bg-muted/30 p-3 space-y-3">
-                  <h6 className="text-xs font-medium">Time Adjustment</h6>
-                  
-                  {/* Target and Unit Selectors */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label className="text-xs">Adjust Target</Label>
-                      <div className="flex gap-1 mt-1">
-                        <Button
-                          variant={timeAdjustmentTarget === 'start' ? "default" : "outline"}
-                          size="sm"
-                          className="h-7 px-3 text-xs"
-                          onClick={() => setTimeAdjustmentTarget('start')}
-                        >
-                          Start
-                        </Button>
-                        <Button
-                          variant={timeAdjustmentTarget === 'end' ? "default" : "outline"}
-                          size="sm"
-                          className="h-7 px-3 text-xs"
-                          onClick={() => setTimeAdjustmentTarget('end')}
-                        >
-                          End
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <Label className="text-xs">Unit</Label>
-                      <div className="flex gap-1 mt-1">
-                        <Button
-                          variant={timeAdjustmentUnit === 's' ? "default" : "outline"}
-                          size="sm"
-                          className="h-7 px-2 text-xs"
-                          onClick={() => setTimeAdjustmentUnit('s')}
-                        >
-                          Sec
-                        </Button>
-                        <Button
-                          variant={timeAdjustmentUnit === 'm' ? "default" : "outline"}
-                          size="sm"
-                          className="h-7 px-2 text-xs"
-                          onClick={() => setTimeAdjustmentUnit('m')}
-                        >
-                          Min
-                        </Button>
-                        <Button
-                          variant={timeAdjustmentUnit === 'h' ? "default" : "outline"}
-                          size="sm"
-                          className="h-7 px-2 text-xs"
-                          onClick={() => setTimeAdjustmentUnit('h')}
-                        >
-                          Hour
-                        </Button>
-                        <Button
-                          variant={timeAdjustmentUnit === 'd' ? "default" : "outline"}
-                          size="sm"
-                          className="h-7 px-2 text-xs"
-                          onClick={() => setTimeAdjustmentUnit('d')}
-                        >
-                          Day
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Adjustment Buttons */}
-                  <div>
-                    <Label className="text-xs">Adjustment</Label>
-                    <div className="flex gap-1 mt-1">
-                      {/* Negative buttons */}
-                      <div className="grid grid-cols-4 gap-1 flex-1">
-                        {[-30, -10, -5, -1].map(step => (
-                          <Button
-                            key={step}
-                            variant="outline"
-                            size="sm"
-                            className="h-6 text-xs"
-                            onClick={() => {
-                              const currentValue = timeAdjustmentTarget === 'start' ? manualEntryData.start : manualEntryData.end
-                              if (!currentValue) return
-                              
-                              const targetDate = new Date(currentValue)
-                              if (isNaN(targetDate.getTime())) return
-                              
-                              switch(timeAdjustmentUnit) {
-                                case 'd':
-                                  targetDate.setDate(targetDate.getDate() + step)
-                                  break
-                                case 'h':
-                                  targetDate.setHours(targetDate.getHours() + step)
-                                  break
-                                case 'm':
-                                  targetDate.setMinutes(targetDate.getMinutes() + step)
-                                  break
-                                case 's':
-                                  targetDate.setSeconds(targetDate.getSeconds() + step)
-                                  break
-                              }
-                              
-                              setManualEntryData({ 
-                                ...manualEntryData, 
-                                [timeAdjustmentTarget]: formatDateTimeLocal(targetDate)
-                              })
-                            }}
-                          >
-                            {step}{timeAdjustmentUnit}
-                          </Button>
-                        ))}
-                      </div>
-                      
-                      {/* Divider */}
-                      <div className="w-px bg-border"></div>
-                      
-                      {/* Positive buttons */}
-                      <div className="grid grid-cols-4 gap-1 flex-1">
-                        {[1, 5, 10, 30].map(step => (
-                          <Button
-                            key={step}
-                            variant="default"
-                            size="sm"
-                            className="h-6 text-xs"
-                            onClick={() => {
-                              const currentValue = timeAdjustmentTarget === 'start' ? manualEntryData.start : manualEntryData.end
-                              if (!currentValue) return
-                              
-                              const targetDate = new Date(currentValue)
-                              if (isNaN(targetDate.getTime())) return
-                              
-                              switch(timeAdjustmentUnit) {
-                                case 'd':
-                                  targetDate.setDate(targetDate.getDate() + step)
-                                  break
-                                case 'h':
-                                  targetDate.setHours(targetDate.getHours() + step)
-                                  break
-                                case 'm':
-                                  targetDate.setMinutes(targetDate.getMinutes() + step)
-                                  break
-                                case 's':
-                                  targetDate.setSeconds(targetDate.getSeconds() + step)
-                                  break
-                              }
-                              
-                              setManualEntryData({ 
-                                ...manualEntryData, 
-                                [timeAdjustmentTarget]: formatDateTimeLocal(targetDate)
-                              })
-                            }}
-                          >
-                            +{step}{timeAdjustmentUnit}
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-          </div>
-        </div>
-        
-        <div className="flex justify-end items-center mt-4 flex-shrink-0 border-t pt-4">
-          
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setManualEntryOpen(false)
-                setEditingItemId(null)
-                setManualEntryData({
-                  id: "",
-                  plant: "",
-                  machineNo: "",
-                  label: "",
-                  labelDescription: "",
-                  event: "",
-                  eventDetail: "",
-                  start: "",
-                  end: "",
-                  legend: ""
-                })
-              }}
-            >
-              Cancel
-            </Button>
-            <Button 
-              onClick={() => {
-                if (editingItemId) {
-                  // Update existing entry (only in Selected Data Source, not in Event Information)
-                  // Parse legend back to label and labelDescription if editing
-                  const updatedItem = { ...manualEntryData }
-                  if (manualEntryData.legend) {
-                    const legendMatch = manualEntryData.legend.match(/^(.+?)\s*\((.+)\)$/)
-                    if (legendMatch) {
-                      updatedItem.label = legendMatch[1].trim()
-                      updatedItem.labelDescription = legendMatch[2].trim()
-                    } else {
-                      updatedItem.label = manualEntryData.legend
-                      updatedItem.labelDescription = ""
-                    }
-                  }
-                  setSelectedDataSourceItems(
-                    selectedDataSourceItems.map(item => 
-                      item.id === editingItemId ? updatedItem : item
-                    )
-                  )
-                } else {
-                  // Add new entry
-                  const newEntry: EventInfo = {
-                    ...manualEntryData,
-                    id: Date.now().toString()
-                  }
-                  
-                  // Add to selected data source items
-                  setSelectedDataSourceItems([...selectedDataSourceItems, newEntry])
-                }
-                
-                // Reset and close
-                setManualEntryOpen(false)
-                setEditingItemId(null)
-                setManualEntryData({
-                  id: "",
-                  plant: "",
-                  machineNo: "",
-                  label: "",
-                  labelDescription: "",
-                  event: "",
-                  eventDetail: "",
-                  start: "",
-                  end: "",
-                  legend: ""
-                })
-              }}
-              disabled={
-                !manualEntryData.plant || 
-                !manualEntryData.machineNo || 
-                !manualEntryData.start || 
-                !manualEntryData.end ||
-                (editingItemId ? !manualEntryData.legend : !manualEntryData.label)
-              }
-            >
-              {editingItemId ? "Update Entry" : "Add Entry"}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <ManualEntryDialog
+      isOpen={manualEntry.isOpen}
+      editingItemId={manualEntry.editingItemId}
+      data={manualEntry.data}
+      onClose={manualEntry.close}
+      onUpdateData={manualEntry.updateData}
+      onSave={handleSaveManualEntry}
+      isValid={manualEntry.isValid()}
+    />
     </>
   )
 }

@@ -80,3 +80,15 @@ export interface ChartSizes {
   chartMinHeight: number
   isCompactLayout: boolean
 }
+
+export interface EventInfo {
+  id: string
+  plant: string
+  machineNo: string
+  label: string
+  labelDescription?: string
+  event: string
+  eventDetail?: string
+  start: string
+  end: string
+}
