@@ -46,6 +46,18 @@ interface EventInfo {
   end: string
 }
 
+// Helper function to format date for datetime-local input
+const formatDateTimeLocal = (date: Date): string => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+}
+
 export function ChartEditModal() {
   const { editingChart, editModalOpen, setEditingChart, setEditModalOpen } = useAnalysisStore()
   const [activeTab, setActiveTab] = useState<"parameters" | "datasource">("parameters")
@@ -76,7 +88,7 @@ export function ChartEditModal() {
   const [addToEventTable, setAddToEventTable] = useState(false)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [timeAdjustmentTarget, setTimeAdjustmentTarget] = useState<'start' | 'end'>('start')
-  const [timeAdjustmentUnit, setTimeAdjustmentUnit] = useState<'h' | 'm' | 's'>('s')
+  const [timeAdjustmentUnit, setTimeAdjustmentUnit] = useState<'d' | 'h' | 'm' | 's'>('s')
 
   useEffect(() => {
     if (lastAddedParamIndex !== null && parameterInputRefs.current[lastAddedParamIndex]) {
@@ -153,6 +165,9 @@ export function ChartEditModal() {
                         size="sm"
                         className="h-7 text-xs"
                         onClick={() => {
+                          const now = new Date()
+                          const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
+                          
                           setManualEntryData({
                             id: "",
                             plant: "",
@@ -161,10 +176,10 @@ export function ChartEditModal() {
                             labelDescription: "",
                             event: "",
                             eventDetail: "",
-                            start: "",
-                            end: ""
+                            start: formatDateTimeLocal(oneHourAgo),
+                            end: formatDateTimeLocal(now),
+                            legend: ""
                           })
-                          setAddToEventTable(false)
                           setManualEntryOpen(true)
                         }}
                       >
@@ -215,7 +230,6 @@ export function ChartEditModal() {
                                         const legend = item.labelDescription ? `${item.label} (${item.labelDescription})` : item.label
                                         setManualEntryData({...item, legend})
                                         setEditingItemId(item.id)
-                                        setAddToEventTable(false)
                                         setManualEntryOpen(true)
                                       }}
                                     >
@@ -678,7 +692,9 @@ export function ChartEditModal() {
                                             ...editingChart,
                                             xAxisRange: {
                                               ...editingChart.xAxisRange,
-                                              unit: e.target.value as "sec" | "min" | "hr"
+                                              unit: e.target.value as "sec" | "min" | "hr",
+                                              min: editingChart.xAxisRange?.min ?? 0,
+                                              max: editingChart.xAxisRange?.max ?? 100
                                             }
                                           })
                                         }}
@@ -961,7 +977,7 @@ export function ChartEditModal() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="manual-plant" className="text-sm">
-                  Plant {!editingItemId && <span className="text-red-500">*</span>}
+                  Plant <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="manual-plant"
@@ -974,7 +990,7 @@ export function ChartEditModal() {
               </div>
               <div>
                 <Label htmlFor="manual-machine" className="text-sm">
-                  Machine No {!editingItemId && <span className="text-red-500">*</span>}
+                  Machine No <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   id="manual-machine"
@@ -987,19 +1003,23 @@ export function ChartEditModal() {
               </div>
             </div>
             
-            {/* Legend Field for Editing */}
-            {editingItemId && (
-              <div>
-                <Label htmlFor="manual-legend" className="text-sm">Legend <span className="text-red-500">*</span></Label>
-                <Input
-                  id="manual-legend"
-                  value={manualEntryData.legend}
-                  onChange={(e) => setManualEntryData({ ...manualEntryData, legend: e.target.value })}
-                  className="mt-1"
-                  placeholder="Enter legend"
-                />
-              </div>
-            )}
+            {/* Legend Field */}
+            <div>
+              <Label htmlFor="manual-legend" className="text-sm">Legend <span className="text-red-500">*</span></Label>
+              <Input
+                id="manual-legend"
+                value={editingItemId ? manualEntryData.legend : manualEntryData.label}
+                onChange={(e) => {
+                  if (editingItemId) {
+                    setManualEntryData({ ...manualEntryData, legend: e.target.value })
+                  } else {
+                    setManualEntryData({ ...manualEntryData, label: e.target.value })
+                  }
+                }}
+                className="mt-1"
+                placeholder="Enter legend"
+              />
+            </div>
             
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -1028,7 +1048,7 @@ export function ChartEditModal() {
               </div>
               
               {/* Time Adjustment */}
-              {editingItemId && manualEntryData.start && manualEntryData.end && (
+              {manualEntryData.start && manualEntryData.end && (
                 <div className="border rounded-lg bg-muted/30 p-3 space-y-3">
                   <h6 className="text-xs font-medium">Time Adjustment</h6>
                   
@@ -1062,26 +1082,34 @@ export function ChartEditModal() {
                         <Button
                           variant={timeAdjustmentUnit === 's' ? "default" : "outline"}
                           size="sm"
-                          className="h-7 px-3 text-xs"
+                          className="h-7 px-2 text-xs"
                           onClick={() => setTimeAdjustmentUnit('s')}
                         >
-                          Seconds
+                          Sec
                         </Button>
                         <Button
                           variant={timeAdjustmentUnit === 'm' ? "default" : "outline"}
                           size="sm"
-                          className="h-7 px-3 text-xs"
+                          className="h-7 px-2 text-xs"
                           onClick={() => setTimeAdjustmentUnit('m')}
                         >
-                          Minutes
+                          Min
                         </Button>
                         <Button
                           variant={timeAdjustmentUnit === 'h' ? "default" : "outline"}
                           size="sm"
-                          className="h-7 px-3 text-xs"
+                          className="h-7 px-2 text-xs"
                           onClick={() => setTimeAdjustmentUnit('h')}
                         >
-                          Hours
+                          Hour
+                        </Button>
+                        <Button
+                          variant={timeAdjustmentUnit === 'd' ? "default" : "outline"}
+                          size="sm"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => setTimeAdjustmentUnit('d')}
+                        >
+                          Day
                         </Button>
                       </div>
                     </div>
@@ -1090,116 +1118,107 @@ export function ChartEditModal() {
                   {/* Adjustment Buttons */}
                   <div>
                     <Label className="text-xs">Adjustment</Label>
-                    <div className="grid grid-cols-8 gap-1 mt-1">
-                      {[-30, -10, -5, -1, 1, 5, 10, 30].map(step => (
-                        <Button
-                          key={step}
-                          variant="outline"
-                          size="sm"
-                          className={`h-6 text-xs ${
-                            step < 0 
-                              ? 'border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400' 
-                              : 'border-blue-300 text-blue-700 hover:bg-blue-50 hover:border-blue-400'
-                          }`}
-                          onClick={() => {
-                            const targetDate = new Date(timeAdjustmentTarget === 'start' ? manualEntryData.start : manualEntryData.end)
-                            
-                            switch(timeAdjustmentUnit) {
-                              case 'h':
-                                targetDate.setHours(targetDate.getHours() + step)
-                                break
-                              case 'm':
-                                targetDate.setMinutes(targetDate.getMinutes() + step)
-                                break
-                              case 's':
-                                targetDate.setSeconds(targetDate.getSeconds() + step)
-                                break
-                            }
-                            
-                            setManualEntryData({ 
-                              ...manualEntryData, 
-                              [timeAdjustmentTarget]: targetDate.toISOString().slice(0, 16)
-                            })
-                          }}
-                        >
-                          {step > 0 ? '+' : ''}{step}{timeAdjustmentUnit}
-                        </Button>
-                      ))}
+                    <div className="flex gap-1 mt-1">
+                      {/* Negative buttons */}
+                      <div className="grid grid-cols-4 gap-1 flex-1">
+                        {[-30, -10, -5, -1].map(step => (
+                          <Button
+                            key={step}
+                            variant="outline"
+                            size="sm"
+                            className="h-6 text-xs"
+                            onClick={() => {
+                              const currentValue = timeAdjustmentTarget === 'start' ? manualEntryData.start : manualEntryData.end
+                              if (!currentValue) return
+                              
+                              const targetDate = new Date(currentValue)
+                              if (isNaN(targetDate.getTime())) return
+                              
+                              switch(timeAdjustmentUnit) {
+                                case 'd':
+                                  targetDate.setDate(targetDate.getDate() + step)
+                                  break
+                                case 'h':
+                                  targetDate.setHours(targetDate.getHours() + step)
+                                  break
+                                case 'm':
+                                  targetDate.setMinutes(targetDate.getMinutes() + step)
+                                  break
+                                case 's':
+                                  targetDate.setSeconds(targetDate.getSeconds() + step)
+                                  break
+                              }
+                              
+                              setManualEntryData({ 
+                                ...manualEntryData, 
+                                [timeAdjustmentTarget]: formatDateTimeLocal(targetDate)
+                              })
+                            }}
+                          >
+                            {step}{timeAdjustmentUnit}
+                          </Button>
+                        ))}
+                      </div>
+                      
+                      {/* Divider */}
+                      <div className="w-px bg-border"></div>
+                      
+                      {/* Positive buttons */}
+                      <div className="grid grid-cols-4 gap-1 flex-1">
+                        {[1, 5, 10, 30].map(step => (
+                          <Button
+                            key={step}
+                            variant="default"
+                            size="sm"
+                            className="h-6 text-xs"
+                            onClick={() => {
+                              const currentValue = timeAdjustmentTarget === 'start' ? manualEntryData.start : manualEntryData.end
+                              if (!currentValue) return
+                              
+                              const targetDate = new Date(currentValue)
+                              if (isNaN(targetDate.getTime())) return
+                              
+                              switch(timeAdjustmentUnit) {
+                                case 'd':
+                                  targetDate.setDate(targetDate.getDate() + step)
+                                  break
+                                case 'h':
+                                  targetDate.setHours(targetDate.getHours() + step)
+                                  break
+                                case 'm':
+                                  targetDate.setMinutes(targetDate.getMinutes() + step)
+                                  break
+                                case 's':
+                                  targetDate.setSeconds(targetDate.getSeconds() + step)
+                                  break
+                              }
+                              
+                              setManualEntryData({ 
+                                ...manualEntryData, 
+                                [timeAdjustmentTarget]: formatDateTimeLocal(targetDate)
+                              })
+                            }}
+                          >
+                            +{step}{timeAdjustmentUnit}
+                          </Button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
               )}
             </div>
 
-            {addToEventTable && !editingItemId && (
-              <div>
-                <Label htmlFor="manual-label-required" className="text-sm">Label <span className="text-red-500">*</span></Label>
-                <Input
-                  id="manual-label-required"
-                  value={manualEntryData.label}
-                  onChange={(e) => setManualEntryData({ ...manualEntryData, label: e.target.value })}
-                  className="mt-1"
-                  placeholder="Enter label"
-                />
-              </div>
-            )}
           </div>
-
-          {/* Optional Fields */}
-          {!editingItemId && (
-            <div className="space-y-3">
-              <h5 className="text-sm font-medium text-muted-foreground">Optional Fields</h5>
-              
-              {!addToEventTable && (
-                <div>
-                  <Label htmlFor="manual-label" className="text-sm">Label</Label>
-                  <Input
-                    id="manual-label"
-                    value={manualEntryData.label}
-                    onChange={(e) => setManualEntryData({ ...manualEntryData, label: e.target.value })}
-                    className="mt-1"
-                    placeholder="Enter label"
-                  />
-                </div>
-              )}
-              
-              <div>
-                <Label htmlFor="manual-label-desc" className="text-sm">Label Description</Label>
-                <Input
-                  id="manual-label-desc"
-                  value={manualEntryData.labelDescription || ""}
-                  onChange={(e) => setManualEntryData({ ...manualEntryData, labelDescription: e.target.value })}
-                  className="mt-1"
-                  placeholder="Enter label description"
-                />
-              </div>
-              
-            </div>
-          )}
         </div>
         
-        <div className="flex justify-between items-center mt-4 flex-shrink-0 border-t pt-4">
-          {/* Event Table Addition Option */}
-          {!editingItemId && (
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="add-to-event-table"
-                checked={addToEventTable}
-                onCheckedChange={setAddToEventTable}
-              />
-              <Label htmlFor="add-to-event-table" className="text-sm">
-                Add to Event Table
-              </Label>
-            </div>
-          )}
-          {editingItemId && <div />}
+        <div className="flex justify-end items-center mt-4 flex-shrink-0 border-t pt-4">
           
           <div className="flex gap-2">
             <Button 
               variant="outline" 
               onClick={() => {
                 setManualEntryOpen(false)
-                setAddToEventTable(false)
                 setEditingItemId(null)
                 setManualEntryData({
                   id: "",
@@ -1247,16 +1266,10 @@ export function ChartEditModal() {
                   
                   // Add to selected data source items
                   setSelectedDataSourceItems([...selectedDataSourceItems, newEntry])
-                  
-                  // Add to event table if checkbox is checked
-                  if (addToEventTable) {
-                    setEvents([...events, newEntry])
-                  }
                 }
                 
                 // Reset and close
                 setManualEntryOpen(false)
-                setAddToEventTable(false)
                 setEditingItemId(null)
                 setManualEntryData({
                   id: "",
@@ -1276,8 +1289,7 @@ export function ChartEditModal() {
                 !manualEntryData.machineNo || 
                 !manualEntryData.start || 
                 !manualEntryData.end ||
-                (addToEventTable && !manualEntryData.label) ||
-                (editingItemId && !manualEntryData.legend)
+                (editingItemId ? !manualEntryData.legend : !manualEntryData.label)
               }
             >
               {editingItemId ? "Update Entry" : "Add Entry"}
