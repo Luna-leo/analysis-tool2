@@ -34,6 +34,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { ManualEntryDialog } from "./ManualEntryDialog"
+import { TriggerSignalDialog } from "./TriggerSignalDialog"
 import { useManualEntry } from "@/hooks/useManualEntry"
 import { EventInfo } from "@/types"
 
@@ -55,6 +56,9 @@ export function ChartEditModal() {
   
   // Manual entry management
   const manualEntry = useManualEntry()
+  
+  // Trigger signal dialog state
+  const [triggerSignalDialogOpen, setTriggerSignalDialogOpen] = useState(false)
 
   const handleSaveManualEntry = (data: any, editingItemId: string | null) => {
     if (editingItemId) {
@@ -88,6 +92,10 @@ export function ChartEditModal() {
     }
     
     manualEntry.close()
+  }
+
+  const handleAddTriggerSignalResults = (results: EventInfo[]) => {
+    setSelectedDataSourceItems([...selectedDataSourceItems, ...results])
   }
 
   useEffect(() => {
@@ -160,15 +168,26 @@ export function ChartEditModal() {
                   <div className="border rounded-lg p-3 bg-muted/30">
                     <div className="flex justify-between items-center mb-2">
                       <h4 className="text-sm font-medium">Selected Data Source</h4>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-7 text-xs"
-                        onClick={manualEntry.openForNew}
-                      >
-                        <Plus className="h-3 w-3 mr-1" />
-                        Add Manual Entry
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={manualEntry.openForNew}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Add Manual Entry
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => setTriggerSignalDialogOpen(true)}
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Trigger Signal
+                        </Button>
+                      </div>
                     </div>
                     {selectedDataSourceItems.length > 0 ? (
                       <div className="border rounded-lg overflow-hidden">
@@ -950,6 +969,13 @@ export function ChartEditModal() {
       onUpdateData={manualEntry.updateData}
       onSave={handleSaveManualEntry}
       isValid={manualEntry.isValid()}
+    />
+    
+    <TriggerSignalDialog
+      isOpen={triggerSignalDialogOpen}
+      onClose={() => setTriggerSignalDialogOpen(false)}
+      onAddToDataSource={handleAddTriggerSignalResults}
+      availableEvents={events}
     />
     </>
   )
