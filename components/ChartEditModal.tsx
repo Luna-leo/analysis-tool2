@@ -11,8 +11,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { useAnalysisStore } from "@/stores/useAnalysisStore"
-import { X, Settings, Plus, Edit2 } from "lucide-react"
+import { X, Settings, Plus } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Badge } from "@/components/ui/badge"
 import {
   Popover,
   PopoverContent,
@@ -26,6 +27,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface EventInfo {
   id: string
@@ -52,8 +59,21 @@ export function ChartEditModal() {
     { id: "3", plant: "Plant B", machineNo: "M003", label: "Alert", labelDescription: "Warning state", event: "Temperature Warning", eventDetail: "Above threshold", start: "2024-01-15T14:30:00", end: "2024-01-15T14:45:00" },
   ])
   const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set())
-  const [editingEvent, setEditingEvent] = useState<EventInfo | null>(null)
-  const [eventFormOpen, setEventFormOpen] = useState(false)
+  const [selectedDataSourceItems, setSelectedDataSourceItems] = useState<EventInfo[]>([])
+  const [manualEntryOpen, setManualEntryOpen] = useState(false)
+  const [manualEntryData, setManualEntryData] = useState<EventInfo>({
+    id: "",
+    plant: "",
+    machineNo: "",
+    label: "",
+    labelDescription: "",
+    event: "",
+    eventDetail: "",
+    start: "",
+    end: ""
+  })
+  const [addToEventTable, setAddToEventTable] = useState(false)
+  const [editingItemId, setEditingItemId] = useState<string | null>(null)
 
   useEffect(() => {
     if (lastAddedParamIndex !== null && parameterInputRefs.current[lastAddedParamIndex]) {
@@ -123,28 +143,101 @@ export function ChartEditModal() {
                 <div className="space-y-4">
                   {/* Selected Data Source Section */}
                   <div className="border rounded-lg p-3 bg-muted/30">
-                    <h4 className="text-sm font-medium mb-2">Selected Data Source</h4>
-                    {editingChart.dataSource ? (
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                          <span className="text-muted-foreground">Source Name:</span>
-                          <span className="ml-2">{editingChart.dataSource.name}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Table:</span>
-                          <span className="ml-2">{editingChart.dataSource.table}</span>
-                        </div>
-                        <div className="col-span-2">
-                          <span className="text-muted-foreground">Columns:</span>
-                          <span className="ml-2">{editingChart.dataSource.columns.join(", ")}</span>
-                        </div>
-                        <div className="col-span-2">
-                          <span className="text-muted-foreground">Last Updated:</span>
-                          <span className="ml-2">{editingChart.dataSource.lastUpdated}</span>
-                        </div>
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="text-sm font-medium">Selected Data Source</h4>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() => {
+                          setManualEntryData({
+                            id: "",
+                            plant: "",
+                            machineNo: "",
+                            label: "",
+                            labelDescription: "",
+                            event: "",
+                            eventDetail: "",
+                            start: "",
+                            end: ""
+                          })
+                          setAddToEventTable(false)
+                          setManualEntryOpen(true)
+                        }}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Add Manual Entry
+                      </Button>
+                    </div>
+                    {selectedDataSourceItems.length > 0 ? (
+                      <div className="border rounded-lg overflow-hidden">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="h-8 text-xs px-2">Plant</TableHead>
+                              <TableHead className="h-8 text-xs px-2">Machine No</TableHead>
+                              <TableHead className="h-8 text-xs px-2">Legend</TableHead>
+                              <TableHead className="h-8 text-xs px-2">Start</TableHead>
+                              <TableHead className="h-8 text-xs px-2">End</TableHead>
+                              <TableHead className="h-8 text-xs w-8"></TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {selectedDataSourceItems.map((item) => (
+                              <TableRow key={item.id}>
+                                <TableCell className="px-2 py-1 text-xs">{item.plant}</TableCell>
+                                <TableCell className="px-2 py-1 text-xs">{item.machineNo}</TableCell>
+                                <TableCell className="px-2 py-1 text-xs">
+                                  {item.labelDescription ? `${item.label} (${item.labelDescription})` : item.label}
+                                </TableCell>
+                                <TableCell className="px-2 py-1 text-xs">
+                                  <div>
+                                    <div>{item.start.split("T")[0]}</div>
+                                    <div>{item.start.split("T")[1]}</div>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="px-2 py-1 text-xs">
+                                  <div>
+                                    <div>{item.end.split("T")[0]}</div>
+                                    <div>{item.end.split("T")[1]}</div>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="px-1 py-1">
+                                  <div className="flex gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 w-6 p-0"
+                                      onClick={() => {
+                                        setManualEntryData(item)
+                                        setEditingItemId(item.id)
+                                        setAddToEventTable(false)
+                                        setManualEntryOpen(true)
+                                      }}
+                                    >
+                                      <Settings className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 w-6 p-0"
+                                      onClick={() => {
+                                        setSelectedDataSourceItems(
+                                          selectedDataSourceItems.filter(i => i.id !== item.id)
+                                        )
+                                      }}
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
                       </div>
                     ) : (
-                      <p className="text-xs text-muted-foreground">No data source selected</p>
+                      <p className="text-xs text-muted-foreground">No data source items selected. Select items from the table below and click 'Add Selected'.</p>
                     )}
                   </div>
 
@@ -156,24 +249,23 @@ export function ChartEditModal() {
                         variant="outline"
                         size="sm"
                         className="h-7 text-xs"
+                        disabled={selectedEventIds.size === 0}
                         onClick={() => {
-                          const newEvent: EventInfo = {
-                            id: Date.now().toString(),
-                            plant: "",
-                            machineNo: "",
-                            label: "",
-                            labelDescription: "",
-                            event: "",
-                            eventDetail: "",
-                            start: "",
-                            end: ""
-                          }
-                          setEditingEvent(newEvent)
-                          setEventFormOpen(true)
+                          const selectedEvents = events.filter(event => 
+                            selectedEventIds.has(event.id)
+                          )
+                          const newItems = [...selectedDataSourceItems]
+                          selectedEvents.forEach(event => {
+                            if (!newItems.find(item => item.id === event.id)) {
+                              newItems.push(event)
+                            }
+                          })
+                          setSelectedDataSourceItems(newItems)
+                          setSelectedEventIds(new Set())
                         }}
                       >
                         <Plus className="h-3 w-3 mr-1" />
-                        Add Event
+                        Add Selected ({selectedEventIds.size})
                       </Button>
                     </div>
                     <div className="border rounded-lg overflow-hidden">
@@ -197,20 +289,21 @@ export function ChartEditModal() {
                             <TableHead className="h-8 text-xs px-2">Machine</TableHead>
                             <TableHead className="h-8 text-xs px-2">Label</TableHead>
                             <TableHead className="h-8 text-xs px-2">Event</TableHead>
-                            <TableHead className="h-8 text-xs px-2">Start</TableHead>
-                            <TableHead className="h-8 text-xs px-2">End</TableHead>
-                            <TableHead className="h-8 text-xs w-6 px-1"></TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {events.map((event) => (
-                            <TableRow 
-                              key={event.id}
-                              className={selectedEventIds.has(event.id) ? "bg-muted/50" : ""}
-                            >
+                          {events.map((event) => {
+                            const isInSelectedDataSource = selectedDataSourceItems.some(item => item.id === event.id)
+                            return (
+                              <TableRow 
+                                key={event.id}
+                                className={`cursor-pointer ${selectedEventIds.has(event.id) ? "bg-muted/50" : ""} ${isInSelectedDataSource ? "opacity-50" : ""}`}
+                                title={`${event.event}\nStart: ${event.start.replace("T", " ")}\nEnd: ${event.end.replace("T", " ")}`}
+                              >
                               <TableCell className="px-1 py-1">
                                 <Checkbox
                                   checked={selectedEventIds.has(event.id)}
+                                  disabled={isInSelectedDataSource}
                                   onCheckedChange={(checked) => {
                                     const newSelectedIds = new Set(selectedEventIds)
                                     if (checked) {
@@ -233,37 +326,18 @@ export function ChartEditModal() {
                               </TableCell>
                               <TableCell className="px-2 py-1 text-xs">
                                 <div className="leading-tight">
-                                  <div>{event.event}</div>
+                                  <div className="flex items-center gap-1">
+                                    {event.event}
+                                    {isInSelectedDataSource && (
+                                      <Badge variant="secondary" className="h-4 text-[10px] px-1">Added</Badge>
+                                    )}
+                                  </div>
                                   <div className="text-muted-foreground">{event.eventDetail || ""}</div>
                                 </div>
                               </TableCell>
-                              <TableCell className="px-2 py-1 text-xs">
-                                <div className="leading-tight">
-                                  <div>{event.start.split("T")[0]}</div>
-                                  <div>{event.start.split("T")[1] || ""}</div>
-                                </div>
-                              </TableCell>
-                              <TableCell className="px-2 py-1 text-xs">
-                                <div className="leading-tight">
-                                  <div>{event.end.split("T")[0]}</div>
-                                  <div>{event.end.split("T")[1] || ""}</div>
-                                </div>
-                              </TableCell>
-                              <TableCell className="px-1 py-1">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-5 w-5 p-0"
-                                  onClick={() => {
-                                    setEditingEvent(event)
-                                    setEventFormOpen(true)
-                                  }}
-                                >
-                                  <Edit2 className="h-3 w-3" />
-                                </Button>
-                              </TableCell>
                             </TableRow>
-                          ))}
+                            )
+                          })}
                         </TableBody>
                       </Table>
                     </div>
@@ -870,113 +944,202 @@ export function ChartEditModal() {
       </DialogContent>
     </Dialog>
 
-    {/* Event Edit Dialog */}
-    <Dialog open={eventFormOpen} onOpenChange={setEventFormOpen}>
-      <DialogContent className="max-w-md">
+    {/* Manual Entry Dialog */}
+    <Dialog open={manualEntryOpen} onOpenChange={setManualEntryOpen}>
+      <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Edit Event</DialogTitle>
+          <DialogTitle>{editingItemId ? "Edit Data Entry" : "Add Manual Data Entry"}</DialogTitle>
         </DialogHeader>
-        {editingEvent && (
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="edit-plant" className="text-sm">Plant</Label>
-              <Input
-                id="edit-plant"
-                value={editingEvent.plant}
-                onChange={(e) => setEditingEvent({ ...editingEvent, plant: e.target.value })}
-                className="mt-1"
-              />
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto p-2">
+          {/* Required Fields */}
+          <div className="space-y-3">
+            <h5 className="text-sm font-medium text-muted-foreground">Required Fields</h5>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="manual-plant" className="text-sm">Plant <span className="text-red-500">*</span></Label>
+                <Input
+                  id="manual-plant"
+                  value={manualEntryData.plant}
+                  onChange={(e) => setManualEntryData({ ...manualEntryData, plant: e.target.value })}
+                  className="mt-1"
+                  placeholder="Enter plant name"
+                  disabled={!!editingItemId}
+                />
+              </div>
+              <div>
+                <Label htmlFor="manual-machine" className="text-sm">Machine No <span className="text-red-500">*</span></Label>
+                <Input
+                  id="manual-machine"
+                  value={manualEntryData.machineNo}
+                  onChange={(e) => setManualEntryData({ ...manualEntryData, machineNo: e.target.value })}
+                  className="mt-1"
+                  placeholder="Enter machine number"
+                  disabled={!!editingItemId}
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="edit-machine" className="text-sm">Machine No</Label>
-              <Input
-                id="edit-machine"
-                value={editingEvent.machineNo}
-                onChange={(e) => setEditingEvent({ ...editingEvent, machineNo: e.target.value })}
-                className="mt-1"
-              />
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="manual-start" className="text-sm">Start <span className="text-red-500">*</span></Label>
+                <Input
+                  id="manual-start"
+                  type="datetime-local"
+                  step="1"
+                  value={manualEntryData.start}
+                  onChange={(e) => setManualEntryData({ ...manualEntryData, start: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label htmlFor="manual-end" className="text-sm">End <span className="text-red-500">*</span></Label>
+                <Input
+                  id="manual-end"
+                  type="datetime-local"
+                  step="1"
+                  value={manualEntryData.end}
+                  onChange={(e) => setManualEntryData({ ...manualEntryData, end: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
             </div>
-            <div>
-              <Label htmlFor="edit-label" className="text-sm">Label</Label>
-              <Input
-                id="edit-label"
-                value={editingEvent.label}
-                onChange={(e) => setEditingEvent({ ...editingEvent, label: e.target.value })}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-label-desc" className="text-sm">Label Description</Label>
-              <Input
-                id="edit-label-desc"
-                value={editingEvent.labelDescription || ""}
-                onChange={(e) => setEditingEvent({ ...editingEvent, labelDescription: e.target.value })}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-event" className="text-sm">Event</Label>
-              <Input
-                id="edit-event"
-                value={editingEvent.event}
-                onChange={(e) => setEditingEvent({ ...editingEvent, event: e.target.value })}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-event-detail" className="text-sm">Event Detail</Label>
-              <Input
-                id="edit-event-detail"
-                value={editingEvent.eventDetail || ""}
-                onChange={(e) => setEditingEvent({ ...editingEvent, eventDetail: e.target.value })}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-start" className="text-sm">Start</Label>
-              <Input
-                id="edit-start"
-                type="datetime-local"
-                step="1"
-                value={editingEvent.start}
-                onChange={(e) => setEditingEvent({ ...editingEvent, start: e.target.value })}
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <Label htmlFor="edit-end" className="text-sm">End</Label>
-              <Input
-                id="edit-end"
-                type="datetime-local"
-                step="1"
-                value={editingEvent.end}
-                onChange={(e) => setEditingEvent({ ...editingEvent, end: e.target.value })}
-                className="mt-1"
-              />
-            </div>
-            <div className="flex justify-end gap-2 mt-4">
-              <Button variant="outline" onClick={() => setEventFormOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={() => {
-                if (events.find(ev => ev.id === editingEvent.id)) {
-                  // Update existing event
-                  const newEvents = events.map(ev => 
-                    ev.id === editingEvent.id ? editingEvent : ev
-                  )
-                  setEvents(newEvents)
-                } else {
-                  // Add new event
-                  setEvents([...events, editingEvent])
-                }
-                setEventFormOpen(false)
-                setEditingEvent(null)
-              }}>
-                Save
-              </Button>
-            </div>
+
+            {addToEventTable && (
+              <div>
+                <Label htmlFor="manual-label" className="text-sm">Label <span className="text-red-500">*</span></Label>
+                <Input
+                  id="manual-label"
+                  value={manualEntryData.label}
+                  onChange={(e) => setManualEntryData({ ...manualEntryData, label: e.target.value })}
+                  className="mt-1"
+                  placeholder="Enter label"
+                />
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Optional Fields */}
+          <div className="space-y-3">
+            <h5 className="text-sm font-medium text-muted-foreground">Optional Fields</h5>
+            
+            {!addToEventTable && (
+              <div>
+                <Label htmlFor="manual-label" className="text-sm">Label</Label>
+                <Input
+                  id="manual-label"
+                  value={manualEntryData.label}
+                  onChange={(e) => setManualEntryData({ ...manualEntryData, label: e.target.value })}
+                  className="mt-1"
+                  placeholder="Enter label"
+                />
+              </div>
+            )}
+            
+            <div>
+              <Label htmlFor="manual-label-desc" className="text-sm">Label Description</Label>
+              <Input
+                id="manual-label-desc"
+                value={manualEntryData.labelDescription || ""}
+                onChange={(e) => setManualEntryData({ ...manualEntryData, labelDescription: e.target.value })}
+                className="mt-1"
+                placeholder="Enter label description"
+              />
+            </div>
+            
+          </div>
+        </div>
+        
+        <div className="flex justify-between items-center mt-4">
+          {/* Event Table Addition Option */}
+          {!editingItemId && (
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="add-to-event-table"
+                checked={addToEventTable}
+                onCheckedChange={setAddToEventTable}
+              />
+              <Label htmlFor="add-to-event-table" className="text-sm">
+                Add to Event Table
+              </Label>
+            </div>
+          )}
+          {editingItemId && <div />}
+          
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setManualEntryOpen(false)
+                setAddToEventTable(false)
+                setEditingItemId(null)
+                setManualEntryData({
+                  id: "",
+                  plant: "",
+                  machineNo: "",
+                  label: "",
+                  labelDescription: "",
+                  event: "",
+                  eventDetail: "",
+                  start: "",
+                  end: ""
+                })
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                if (editingItemId) {
+                  // Update existing entry (only in Selected Data Source, not in Event Information)
+                  setSelectedDataSourceItems(
+                    selectedDataSourceItems.map(item => 
+                      item.id === editingItemId ? manualEntryData : item
+                    )
+                  )
+                } else {
+                  // Add new entry
+                  const newEntry: EventInfo = {
+                    ...manualEntryData,
+                    id: Date.now().toString()
+                  }
+                  
+                  // Add to selected data source items
+                  setSelectedDataSourceItems([...selectedDataSourceItems, newEntry])
+                  
+                  // Add to event table if checkbox is checked
+                  if (addToEventTable) {
+                    setEvents([...events, newEntry])
+                  }
+                }
+                
+                // Reset and close
+                setManualEntryOpen(false)
+                setAddToEventTable(false)
+                setEditingItemId(null)
+                setManualEntryData({
+                  id: "",
+                  plant: "",
+                  machineNo: "",
+                  label: "",
+                  labelDescription: "",
+                  event: "",
+                  eventDetail: "",
+                  start: "",
+                  end: ""
+                })
+              }}
+              disabled={
+                !manualEntryData.plant || 
+                !manualEntryData.machineNo || 
+                !manualEntryData.start || 
+                !manualEntryData.end ||
+                (addToEventTable && !manualEntryData.label)
+              }
+            >
+              {editingItemId ? "Update Entry" : "Add Entry"}
+            </Button>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
     </>
