@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { useAnalysisStore } from "@/stores/useAnalysisStore"
-import { X, Settings } from "lucide-react"
+import { X, Settings, Plus, Edit2 } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Popover,
   PopoverContent,
@@ -26,11 +27,31 @@ import {
   TableRow,
 } from "@/components/ui/table"
 
+interface EventInfo {
+  id: string
+  plant: string
+  machineNo: string
+  label: string
+  event: string
+  start: string
+  end: string
+}
+
 export function ChartEditModal() {
   const { editingChart, editModalOpen, setEditingChart, setEditModalOpen } = useAnalysisStore()
   const [activeTab, setActiveTab] = useState<"parameters" | "datasource">("parameters")
   const [lastAddedParamIndex, setLastAddedParamIndex] = useState<number | null>(null)
   const parameterInputRefs = useRef<(HTMLInputElement | null)[]>([])
+  
+  // Event data state
+  const [events, setEvents] = useState<EventInfo[]>([
+    { id: "1", plant: "Plant A", machineNo: "M001", label: "Maintenance", event: "Scheduled Stop", start: "2024-01-15 10:00", end: "2024-01-15 12:00" },
+    { id: "2", plant: "Plant A", machineNo: "M002", label: "Production", event: "Normal Operation", start: "2024-01-15 08:00", end: "2024-01-15 16:00" },
+    { id: "3", plant: "Plant B", machineNo: "M003", label: "Alert", event: "Temperature Warning", start: "2024-01-15 14:30", end: "2024-01-15 14:45" },
+  ])
+  const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set())
+  const [editingEvent, setEditingEvent] = useState<EventInfo | null>(null)
+  const [eventFormOpen, setEventFormOpen] = useState(false)
 
   useEffect(() => {
     if (lastAddedParamIndex !== null && parameterInputRefs.current[lastAddedParamIndex]) {
@@ -44,7 +65,8 @@ export function ChartEditModal() {
   if (!editingChart) return null
 
   return (
-    <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+    <>
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
       <DialogContent className="max-w-7xl w-[90vw] h-[90vh] flex flex-col overflow-hidden" hideCloseButton>
         <DialogHeader className="flex-shrink-0">
           <div className="flex justify-between items-center">
@@ -99,48 +121,111 @@ export function ChartEditModal() {
                 <div className="space-y-4">
                   {/* Event Information Section */}
                   <div>
-                    <h4 className="text-sm font-medium mb-3">Event Information</h4>
-                        <div className="border rounded-lg overflow-hidden">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead className="h-8 text-xs">Plant</TableHead>
-                                <TableHead className="h-8 text-xs">Machine No</TableHead>
-                                <TableHead className="h-8 text-xs">Label</TableHead>
-                                <TableHead className="h-8 text-xs">Event</TableHead>
-                                <TableHead className="h-8 text-xs">Start</TableHead>
-                                <TableHead className="h-8 text-xs">End</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {/* Sample event data - replace with actual data */}
-                              <TableRow>
-                                <TableCell className="p-2 text-xs">Plant A</TableCell>
-                                <TableCell className="p-2 text-xs">M001</TableCell>
-                                <TableCell className="p-2 text-xs">Maintenance</TableCell>
-                                <TableCell className="p-2 text-xs">Scheduled Stop</TableCell>
-                                <TableCell className="p-2 text-xs">2024-01-15 10:00</TableCell>
-                                <TableCell className="p-2 text-xs">2024-01-15 12:00</TableCell>
-                              </TableRow>
-                              <TableRow>
-                                <TableCell className="p-2 text-xs">Plant A</TableCell>
-                                <TableCell className="p-2 text-xs">M002</TableCell>
-                                <TableCell className="p-2 text-xs">Production</TableCell>
-                                <TableCell className="p-2 text-xs">Normal Operation</TableCell>
-                                <TableCell className="p-2 text-xs">2024-01-15 08:00</TableCell>
-                                <TableCell className="p-2 text-xs">2024-01-15 16:00</TableCell>
-                              </TableRow>
-                              <TableRow>
-                                <TableCell className="p-2 text-xs">Plant B</TableCell>
-                                <TableCell className="p-2 text-xs">M003</TableCell>
-                                <TableCell className="p-2 text-xs">Alert</TableCell>
-                                <TableCell className="p-2 text-xs">Temperature Warning</TableCell>
-                                <TableCell className="p-2 text-xs">2024-01-15 14:30</TableCell>
-                                <TableCell className="p-2 text-xs">2024-01-15 14:45</TableCell>
-                              </TableRow>
-                            </TableBody>
-                          </Table>
-                        </div>
+                    <div className="flex justify-between items-center mb-3">
+                      <h4 className="text-sm font-medium">Event Information</h4>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() => {
+                          const newEvent: EventInfo = {
+                            id: Date.now().toString(),
+                            plant: "",
+                            machineNo: "",
+                            label: "",
+                            event: "",
+                            start: "",
+                            end: ""
+                          }
+                          setEditingEvent(newEvent)
+                          setEventFormOpen(true)
+                        }}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Add Event
+                      </Button>
+                    </div>
+                    <div className="border rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="h-8 text-xs w-6 px-1">
+                              <Checkbox
+                                checked={selectedEventIds.size === events.length && events.length > 0}
+                                onCheckedChange={(checked) => {
+                                  if (checked) {
+                                    setSelectedEventIds(new Set(events.map(e => e.id)))
+                                  } else {
+                                    setSelectedEventIds(new Set())
+                                  }
+                                }}
+                                className="h-3 w-3"
+                              />
+                            </TableHead>
+                            <TableHead className="h-8 text-xs px-2">Plant</TableHead>
+                            <TableHead className="h-8 text-xs px-2">Machine</TableHead>
+                            <TableHead className="h-8 text-xs px-2">Label</TableHead>
+                            <TableHead className="h-8 text-xs px-2">Event</TableHead>
+                            <TableHead className="h-8 text-xs px-2">Start</TableHead>
+                            <TableHead className="h-8 text-xs px-2">End</TableHead>
+                            <TableHead className="h-8 text-xs w-6 px-1"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {events.map((event) => (
+                            <TableRow 
+                              key={event.id}
+                              className={selectedEventIds.has(event.id) ? "bg-muted/50" : ""}
+                            >
+                              <TableCell className="px-1 py-1">
+                                <Checkbox
+                                  checked={selectedEventIds.has(event.id)}
+                                  onCheckedChange={(checked) => {
+                                    const newSelectedIds = new Set(selectedEventIds)
+                                    if (checked) {
+                                      newSelectedIds.add(event.id)
+                                    } else {
+                                      newSelectedIds.delete(event.id)
+                                    }
+                                    setSelectedEventIds(newSelectedIds)
+                                  }}
+                                  className="h-3 w-3"
+                                />
+                              </TableCell>
+                              <TableCell className="px-2 py-1 text-xs">{event.plant}</TableCell>
+                              <TableCell className="px-2 py-1 text-xs">{event.machineNo}</TableCell>
+                              <TableCell className="px-2 py-1 text-xs">{event.label}</TableCell>
+                              <TableCell className="px-2 py-1 text-xs">{event.event}</TableCell>
+                              <TableCell className="px-2 py-1 text-xs">
+                                <div className="leading-tight">
+                                  <div>{event.start.split(" ")[0]}</div>
+                                  <div>{event.start.split(" ")[1]}</div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="px-2 py-1 text-xs">
+                                <div className="leading-tight">
+                                  <div>{event.end.split(" ")[0]}</div>
+                                  <div>{event.end.split(" ")[1]}</div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="px-1 py-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-5 w-5 p-0"
+                                  onClick={() => {
+                                    setEditingEvent(event)
+                                    setEventFormOpen(true)
+                                  }}
+                                >
+                                  <Edit2 className="h-3 w-3" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
                   </div>
                 </div>
               )}
@@ -743,5 +828,96 @@ export function ChartEditModal() {
 
       </DialogContent>
     </Dialog>
+
+    {/* Event Edit Dialog */}
+    <Dialog open={eventFormOpen} onOpenChange={setEventFormOpen}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Edit Event</DialogTitle>
+        </DialogHeader>
+        {editingEvent && (
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit-plant" className="text-sm">Plant</Label>
+              <Input
+                id="edit-plant"
+                value={editingEvent.plant}
+                onChange={(e) => setEditingEvent({ ...editingEvent, plant: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-machine" className="text-sm">Machine No</Label>
+              <Input
+                id="edit-machine"
+                value={editingEvent.machineNo}
+                onChange={(e) => setEditingEvent({ ...editingEvent, machineNo: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-label" className="text-sm">Label</Label>
+              <Input
+                id="edit-label"
+                value={editingEvent.label}
+                onChange={(e) => setEditingEvent({ ...editingEvent, label: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-event" className="text-sm">Event</Label>
+              <Input
+                id="edit-event"
+                value={editingEvent.event}
+                onChange={(e) => setEditingEvent({ ...editingEvent, event: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-start" className="text-sm">Start</Label>
+              <Input
+                id="edit-start"
+                type="datetime-local"
+                value={editingEvent.start}
+                onChange={(e) => setEditingEvent({ ...editingEvent, start: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-end" className="text-sm">End</Label>
+              <Input
+                id="edit-end"
+                type="datetime-local"
+                value={editingEvent.end}
+                onChange={(e) => setEditingEvent({ ...editingEvent, end: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" onClick={() => setEventFormOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={() => {
+                if (events.find(ev => ev.id === editingEvent.id)) {
+                  // Update existing event
+                  const newEvents = events.map(ev => 
+                    ev.id === editingEvent.id ? editingEvent : ev
+                  )
+                  setEvents(newEvents)
+                } else {
+                  // Add new event
+                  setEvents([...events, editingEvent])
+                }
+                setEventFormOpen(false)
+                setEditingEvent(null)
+              }}>
+                Save
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+    </>
   )
 }
