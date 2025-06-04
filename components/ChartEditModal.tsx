@@ -61,7 +61,7 @@ export function ChartEditModal() {
   const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set())
   const [selectedDataSourceItems, setSelectedDataSourceItems] = useState<EventInfo[]>([])
   const [manualEntryOpen, setManualEntryOpen] = useState(false)
-  const [manualEntryData, setManualEntryData] = useState<EventInfo>({
+  const [manualEntryData, setManualEntryData] = useState<EventInfo & { legend?: string }>({
     id: "",
     plant: "",
     machineNo: "",
@@ -70,10 +70,13 @@ export function ChartEditModal() {
     event: "",
     eventDetail: "",
     start: "",
-    end: ""
+    end: "",
+    legend: ""
   })
   const [addToEventTable, setAddToEventTable] = useState(false)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
+  const [timeAdjustmentTarget, setTimeAdjustmentTarget] = useState<'start' | 'end'>('start')
+  const [timeAdjustmentUnit, setTimeAdjustmentUnit] = useState<'h' | 'm' | 's'>('s')
 
   useEffect(() => {
     if (lastAddedParamIndex !== null && parameterInputRefs.current[lastAddedParamIndex]) {
@@ -209,7 +212,8 @@ export function ChartEditModal() {
                                       size="sm"
                                       className="h-6 w-6 p-0"
                                       onClick={() => {
-                                        setManualEntryData(item)
+                                        const legend = item.labelDescription ? `${item.label} (${item.labelDescription})` : item.label
+                                        setManualEntryData({...item, legend})
                                         setEditingItemId(item.id)
                                         setAddToEventTable(false)
                                         setManualEntryOpen(true)
@@ -946,17 +950,19 @@ export function ChartEditModal() {
 
     {/* Manual Entry Dialog */}
     <Dialog open={manualEntryOpen} onOpenChange={setManualEntryOpen}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
+      <DialogContent className="max-w-lg h-[80vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>{editingItemId ? "Edit Data Entry" : "Add Manual Data Entry"}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 max-h-[70vh] overflow-y-auto p-2">
+        <div className="space-y-4 flex-1 overflow-y-auto p-2">
           {/* Required Fields */}
           <div className="space-y-3">
             <h5 className="text-sm font-medium text-muted-foreground">Required Fields</h5>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="manual-plant" className="text-sm">Plant <span className="text-red-500">*</span></Label>
+                <Label htmlFor="manual-plant" className="text-sm">
+                  Plant {!editingItemId && <span className="text-red-500">*</span>}
+                </Label>
                 <Input
                   id="manual-plant"
                   value={manualEntryData.plant}
@@ -967,7 +973,9 @@ export function ChartEditModal() {
                 />
               </div>
               <div>
-                <Label htmlFor="manual-machine" className="text-sm">Machine No <span className="text-red-500">*</span></Label>
+                <Label htmlFor="manual-machine" className="text-sm">
+                  Machine No {!editingItemId && <span className="text-red-500">*</span>}
+                </Label>
                 <Input
                   id="manual-machine"
                   value={manualEntryData.machineNo}
@@ -979,36 +987,155 @@ export function ChartEditModal() {
               </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
+            {/* Legend Field for Editing */}
+            {editingItemId && (
               <div>
-                <Label htmlFor="manual-start" className="text-sm">Start <span className="text-red-500">*</span></Label>
+                <Label htmlFor="manual-legend" className="text-sm">Legend <span className="text-red-500">*</span></Label>
                 <Input
-                  id="manual-start"
-                  type="datetime-local"
-                  step="1"
-                  value={manualEntryData.start}
-                  onChange={(e) => setManualEntryData({ ...manualEntryData, start: e.target.value })}
+                  id="manual-legend"
+                  value={manualEntryData.legend}
+                  onChange={(e) => setManualEntryData({ ...manualEntryData, legend: e.target.value })}
                   className="mt-1"
+                  placeholder="Enter legend"
                 />
               </div>
-              <div>
-                <Label htmlFor="manual-end" className="text-sm">End <span className="text-red-500">*</span></Label>
-                <Input
-                  id="manual-end"
-                  type="datetime-local"
-                  step="1"
-                  value={manualEntryData.end}
-                  onChange={(e) => setManualEntryData({ ...manualEntryData, end: e.target.value })}
-                  className="mt-1"
-                />
+            )}
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="manual-start" className="text-sm">Start <span className="text-red-500">*</span></Label>
+                  <Input
+                    id="manual-start"
+                    type="datetime-local"
+                    step="1"
+                    value={manualEntryData.start}
+                    onChange={(e) => setManualEntryData({ ...manualEntryData, start: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="manual-end" className="text-sm">End <span className="text-red-500">*</span></Label>
+                  <Input
+                    id="manual-end"
+                    type="datetime-local"
+                    step="1"
+                    value={manualEntryData.end}
+                    onChange={(e) => setManualEntryData({ ...manualEntryData, end: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
               </div>
+              
+              {/* Time Adjustment */}
+              {editingItemId && manualEntryData.start && manualEntryData.end && (
+                <div className="border rounded-lg bg-muted/30 p-3 space-y-3">
+                  <h6 className="text-xs font-medium">Time Adjustment</h6>
+                  
+                  {/* Target and Unit Selectors */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs">Adjust Target</Label>
+                      <div className="flex gap-1 mt-1">
+                        <Button
+                          variant={timeAdjustmentTarget === 'start' ? "default" : "outline"}
+                          size="sm"
+                          className="h-7 px-3 text-xs"
+                          onClick={() => setTimeAdjustmentTarget('start')}
+                        >
+                          Start
+                        </Button>
+                        <Button
+                          variant={timeAdjustmentTarget === 'end' ? "default" : "outline"}
+                          size="sm"
+                          className="h-7 px-3 text-xs"
+                          onClick={() => setTimeAdjustmentTarget('end')}
+                        >
+                          End
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label className="text-xs">Unit</Label>
+                      <div className="flex gap-1 mt-1">
+                        <Button
+                          variant={timeAdjustmentUnit === 's' ? "default" : "outline"}
+                          size="sm"
+                          className="h-7 px-3 text-xs"
+                          onClick={() => setTimeAdjustmentUnit('s')}
+                        >
+                          Seconds
+                        </Button>
+                        <Button
+                          variant={timeAdjustmentUnit === 'm' ? "default" : "outline"}
+                          size="sm"
+                          className="h-7 px-3 text-xs"
+                          onClick={() => setTimeAdjustmentUnit('m')}
+                        >
+                          Minutes
+                        </Button>
+                        <Button
+                          variant={timeAdjustmentUnit === 'h' ? "default" : "outline"}
+                          size="sm"
+                          className="h-7 px-3 text-xs"
+                          onClick={() => setTimeAdjustmentUnit('h')}
+                        >
+                          Hours
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Adjustment Buttons */}
+                  <div>
+                    <Label className="text-xs">Adjustment</Label>
+                    <div className="grid grid-cols-8 gap-1 mt-1">
+                      {[-30, -10, -5, -1, 1, 5, 10, 30].map(step => (
+                        <Button
+                          key={step}
+                          variant="outline"
+                          size="sm"
+                          className={`h-6 text-xs ${
+                            step < 0 
+                              ? 'border-red-300 text-red-700 hover:bg-red-50 hover:border-red-400' 
+                              : 'border-blue-300 text-blue-700 hover:bg-blue-50 hover:border-blue-400'
+                          }`}
+                          onClick={() => {
+                            const targetDate = new Date(timeAdjustmentTarget === 'start' ? manualEntryData.start : manualEntryData.end)
+                            
+                            switch(timeAdjustmentUnit) {
+                              case 'h':
+                                targetDate.setHours(targetDate.getHours() + step)
+                                break
+                              case 'm':
+                                targetDate.setMinutes(targetDate.getMinutes() + step)
+                                break
+                              case 's':
+                                targetDate.setSeconds(targetDate.getSeconds() + step)
+                                break
+                            }
+                            
+                            setManualEntryData({ 
+                              ...manualEntryData, 
+                              [timeAdjustmentTarget]: targetDate.toISOString().slice(0, 16)
+                            })
+                          }}
+                        >
+                          {step > 0 ? '+' : ''}{step}{timeAdjustmentUnit}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {addToEventTable && (
+            {addToEventTable && !editingItemId && (
               <div>
-                <Label htmlFor="manual-label" className="text-sm">Label <span className="text-red-500">*</span></Label>
+                <Label htmlFor="manual-label-required" className="text-sm">Label <span className="text-red-500">*</span></Label>
                 <Input
-                  id="manual-label"
+                  id="manual-label-required"
                   value={manualEntryData.label}
                   onChange={(e) => setManualEntryData({ ...manualEntryData, label: e.target.value })}
                   className="mt-1"
@@ -1019,37 +1146,39 @@ export function ChartEditModal() {
           </div>
 
           {/* Optional Fields */}
-          <div className="space-y-3">
-            <h5 className="text-sm font-medium text-muted-foreground">Optional Fields</h5>
-            
-            {!addToEventTable && (
+          {!editingItemId && (
+            <div className="space-y-3">
+              <h5 className="text-sm font-medium text-muted-foreground">Optional Fields</h5>
+              
+              {!addToEventTable && (
+                <div>
+                  <Label htmlFor="manual-label" className="text-sm">Label</Label>
+                  <Input
+                    id="manual-label"
+                    value={manualEntryData.label}
+                    onChange={(e) => setManualEntryData({ ...manualEntryData, label: e.target.value })}
+                    className="mt-1"
+                    placeholder="Enter label"
+                  />
+                </div>
+              )}
+              
               <div>
-                <Label htmlFor="manual-label" className="text-sm">Label</Label>
+                <Label htmlFor="manual-label-desc" className="text-sm">Label Description</Label>
                 <Input
-                  id="manual-label"
-                  value={manualEntryData.label}
-                  onChange={(e) => setManualEntryData({ ...manualEntryData, label: e.target.value })}
+                  id="manual-label-desc"
+                  value={manualEntryData.labelDescription || ""}
+                  onChange={(e) => setManualEntryData({ ...manualEntryData, labelDescription: e.target.value })}
                   className="mt-1"
-                  placeholder="Enter label"
+                  placeholder="Enter label description"
                 />
               </div>
-            )}
-            
-            <div>
-              <Label htmlFor="manual-label-desc" className="text-sm">Label Description</Label>
-              <Input
-                id="manual-label-desc"
-                value={manualEntryData.labelDescription || ""}
-                onChange={(e) => setManualEntryData({ ...manualEntryData, labelDescription: e.target.value })}
-                className="mt-1"
-                placeholder="Enter label description"
-              />
+              
             </div>
-            
-          </div>
+          )}
         </div>
         
-        <div className="flex justify-between items-center mt-4">
+        <div className="flex justify-between items-center mt-4 flex-shrink-0 border-t pt-4">
           {/* Event Table Addition Option */}
           {!editingItemId && (
             <div className="flex items-center space-x-2">
@@ -1081,7 +1210,8 @@ export function ChartEditModal() {
                   event: "",
                   eventDetail: "",
                   start: "",
-                  end: ""
+                  end: "",
+                  legend: ""
                 })
               }}
             >
@@ -1091,9 +1221,21 @@ export function ChartEditModal() {
               onClick={() => {
                 if (editingItemId) {
                   // Update existing entry (only in Selected Data Source, not in Event Information)
+                  // Parse legend back to label and labelDescription if editing
+                  const updatedItem = { ...manualEntryData }
+                  if (manualEntryData.legend) {
+                    const legendMatch = manualEntryData.legend.match(/^(.+?)\s*\((.+)\)$/)
+                    if (legendMatch) {
+                      updatedItem.label = legendMatch[1].trim()
+                      updatedItem.labelDescription = legendMatch[2].trim()
+                    } else {
+                      updatedItem.label = manualEntryData.legend
+                      updatedItem.labelDescription = ""
+                    }
+                  }
                   setSelectedDataSourceItems(
                     selectedDataSourceItems.map(item => 
-                      item.id === editingItemId ? manualEntryData : item
+                      item.id === editingItemId ? updatedItem : item
                     )
                   )
                 } else {
@@ -1125,7 +1267,8 @@ export function ChartEditModal() {
                   event: "",
                   eventDetail: "",
                   start: "",
-                  end: ""
+                  end: "",
+                  legend: ""
                 })
               }}
               disabled={
@@ -1133,7 +1276,8 @@ export function ChartEditModal() {
                 !manualEntryData.machineNo || 
                 !manualEntryData.start || 
                 !manualEntryData.end ||
-                (addToEventTable && !manualEntryData.label)
+                (addToEventTable && !manualEntryData.label) ||
+                (editingItemId && !manualEntryData.legend)
               }
             >
               {editingItemId ? "Update Entry" : "Add Entry"}
