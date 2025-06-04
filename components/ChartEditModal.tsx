@@ -32,7 +32,9 @@ interface EventInfo {
   plant: string
   machineNo: string
   label: string
+  labelDescription?: string
   event: string
+  eventDetail?: string
   start: string
   end: string
 }
@@ -45,9 +47,9 @@ export function ChartEditModal() {
   
   // Event data state
   const [events, setEvents] = useState<EventInfo[]>([
-    { id: "1", plant: "Plant A", machineNo: "M001", label: "Maintenance", event: "Scheduled Stop", start: "2024-01-15 10:00", end: "2024-01-15 12:00" },
-    { id: "2", plant: "Plant A", machineNo: "M002", label: "Production", event: "Normal Operation", start: "2024-01-15 08:00", end: "2024-01-15 16:00" },
-    { id: "3", plant: "Plant B", machineNo: "M003", label: "Alert", event: "Temperature Warning", start: "2024-01-15 14:30", end: "2024-01-15 14:45" },
+    { id: "1", plant: "Plant A", machineNo: "M001", label: "Maintenance", labelDescription: "Regular check", event: "Scheduled Stop", eventDetail: "Monthly maintenance", start: "2024-01-15T10:00:00", end: "2024-01-15T12:00:00" },
+    { id: "2", plant: "Plant A", machineNo: "M002", label: "Production", labelDescription: "Normal run", event: "Normal Operation", eventDetail: "Batch processing", start: "2024-01-15T08:00:00", end: "2024-01-15T16:00:00" },
+    { id: "3", plant: "Plant B", machineNo: "M003", label: "Alert", labelDescription: "Warning state", event: "Temperature Warning", eventDetail: "Above threshold", start: "2024-01-15T14:30:00", end: "2024-01-15T14:45:00" },
   ])
   const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set())
   const [editingEvent, setEditingEvent] = useState<EventInfo | null>(null)
@@ -119,6 +121,33 @@ export function ChartEditModal() {
               {/* DataSource Section */}
               {activeTab === "datasource" && (
                 <div className="space-y-4">
+                  {/* Selected Data Source Section */}
+                  <div className="border rounded-lg p-3 bg-muted/30">
+                    <h4 className="text-sm font-medium mb-2">Selected Data Source</h4>
+                    {editingChart.dataSource ? (
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <span className="text-muted-foreground">Source Name:</span>
+                          <span className="ml-2">{editingChart.dataSource.name}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Table:</span>
+                          <span className="ml-2">{editingChart.dataSource.table}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-muted-foreground">Columns:</span>
+                          <span className="ml-2">{editingChart.dataSource.columns.join(", ")}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-muted-foreground">Last Updated:</span>
+                          <span className="ml-2">{editingChart.dataSource.lastUpdated}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">No data source selected</p>
+                    )}
+                  </div>
+
                   {/* Event Information Section */}
                   <div>
                     <div className="flex justify-between items-center mb-3">
@@ -133,7 +162,9 @@ export function ChartEditModal() {
                             plant: "",
                             machineNo: "",
                             label: "",
+                            labelDescription: "",
                             event: "",
+                            eventDetail: "",
                             start: "",
                             end: ""
                           }
@@ -194,18 +225,28 @@ export function ChartEditModal() {
                               </TableCell>
                               <TableCell className="px-2 py-1 text-xs">{event.plant}</TableCell>
                               <TableCell className="px-2 py-1 text-xs">{event.machineNo}</TableCell>
-                              <TableCell className="px-2 py-1 text-xs">{event.label}</TableCell>
-                              <TableCell className="px-2 py-1 text-xs">{event.event}</TableCell>
                               <TableCell className="px-2 py-1 text-xs">
                                 <div className="leading-tight">
-                                  <div>{event.start.split(" ")[0]}</div>
-                                  <div>{event.start.split(" ")[1]}</div>
+                                  <div>{event.label}</div>
+                                  <div className="text-muted-foreground">{event.labelDescription || ""}</div>
                                 </div>
                               </TableCell>
                               <TableCell className="px-2 py-1 text-xs">
                                 <div className="leading-tight">
-                                  <div>{event.end.split(" ")[0]}</div>
-                                  <div>{event.end.split(" ")[1]}</div>
+                                  <div>{event.event}</div>
+                                  <div className="text-muted-foreground">{event.eventDetail || ""}</div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="px-2 py-1 text-xs">
+                                <div className="leading-tight">
+                                  <div>{event.start.split("T")[0]}</div>
+                                  <div>{event.start.split("T")[1] || ""}</div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="px-2 py-1 text-xs">
+                                <div className="leading-tight">
+                                  <div>{event.end.split("T")[0]}</div>
+                                  <div>{event.end.split("T")[1] || ""}</div>
                                 </div>
                               </TableCell>
                               <TableCell className="px-1 py-1">
@@ -865,6 +906,15 @@ export function ChartEditModal() {
               />
             </div>
             <div>
+              <Label htmlFor="edit-label-desc" className="text-sm">Label Description</Label>
+              <Input
+                id="edit-label-desc"
+                value={editingEvent.labelDescription || ""}
+                onChange={(e) => setEditingEvent({ ...editingEvent, labelDescription: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+            <div>
               <Label htmlFor="edit-event" className="text-sm">Event</Label>
               <Input
                 id="edit-event"
@@ -874,10 +924,20 @@ export function ChartEditModal() {
               />
             </div>
             <div>
+              <Label htmlFor="edit-event-detail" className="text-sm">Event Detail</Label>
+              <Input
+                id="edit-event-detail"
+                value={editingEvent.eventDetail || ""}
+                onChange={(e) => setEditingEvent({ ...editingEvent, eventDetail: e.target.value })}
+                className="mt-1"
+              />
+            </div>
+            <div>
               <Label htmlFor="edit-start" className="text-sm">Start</Label>
               <Input
                 id="edit-start"
                 type="datetime-local"
+                step="1"
                 value={editingEvent.start}
                 onChange={(e) => setEditingEvent({ ...editingEvent, start: e.target.value })}
                 className="mt-1"
@@ -888,6 +948,7 @@ export function ChartEditModal() {
               <Input
                 id="edit-end"
                 type="datetime-local"
+                step="1"
                 value={editingEvent.end}
                 onChange={(e) => setEditingEvent({ ...editingEvent, end: e.target.value })}
                 className="mt-1"
