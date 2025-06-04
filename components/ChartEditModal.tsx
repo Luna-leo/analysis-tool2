@@ -40,7 +40,7 @@ import { EventInfo } from "@/types"
 
 export function ChartEditModal() {
   const { editingChart, editModalOpen, setEditingChart, setEditModalOpen } = useAnalysisStore()
-  const [activeTab, setActiveTab] = useState<"parameters" | "datasource">("parameters")
+  const [activeTab, setActiveTab] = useState<"parameters" | "datasource">("datasource")
   const [lastAddedParamIndex, setLastAddedParamIndex] = useState<number | null>(null)
   const parameterInputRefs = useRef<(HTMLInputElement | null)[]>([])
   
@@ -131,16 +131,6 @@ export function ChartEditModal() {
             <div className="flex gap-2 mb-4">
               <button
                 className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
-                  activeTab === "parameters"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted hover:bg-muted/80"
-                }`}
-                onClick={() => setActiveTab("parameters")}
-              >
-                Parameters
-              </button>
-              <button
-                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
                   activeTab === "datasource"
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted hover:bg-muted/80"
@@ -148,6 +138,16 @@ export function ChartEditModal() {
                 onClick={() => setActiveTab("datasource")}
               >
                 DataSource
+              </button>
+              <button
+                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                  activeTab === "parameters"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted hover:bg-muted/80"
+                }`}
+                onClick={() => setActiveTab("parameters")}
+              >
+                Parameters
               </button>
             </div>
 
