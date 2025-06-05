@@ -22,6 +22,24 @@ export function AppearanceTab({ editingChart, setEditingChart, selectedDataSourc
     <div className="space-y-4">
                       <div className="space-y-4">
                         <div>
+                          <Label htmlFor="chart-type" className="text-sm">Chart Type</Label>
+                          <select
+                            id="chart-type"
+                            value={editingChart.chartType}
+                            onChange={(e) => {
+                              setEditingChart({
+                                ...editingChart,
+                                chartType: e.target.value as "line" | "bar" | "pie",
+                              })
+                            }}
+                            className="w-full h-8 px-2 py-1 border rounded-md text-sm"
+                          >
+                            <option value="line">Line Chart</option>
+                            <option value="bar">Bar Chart</option>
+                            <option value="pie">Pie Chart</option>
+                          </select>
+                        </div>
+                        <div>
                           <Label htmlFor="chart-title" className="text-sm">Title</Label>
                           <div className="flex items-center gap-2">
                             <Input
