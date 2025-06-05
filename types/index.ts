@@ -92,3 +92,22 @@ export interface EventInfo {
   start: string
   end: string
 }
+
+export interface SearchCondition {
+  id: string
+  type: 'condition' | 'group'
+  // For simple conditions
+  parameter?: string
+  operator?: 'gt' | 'lt' | 'eq' | 'gte' | 'lte' | 'ne'
+  value?: string
+  // For groups
+  logicalOperator?: 'AND' | 'OR'
+  conditions?: SearchCondition[]
+}
+
+export interface SearchResult {
+  id: string
+  timestamp: string
+  parameters: Record<string, number>
+  matchedConditions: string[]
+}
