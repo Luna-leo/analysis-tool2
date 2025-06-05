@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -17,6 +17,7 @@ interface AppearanceTabProps {
 }
 
 export function AppearanceTab({ editingChart, setEditingChart, selectedDataSourceItems }: AppearanceTabProps) {
+  const [appearanceMode, setAppearanceMode] = useState<"datasource" | "parameter" | "both">("both")
   return (
     <div className="space-y-4">
                       <div className="space-y-4">
@@ -450,13 +451,35 @@ export function AppearanceTab({ editingChart, setEditingChart, selectedDataSourc
       
                         {/* Appearance Settings Table */}
                         <div>
-                          <Label className="text-sm mb-2 block">Appearance Settings</Label>
+                          <div className="flex items-center justify-between mb-2">
+                            <Label className="text-sm">Appearance Settings</Label>
+                            <div className="flex items-center gap-2">
+                              <Label className="text-xs">Mode</Label>
+                              <select
+                                className="h-7 text-xs border rounded-md px-2"
+                                value={appearanceMode}
+                                onChange={(e) =>
+                                  setAppearanceMode(
+                                    e.target.value as "datasource" | "parameter" | "both"
+                                  )
+                                }
+                              >
+                                <option value="datasource">Data Sourceごとに設定する</option>
+                                <option value="parameter">Parameterごとに設定する</option>
+                                <option value="both">Data Source x Parameterごとに設定する</option>
+                              </select>
+                            </div>
+                          </div>
                           <div className="border rounded-lg overflow-hidden">
                             <Table>
                               <TableHeader>
                                 <TableRow>
-                                  <TableHead className="text-xs">Data Source</TableHead>
-                                  <TableHead className="text-xs">Parameter</TableHead>
+                                  {appearanceMode !== "parameter" && (
+                                    <TableHead className="text-xs">Data Source</TableHead>
+                                  )}
+                                  {appearanceMode !== "datasource" && (
+                                    <TableHead className="text-xs">Parameter</TableHead>
+                                  )}
                                   <TableHead className="text-xs">Marker</TableHead>
                                   <TableHead className="text-xs">Line</TableHead>
                                 </TableRow>
@@ -468,25 +491,29 @@ export function AppearanceTab({ editingChart, setEditingChart, selectedDataSourc
                                       const key = `${dataSource.id}-${paramIndex}`
                                       return (
                                         <TableRow key={key}>
-                                          <TableCell className="text-xs">
-                                            <div>
-                                              <div className="font-medium">{dataSource.plant} - {dataSource.machineNo}</div>
-                                              <div className="text-muted-foreground">
-                                                {dataSource.labelDescription ? `${dataSource.label} (${dataSource.labelDescription})` : dataSource.label}
+                                          {appearanceMode !== "parameter" && (
+                                            <TableCell className="text-xs">
+                                              <div>
+                                                <div className="font-medium">{dataSource.plant} - {dataSource.machineNo}</div>
+                                                <div className="text-muted-foreground">
+                                                  {dataSource.labelDescription ? `${dataSource.label} (${dataSource.labelDescription})` : dataSource.label}
+                                                </div>
                                               </div>
-                                            </div>
-                                          </TableCell>
-                                          <TableCell className="text-xs">
-                                            <div>
-                                              <div className="font-medium flex items-center gap-1">
-                                                {param.parameter || "Unnamed"}
-                                                {param.parameterType === "Formula" && (
-                                                  <Badge variant="secondary" className="text-[10px] px-1 h-4">Formula</Badge>
-                                                )}
+                                            </TableCell>
+                                          )}
+                                          {appearanceMode !== "datasource" && (
+                                            <TableCell className="text-xs">
+                                              <div>
+                                                <div className="font-medium flex items-center gap-1">
+                                                  {param.parameter || "Unnamed"}
+                                                  {param.parameterType === "Formula" && (
+                                                    <Badge variant="secondary" className="text-[10px] px-1 h-4">Formula</Badge>
+                                                  )}
+                                                </div>
+                                                <div className="text-muted-foreground">Axis {param.axisNo || 1}</div>
                                               </div>
-                                              <div className="text-muted-foreground">Axis {param.axisNo || 1}</div>
-                                            </div>
-                                          </TableCell>
+                                            </TableCell>
+                                          )}
                                           <TableCell className="text-xs">
                                             <div className="flex items-center gap-1">
                                               <Popover>
@@ -715,7 +742,7 @@ export function AppearanceTab({ editingChart, setEditingChart, selectedDataSourc
                                   )
                                 ) : (
                                   <TableRow>
-                                    <TableCell colSpan={4} className="text-center text-xs text-muted-foreground py-4">
+                                    <TableCell colSpan={appearanceMode === "both" ? 4 : 3} className="text-center text-xs text-muted-foreground py-4">
                                       {selectedDataSourceItems.length === 0 
                                         ? "No data sources selected. Please select data sources in the DataSource tab."
                                         : "No Y parameters configured. Please add parameters in the Parameters tab."}
