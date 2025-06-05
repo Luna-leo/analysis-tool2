@@ -7,6 +7,7 @@ import { useAnalysisStore } from "@/stores/useAnalysisStore"
 import { DataSourceTab } from "./EditModal/DataSourceTab"
 import { ParametersTab } from "./EditModal/ParametersTab"
 import { AppearanceTab } from "./EditModal/AppearanceTab"
+import { ChartPreview } from "./ChartPreview"
 import { EventInfo } from "@/types"
 
 export function ChartEditModal() {
@@ -81,9 +82,14 @@ export function ChartEditModal() {
               </div>
             </div>
 
-            <div className="border rounded-lg p-4 overflow-y-auto h-full">
-              <h3 className="text-base font-semibold border-b pb-1 mb-2">Chart Preview</h3>
-              <p className="text-base text-muted-foreground">Chart preview will be displayed here.</p>
+            <div className="border rounded-lg p-4 overflow-hidden h-full flex flex-col">
+              <h3 className="text-base font-semibold border-b pb-1 mb-2 flex-shrink-0">Chart Preview</h3>
+              <div className="flex-1 min-h-0">
+                <ChartPreview
+                  editingChart={editingChart}
+                  selectedDataSourceItems={selectedDataSourceItems}
+                />
+              </div>
             </div>
           </div>
         </DialogContent>
