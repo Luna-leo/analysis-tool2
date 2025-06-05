@@ -6,7 +6,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { EventInfo, SearchResult } from "@/types"
 import { Search } from "lucide-react"
 import { useSearchConditions } from '@/hooks/useSearchConditions'
@@ -33,6 +32,7 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
   const [labelName, setLabelName] = useState('')
   const [duration, setDuration] = useState(10)
   const [durationUnit, setDurationUnit] = useState<'seconds' | 'minutes' | 'hours'>('minutes')
+  const [hasSearched, setHasSearched] = useState(false)
   
   // Use custom hooks for state management
   const searchConditions = useSearchConditions()
@@ -46,9 +46,17 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
     }
   }, [searchConditions.searchConditions, searchConditions.conditionMode, searchConditions.selectedPredefinedCondition])
 
+  // Reset hasSearched when dialog opens
+  React.useEffect(() => {
+    if (isOpen) {
+      setHasSearched(false)
+    }
+  }, [isOpen])
+
   // Mock search function
   const performSearch = async () => {
     searchPeriod.setIsSearching(true)
+    setHasSearched(true)
     
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 1000))
@@ -165,6 +173,7 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
     
     // Reset dialog state
     searchPeriod.resetSearchResults()
+    setHasSearched(false)
     onClose()
   }
 
@@ -182,7 +191,7 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
   return (
     <>
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl w-[95vw] h-[90vh] flex flex-col">
+      <DialogContent className="max-w-6xl w-[95vw] h-[85vh] flex flex-col">
         <DialogHeader>
           <div className="flex justify-between items-center pr-8">
             <DialogTitle>Signal Search</DialogTitle>
@@ -197,57 +206,51 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
           </div>
         </DialogHeader>
         
-        <div className="flex-1 overflow-hidden">
-          <Tabs defaultValue="setup" className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="setup">Search Setup</TabsTrigger>
-              <TabsTrigger value="results" disabled={searchPeriod.searchResults.length === 0}>
-                Results ({searchPeriod.searchResults.length})
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="setup" className="flex-1 overflow-y-auto space-y-4">
-              {/* Search Period Selection */}
-              <SearchPeriodSection
-                searchPeriodType={searchPeriod.searchPeriodType}
-                onSearchPeriodTypeChange={searchPeriod.setSearchPeriodType}
-                selectedEventIds={searchPeriod.selectedEventIds}
-                onSelectedEventIdsChange={searchPeriod.setSelectedEventIds}
-                eventSearchQuery={searchPeriod.eventSearchQuery}
-                onEventSearchQueryChange={searchPeriod.setEventSearchQuery}
-                manualPeriods={searchPeriod.manualPeriods}
-                onAddManualPeriod={searchPeriod.addManualPeriod}
-                onRemoveManualPeriod={searchPeriod.removeManualPeriod}
-                onUpdateManualPeriod={searchPeriod.updateManualPeriod}
-                filteredEvents={searchPeriod.filteredEvents}
-              />
-              
-              {/* Search Conditions */}
-              <SearchConditionsSection
-                conditionMode={searchConditions.conditionMode}
-                onConditionModeChange={(mode) => {
-                  searchConditions.setConditionMode(mode)
-                  if (mode === 'predefined') {
-                    searchConditions.setLoadedFromPredefined(null)
-                    searchConditions.setSelectedPredefinedCondition('')
-                  }
-                }}
-                selectedPredefinedCondition={searchConditions.selectedPredefinedCondition}
-                onSelectedPredefinedConditionChange={searchConditions.setSelectedPredefinedCondition}
-                loadedFromPredefined={searchConditions.loadedFromPredefined}
-                searchConditions={searchConditions.searchConditions}
-                onSearchConditionsChange={searchConditions.setSearchConditions}
-                savedConditions={searchConditions.savedConditions}
-                getCurrentExpressionJSX={searchConditions.getCurrentExpressionJSX}
-                onLoadPredefinedCondition={searchConditions.loadPredefinedCondition}
-                onResetToFresh={searchConditions.resetToFresh}
-                onShowSaveDialog={() => searchConditions.setShowSaveDialog(true)}
-                onLoadSavedCondition={searchConditions.loadSavedCondition}
-                onDeleteSavedCondition={searchConditions.deleteSavedCondition}
-              />
-            </TabsContent>
-            
-            <TabsContent value="results" className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-hidden flex flex-col gap-4">
+          {/* Search Period Selection */}
+          <SearchPeriodSection
+            searchPeriodType={searchPeriod.searchPeriodType}
+            onSearchPeriodTypeChange={searchPeriod.setSearchPeriodType}
+            selectedEventIds={searchPeriod.selectedEventIds}
+            onSelectedEventIdsChange={searchPeriod.setSelectedEventIds}
+            eventSearchQuery={searchPeriod.eventSearchQuery}
+            onEventSearchQueryChange={searchPeriod.setEventSearchQuery}
+            manualPeriods={searchPeriod.manualPeriods}
+            onAddManualPeriod={searchPeriod.addManualPeriod}
+            onRemoveManualPeriod={searchPeriod.removeManualPeriod}
+            onUpdateManualPeriod={searchPeriod.updateManualPeriod}
+            filteredEvents={searchPeriod.filteredEvents}
+            defaultOpen={!hasSearched}
+          />
+          
+          {/* Search Conditions */}
+          <SearchConditionsSection
+            conditionMode={searchConditions.conditionMode}
+            onConditionModeChange={(mode) => {
+              searchConditions.setConditionMode(mode)
+              if (mode === 'predefined') {
+                searchConditions.setLoadedFromPredefined(null)
+                searchConditions.setSelectedPredefinedCondition('')
+              }
+            }}
+            selectedPredefinedCondition={searchConditions.selectedPredefinedCondition}
+            onSelectedPredefinedConditionChange={searchConditions.setSelectedPredefinedCondition}
+            loadedFromPredefined={searchConditions.loadedFromPredefined}
+            searchConditions={searchConditions.searchConditions}
+            onSearchConditionsChange={searchConditions.setSearchConditions}
+            savedConditions={searchConditions.savedConditions}
+            getCurrentExpressionJSX={searchConditions.getCurrentExpressionJSX}
+            onLoadPredefinedCondition={searchConditions.loadPredefinedCondition}
+            onResetToFresh={searchConditions.resetToFresh}
+            onShowSaveDialog={() => searchConditions.setShowSaveDialog(true)}
+            onLoadSavedCondition={searchConditions.loadSavedCondition}
+            onDeleteSavedCondition={searchConditions.deleteSavedCondition}
+            defaultOpen={!hasSearched}
+          />
+          
+          {/* Search Results */}
+          {searchPeriod.searchResults.length > 0 && (
+            <div className="flex-1 overflow-hidden">
               <SearchResultsSection
                 searchResults={searchPeriod.searchResults}
                 selectedResultIds={searchPeriod.selectedResultIds}
@@ -262,8 +265,8 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
                 durationUnit={durationUnit}
                 onDurationUnitChange={setDurationUnit}
               />
-            </TabsContent>
-          </Tabs>
+            </div>
+          )}
         </div>
         
         <div className="flex justify-end gap-2 pt-4 border-t">

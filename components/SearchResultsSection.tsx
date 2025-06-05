@@ -70,8 +70,8 @@ export const SearchResultsSection: React.FC<SearchResultsSectionProps> = ({
   }
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="h-full flex flex-col">
+      <CardHeader className="flex-shrink-0">
         <div className="flex justify-between items-start">
           <CardTitle className="text-lg">Search Results</CardTitle>
           <div className="flex items-end gap-2">
@@ -139,10 +139,10 @@ export const SearchResultsSection: React.FC<SearchResultsSectionProps> = ({
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 overflow-y-auto">
         {searchResults.length > 0 ? (
           <div className="border rounded-lg overflow-hidden">
-            <div className="overflow-y-auto max-h-96">
+            <div className="overflow-y-auto">
               <Table>
                 <TableHeader>
                   <TableRow>

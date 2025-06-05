@@ -1,11 +1,16 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
-import { Plus, X } from 'lucide-react'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
+import { Plus, X, ChevronDown } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -35,6 +40,7 @@ interface SearchPeriodSectionProps {
   onRemoveManualPeriod?: (id: string) => void
   onUpdateManualPeriod?: (id: string, updates: Partial<ManualPeriod>) => void
   filteredEvents: EventInfo[]
+  defaultOpen?: boolean
 }
 
 export const SearchPeriodSection: React.FC<SearchPeriodSectionProps> = ({
@@ -50,8 +56,16 @@ export const SearchPeriodSection: React.FC<SearchPeriodSectionProps> = ({
   onAddManualPeriod,
   onRemoveManualPeriod,
   onUpdateManualPeriod,
-  filteredEvents
+  filteredEvents,
+  defaultOpen = true
 }) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
+  
+  // Update isOpen when defaultOpen prop changes
+  React.useEffect(() => {
+    setIsOpen(defaultOpen)
+  }, [defaultOpen])
+  
   // Use new multiple periods if available, otherwise fall back to single period
   const periods = manualPeriods || (manualPeriod ? [{
     id: '1',
@@ -67,12 +81,34 @@ export const SearchPeriodSection: React.FC<SearchPeriodSectionProps> = ({
     }
   }
 
+  // Generate summary for collapsed state
+  const getSummary = () => {
+    if (searchPeriodType === 'manual') {
+      const validPeriods = periods.filter(p => p.plant && p.machineNo && p.start && p.end)
+      return `Manual: ${validPeriods.length} period(s) configured`
+    } else {
+      return `Events: ${selectedEventIds.size} selected from ${filteredEvents.length} available`
+    }
+  }
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Search Period</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className={`${isOpen ? 'h-full' : 'h-auto'} flex flex-col`}>
+      <Card className={`${isOpen ? 'h-full' : 'h-auto'} flex flex-col`}>
+        <CollapsibleTrigger asChild>
+          <CardHeader className={`flex-shrink-0 ${isOpen ? 'pb-6' : 'py-3'}`}>
+            <Button variant="ghost" className="w-full justify-between p-0 hover:bg-transparent">
+              <div className="flex flex-col items-start">
+                <CardTitle className="text-lg">Search Period</CardTitle>
+                {!isOpen && (
+                  <p className="text-xs text-muted-foreground mt-1">{getSummary()}</p>
+                )}
+              </div>
+              <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            </Button>
+          </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent className={`${isOpen ? 'flex-1' : ''} overflow-hidden`}>
+          <CardContent className={`${isOpen ? 'h-full' : ''} overflow-y-auto space-y-4`}>
         <RadioGroup
           value={searchPeriodType}
           onValueChange={onSearchPeriodTypeChange}
@@ -90,7 +126,7 @@ export const SearchPeriodSection: React.FC<SearchPeriodSectionProps> = ({
         
         {searchPeriodType === 'events' && (
           <div className="space-y-4">
-            <div className="border rounded-lg overflow-hidden max-h-64">
+            <div className="border rounded-lg overflow-hidden">
               <div className="p-3 bg-muted/30 border-b">
                 <div className="flex items-center justify-between gap-4">
                   <Label className="text-sm font-medium">Select Events for Period Range:</Label>
@@ -107,7 +143,7 @@ export const SearchPeriodSection: React.FC<SearchPeriodSectionProps> = ({
                   </div>
                 </div>
               </div>
-              <div className="overflow-y-auto max-h-48">
+              <div className="overflow-y-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -209,7 +245,7 @@ export const SearchPeriodSection: React.FC<SearchPeriodSectionProps> = ({
         
         {searchPeriodType === 'manual' && (
           <div className="space-y-4">
-            <div className="border rounded-lg overflow-hidden max-h-64">
+            <div className="border rounded-lg overflow-hidden">
               <div className="p-3 bg-muted/30 border-b">
                 <div className="flex items-center justify-between gap-4">
                   <Label className="text-sm font-medium">Manual Period Entries:</Label>
@@ -226,7 +262,7 @@ export const SearchPeriodSection: React.FC<SearchPeriodSectionProps> = ({
                   )}
                 </div>
               </div>
-              <div className="overflow-y-auto max-h-48">
+              <div className="overflow-y-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -300,7 +336,9 @@ export const SearchPeriodSection: React.FC<SearchPeriodSectionProps> = ({
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   )
 }

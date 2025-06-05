@@ -1,14 +1,19 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import { ConditionBuilder } from './ConditionBuilder'
 import { predefinedConditions } from '@/data/predefinedConditions'
 import { colorCodeExpressionString } from '@/lib/conditionUtils'
 import { SearchCondition } from '@/types'
-import { Edit2, Save, Minus } from "lucide-react"
+import { Edit2, Save, Minus, ChevronDown } from "lucide-react"
 
 interface SavedCondition {
   id: string
@@ -33,6 +38,7 @@ interface SearchConditionsSectionProps {
   onShowSaveDialog: () => void
   onLoadSavedCondition: (condition: SavedCondition) => void
   onDeleteSavedCondition: (id: string) => void
+  defaultOpen?: boolean
 }
 
 export const SearchConditionsSection: React.FC<SearchConditionsSectionProps> = ({
@@ -49,14 +55,52 @@ export const SearchConditionsSection: React.FC<SearchConditionsSectionProps> = (
   onResetToFresh,
   onShowSaveDialog,
   onLoadSavedCondition,
-  onDeleteSavedCondition
+  onDeleteSavedCondition,
+  defaultOpen = true
 }) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen)
+  
+  // Update isOpen when defaultOpen prop changes
+  React.useEffect(() => {
+    setIsOpen(defaultOpen)
+  }, [defaultOpen])
+  
+  // Generate summary for collapsed state
+  const getSummary = () => {
+    if (conditionMode === 'predefined') {
+      if (selectedPredefinedCondition) {
+        const condition = predefinedConditions.find(c => c.id === selectedPredefinedCondition)
+        return `Predefined: ${condition?.name || 'None selected'}`
+      }
+      return 'Predefined: None selected'
+    } else {
+      const conditionCount = searchConditions.length
+      if (loadedFromPredefined) {
+        const original = predefinedConditions.find(c => c.id === loadedFromPredefined)
+        return `Custom: Modified from "${original?.name}" (${conditionCount} conditions)`
+      }
+      return `Manual: ${conditionCount} condition(s) built`
+    }
+  }
+  
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Search Conditions</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className={`${isOpen ? 'h-full' : 'h-auto'} flex flex-col`}>
+      <Card className={`${isOpen ? 'h-full' : 'h-auto'} flex flex-col`}>
+        <CollapsibleTrigger asChild>
+          <CardHeader className={`flex-shrink-0 ${isOpen ? 'pb-6' : 'py-3'}`}>
+            <Button variant="ghost" className="w-full justify-between p-0 hover:bg-transparent">
+              <div className="flex flex-col items-start">
+                <CardTitle className="text-lg">Search Conditions</CardTitle>
+                {!isOpen && (
+                  <p className="text-xs text-muted-foreground mt-1">{getSummary()}</p>
+                )}
+              </div>
+              <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            </Button>
+          </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent className={`${isOpen ? 'flex-1' : ''} overflow-hidden`}>
+          <CardContent className={`${isOpen ? 'h-full' : ''} overflow-y-auto space-y-4`}>
         {/* Condition Mode Selection */}
         <RadioGroup
           value={conditionMode}
@@ -173,15 +217,6 @@ export const SearchConditionsSection: React.FC<SearchConditionsSectionProps> = (
                   <span className="ml-2 text-xs text-blue-600">(Modified from preset)</span>
                 )}
               </h4>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={onShowSaveDialog}
-              >
-                <Save className="h-3 w-3 mr-1" />
-                条件登録
-              </Button>
             </div>
             <div className="border rounded-lg p-4 bg-muted/20 min-h-[100px]">
               <div className="font-mono text-sm break-words">
@@ -228,7 +263,7 @@ export const SearchConditionsSection: React.FC<SearchConditionsSectionProps> = (
             {savedConditions.length > 0 && (
               <div className="mt-4">
                 <h5 className="text-xs font-medium text-muted-foreground mb-2">保存済み条件</h5>
-                <div className="space-y-2 max-h-32 overflow-y-auto">
+                <div className="space-y-2 overflow-y-auto">
                   {savedConditions.map((saved) => (
                     <div key={saved.id} className="flex items-center gap-2 p-2 border rounded text-xs">
                       <div className="flex-1">
@@ -260,7 +295,9 @@ export const SearchConditionsSection: React.FC<SearchConditionsSectionProps> = (
             )}
           </div>
         </div>
-      </CardContent>
-    </Card>
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
   )
 }
