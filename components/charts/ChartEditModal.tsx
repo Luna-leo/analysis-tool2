@@ -48,7 +48,7 @@ import {
 import { ManualEntryDialog } from "../ManualEntryDialog"
 import { TriggerSignalDialog } from "../search/TriggerSignalDialog"
 import { useManualEntry } from "@/hooks/useManualEntry"
-import { EventInfo } from "@/types"
+import { EventInfo, MarkerType, LineStyle } from "@/types"
 
 
 export function ChartEditModal() {
@@ -81,6 +81,18 @@ export function ChartEditModal() {
   const [endOffset, setEndOffset] = useState(0)
   const [endOffsetUnit, setEndOffsetUnit] = useState<'min' | 'sec'>('min')
   const [offsetSectionOpen, setOffsetSectionOpen] = useState(false)
+
+  // Appearance settings state
+  const [appearanceMode, setAppearanceMode] = useState<'datasource' | 'parameter' | 'dataxparameter'>('datasource')
+  const [appearanceSettings, setAppearanceSettings] = useState<Record<string, {
+    markerType: MarkerType
+    markerSize: number
+    markerBorderColor: string
+    markerFillColor: string
+    lineWidth: number
+    lineColor: string
+    lineStyle: LineStyle
+  }>>({})
 
   const handleSaveManualEntry = (data: any, editingItemId: string | null) => {
     if (editingItemId) {
@@ -1156,6 +1168,198 @@ export function ChartEditModal() {
                         <p className="text-xs text-muted-foreground">Add Y parameters to configure axis labels</p>
                       )}
                     </div>
+                  </div>
+                </div>
+
+                {/* Appearance table */}
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Label className="text-sm">Appearance By</Label>
+                    <Select
+                      value={appearanceMode}
+                      onValueChange={(v) =>
+                        setAppearanceMode(
+                          v as 'datasource' | 'parameter' | 'dataxparameter'
+                        )
+                      }
+                    >
+                      <SelectTrigger className="h-8 w-40 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="datasource">Data Source</SelectItem>
+                        <SelectItem value="parameter">Parameter</SelectItem>
+                        <SelectItem value="dataxparameter">Data x Parameter</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="border rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          {appearanceMode !== 'parameter' && (
+                            <TableHead className="text-xs">Data source</TableHead>
+                          )}
+                          {appearanceMode !== 'datasource' && (
+                            <TableHead className="text-xs">Parameter</TableHead>
+                          )}
+                          <TableHead className="text-xs">Marker</TableHead>
+                          <TableHead className="text-xs">Line</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {(() => {
+                          const rows: { ds?: EventInfo; param?: typeof editingChart.yAxisParams[0] }[] = []
+                          if (appearanceMode === 'datasource') {
+                            rows.push(...selectedDataSourceItems.map(ds => ({ ds })))
+                          } else if (appearanceMode === 'parameter') {
+                            rows.push(...(editingChart.yAxisParams || []).map(param => ({ param })))
+                          } else {
+                            selectedDataSourceItems.forEach(ds => {
+                              ;(editingChart.yAxisParams || []).forEach(param => {
+                                rows.push({ ds, param })
+                              })
+                            })
+                          }
+                          return rows.map(row => {
+                            const key = `${row.ds?.id || 'none'}-${row.param?.parameter || 'none'}`
+                            const settings = appearanceSettings[key] || {
+                              markerType: 'circle' as MarkerType,
+                              markerSize: 4,
+                              markerBorderColor: '#000000',
+                              markerFillColor: '#000000',
+                              lineWidth: 2,
+                              lineColor: '#000000',
+                              lineStyle: 'solid' as LineStyle,
+                            }
+                            return (
+                              <TableRow key={key}>
+                                {appearanceMode !== 'parameter' && (
+                                  <TableCell className="text-xs">
+                                    {row.ds ? row.ds.label : '-'}
+                                  </TableCell>
+                                )}
+                                {appearanceMode !== 'datasource' && (
+                                  <TableCell className="text-xs">
+                                    {row.param ? row.param.parameter : '-'}
+                                  </TableCell>
+                                )}
+                                <TableCell className="text-xs space-y-1">
+                                  <select
+                                    className="w-full h-6 border rounded px-1 text-xs"
+                                    value={settings.markerType}
+                                    onChange={(e) => {
+                                      setAppearanceSettings({
+                                        ...appearanceSettings,
+                                        [key]: {
+                                          ...settings,
+                                          markerType: e.target.value as MarkerType,
+                                        },
+                                      })
+                                    }}
+                                  >
+                                    <option value="circle">circle</option>
+                                    <option value="square">square</option>
+                                    <option value="triangle">triangle</option>
+                                    <option value="diamond">diamond</option>
+                                  </select>
+                                  <div className="flex items-center gap-1">
+                                    <Input
+                                      type="number"
+                                      className="h-6 w-12 text-xs"
+                                      value={settings.markerSize}
+                                      onChange={(e) => {
+                                        setAppearanceSettings({
+                                          ...appearanceSettings,
+                                          [key]: {
+                                            ...settings,
+                                            markerSize: parseInt(e.target.value) || 0,
+                                          },
+                                        })
+                                      }}
+                                    />
+                                    <input
+                                      type="color"
+                                      value={settings.markerBorderColor}
+                                      onChange={(e) => {
+                                        setAppearanceSettings({
+                                          ...appearanceSettings,
+                                          [key]: {
+                                            ...settings,
+                                            markerBorderColor: e.target.value,
+                                          },
+                                        })
+                                      }}
+                                      className="h-6 w-6 p-0 border rounded"
+                                    />
+                                    <input
+                                      type="color"
+                                      value={settings.markerFillColor}
+                                      onChange={(e) => {
+                                        setAppearanceSettings({
+                                          ...appearanceSettings,
+                                          [key]: {
+                                            ...settings,
+                                            markerFillColor: e.target.value,
+                                          },
+                                        })
+                                      }}
+                                      className="h-6 w-6 p-0 border rounded"
+                                    />
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-xs space-y-1">
+                                  <select
+                                    className="w-full h-6 border rounded px-1 text-xs"
+                                    value={settings.lineStyle}
+                                    onChange={(e) => {
+                                      setAppearanceSettings({
+                                        ...appearanceSettings,
+                                        [key]: {
+                                          ...settings,
+                                          lineStyle: e.target.value as LineStyle,
+                                        },
+                                      })
+                                    }}
+                                  >
+                                    <option value="solid">solid</option>
+                                    <option value="dashed">dashed</option>
+                                    <option value="dotted">dotted</option>
+                                  </select>
+                                  <div className="flex items-center gap-1">
+                                    <Input
+                                      type="number"
+                                      className="h-6 w-12 text-xs"
+                                      value={settings.lineWidth}
+                                      onChange={(e) => {
+                                        setAppearanceSettings({
+                                          ...appearanceSettings,
+                                          [key]: {
+                                            ...settings,
+                                            lineWidth: parseInt(e.target.value) || 0,
+                                          },
+                                        })
+                                      }}
+                                    />
+                                    <input
+                                      type="color"
+                                      value={settings.lineColor}
+                                      onChange={(e) => {
+                                        setAppearanceSettings({
+                                          ...appearanceSettings,
+                                          [key]: { ...settings, lineColor: e.target.value },
+                                        })
+                                      }}
+                                      className="h-6 w-6 p-0 border rounded"
+                                    />
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )
+                          })
+                        })()}
+                      </TableBody>
+                    </Table>
                   </div>
                 </div>
               </div>
