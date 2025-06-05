@@ -105,9 +105,19 @@ export interface SearchCondition {
   conditions?: SearchCondition[]
 }
 
+export interface ManualPeriod {
+  id: string
+  plant: string
+  machineNo: string
+  start: string
+  end: string
+}
+
 export interface SearchResult {
   id: string
   timestamp: string
+  plant?: string
+  machineNo?: string
   parameters: Record<string, number>
   matchedConditions: string[]
 }

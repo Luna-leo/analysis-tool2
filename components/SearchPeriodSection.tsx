@@ -4,6 +4,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Button } from "@/components/ui/button"
+import { Plus, X } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -12,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { EventInfo } from '@/types'
+import { EventInfo, ManualPeriod } from '@/types'
 
 interface SearchPeriodSectionProps {
   searchPeriodType: 'events' | 'manual'
@@ -21,13 +23,17 @@ interface SearchPeriodSectionProps {
   onSelectedEventIdsChange: (ids: Set<string>) => void
   eventSearchQuery: string
   onEventSearchQueryChange: (query: string) => void
-  manualPeriod: {
+  manualPeriod?: {
     start: string
     end: string
     plant: string
     machineNo: string
   }
-  onManualPeriodChange: (period: any) => void
+  onManualPeriodChange?: (period: any) => void
+  manualPeriods?: ManualPeriod[]
+  onAddManualPeriod?: () => void
+  onRemoveManualPeriod?: (id: string) => void
+  onUpdateManualPeriod?: (id: string, updates: Partial<ManualPeriod>) => void
   filteredEvents: EventInfo[]
 }
 
@@ -40,8 +46,27 @@ export const SearchPeriodSection: React.FC<SearchPeriodSectionProps> = ({
   onEventSearchQueryChange,
   manualPeriod,
   onManualPeriodChange,
+  manualPeriods,
+  onAddManualPeriod,
+  onRemoveManualPeriod,
+  onUpdateManualPeriod,
   filteredEvents
 }) => {
+  // Use new multiple periods if available, otherwise fall back to single period
+  const periods = manualPeriods || (manualPeriod ? [{
+    id: '1',
+    ...manualPeriod
+  }] : [])
+
+  const handleUpdatePeriod = (id: string, updates: Partial<ManualPeriod>) => {
+    if (onUpdateManualPeriod) {
+      onUpdateManualPeriod(id, updates)
+    } else if (onManualPeriodChange && manualPeriod) {
+      // Fallback for single period
+      onManualPeriodChange({ ...manualPeriod, ...updates })
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -54,12 +79,12 @@ export const SearchPeriodSection: React.FC<SearchPeriodSectionProps> = ({
           className="flex gap-6"
         >
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="events" id="events" />
-            <Label htmlFor="events">Use Event Table Periods</Label>
-          </div>
-          <div className="flex items-center space-x-2">
             <RadioGroupItem value="manual" id="manual" />
             <Label htmlFor="manual">Manual Period Specification</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="events" id="events" />
+            <Label htmlFor="events">Use Event Table Periods</Label>
           </div>
         </RadioGroup>
         
@@ -184,53 +209,88 @@ export const SearchPeriodSection: React.FC<SearchPeriodSectionProps> = ({
         
         {searchPeriodType === 'manual' && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="manual-plant">
-                  Plant <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="manual-plant"
-                  value={manualPeriod.plant}
-                  onChange={(e) => onManualPeriodChange({ ...manualPeriod, plant: e.target.value })}
-                  placeholder="Enter plant name"
-                />
-              </div>
-              <div>
-                <Label htmlFor="manual-machine">
-                  Machine No <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="manual-machine"
-                  value={manualPeriod.machineNo}
-                  onChange={(e) => onManualPeriodChange({ ...manualPeriod, machineNo: e.target.value })}
-                  placeholder="Enter machine number"
-                />
-              </div>
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Manual Period Entries:</Label>
+              {onAddManualPeriod && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onAddManualPeriod}
+                  className="h-7"
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Add Period
+                </Button>
+              )}
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="manual-start">
-                  Start Date/Time <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="manual-start"
-                  type="datetime-local"
-                  value={manualPeriod.start}
-                  onChange={(e) => onManualPeriodChange({ ...manualPeriod, start: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="manual-end">
-                  End Date/Time <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="manual-end"
-                  type="datetime-local"
-                  value={manualPeriod.end}
-                  onChange={(e) => onManualPeriodChange({ ...manualPeriod, end: e.target.value })}
-                />
-              </div>
+            
+            <div className="space-y-3">
+              {periods.map((period, index) => (
+                <div key={period.id} className="relative">
+                  <div className="grid grid-cols-4 gap-4 p-3 border rounded-lg bg-muted/10">
+                    <div>
+                      <Label htmlFor={`manual-plant-${period.id}`} className="text-xs">
+                        Plant <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id={`manual-plant-${period.id}`}
+                        value={period.plant}
+                        onChange={(e) => handleUpdatePeriod(period.id, { plant: e.target.value })}
+                        placeholder="Enter plant name"
+                        className="h-8"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`manual-machine-${period.id}`} className="text-xs">
+                        Machine No <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id={`manual-machine-${period.id}`}
+                        value={period.machineNo}
+                        onChange={(e) => handleUpdatePeriod(period.id, { machineNo: e.target.value })}
+                        placeholder="Enter machine number"
+                        className="h-8"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`manual-start-${period.id}`} className="text-xs">
+                        Start Date/Time <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id={`manual-start-${period.id}`}
+                        type="datetime-local"
+                        step="1"
+                        value={period.start}
+                        onChange={(e) => handleUpdatePeriod(period.id, { start: e.target.value })}
+                        className="h-8"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor={`manual-end-${period.id}`} className="text-xs">
+                        End Date/Time <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id={`manual-end-${period.id}`}
+                        type="datetime-local"
+                        step="1"
+                        value={period.end}
+                        onChange={(e) => handleUpdatePeriod(period.id, { end: e.target.value })}
+                        className="h-8"
+                      />
+                    </div>
+                  </div>
+                  {onRemoveManualPeriod && periods.length > 1 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onRemoveManualPeriod(period.id)}
+                      className="absolute -top-2 -right-2 h-6 w-6 p-0"
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         )}

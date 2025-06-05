@@ -30,11 +30,19 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
   onAddToDataSource,
   availableEvents
 }) => {
-  const [triggerLegend, setTriggerLegend] = useState('')
+  const [labelName, setLabelName] = useState('')
   
   // Use custom hooks for state management
   const searchConditions = useSearchConditions()
   const searchPeriod = useSearchPeriod(availableEvents)
+  
+  // Set default label name to condition name
+  React.useEffect(() => {
+    const conditionName = searchConditions.getCurrentExpression()
+    if (conditionName) {
+      setLabelName(conditionName)
+    }
+  }, [searchConditions.searchConditions, searchConditions.conditionMode, searchConditions.selectedPredefinedCondition])
 
   // Mock search function
   const performSearch = async () => {
@@ -45,26 +53,50 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
     
     // Generate mock search results based on current condition type
     const currentExpression = searchConditions.getCurrentExpression()
-    const mockResults: SearchResult[] = [
-      {
-        id: '1',
-        timestamp: '2024-01-15T10:30:15',
-        parameters: { temperature: 85.2, pressure: 12.5, flow: 45.8, speed: 55 },
-        matchedConditions: [currentExpression]
-      },
-      {
-        id: '2',
-        timestamp: '2024-01-15T11:15:30',
-        parameters: { temperature: 92.1, pressure: 13.2, flow: 48.3, speed: 62 },
-        matchedConditions: [currentExpression]
-      },
-      {
-        id: '3',
-        timestamp: '2024-01-15T14:22:45',
-        parameters: { temperature: 88.7, pressure: 11.8, flow: 52.1, speed: 58 },
-        matchedConditions: [currentExpression]
-      }
-    ]
+    const mockResults: SearchResult[] = []
+    
+    if (searchPeriod.searchPeriodType === 'manual') {
+      // Generate results for each manual period
+      searchPeriod.manualPeriods.forEach((period, idx) => {
+        if (period.plant && period.machineNo && period.start && period.end) {
+          // Generate 2-3 results per period
+          const resultsCount = 2 + Math.floor(Math.random() * 2)
+          for (let i = 0; i < resultsCount; i++) {
+            mockResults.push({
+              id: `${idx}_${i}`,
+              timestamp: `2024-01-15T${10 + idx}:${15 + i * 20}:${15 + i * 5}`,
+              plant: period.plant,
+              machineNo: period.machineNo,
+              parameters: { 
+                temperature: 80 + Math.random() * 20, 
+                pressure: 10 + Math.random() * 5, 
+                flow: 40 + Math.random() * 20, 
+                speed: 50 + Math.random() * 20 
+              },
+              matchedConditions: [currentExpression]
+            })
+          }
+        }
+      })
+    } else {
+      // Generate results for event-based periods
+      const selectedEvents = searchPeriod.filteredEvents.filter(e => searchPeriod.selectedEventIds.has(e.id))
+      selectedEvents.forEach((event, idx) => {
+        mockResults.push({
+          id: `event_${idx}`,
+          timestamp: event.start,
+          plant: event.plant,
+          machineNo: event.machineNo,
+          parameters: { 
+            temperature: 80 + Math.random() * 20, 
+            pressure: 10 + Math.random() * 5, 
+            flow: 40 + Math.random() * 20, 
+            speed: 50 + Math.random() * 20 
+          },
+          matchedConditions: [currentExpression]
+        })
+      })
+    }
     
     searchPeriod.setSearchResults(mockResults)
     searchPeriod.setIsSearching(false)
@@ -79,10 +111,10 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
     const selectedEvents = availableEvents.filter(e => searchPeriod.selectedEventIds.has(e.id))
     const eventsToAdd: EventInfo[] = selectedResults.map(result => ({
       id: `trigger_${result.id}_${Date.now()}`,
-      plant: searchPeriod.searchPeriodType === 'manual' ? searchPeriod.manualPeriod.plant : 'Signal Detection',
-      machineNo: searchPeriod.searchPeriodType === 'manual' ? searchPeriod.manualPeriod.machineNo : 'AUTO',
-      label: triggerLegend,
-      labelDescription: `Conditions: ${result.matchedConditions.join(', ')} | Search period: ${searchPeriod.searchPeriodType === 'manual' ? 'Manual' : `${selectedEvents.length} events`}`,
+      plant: result.plant || 'Signal Detection',
+      machineNo: result.machineNo || 'AUTO',
+      label: labelName || 'Signal Detection',
+      labelDescription: '',
       event: 'Trigger Event',
       eventDetail: `Auto-detected at ${result.timestamp}`,
       start: result.timestamp,
@@ -100,9 +132,8 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
   const isSearchValid = () => {
     const hasValidPeriod = searchPeriod.hasValidPeriod()
     const hasValidConditions = searchConditions.hasValidConditions()
-    const hasValidLegend = triggerLegend.trim() !== ''
     
-    return hasValidPeriod && hasValidConditions && hasValidLegend
+    return hasValidPeriod && hasValidConditions
   }
 
 
@@ -113,7 +144,7 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl w-[95vw] h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Trigger Signal Condition Search</DialogTitle>
+          <DialogTitle>Signal Search</DialogTitle>
         </DialogHeader>
         
         <div className="flex-1 overflow-hidden">
@@ -134,15 +165,15 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
                 onSelectedEventIdsChange={searchPeriod.setSelectedEventIds}
                 eventSearchQuery={searchPeriod.eventSearchQuery}
                 onEventSearchQueryChange={searchPeriod.setEventSearchQuery}
-                manualPeriod={searchPeriod.manualPeriod}
-                onManualPeriodChange={searchPeriod.setManualPeriod}
+                manualPeriods={searchPeriod.manualPeriods}
+                onAddManualPeriod={searchPeriod.addManualPeriod}
+                onRemoveManualPeriod={searchPeriod.removeManualPeriod}
+                onUpdateManualPeriod={searchPeriod.updateManualPeriod}
                 filteredEvents={searchPeriod.filteredEvents}
               />
               
               {/* Search Conditions */}
               <SearchConditionsSection
-                triggerLegend={triggerLegend}
-                onTriggerLegendChange={setTriggerLegend}
                 conditionMode={searchConditions.conditionMode}
                 onConditionModeChange={(mode) => {
                   searchConditions.setConditionMode(mode)
@@ -184,6 +215,8 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
                 selectedResultIds={searchPeriod.selectedResultIds}
                 onSelectedResultIdsChange={searchPeriod.setSelectedResultIds}
                 onAddSelectedResults={handleAddSelectedResults}
+                labelName={labelName}
+                onLabelNameChange={setLabelName}
               />
             </TabsContent>
           </Tabs>

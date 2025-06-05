@@ -19,8 +19,6 @@ interface SavedCondition {
 }
 
 interface SearchConditionsSectionProps {
-  triggerLegend: string
-  onTriggerLegendChange: (legend: string) => void
   conditionMode: 'predefined' | 'manual'
   onConditionModeChange: (mode: 'predefined' | 'manual') => void
   selectedPredefinedCondition: string
@@ -38,8 +36,6 @@ interface SearchConditionsSectionProps {
 }
 
 export const SearchConditionsSection: React.FC<SearchConditionsSectionProps> = ({
-  triggerLegend,
-  onTriggerLegendChange,
   conditionMode,
   onConditionModeChange,
   selectedPredefinedCondition,
@@ -61,23 +57,6 @@ export const SearchConditionsSection: React.FC<SearchConditionsSectionProps> = (
         <CardTitle className="text-lg">Search Conditions</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Legend Setting */}
-        <div className="border rounded-lg p-3 bg-muted/20">
-          <Label htmlFor="trigger-legend" className="text-sm font-medium">
-            Trigger Signal Legend <span className="text-red-500">*</span>
-          </Label>
-          <Input
-            id="trigger-legend"
-            value={triggerLegend}
-            onChange={(e) => onTriggerLegendChange(e.target.value)}
-            placeholder="Enter legend for trigger signals"
-            className="mt-2"
-          />
-          <p className="text-xs text-muted-foreground mt-1">
-            This legend will be used for all detected trigger signal events.
-          </p>
-        </div>
-
         {/* Condition Mode Selection */}
         <RadioGroup
           value={conditionMode}

@@ -185,7 +185,7 @@ export function ChartEditModal() {
                           onClick={() => setTriggerSignalDialogOpen(true)}
                         >
                           <Plus className="h-3 w-3 mr-1" />
-                          Trigger Signal
+                          Signal Search
                         </Button>
                       </div>
                     </div>

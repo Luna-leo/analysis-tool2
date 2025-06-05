@@ -49,8 +49,7 @@ export const predefinedConditions: PredefinedCondition[] = [
         conditions: [
           { id: 'cond_pressure_critical', type: 'condition' as const, parameter: 'pressure', operator: 'gt' as const, value: '12' },
           { id: 'cond_flow_critical', type: 'condition' as const, parameter: 'flow', operator: 'lt' as const, value: '30', logicalOperator: 'OR' as const }
-        ],
-        logicalOperator: 'AND' as const
+        ]
       }
     ]
   },

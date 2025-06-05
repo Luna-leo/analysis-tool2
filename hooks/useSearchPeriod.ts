@@ -1,16 +1,19 @@
 import { useState } from 'react'
-import { EventInfo, SearchResult } from '@/types'
+import { EventInfo, SearchResult, ManualPeriod } from '@/types'
 
 export const useSearchPeriod = (availableEvents: EventInfo[]) => {
-  const [searchPeriodType, setSearchPeriodType] = useState<'events' | 'manual'>('events')
+  const [searchPeriodType, setSearchPeriodType] = useState<'events' | 'manual'>('manual')
   const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set())
   const [eventSearchQuery, setEventSearchQuery] = useState('')
-  const [manualPeriod, setManualPeriod] = useState({
-    start: '',
-    end: '',
-    plant: '',
-    machineNo: ''
-  })
+  const [manualPeriods, setManualPeriods] = useState<ManualPeriod[]>([
+    {
+      id: '1',
+      start: '',
+      end: '',
+      plant: '',
+      machineNo: ''
+    }
+  ])
   const [isSearching, setIsSearching] = useState(false)
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [selectedResultIds, setSelectedResultIds] = useState<Set<string>>(new Set())
@@ -30,15 +33,70 @@ export const useSearchPeriod = (availableEvents: EventInfo[]) => {
     )
   })
 
+  const addManualPeriod = () => {
+    const newId = (Math.max(...manualPeriods.map(p => parseInt(p.id))) + 1).toString()
+    setManualPeriods([...manualPeriods, {
+      id: newId,
+      start: '',
+      end: '',
+      plant: '',
+      machineNo: ''
+    }])
+  }
+
+  const removeManualPeriod = (id: string) => {
+    if (manualPeriods.length > 1) {
+      setManualPeriods(manualPeriods.filter(p => p.id !== id))
+    }
+  }
+
+  const updateManualPeriod = (id: string, updates: Partial<ManualPeriod>) => {
+    setManualPeriods(manualPeriods.map(p => 
+      p.id === id ? { ...p, ...updates } : p
+    ))
+  }
+
   const hasValidPeriod = () => {
-    return searchPeriodType === 'events' 
-      ? selectedEventIds.size > 0
-      : manualPeriod.start && manualPeriod.end && manualPeriod.plant && manualPeriod.machineNo
+    if (searchPeriodType === 'events') {
+      return selectedEventIds.size > 0
+    } else {
+      return manualPeriods.some(p => 
+        p.start && p.end && p.plant && p.machineNo
+      )
+    }
   }
 
   const resetSearchResults = () => {
     setSelectedResultIds(new Set())
     setSearchResults([])
+  }
+
+  // Group search results by plant and machine
+  const groupedSearchResults = searchResults.reduce((acc, result) => {
+    const key = `${result.plant || 'Unknown'}_${result.machineNo || 'Unknown'}`
+    if (!acc[key]) {
+      acc[key] = {
+        plant: result.plant || 'Unknown',
+        machineNo: result.machineNo || 'Unknown',
+        results: []
+      }
+    }
+    acc[key].results.push(result)
+    return acc
+  }, {} as Record<string, { plant: string, machineNo: string, results: SearchResult[] }>)
+
+  // For backward compatibility
+  const manualPeriod = manualPeriods[0] || {
+    start: '',
+    end: '',
+    plant: '',
+    machineNo: ''
+  }
+  
+  const setManualPeriod = (period: any) => {
+    if (manualPeriods.length > 0) {
+      updateManualPeriod(manualPeriods[0].id, period)
+    }
   }
 
   return {
@@ -50,6 +108,11 @@ export const useSearchPeriod = (availableEvents: EventInfo[]) => {
     setEventSearchQuery,
     manualPeriod,
     setManualPeriod,
+    manualPeriods,
+    setManualPeriods,
+    addManualPeriod,
+    removeManualPeriod,
+    updateManualPeriod,
     isSearching,
     setIsSearching,
     searchResults,
@@ -58,6 +121,7 @@ export const useSearchPeriod = (availableEvents: EventInfo[]) => {
     setSelectedResultIds,
     filteredEvents,
     hasValidPeriod,
-    resetSearchResults
+    resetSearchResults,
+    groupedSearchResults
   }
 }
