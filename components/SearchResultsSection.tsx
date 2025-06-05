@@ -5,6 +5,13 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   Table,
   TableBody,
   TableCell,
@@ -23,6 +30,10 @@ interface SearchResultsSectionProps {
   onLabelNameChange?: (name: string) => void
   resultLabels?: Map<string, string>
   onResultLabelsChange?: (labels: Map<string, string>) => void
+  duration?: number
+  onDurationChange?: (duration: number) => void
+  durationUnit?: 'seconds' | 'minutes' | 'hours'
+  onDurationUnitChange?: (unit: 'seconds' | 'minutes' | 'hours') => void
 }
 
 export const SearchResultsSection: React.FC<SearchResultsSectionProps> = ({
@@ -33,7 +44,11 @@ export const SearchResultsSection: React.FC<SearchResultsSectionProps> = ({
   labelName,
   onLabelNameChange,
   resultLabels = new Map(),
-  onResultLabelsChange
+  onResultLabelsChange,
+  duration = 10,
+  onDurationChange,
+  durationUnit = 'minutes',
+  onDurationUnitChange
 }) => {
 
   const handleBulkLabelUpdate = () => {
@@ -82,6 +97,35 @@ export const SearchResultsSection: React.FC<SearchResultsSectionProps> = ({
                   >
                     Apply to Selected
                   </Button>
+                </div>
+              </div>
+            )}
+            {onDurationChange && (
+              <div className="flex flex-col gap-1">
+                <Label htmlFor="duration" className="text-xs text-muted-foreground">
+                  Data Collection Period
+                </Label>
+                <div className="flex gap-1">
+                  <Input
+                    id="duration"
+                    type="number"
+                    min="1"
+                    value={duration}
+                    onChange={(e) => onDurationChange(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="h-8 w-16 text-xs"
+                  />
+                  {onDurationUnitChange && (
+                    <Select value={durationUnit} onValueChange={onDurationUnitChange}>
+                      <SelectTrigger className="h-8 w-20 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="seconds">Seconds</SelectItem>
+                        <SelectItem value="minutes">Minutes</SelectItem>
+                        <SelectItem value="hours">Hours</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
               </div>
             )}

@@ -31,6 +31,8 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
   availableEvents
 }) => {
   const [labelName, setLabelName] = useState('')
+  const [duration, setDuration] = useState(10)
+  const [durationUnit, setDurationUnit] = useState<'seconds' | 'minutes' | 'hours'>('minutes')
   
   // Use custom hooks for state management
   const searchConditions = useSearchConditions()
@@ -113,6 +115,39 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
       // Use individual legend if set, otherwise use default labelName
       const resultLabel = searchPeriod.resultLabels.get(result.id) || labelName || 'Signal Detection'
       
+      // Calculate end timestamp based on duration and unit
+      const startTime = new Date(result.timestamp)
+      let durationInMs = duration
+      let unitLabel = ''
+      
+      switch (durationUnit) {
+        case 'seconds':
+          durationInMs = duration * 1000
+          unitLabel = 's'
+          break
+        case 'minutes':
+          durationInMs = duration * 60 * 1000
+          unitLabel = 'min'
+          break
+        case 'hours':
+          durationInMs = duration * 60 * 60 * 1000
+          unitLabel = 'h'
+          break
+      }
+      
+      const endTime = new Date(startTime.getTime() + durationInMs)
+      
+      // Format end time to match the format of other timestamps (without Z suffix)
+      const formatDateTime = (date: Date) => {
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        const hours = String(date.getHours()).padStart(2, '0')
+        const minutes = String(date.getMinutes()).padStart(2, '0')
+        const seconds = String(date.getSeconds()).padStart(2, '0')
+        return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+      }
+      
       return {
         id: `trigger_${result.id}_${Date.now()}`,
         plant: result.plant || 'Signal Detection',
@@ -120,9 +155,9 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
         label: resultLabel,
         labelDescription: '',
         event: 'Trigger Event',
-        eventDetail: `Auto-detected at ${result.timestamp}`,
+        eventDetail: `Auto-detected at ${result.timestamp} (${duration}${unitLabel} period)`,
         start: result.timestamp,
-        end: result.timestamp // Same timestamp for trigger events
+        end: formatDateTime(endTime)
       }
     })
     
@@ -222,6 +257,10 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
                 onLabelNameChange={setLabelName}
                 resultLabels={searchPeriod.resultLabels}
                 onResultLabelsChange={searchPeriod.setResultLabels}
+                duration={duration}
+                onDurationChange={setDuration}
+                durationUnit={durationUnit}
+                onDurationUnitChange={setDurationUnit}
               />
             </TabsContent>
           </Tabs>
