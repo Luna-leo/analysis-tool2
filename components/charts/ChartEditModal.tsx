@@ -82,8 +82,8 @@ export function ChartEditModal() {
             </div>
 
             <div className="border rounded-lg p-4 overflow-y-auto h-full">
-              <h3 className="text-base font-semibold border-b pb-1 mb-2">Additional Settings</h3>
-              <p className="text-base text-muted-foreground">Additional chart settings can be configured here.</p>
+              <h3 className="text-base font-semibold border-b pb-1 mb-2">Chart Preview</h3>
+              <p className="text-base text-muted-foreground">Chart preview will be displayed here.</p>
             </div>
           </div>
         </DialogContent>
