@@ -606,6 +606,7 @@ export function ChartEditModal() {
                         className="h-7 text-xs"
                         onClick={() => {
                           const newParam = {
+                            parameterType: "Parameter" as "Parameter" | "Formula",
                             parameter: "",
                             axisNo: 1,
                             axisName: "",
@@ -634,6 +635,7 @@ export function ChartEditModal() {
                     
                     {/* Table Header */}
                     <div className="flex gap-2 mb-2 px-1 pb-1 border-b flex-shrink-0">
+                      <div className="w-28 text-xs font-medium text-muted-foreground">Parameter Type</div>
                       <div className="flex-1 text-xs font-medium text-muted-foreground">Parameter</div>
                       <div className="w-16 text-xs font-medium text-muted-foreground">Axis No</div>
                       <div className="w-7"></div>
@@ -644,6 +646,22 @@ export function ChartEditModal() {
                       <div className="space-y-1">
                         {editingChart.yAxisParams?.map((param, index) => (
                           <div key={index} className="flex gap-2 p-1">
+                            {/* Parameter Type */}
+                            <div className="w-28">
+                              <select
+                                value={param.parameterType || "Parameter"}
+                                onChange={(e) => {
+                                  const newParams = [...(editingChart.yAxisParams || [])]
+                                  newParams[index] = { ...newParams[index], parameterType: e.target.value as "Parameter" | "Formula" }
+                                  setEditingChart({ ...editingChart, yAxisParams: newParams })
+                                }}
+                                className="w-full h-7 px-2 py-1 border rounded-md text-sm"
+                              >
+                                <option value="Parameter">Parameter</option>
+                                <option value="Formula">Formula</option>
+                              </select>
+                            </div>
+                            
                             {/* Parameter */}
                             <div className="flex-1">
                               <Input
