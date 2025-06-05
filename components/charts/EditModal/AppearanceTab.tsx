@@ -727,7 +727,7 @@ export function AppearanceTab({ editingChart, setEditingChart, selectedDataSourc
                           </div>
                         </div>
                       </div>
-                    )}
+                    
     </div>
   )
 }
