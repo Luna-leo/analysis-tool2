@@ -17,6 +17,7 @@ export const useSearchPeriod = (availableEvents: EventInfo[]) => {
   const [isSearching, setIsSearching] = useState(false)
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [selectedResultIds, setSelectedResultIds] = useState<Set<string>>(new Set())
+  const [resultLabels, setResultLabels] = useState<Map<string, string>>(new Map())
 
   // Filter events based on search query
   const filteredEvents = availableEvents.filter(event => {
@@ -69,6 +70,7 @@ export const useSearchPeriod = (availableEvents: EventInfo[]) => {
   const resetSearchResults = () => {
     setSelectedResultIds(new Set())
     setSearchResults([])
+    setResultLabels(new Map())
   }
 
   // Group search results by plant and machine
@@ -119,6 +121,8 @@ export const useSearchPeriod = (availableEvents: EventInfo[]) => {
     setSearchResults,
     selectedResultIds,
     setSelectedResultIds,
+    resultLabels,
+    setResultLabels,
     filteredEvents,
     hasValidPeriod,
     resetSearchResults,

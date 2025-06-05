@@ -109,17 +109,22 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
     
     // Convert search results to EventInfo format
     const selectedEvents = availableEvents.filter(e => searchPeriod.selectedEventIds.has(e.id))
-    const eventsToAdd: EventInfo[] = selectedResults.map(result => ({
-      id: `trigger_${result.id}_${Date.now()}`,
-      plant: result.plant || 'Signal Detection',
-      machineNo: result.machineNo || 'AUTO',
-      label: labelName || 'Signal Detection',
-      labelDescription: '',
-      event: 'Trigger Event',
-      eventDetail: `Auto-detected at ${result.timestamp}`,
-      start: result.timestamp,
-      end: result.timestamp // Same timestamp for trigger events
-    }))
+    const eventsToAdd: EventInfo[] = selectedResults.map(result => {
+      // Use individual legend if set, otherwise use default labelName
+      const resultLabel = searchPeriod.resultLabels.get(result.id) || labelName || 'Signal Detection'
+      
+      return {
+        id: `trigger_${result.id}_${Date.now()}`,
+        plant: result.plant || 'Signal Detection',
+        machineNo: result.machineNo || 'AUTO',
+        label: resultLabel,
+        labelDescription: '',
+        event: 'Trigger Event',
+        eventDetail: `Auto-detected at ${result.timestamp}`,
+        start: result.timestamp,
+        end: result.timestamp // Same timestamp for trigger events
+      }
+    })
     
     onAddToDataSource(eventsToAdd)
     
@@ -144,7 +149,17 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl w-[95vw] h-[90vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Signal Search</DialogTitle>
+          <div className="flex justify-between items-center pr-8">
+            <DialogTitle>Signal Search</DialogTitle>
+            <Button
+              onClick={performSearch}
+              disabled={!isSearchValid() || searchPeriod.isSearching}
+              className="px-6"
+            >
+              <Search className="h-4 w-4 mr-2" />
+              {searchPeriod.isSearching ? 'Searching...' : 'Execute Search'}
+            </Button>
+          </div>
         </DialogHeader>
         
         <div className="flex-1 overflow-hidden">
@@ -195,18 +210,6 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
                 onLoadSavedCondition={searchConditions.loadSavedCondition}
                 onDeleteSavedCondition={searchConditions.deleteSavedCondition}
               />
-              
-              {/* Search Button */}
-              <div className="flex justify-center">
-                <Button
-                  onClick={performSearch}
-                  disabled={!isSearchValid() || searchPeriod.isSearching}
-                  className="px-8"
-                >
-                  <Search className="h-4 w-4 mr-2" />
-                  {searchPeriod.isSearching ? 'Searching...' : 'Execute Search'}
-                </Button>
-              </div>
             </TabsContent>
             
             <TabsContent value="results" className="flex-1 overflow-y-auto">
@@ -217,6 +220,8 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
                 onAddSelectedResults={handleAddSelectedResults}
                 labelName={labelName}
                 onLabelNameChange={setLabelName}
+                resultLabels={searchPeriod.resultLabels}
+                onResultLabelsChange={searchPeriod.setResultLabels}
               />
             </TabsContent>
           </Tabs>
