@@ -25,7 +25,7 @@ export function AppearanceTab({ editingChart, setEditingChart, selectedDataSourc
                           <Label htmlFor="chart-type" className="text-sm">Chart Type</Label>
                           <select
                             id="chart-type"
-                            value={editingChart.chartType}
+                            value={editingChart.chartType || "line"}
                             onChange={(e) => {
                               setEditingChart({
                                 ...editingChart,

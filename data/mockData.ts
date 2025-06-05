@@ -16,7 +16,7 @@ export const mockFileTree: FileNode[] = [
           {
             id: "chart-1",
             title: "Monthly Revenue",
-            chartType: "bar",
+            chartType: "line",
             data: [
               { name: "Jan", value: 400 },
               { name: "Feb", value: 300 },

@@ -66,11 +66,13 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
     const g = svg.append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`)
 
-    if (editingChart.chartType === "line") {
+    const chartType = editingChart.chartType || "line"
+    
+    if (chartType === "line") {
       renderLineChart(g, data, width, height)
-    } else if (editingChart.chartType === "bar") {
+    } else if (chartType === "bar") {
       renderBarChart(g, data, width, height)
-    } else if (editingChart.chartType === "pie") {
+    } else if (chartType === "pie") {
       renderPieChart(g, data, width, height)
     }
 
