@@ -14,7 +14,7 @@ export type OperatorType = "gt" | "lt" | "eq" | "gte" | "lte" | "ne"
 
 export type LogicalOperator = "AND" | "OR"
 
-export type MarkerType = "circle" | "square" | "triangle" | "diamond"
+export type MarkerType = "circle" | "square" | "triangle" | "diamond" | "star" | "cross"
 
 export type LineStyle = "solid" | "dashed" | "dotted"
 
@@ -46,6 +46,7 @@ export interface ChartComponent {
     unit?: TimeUnit
   }
   yAxisParams?: Array<{
+    parameterType?: "Parameter" | "Formula"
     parameter: string
     axisNo?: number
     axisName: string
