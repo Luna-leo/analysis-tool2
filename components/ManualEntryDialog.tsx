@@ -1,4 +1,4 @@
-import React from 'react'
+import React from "react"
 import {
   Dialog,
   DialogContent,
@@ -8,10 +8,10 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { TimeAdjustmentSection } from "./TimeAdjustmentSection"
+import { EventInfo } from "@/types"
 import { useTimeAdjustment } from "@/hooks/useTimeAdjustment"
 import { ManualEntryData } from "@/hooks/useManualEntry"
-import { EventInfo } from "@/types"
+import { TimeAdjustmentSection } from "./TimeAdjustmentSection"
 
 interface ManualEntryDialogProps {
   isOpen: boolean

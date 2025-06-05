@@ -1,10 +1,28 @@
 export type ActiveView = "explorer" | "search" | "database" | "settings"
 
+export type ConditionMode = "predefined" | "manual"
+
+export type ChartType = "bar" | "line" | "pie"
+
+export type AxisType = "datetime" | "time" | "numeric" | "category" | "parameter"
+
+export type TimeUnit = "sec" | "min" | "hr"
+
+export type DurationUnit = "seconds" | "minutes" | "hours"
+
+export type OperatorType = "gt" | "lt" | "eq" | "gte" | "lte" | "ne"
+
+export type LogicalOperator = "AND" | "OR"
+
+export type MarkerType = "circle" | "square" | "triangle" | "diamond"
+
+export type LineStyle = "solid" | "dashed" | "dotted"
+
 export interface ChartComponent {
   id: string
   title: string
   showTitle?: boolean
-  chartType: "bar" | "line" | "pie"
+  chartType: ChartType
   data: Array<{ name: string; value: number }>
   legend?: boolean
   xLabel?: string
@@ -20,12 +38,12 @@ export interface ChartComponent {
     columns: string[]
     lastUpdated: string
   }
-  xAxisType?: "datetime" | "time" | "numeric" | "category" | "parameter"
+  xAxisType?: AxisType
   xAxisRange?: {
     auto?: boolean
     min: string | number
     max: string | number
-    unit?: "sec" | "min" | "hr"
+    unit?: TimeUnit
   }
   yAxisParams?: Array<{
     parameter: string
@@ -37,7 +55,7 @@ export interface ChartComponent {
       max: number
     }
     marker?: {
-      type: "circle" | "square" | "triangle" | "diamond"
+      type: MarkerType
       size: number
       borderColor: string
       fillColor: string
@@ -45,7 +63,7 @@ export interface ChartComponent {
     line?: {
       width: number
       color: string
-      style: "solid" | "dashed" | "dotted"
+      style: LineStyle
     }
   }>
 }
@@ -55,7 +73,7 @@ export interface FileNode {
   name: string
   type: "file" | "folder"
   children?: FileNode[]
-  chartType?: "bar" | "line" | "pie"
+  chartType?: ChartType
   dataSources?: string[]
   charts?: ChartComponent[]
 }
@@ -98,10 +116,10 @@ export interface SearchCondition {
   type: 'condition' | 'group'
   // For simple conditions
   parameter?: string
-  operator?: 'gt' | 'lt' | 'eq' | 'gte' | 'lte' | 'ne'
+  operator?: OperatorType
   value?: string
   // For groups
-  logicalOperator?: 'AND' | 'OR'
+  logicalOperator?: LogicalOperator
   conditions?: SearchCondition[]
 }
 
@@ -120,4 +138,20 @@ export interface SearchResult {
   machineNo?: string
   parameters: Record<string, number>
   matchedConditions: string[]
+}
+
+export interface SavedCondition {
+  id: string
+  name: string
+  expression: string
+  conditions: SearchCondition[]
+  createdAt: string
+}
+
+export interface PredefinedCondition {
+  id: string
+  name: string
+  description: string
+  expression: string
+  conditions: SearchCondition[]
 }

@@ -1,24 +1,16 @@
-import React, { useState } from 'react'
-import { SearchCondition } from '@/types'
+import React, { useState } from "react"
+import { SearchCondition, SavedCondition, ConditionMode } from "@/types"
 import { 
   formatConditionExpression, 
   formatConditionExpressionToJSX, 
   colorCodeExpressionString,
   validateConditions,
   generateConditionId 
-} from '@/lib/conditionUtils'
-import { predefinedConditions } from '@/data/predefinedConditions'
-
-interface SavedCondition {
-  id: string
-  name: string
-  expression: string
-  conditions: SearchCondition[]
-  createdAt: string
-}
+} from "@/lib/conditionUtils"
+import { predefinedConditions } from "@/data/predefinedConditions"
 
 export const useSearchConditions = () => {
-  const [conditionMode, setConditionMode] = useState<'predefined' | 'manual'>('predefined')
+  const [conditionMode, setConditionMode] = useState<ConditionMode>('predefined')
   const [selectedPredefinedCondition, setSelectedPredefinedCondition] = useState<string>('')
   const [loadedFromPredefined, setLoadedFromPredefined] = useState<string | null>(null)
   const [searchConditions, setSearchConditions] = useState<SearchCondition[]>([

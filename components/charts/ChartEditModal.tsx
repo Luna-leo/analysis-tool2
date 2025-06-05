@@ -33,8 +33,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { ManualEntryDialog } from "./ManualEntryDialog"
-import { TriggerSignalDialog } from "./TriggerSignalDialog"
+import { ManualEntryDialog } from "../ManualEntryDialog"
+import { TriggerSignalDialog } from "../search/TriggerSignalDialog"
 import { useManualEntry } from "@/hooks/useManualEntry"
 import { EventInfo } from "@/types"
 

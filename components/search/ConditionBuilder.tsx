@@ -1,9 +1,9 @@
-import React from 'react'
+import React from "react"
+import { Plus, Minus, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { SearchCondition } from '@/types'
-import { operatorLabels, generateConditionId } from '@/lib/conditionUtils'
-import { Plus, Minus, ChevronDown } from "lucide-react"
+import { SearchCondition } from "@/types"
+import { operatorLabels, generateConditionId } from "@/lib/conditionUtils"
 
 interface ConditionBuilderProps {
   conditions: SearchCondition[]
