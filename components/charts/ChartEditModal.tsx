@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { useAnalysisStore } from "@/stores/useAnalysisStore"
-import { X, Settings, Plus } from "lucide-react"
+import { X, Settings, Plus, ChevronDown, Search } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -27,6 +27,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import {
   Tooltip,
   TooltipContent,
@@ -59,6 +71,16 @@ export function ChartEditModal() {
   
   // Trigger signal dialog state
   const [triggerSignalDialogOpen, setTriggerSignalDialogOpen] = useState(false)
+  
+  // Search state
+  const [eventSearchTerm, setEventSearchTerm] = useState("")
+  
+  // Time offset state
+  const [startOffset, setStartOffset] = useState(0)
+  const [startOffsetUnit, setStartOffsetUnit] = useState<'min' | 'sec'>('min')
+  const [endOffset, setEndOffset] = useState(0)
+  const [endOffsetUnit, setEndOffsetUnit] = useState<'min' | 'sec'>('min')
+  const [offsetSectionOpen, setOffsetSectionOpen] = useState(false)
 
   const handleSaveManualEntry = (data: any, editingItemId: string | null) => {
     if (editingItemId) {
@@ -96,6 +118,14 @@ export function ChartEditModal() {
 
   const handleAddTriggerSignalResults = (results: EventInfo[]) => {
     setSelectedDataSourceItems([...selectedDataSourceItems, ...results])
+  }
+
+  const resetStartOffset = () => {
+    setStartOffset(0)
+  }
+
+  const resetEndOffset = () => {
+    setEndOffset(0)
   }
 
   useEffect(() => {
@@ -189,67 +219,169 @@ export function ChartEditModal() {
                         </Button>
                       </div>
                     </div>
+                    
                     {selectedDataSourceItems.length > 0 ? (
-                      <div className="border rounded-lg overflow-hidden">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead className="h-8 text-xs px-2">Plant</TableHead>
-                              <TableHead className="h-8 text-xs px-2">Machine No</TableHead>
-                              <TableHead className="h-8 text-xs px-2">Legend</TableHead>
-                              <TableHead className="h-8 text-xs px-2">Start</TableHead>
-                              <TableHead className="h-8 text-xs px-2">End</TableHead>
-                              <TableHead className="h-8 text-xs w-8"></TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {selectedDataSourceItems.map((item) => (
-                              <TableRow key={item.id}>
-                                <TableCell className="px-2 py-1 text-xs">{item.plant}</TableCell>
-                                <TableCell className="px-2 py-1 text-xs">{item.machineNo}</TableCell>
-                                <TableCell className="px-2 py-1 text-xs">
-                                  {item.labelDescription ? `${item.label} (${item.labelDescription})` : item.label}
-                                </TableCell>
-                                <TableCell className="px-2 py-1 text-xs">
-                                  <div>
-                                    <div>{item.start.split("T")[0]}</div>
-                                    <div>{item.start.split("T")[1]}</div>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="px-2 py-1 text-xs">
-                                  <div>
-                                    <div>{item.end.split("T")[0]}</div>
-                                    <div>{item.end.split("T")[1]}</div>
-                                  </div>
-                                </TableCell>
-                                <TableCell className="px-1 py-1">
-                                  <div className="flex gap-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-6 w-6 p-0"
-                                      onClick={() => manualEntry.openForEdit(item)}
-                                    >
-                                      <Settings className="h-3 w-3" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-6 w-6 p-0"
-                                      onClick={() => {
-                                        setSelectedDataSourceItems(
-                                          selectedDataSourceItems.filter(i => i.id !== item.id)
-                                        )
-                                      }}
-                                    >
-                                      <X className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
+                      <div className="space-y-3">
+                        <div className="border rounded-lg overflow-hidden">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead className="h-8 text-xs px-2">Plant</TableHead>
+                                <TableHead className="h-8 text-xs px-2">Machine No</TableHead>
+                                <TableHead className="h-8 text-xs px-2">Legend</TableHead>
+                                <TableHead className="h-8 text-xs px-2">Start</TableHead>
+                                <TableHead className="h-8 text-xs px-2">End</TableHead>
+                                <TableHead className="h-8 text-xs w-8"></TableHead>
                               </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
+                            </TableHeader>
+                            <TableBody>
+                              {selectedDataSourceItems.map((item) => (
+                                <TableRow key={item.id}>
+                                  <TableCell className="px-2 py-1 text-xs">{item.plant}</TableCell>
+                                  <TableCell className="px-2 py-1 text-xs">{item.machineNo}</TableCell>
+                                  <TableCell className="px-2 py-1 text-xs">
+                                    {item.labelDescription ? `${item.label} (${item.labelDescription})` : item.label}
+                                  </TableCell>
+                                  <TableCell className="px-2 py-1 text-xs">
+                                    <div>
+                                      <div>{item.start.split("T")[0]}</div>
+                                      <div>{item.start.split("T")[1]}</div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="px-2 py-1 text-xs">
+                                    <div>
+                                      <div>{item.end.split("T")[0]}</div>
+                                      <div>{item.end.split("T")[1]}</div>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="px-1 py-1">
+                                    <div className="flex gap-1">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 w-6 p-0"
+                                        onClick={() => manualEntry.openForEdit(item)}
+                                      >
+                                        <Settings className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-6 w-6 p-0"
+                                        onClick={() => {
+                                          setSelectedDataSourceItems(
+                                            selectedDataSourceItems.filter(i => i.id !== item.id)
+                                          )
+                                        }}
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                        
+                        {/* Time Offset Controls - Collapsible */}
+                        <Collapsible open={offsetSectionOpen} onOpenChange={setOffsetSectionOpen}>
+                          <div className="border rounded-lg p-3 bg-background">
+                            <CollapsibleTrigger asChild>
+                              <div className="flex items-center justify-between cursor-pointer">
+                                <div className="flex items-center gap-2">
+                                  <h4 className="text-sm font-medium">Time Offset</h4>
+                                  {!offsetSectionOpen && (startOffset !== 0 || endOffset !== 0) && (
+                                    <div className="text-xs text-muted-foreground">
+                                      {startOffset !== 0 && `Start: ${startOffset > 0 ? '+' : ''}${startOffset}${startOffsetUnit}`}
+                                      {startOffset !== 0 && endOffset !== 0 && ', '}
+                                      {endOffset !== 0 && `End: ${endOffset > 0 ? '+' : ''}${endOffset}${endOffsetUnit}`}
+                                    </div>
+                                  )}
+                                </div>
+                                <ChevronDown className={`h-4 w-4 transition-transform ${offsetSectionOpen ? 'rotate-180' : ''}`} />
+                              </div>
+                            </CollapsibleTrigger>
+                            
+                            <CollapsibleContent className="overflow-hidden">
+                              <div className="grid grid-cols-2 gap-4 mt-3">
+                                {/* Start Offset */}
+                                <div className="space-y-2">
+                                  <Label className="text-xs font-medium">Start Offset:</Label>
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      type="number"
+                                      value={startOffset}
+                                      onChange={(e) => setStartOffset(Number(e.target.value))}
+                                      className="w-16 h-7 text-xs"
+                                      placeholder="0"
+                                    />
+                                    <Select value={startOffsetUnit} onValueChange={(value: 'min' | 'sec') => setStartOffsetUnit(value)}>
+                                      <SelectTrigger className="w-16 h-7 text-xs">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="min">min</SelectItem>
+                                        <SelectItem value="sec">sec</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                    {startOffset !== 0 && (
+                                      <span className="text-xs text-muted-foreground">
+                                        ({startOffset > 0 ? '+' : ''}{startOffset}{startOffsetUnit})
+                                      </span>
+                                    )}
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-7 text-xs px-2"
+                                      onClick={resetStartOffset}
+                                      disabled={startOffset === 0}
+                                    >
+                                      Reset
+                                    </Button>
+                                  </div>
+                                </div>
+                                
+                                {/* End Offset */}
+                                <div className="space-y-2">
+                                  <Label className="text-xs font-medium">End Offset:</Label>
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      type="number"
+                                      value={endOffset}
+                                      onChange={(e) => setEndOffset(Number(e.target.value))}
+                                      className="w-16 h-7 text-xs"
+                                      placeholder="0"
+                                    />
+                                    <Select value={endOffsetUnit} onValueChange={(value: 'min' | 'sec') => setEndOffsetUnit(value)}>
+                                      <SelectTrigger className="w-16 h-7 text-xs">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="min">min</SelectItem>
+                                        <SelectItem value="sec">sec</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                    {endOffset !== 0 && (
+                                      <span className="text-xs text-muted-foreground">
+                                        ({endOffset > 0 ? '+' : ''}{endOffset}{endOffsetUnit})
+                                      </span>
+                                    )}
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-7 text-xs px-2"
+                                      onClick={resetEndOffset}
+                                      disabled={endOffset === 0}
+                                    >
+                                      Reset
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </CollapsibleContent>
+                          </div>
+                        </Collapsible>
                       </div>
                     ) : (
                       <p className="text-xs text-muted-foreground">No data source items selected. Select items from the table below and click 'Add Selected'.</p>
@@ -283,18 +415,60 @@ export function ChartEditModal() {
                         Add Selected ({selectedEventIds.size})
                       </Button>
                     </div>
+                    
+                    {/* Search Input */}
+                    <div className="relative mb-3 px-1">
+                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Search events by plant, machine, label, or event..."
+                        value={eventSearchTerm}
+                        onChange={(e) => setEventSearchTerm(e.target.value)}
+                        className="h-8 text-sm pl-10"
+                      />
+                    </div>
+                    
                     <div className="border rounded-lg overflow-hidden">
                       <Table>
                         <TableHeader>
                           <TableRow>
                             <TableHead className="h-8 text-xs w-6 px-1">
                               <Checkbox
-                                checked={selectedEventIds.size === events.length && events.length > 0}
+                                checked={(() => {
+                                  const filteredEvents = events.filter((event) => {
+                                    if (!eventSearchTerm) return true
+                                    const searchLower = eventSearchTerm.toLowerCase()
+                                    return (
+                                      event.plant.toLowerCase().includes(searchLower) ||
+                                      event.machineNo.toLowerCase().includes(searchLower) ||
+                                      event.label.toLowerCase().includes(searchLower) ||
+                                      event.labelDescription?.toLowerCase().includes(searchLower) ||
+                                      event.event.toLowerCase().includes(searchLower) ||
+                                      event.eventDetail?.toLowerCase().includes(searchLower)
+                                    )
+                                  })
+                                  return filteredEvents.length > 0 && filteredEvents.every(event => selectedEventIds.has(event.id))
+                                })()}
                                 onCheckedChange={(checked) => {
+                                  const filteredEvents = events.filter((event) => {
+                                    if (!eventSearchTerm) return true
+                                    const searchLower = eventSearchTerm.toLowerCase()
+                                    return (
+                                      event.plant.toLowerCase().includes(searchLower) ||
+                                      event.machineNo.toLowerCase().includes(searchLower) ||
+                                      event.label.toLowerCase().includes(searchLower) ||
+                                      event.labelDescription?.toLowerCase().includes(searchLower) ||
+                                      event.event.toLowerCase().includes(searchLower) ||
+                                      event.eventDetail?.toLowerCase().includes(searchLower)
+                                    )
+                                  })
                                   if (checked) {
-                                    setSelectedEventIds(new Set(events.map(e => e.id)))
+                                    const newSelected = new Set(selectedEventIds)
+                                    filteredEvents.forEach(event => newSelected.add(event.id))
+                                    setSelectedEventIds(newSelected)
                                   } else {
-                                    setSelectedEventIds(new Set())
+                                    const newSelected = new Set(selectedEventIds)
+                                    filteredEvents.forEach(event => newSelected.delete(event.id))
+                                    setSelectedEventIds(newSelected)
                                   }
                                 }}
                                 className="h-3 w-3"
@@ -307,7 +481,20 @@ export function ChartEditModal() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {events.map((event) => {
+                          {events
+                            .filter((event) => {
+                              if (!eventSearchTerm) return true
+                              const searchLower = eventSearchTerm.toLowerCase()
+                              return (
+                                event.plant.toLowerCase().includes(searchLower) ||
+                                event.machineNo.toLowerCase().includes(searchLower) ||
+                                event.label.toLowerCase().includes(searchLower) ||
+                                event.labelDescription?.toLowerCase().includes(searchLower) ||
+                                event.event.toLowerCase().includes(searchLower) ||
+                                event.eventDetail?.toLowerCase().includes(searchLower)
+                              )
+                            })
+                            .map((event) => {
                             const isInSelectedDataSource = selectedDataSourceItems.some(item => item.id === event.id)
                             return (
                               <TableRow 
