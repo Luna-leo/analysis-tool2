@@ -26,7 +26,13 @@ export function FileExplorer() {
     creatingNodeParentId,
     setCreatingNode,
     createNewFolder,
-    createNewFile
+    createNewFile,
+    draggedNode,
+    dragOverNode,
+    dragPosition,
+    setDraggedNode,
+    setDragOverNode,
+    moveNode
   } = useAnalysisStore()
   const [tempName, setTempName] = useState("")
   const inputRef = useRef<HTMLInputElement>(null)
@@ -69,13 +75,104 @@ export function FileExplorer() {
     setTempName("")
   }
 
+  const handleDragStart = (e: React.DragEvent, nodeId: string) => {
+    setDraggedNode(nodeId)
+    e.dataTransfer.effectAllowed = "move"
+    e.dataTransfer.setData("text/plain", nodeId)
+  }
+
+  const handleDragOver = (e: React.DragEvent, nodeId: string, position: "before" | "after" | "inside") => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (draggedNode && draggedNode !== nodeId) {
+      setDragOverNode(nodeId, position)
+      e.dataTransfer.dropEffect = "move"
+    }
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    // Only clear if we're actually leaving the element (not entering a child)
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = e.clientX
+    const y = e.clientY
+    
+    if (x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom) {
+      setDragOverNode(null, null)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent, nodeId: string, position: "before" | "after" | "inside") => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (draggedNode && draggedNode !== nodeId) {
+      moveNode(draggedNode, nodeId, position)
+    }
+    
+    setDraggedNode(null)
+    setDragOverNode(null, null)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedNode(null)
+    setDragOverNode(null, null)
+  }
+
+  const getDropIndicatorClass = (nodeId: string, position: "before" | "after" | "inside") => {
+    if (dragOverNode === nodeId && dragPosition === position && draggedNode) {
+      switch (position) {
+        case "before":
+          return "border-t-2 border-blue-500"
+        case "after":
+          return "border-b-2 border-blue-500"
+        case "inside":
+          return "bg-blue-50 border-blue-200 border-2 border-dashed"
+        default:
+          return ""
+      }
+    }
+    return ""
+  }
+
   const renderFileTree = (nodes: FileNode[], depth = 0) => {
     return nodes.map((node) => (
       <div key={node.id}>
+        {/* Drop zone before the node */}
         <div
           className={cn(
-            "group flex items-center gap-2 px-2 py-1 hover:bg-accent cursor-pointer text-sm relative",
-            `ml-${depth * 4}`
+            "h-1 transition-all",
+            getDropIndicatorClass(node.id, "before")
+          )}
+          onDragOver={(e) => handleDragOver(e, node.id, "before")}
+          onDrop={(e) => handleDrop(e, node.id, "before")}
+        />
+        
+        <div
+          draggable={!renamingNode && !creatingNodeType}
+          onDragStart={(e) => handleDragStart(e, node.id)}
+          onDragEnd={handleDragEnd}
+          onDragOver={(e) => {
+            if (node.type === "folder") {
+              handleDragOver(e, node.id, "inside")
+            } else {
+              e.preventDefault()
+            }
+          }}
+          onDragLeave={handleDragLeave}
+          onDrop={(e) => {
+            if (node.type === "folder") {
+              handleDrop(e, node.id, "inside")
+            }
+          }}
+          className={cn(
+            "group flex items-center gap-2 px-2 py-1 hover:bg-accent cursor-pointer text-sm relative transition-all",
+            `ml-${depth * 4}`,
+            draggedNode === node.id && "opacity-50",
+            getDropIndicatorClass(node.id, "inside")
           )}
         >
           <div
@@ -202,13 +299,60 @@ export function FileExplorer() {
             )}
           </div>
         )}
+        
+        {/* Drop zone after the node */}
+        <div
+          className={cn(
+            "h-1 transition-all",
+            getDropIndicatorClass(node.id, "after")
+          )}
+          onDragOver={(e) => handleDragOver(e, node.id, "after")}
+          onDrop={(e) => handleDrop(e, node.id, "after")}
+        />
       </div>
     ))
   }
 
   return (
-    <div className="py-2">
+    <div 
+      className="py-2"
+      onDragOver={(e) => {
+        if (fileTree.length === 0) {
+          e.preventDefault()
+          setDragOverNode(null, "inside")
+        }
+      }}
+      onDrop={(e) => {
+        if (draggedNode && fileTree.length === 0) {
+          e.preventDefault()
+          moveNode(draggedNode, null, "inside")
+        }
+      }}
+    >
       {renderFileTree(fileTree)}
+      
+      {/* Root level drop zone */}
+      {fileTree.length > 0 && (
+        <div
+          className={cn(
+            "h-2 transition-all",
+            dragOverNode === null && dragPosition === "inside" && draggedNode
+              ? "bg-blue-50 border-blue-200 border-2 border-dashed rounded"
+              : ""
+          )}
+          onDragOver={(e) => {
+            e.preventDefault()
+            setDragOverNode(null, "inside")
+          }}
+          onDrop={(e) => {
+            if (draggedNode) {
+              e.preventDefault()
+              moveNode(draggedNode, null, "inside")
+            }
+          }}
+        />
+      )}
+      
       {creatingNodeParentId === null && creatingNodeType && (
         <div className="flex items-center gap-2 px-2 py-1 text-sm">
           {creatingNodeType === "folder" ? (

@@ -16,6 +16,9 @@ interface AnalysisState {
   renamingNode: string | null
   creatingNodeType: "folder" | "file" | null
   creatingNodeParentId: string | null
+  draggedNode: string | null
+  dragOverNode: string | null
+  dragPosition: "before" | "after" | "inside" | null
   
   // Layout State
   layoutSettingsMap: Record<string, LayoutSettings>
@@ -48,6 +51,9 @@ interface AnalysisActions {
   createNewFolder: (parentId: string | null, name: string) => void
   createNewFile: (parentId: string | null, name: string) => void
   setCreatingNode: (type: "folder" | "file" | null, parentId: string | null) => void
+  moveNode: (nodeId: string, targetId: string | null, position: "before" | "after" | "inside") => void
+  setDraggedNode: (nodeId: string | null) => void
+  setDragOverNode: (nodeId: string | null, position: "before" | "after" | "inside" | null) => void
   
   // Layout Actions
   updateLayoutSettings: (fileId: string, settings: Partial<LayoutSettings>) => void
@@ -92,6 +98,9 @@ export const useAnalysisStore = create<AnalysisStore>()(
       renamingNode: null,
       creatingNodeType: null,
       creatingNodeParentId: null,
+      draggedNode: null,
+      dragOverNode: null,
+      dragPosition: null,
       layoutSettingsMap: {},
       chartSettingsMap: {},
       currentPage: 1,
@@ -282,6 +291,113 @@ export const useAnalysisStore = create<AnalysisStore>()(
       setCreatingNode: (type: "folder" | "file" | null, parentId: string | null) => set({ 
         creatingNodeType: type, 
         creatingNodeParentId: parentId 
+      }),
+
+      moveNode: (nodeId, targetId, position) => set((state) => {
+        // Helper function to check if target is a descendant of source
+        const isDescendant = (sourceId: string, targetId: string | null, nodes: FileNode[]): boolean => {
+          if (!targetId) return false
+          
+          for (const node of nodes) {
+            if (node.id === targetId) {
+              // Found target node, check if source is an ancestor
+              const findAncestor = (currentNode: FileNode, searchId: string): boolean => {
+                if (currentNode.id === searchId) return true
+                if (currentNode.children) {
+                  return currentNode.children.some(child => findAncestor(child, searchId))
+                }
+                return false
+              }
+              return findAncestor(node, sourceId)
+            }
+            if (node.children && isDescendant(sourceId, targetId, node.children)) {
+              return true
+            }
+          }
+          return false
+        }
+
+        // Prevent moving node into its own descendant
+        if (targetId && isDescendant(nodeId, targetId, state.fileTree)) {
+          return state
+        }
+
+        // Find and remove the node from its current location
+        let movedNode: FileNode | null = null
+        const removeNode = (nodes: FileNode[]): FileNode[] => {
+          return nodes.filter(node => {
+            if (node.id === nodeId) {
+              movedNode = node
+              return false
+            }
+            if (node.children) {
+              node.children = removeNode(node.children)
+            }
+            return true
+          })
+        }
+
+        if (!movedNode) {
+          const newTree = removeNode([...state.fileTree])
+          if (!movedNode) return state // Node not found
+        }
+
+        // Add the node to its new location
+        const addNode = (nodes: FileNode[]): FileNode[] => {
+          if (!targetId) {
+            // Move to root level
+            if (position === "before" || position === "after") {
+              // For root level, just add at the end
+              return [...nodes, movedNode!]
+            }
+            return [...nodes, movedNode!]
+          }
+
+          return nodes.map(node => {
+            if (node.id === targetId) {
+              if (position === "inside" && node.type === "folder") {
+                // Add inside the folder
+                return {
+                  ...node,
+                  children: [...(node.children || []), movedNode!]
+                }
+              }
+            }
+            if (node.children) {
+              return { ...node, children: addNode(node.children) }
+            }
+            return node
+          }).flatMap(node => {
+            if (node.id === targetId && position !== "inside") {
+              // Add before or after the target
+              return position === "before" ? [movedNode!, node] : [node, movedNode!]
+            }
+            return [node]
+          })
+        }
+
+        const newFileTree = removeNode([...state.fileTree])
+        const finalTree = movedNode ? addNode(newFileTree) : newFileTree
+
+        // Update open tabs if the moved node was open
+        const newOpenTabs = state.openTabs.map(tab => 
+          tab.id === nodeId ? movedNode! : tab
+        )
+
+        return {
+          fileTree: finalTree,
+          openTabs: newOpenTabs,
+          draggedNode: null,
+          dragOverNode: null,
+          dragPosition: null
+        }
+      }),
+
+      setDraggedNode: (nodeId) => set({ draggedNode: nodeId }),
+
+      setDragOverNode: (nodeId, position) => set({ 
+        dragOverNode: nodeId, 
+        dragPosition: position 
       }),
 
       // Layout Actions
