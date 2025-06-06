@@ -1,7 +1,23 @@
 "use client"
 
 import React from "react"
-import { FolderOpen, Search, Database, Calculator, Settings, FolderPlus, FilePlus } from "lucide-react"
+import { 
+  FolderOpen, 
+  Search, 
+  Database, 
+  Calculator, 
+  Settings, 
+  FolderPlus, 
+  FilePlus,
+  FunctionSquare,
+  ArrowLeftRight,
+  Zap,
+  Calendar,
+  Hash,
+  Tag,
+  BarChart3,
+  Lock
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { FileExplorer } from "./FileExplorer"
@@ -62,14 +78,109 @@ export function Sidebar() {
         return (
           <>
             <h2 className="text-sm font-semibold px-4 py-2">Data Sources</h2>
-            <div className="px-4 py-2 text-sm text-muted-foreground">Database connections coming soon...</div>
+            <div className="px-2 space-y-1">
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
+                onClick={() => console.log("Event Master")}
+              >
+                <Calendar className="h-4 w-4 shrink-0" />
+                <div className="flex flex-col items-start flex-1">
+                  <span>Event Master</span>
+                  <span className="text-xs text-muted-foreground">イベント情報</span>
+                </div>
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
+                onClick={() => console.log("Parameter Master")}
+              >
+                <Hash className="h-4 w-4 shrink-0" />
+                <div className="flex flex-col items-start flex-1">
+                  <span>Parameter Master</span>
+                  <span className="text-xs text-muted-foreground">パラメータID、パラメータ名、単位</span>
+                </div>
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
+                onClick={() => console.log("Tag Master")}
+              >
+                <Tag className="h-4 w-4 shrink-0" />
+                <span>Tag Master</span>
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
+                onClick={() => console.log("Sensor data Master")}
+              >
+                <BarChart3 className="h-4 w-4 shrink-0" />
+                <div className="flex flex-col items-start flex-1">
+                  <span>Sensor data Master</span>
+                  <span className="text-xs text-muted-foreground">プラントとか号機毎のデータ存在期間とか</span>
+                </div>
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
+                onClick={() => console.log("Formula Master")}
+              >
+                <FunctionSquare className="h-4 w-4 shrink-0" />
+                <div className="flex flex-col items-start flex-1">
+                  <span>Formula Master</span>
+                  <span className="text-xs text-muted-foreground">登録済み数式</span>
+                </div>
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
+                onClick={() => console.log("Inter lock Master")}
+              >
+                <Lock className="h-4 w-4 shrink-0" />
+                <div className="flex flex-col items-start flex-1">
+                  <span>Inter lock Master</span>
+                  <span className="text-xs text-muted-foreground">登録済み管理値、プラント・号機毎</span>
+                </div>
+              </Button>
+            </div>
           </>
         )
       case "calculator":
         return (
           <>
             <h2 className="text-sm font-semibold px-4 py-2">Calculator</h2>
-            <div className="px-4 py-2 text-sm text-muted-foreground">Calculator functionality coming soon...</div>
+            <div className="px-2 space-y-1">
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
+                onClick={() => console.log("Formula")}
+              >
+                <FunctionSquare className="h-4 w-4 shrink-0" />
+                <span>Formula</span>
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
+                onClick={() => console.log("Unit Convert Formula Master")}
+              >
+                <ArrowLeftRight className="h-4 w-4 shrink-0" />
+                <div className="flex flex-col items-start flex-1">
+                  <span>Unit Convert Formula Master</span>
+                  <span className="text-xs text-muted-foreground">単位換算式</span>
+                </div>
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
+                onClick={() => console.log("Trigger Condition Master")}
+              >
+                <Zap className="h-4 w-4 shrink-0" />
+                <div className="flex flex-col items-start flex-1">
+                  <span>Trigger Condition Master</span>
+                  <span className="text-xs text-muted-foreground">登録済みキック信号コンディション</span>
+                </div>
+              </Button>
+            </div>
           </>
         )
       case "settings":
