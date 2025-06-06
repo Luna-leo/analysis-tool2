@@ -3,12 +3,12 @@ import { FileNode } from "@/types"
 export const mockFileTree: FileNode[] = [
   {
     id: "1",
-    name: "Sales Analysis",
+    name: "Plant A",
     type: "folder",
     children: [
       {
         id: "2",
-        name: "Q1 Revenue Dashboard",
+        name: "Speed Up",
         type: "file",
         dataSources: ["Sales DB", "Revenue API", "Customer Data"],
         charts: [
@@ -55,7 +55,7 @@ export const mockFileTree: FileNode[] = [
       },
       {
         id: "3",
-        name: "Customer Insights",
+        name: "Load Up",
         type: "file",
         dataSources: ["CRM System", "Analytics DB"],
         charts: [
@@ -86,14 +86,14 @@ export const mockFileTree: FileNode[] = [
   },
   {
     id: "4",
-    name: "Marketing Reports",
+    name: "Plant B",
     type: "folder",
     children: [
       {
         id: "5",
-        name: "Campaign Performance",
+        name: "Kick Signal",
         type: "file",
-        dataSources: ["Marketing API", "Social Media Data"],
+        dataSources: ["2025:Fuel Change", "2024 Fuel Change"],
         charts: [
           {
             id: "chart-200",
