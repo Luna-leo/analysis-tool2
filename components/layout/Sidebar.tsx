@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { FolderOpen, Search, Database, Settings } from "lucide-react"
+import { FolderOpen, Search, Database, Settings, FolderPlus, FilePlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { FileExplorer } from "./FileExplorer"
@@ -9,7 +9,7 @@ import { ActiveView } from "@/types"
 import { useAnalysisStore } from "@/stores/useAnalysisStore"
 
 export function Sidebar() {
-  const { activeView, sidebarOpen, setActiveView, setSidebarOpen, fileTree } = useAnalysisStore()
+  const { activeView, sidebarOpen, setActiveView, setSidebarOpen, fileTree, setCreatingNode } = useAnalysisStore()
 
   const handleViewClick = (view: ActiveView) => {
     if (activeView === view) {
@@ -25,7 +25,29 @@ export function Sidebar() {
       case "explorer":
         return (
           <>
-            <h2 className="text-sm font-semibold px-4 py-2">Explorer</h2>
+            <div className="flex items-center justify-between px-4 py-2">
+              <h2 className="text-sm font-semibold">Explorer</h2>
+              <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => setCreatingNode("folder", null)}
+                  title="New Folder"
+                >
+                  <FolderPlus className="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => setCreatingNode("file", null)}
+                  title="New File"
+                >
+                  <FilePlus className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
             <FileExplorer />
           </>
         )

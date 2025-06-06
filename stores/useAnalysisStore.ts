@@ -14,6 +14,8 @@ interface AnalysisState {
   activeTab: string
   expandedFolders: Set<string>
   renamingNode: string | null
+  creatingNodeType: "folder" | "file" | null
+  creatingNodeParentId: string | null
   
   // Layout State
   layoutSettingsMap: Record<string, LayoutSettings>
@@ -43,6 +45,9 @@ interface AnalysisActions {
   setFileTree: (fileTree: FileNode[]) => void
   renameNode: (nodeId: string, newName: string) => void
   setRenamingNode: (nodeId: string | null) => void
+  createNewFolder: (parentId: string | null, name: string) => void
+  createNewFile: (parentId: string | null, name: string) => void
+  setCreatingNode: (type: "folder" | "file" | null, parentId: string | null) => void
   
   // Layout Actions
   updateLayoutSettings: (fileId: string, settings: Partial<LayoutSettings>) => void
@@ -85,6 +90,8 @@ export const useAnalysisStore = create<AnalysisStore>()(
       activeTab: '',
       expandedFolders: new Set(['1']),
       renamingNode: null,
+      creatingNodeType: null,
+      creatingNodeParentId: null,
       layoutSettingsMap: {},
       chartSettingsMap: {},
       currentPage: 1,
@@ -192,6 +199,90 @@ export const useAnalysisStore = create<AnalysisStore>()(
       }),
 
       setRenamingNode: (nodeId) => set({ renamingNode: nodeId }),
+
+      createNewFolder: (parentId, name) => set((state) => {
+        const newFolder: FileNode = {
+          id: `folder_${Date.now()}`,
+          name,
+          type: "folder",
+          children: []
+        }
+
+        if (!parentId) {
+          // Add to root level
+          return { fileTree: [...state.fileTree, newFolder] }
+        }
+
+        // Add to specific parent folder
+        const addToParent = (nodes: FileNode[]): FileNode[] => {
+          return nodes.map(node => {
+            if (node.id === parentId && node.type === "folder") {
+              return {
+                ...node,
+                children: [...(node.children || []), newFolder]
+              }
+            }
+            if (node.children) {
+              return { ...node, children: addToParent(node.children) }
+            }
+            return node
+          })
+        }
+
+        // Ensure parent folder is expanded
+        const newExpanded = new Set(state.expandedFolders)
+        newExpanded.add(parentId)
+
+        return { 
+          fileTree: addToParent(state.fileTree),
+          expandedFolders: newExpanded
+        }
+      }),
+
+      createNewFile: (parentId, name) => set((state) => {
+        const newFile: FileNode = {
+          id: `file_${Date.now()}`,
+          name,
+          type: "file",
+          dataSources: [],
+          charts: []
+        }
+
+        if (!parentId) {
+          // Add to root level
+          return { fileTree: [...state.fileTree, newFile] }
+        }
+
+        // Add to specific parent folder
+        const addToParent = (nodes: FileNode[]): FileNode[] => {
+          return nodes.map(node => {
+            if (node.id === parentId && node.type === "folder") {
+              return {
+                ...node,
+                children: [...(node.children || []), newFile]
+              }
+            }
+            if (node.children) {
+              return { ...node, children: addToParent(node.children) }
+            }
+            return node
+          })
+        }
+
+        // Ensure parent folder is expanded
+        const newExpanded = new Set(state.expandedFolders)
+        newExpanded.add(parentId)
+
+        return { 
+          fileTree: addToParent(state.fileTree),
+          expandedFolders: newExpanded
+        }
+      }),
+
+      setCreatingNode: (type: "folder" | "file" | null, parentId: string | null) => set({ 
+        creatingNodeType: type, 
+        creatingNodeParentId: parentId 
+      }),
 
       // Layout Actions
       updateLayoutSettings: (fileId, settings) => set((state) => ({
