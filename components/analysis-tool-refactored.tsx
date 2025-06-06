@@ -5,7 +5,6 @@ import { ResizablePanelGroup, ResizablePanel } from "@/components/ui/resizable"
 import { Sidebar, TabHeader, BreadcrumbNavigation, WelcomeMessage } from "./layout"
 import { ChartGrid, ChartEditModal } from "./charts"
 import { useAnalysisStore } from "@/stores/useAnalysisStore"
-import { mockFileTree } from "@/data/mockData"
 
 export default function AnalysisTool() {
   const { openTabs, activeTab } = useAnalysisStore()
@@ -15,7 +14,7 @@ export default function AnalysisTool() {
       <ResizablePanelGroup direction="horizontal" className="flex-1">
         {/* Sidebar with Activity Bar */}
         <div className="flex">
-          <Sidebar fileTree={mockFileTree} />
+          <Sidebar />
         </div>
 
         {/* Main Content Area */}

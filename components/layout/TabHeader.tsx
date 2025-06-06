@@ -2,9 +2,10 @@ import React from "react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { TabBar } from "./TabBar"
 import { LayoutSettings } from "./LayoutSettings"
+import { FileNode } from "@/types"
 
 interface TabHeaderProps {
-  openTabs: Array<{ id: string; name: string }>
+  openTabs: FileNode[]
   activeTab: string | null
 }
 

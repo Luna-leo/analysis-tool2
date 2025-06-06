@@ -482,9 +482,9 @@ export function AppearanceTab({ editingChart, setEditingChart, selectedDataSourc
                                   )
                                 }
                               >
-                                <option value="datasource">Data Sourceごとに設定する</option>
-                                <option value="parameter">Parameterごとに設定する</option>
-                                <option value="both">Data Source x Parameterごとに設定する</option>
+                                <option value="datasource">By Data Source</option>
+                                <option value="parameter">By Parameter</option>
+                                <option value="both">By Data Source x Parameter</option>
                               </select>
                             </div>
                           </div>

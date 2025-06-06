@@ -5,15 +5,11 @@ import { FolderOpen, Search, Database, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { FileExplorer } from "./FileExplorer"
-import { ActiveView, FileNode } from "@/types"
+import { ActiveView } from "@/types"
 import { useAnalysisStore } from "@/stores/useAnalysisStore"
 
-interface SidebarProps {
-  fileTree: FileNode[]
-}
-
-export function Sidebar({ fileTree }: SidebarProps) {
-  const { activeView, sidebarOpen, setActiveView, setSidebarOpen } = useAnalysisStore()
+export function Sidebar() {
+  const { activeView, sidebarOpen, setActiveView, setSidebarOpen, fileTree } = useAnalysisStore()
 
   const handleViewClick = (view: ActiveView) => {
     if (activeView === view) {
@@ -30,7 +26,7 @@ export function Sidebar({ fileTree }: SidebarProps) {
         return (
           <>
             <h2 className="text-sm font-semibold px-4 py-2">Explorer</h2>
-            <FileExplorer fileTree={fileTree} />
+            <FileExplorer />
           </>
         )
       case "search":

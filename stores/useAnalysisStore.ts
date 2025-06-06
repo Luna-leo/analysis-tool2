@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
 import type { ActiveView, FileNode, LayoutSettings, ChartSettings, ChartComponent } from '@/types'
+import { mockFileTree } from '@/data/mockData'
 
 interface AnalysisState {
   // View State
@@ -8,9 +9,11 @@ interface AnalysisState {
   sidebarOpen: boolean
   
   // File State
+  fileTree: FileNode[]
   openTabs: FileNode[]
   activeTab: string
   expandedFolders: Set<string>
+  renamingNode: string | null
   
   // Layout State
   layoutSettingsMap: Record<string, LayoutSettings>
@@ -37,6 +40,9 @@ interface AnalysisActions {
   setActiveTab: (tabId: string) => void
   toggleFolder: (folderId: string) => void
   reorderTabs: (draggedId: string, targetId: string) => void
+  setFileTree: (fileTree: FileNode[]) => void
+  renameNode: (nodeId: string, newName: string) => void
+  setRenamingNode: (nodeId: string | null) => void
   
   // Layout Actions
   updateLayoutSettings: (fileId: string, settings: Partial<LayoutSettings>) => void
@@ -74,9 +80,11 @@ export const useAnalysisStore = create<AnalysisStore>()(
       // Initial State
       activeView: 'explorer',
       sidebarOpen: true,
+      fileTree: mockFileTree,
       openTabs: [],
       activeTab: '',
       expandedFolders: new Set(['1']),
+      renamingNode: null,
       layoutSettingsMap: {},
       chartSettingsMap: {},
       currentPage: 1,
@@ -153,6 +161,37 @@ export const useAnalysisStore = create<AnalysisStore>()(
 
         return { openTabs: newTabs }
       }),
+
+      setFileTree: (fileTree) => set({ fileTree }),
+
+      renameNode: (nodeId, newName) => set((state) => {
+        const updateNode = (nodes: FileNode[]): FileNode[] => {
+          return nodes.map(node => {
+            if (node.id === nodeId) {
+              return { ...node, name: newName }
+            }
+            if (node.children) {
+              return { ...node, children: updateNode(node.children) }
+            }
+            return node
+          })
+        }
+
+        const newFileTree = updateNode(state.fileTree)
+        
+        // Also update open tabs if the renamed node is open
+        const newOpenTabs = state.openTabs.map(tab => 
+          tab.id === nodeId ? { ...tab, name: newName } : tab
+        )
+
+        return { 
+          fileTree: newFileTree,
+          openTabs: newOpenTabs,
+          renamingNode: null
+        }
+      }),
+
+      setRenamingNode: (nodeId) => set({ renamingNode: nodeId }),
 
       // Layout Actions
       updateLayoutSettings: (fileId, settings) => set((state) => ({
