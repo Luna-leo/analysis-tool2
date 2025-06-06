@@ -372,22 +372,6 @@ export function DataSourceTab({
                           event.eventDetail?.toLowerCase().includes(searchLower)
                         )
                       }).length === selectedEventIds.size}
-                      indeterminate={
-                        selectedEventIds.size > 0 && 
-                        events.filter((event) => {
-                          if (!eventSearchTerm) return true
-                          const searchLower = eventSearchTerm.toLowerCase()
-                          return (
-                            event.plant.toLowerCase().includes(searchLower) ||
-                            event.machineNo.toLowerCase().includes(searchLower) ||
-                            event.label.toLowerCase().includes(searchLower) ||
-                            event.labelDescription?.toLowerCase().includes(searchLower) ||
-                            event.event.toLowerCase().includes(searchLower) ||
-                            event.eventDetail?.toLowerCase().includes(searchLower)
-                          )
-                        }).length !== selectedEventIds.size && 
-                        selectedEventIds.size > 0 ? true : undefined
-                      }
                       onCheckedChange={(checked) => {
                         const filteredEvents = events.filter((event) => {
                           if (!eventSearchTerm) return true

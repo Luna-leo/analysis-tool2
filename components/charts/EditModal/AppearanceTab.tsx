@@ -470,7 +470,7 @@ export function AppearanceTab({ editingChart, setEditingChart, selectedDataSourc
                         {/* Appearance Settings Table */}
                         <div>
                           <div className="flex items-center justify-between mb-2">
-                            <Label className="text-sm">Appearance Settings</Label>
+                            <Label className="text-sm">Plot Style Settings</Label>
                             <div className="flex items-center gap-2">
                               <Label className="text-xs">Mode</Label>
                               <select

@@ -90,17 +90,9 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
       .nice()
       .range([height, 0])
 
-    const line = d3.line<any>()
-      .x(d => xScale(d.timestamp))
-      .y((d, i, arr) => {
-        const param = yParams[0]
-        return yScale(d[param?.parameter] || 0)
-      })
-      .curve(d3.curveMonotoneX)
-
     g.append("g")
       .attr("transform", `translate(0,${height})`)
-      .call(d3.axisBottom(xScale).tickFormat(d3.timeFormat("%H:%M")))
+      .call(d3.axisBottom(xScale).tickFormat((d) => d3.timeFormat("%H:%M")(d as Date)))
 
     g.append("g")
       .call(d3.axisLeft(yScale))
