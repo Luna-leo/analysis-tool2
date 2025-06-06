@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { FolderOpen, Search, Database, Settings, FolderPlus, FilePlus } from "lucide-react"
+import { FolderOpen, Search, Database, Calculator, Settings, FolderPlus, FilePlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { FileExplorer } from "./FileExplorer"
@@ -65,6 +65,13 @@ export function Sidebar() {
             <div className="px-4 py-2 text-sm text-muted-foreground">Database connections coming soon...</div>
           </>
         )
+      case "calculator":
+        return (
+          <>
+            <h2 className="text-sm font-semibold px-4 py-2">Calculator</h2>
+            <div className="px-4 py-2 text-sm text-muted-foreground">Calculator functionality coming soon...</div>
+          </>
+        )
       case "settings":
         return (
           <>
@@ -104,6 +111,14 @@ export function Sidebar() {
           onClick={() => handleViewClick("database")}
         >
           <Database className="h-5 w-5" />
+        </Button>
+        <Button
+          variant={activeView === "calculator" ? "secondary" : "ghost"}
+          size="icon"
+          className="h-10 w-10"
+          onClick={() => handleViewClick("calculator")}
+        >
+          <Calculator className="h-5 w-5" />
         </Button>
         <Button
           variant={activeView === "settings" ? "secondary" : "ghost"}

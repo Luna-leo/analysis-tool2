@@ -1,4 +1,4 @@
-export type ActiveView = "explorer" | "search" | "database" | "settings"
+export type ActiveView = "explorer" | "search" | "database" | "calculator" | "settings"
 
 export type ConditionMode = "predefined" | "manual"
 
