@@ -193,17 +193,7 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-6xl w-[95vw] h-[85vh] flex flex-col">
         <DialogHeader>
-          <div className="flex justify-between items-center pr-8">
-            <DialogTitle>Signal Search</DialogTitle>
-            <Button
-              onClick={performSearch}
-              disabled={!isSearchValid() || searchPeriod.isSearching}
-              className="px-6"
-            >
-              <Search className="h-4 w-4 mr-2" />
-              {searchPeriod.isSearching ? 'Searching...' : 'Execute Search'}
-            </Button>
-          </div>
+          <DialogTitle>Signal Search</DialogTitle>
         </DialogHeader>
         
         <div className="flex-1 overflow-hidden flex flex-col gap-4">
@@ -270,8 +260,16 @@ export const TriggerSignalDialog: React.FC<TriggerSignalDialogProps> = ({
         </div>
         
         <div className="flex justify-end gap-2 pt-4 border-t">
+          <Button
+            onClick={performSearch}
+            disabled={!isSearchValid() || searchPeriod.isSearching}
+            className="px-6"
+          >
+            <Search className="h-4 w-4 mr-2" />
+            {searchPeriod.isSearching ? 'Searching...' : 'Execute Search'}
+          </Button>
           <Button variant="outline" onClick={onClose}>
-            Close
+            Cancel
           </Button>
         </div>
       </DialogContent>

@@ -52,7 +52,7 @@ export const SaveConditionDialog: React.FC<SaveConditionDialogProps> = ({
         </div>
         <div className="flex justify-end gap-2 pt-4">
           <Button variant="outline" onClick={onClose}>
-            キャンセル
+            Cancel
           </Button>
           <Button 
             onClick={onSave}
