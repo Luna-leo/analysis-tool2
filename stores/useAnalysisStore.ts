@@ -294,93 +294,76 @@ export const useAnalysisStore = create<AnalysisStore>()(
       }),
 
       moveNode: (nodeId, targetId, position) => set((state) => {
-        // Helper function to check if target is a descendant of source
-        const isDescendant = (sourceId: string, targetId: string | null, nodes: FileNode[]): boolean => {
-          if (!targetId) return false
-          
-          for (const node of nodes) {
-            if (node.id === targetId) {
-              // Found target node, check if source is an ancestor
-              const findAncestor = (currentNode: FileNode, searchId: string): boolean => {
-                if (currentNode.id === searchId) return true
-                if (currentNode.children) {
-                  return currentNode.children.some(child => findAncestor(child, searchId))
-                }
+        // Helper to check if the target is a descendant of the source
+        const isDescendant = (sourceId: string, searchId: string | null, nodes: FileNode[]): boolean => {
+          if (!searchId) return false
+          for (const n of nodes) {
+            if (n.id === searchId) {
+              const findAncestor = (cur: FileNode): boolean => {
+                if (cur.id === sourceId) return true
+                if (cur.children) return cur.children.some(findAncestor)
                 return false
               }
-              return findAncestor(node, sourceId)
+              return findAncestor(n)
             }
-            if (node.children && isDescendant(sourceId, targetId, node.children)) {
-              return true
-            }
+            if (n.children && isDescendant(sourceId, searchId, n.children)) return true
           }
           return false
         }
 
-        // Prevent moving node into its own descendant
+        // Prevent moving a node into its own descendant
         if (targetId && isDescendant(nodeId, targetId, state.fileTree)) {
           return state
         }
 
-        // Find and remove the node from its current location
+        // Remove the node from the tree while capturing it
         let movedNode: FileNode | null = null
         const removeNode = (nodes: FileNode[]): FileNode[] => {
-          return nodes.filter(node => {
+          return nodes.reduce<FileNode[]>((acc, node) => {
             if (node.id === nodeId) {
               movedNode = node
-              return false
+              return acc
             }
-            if (node.children) {
-              node.children = removeNode(node.children)
-            }
-            return true
-          })
+            const children = node.children ? removeNode(node.children) : undefined
+            acc.push(children ? { ...node, children } : node)
+            return acc
+          }, [])
         }
 
-        if (!movedNode) {
-          const newTree = removeNode([...state.fileTree])
-          if (!movedNode) return state // Node not found
-        }
+        const treeWithoutNode = removeNode(state.fileTree)
+        if (!movedNode) return state // Node not found
 
-        // Add the node to its new location
+        // Add the node at the new location
         const addNode = (nodes: FileNode[]): FileNode[] => {
           if (!targetId) {
-            // Move to root level
-            if (position === "before" || position === "after") {
-              // For root level, just add at the end
-              return [...nodes, movedNode!]
-            }
             return [...nodes, movedNode!]
           }
 
-          return nodes.map(node => {
+          return nodes.reduce<FileNode[]>((acc, node) => {
             if (node.id === targetId) {
               if (position === "inside" && node.type === "folder") {
-                // Add inside the folder
-                return {
+                acc.push({
                   ...node,
                   children: [...(node.children || []), movedNode!]
-                }
+                })
+              } else if (position === "before") {
+                acc.push(movedNode!, node)
+              } else if (position === "after") {
+                acc.push(node, movedNode!)
+              } else {
+                acc.push(node)
               }
+            } else {
+              const children = node.children ? addNode(node.children) : undefined
+              acc.push(children ? { ...node, children } : node)
             }
-            if (node.children) {
-              return { ...node, children: addNode(node.children) }
-            }
-            return node
-          }).flatMap(node => {
-            if (node.id === targetId && position !== "inside") {
-              // Add before or after the target
-              return position === "before" ? [movedNode!, node] : [node, movedNode!]
-            }
-            return [node]
-          })
+            return acc
+          }, [])
         }
 
-        const newFileTree = removeNode([...state.fileTree])
-        const finalTree = movedNode ? addNode(newFileTree) : newFileTree
+        const finalTree = addNode(treeWithoutNode)
 
-        // Update open tabs if the moved node was open
-        const newOpenTabs = state.openTabs.map(tab => 
+        const newOpenTabs = state.openTabs.map(tab =>
           tab.id === nodeId ? movedNode! : tab
         )
 
