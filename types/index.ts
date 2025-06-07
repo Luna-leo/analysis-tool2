@@ -18,6 +18,17 @@ export type MarkerType = "circle" | "square" | "triangle" | "diamond" | "star" |
 
 export type LineStyle = "solid" | "dashed" | "dotted"
 
+export type ReferenceLineType = "vertical" | "horizontal" | "interlock"
+
+export interface ReferenceLine {
+  id: string
+  type: ReferenceLineType
+  value: number
+  label: string
+  color: string
+  style: LineStyle
+}
+
 export interface ChartComponent {
   id: string
   title: string
@@ -32,6 +43,7 @@ export interface ChartComponent {
   yParameters?: string[]
   verticalLines?: Array<{ value: number; label?: string; color?: string }>
   horizontalLines?: Array<{ value: number; label?: string; color?: string }>
+  referenceLines?: ReferenceLine[]
   dataSource?: {
     name: string
     table: string
