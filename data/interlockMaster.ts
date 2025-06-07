@@ -5,6 +5,8 @@ export const mockInterlockMaster: InterlockMaster[] = [
     id: "il-001",
     name: "Temperature-Pressure Safety Interlock",
     category: "Safety",
+    plant_name: "Plant A",
+    machine_no: "M-001",
     definition: {
       id: "def-001",
       name: "Temperature-Pressure Safety Interlock",
@@ -69,6 +71,8 @@ export const mockInterlockMaster: InterlockMaster[] = [
     id: "il-002",
     name: "Flow-Velocity Interlock",
     category: "Process",
+    plant_name: "Plant A",
+    machine_no: "M-002",
     definition: {
       id: "def-002",
       name: "Flow-Velocity Interlock",
@@ -124,6 +128,8 @@ export const mockInterlockMaster: InterlockMaster[] = [
     id: "il-003",
     name: "Power-Current Protection",
     category: "Electrical",
+    plant_name: "Plant B",
+    machine_no: "M-101",
     definition: {
       id: "def-003",
       name: "Power-Current Protection",

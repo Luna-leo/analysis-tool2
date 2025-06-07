@@ -45,6 +45,8 @@ export interface InterlockMaster {
   id: string
   name: string
   category: string
+  plant_name: string
+  machine_no: string
   definition: InterlockDefinition
   createdAt: string
   updatedAt: string
@@ -93,7 +95,7 @@ export interface ChartComponent {
     unit?: TimeUnit
   }
   yAxisParams?: Array<{
-    parameterType?: "Parameter" | "Formula"
+    parameterType?: "Parameter" | "Formula" | "Interlock"
     parameter: string
     axisNo?: number
     axisName: string
@@ -113,6 +115,11 @@ export interface ChartComponent {
       color: string
       style: LineStyle
     }
+    // For Interlock type
+    interlockId?: string
+    interlockSource?: "master" | "custom"
+    interlockDefinition?: InterlockDefinition
+    selectedThresholds?: string[]
   }>
 }
 

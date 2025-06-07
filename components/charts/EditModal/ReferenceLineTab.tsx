@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Trash2, Plus } from "lucide-react"
 import { ChartComponent, ReferenceLineType } from "@/types"
-import { InterlockSection } from "./InterlockSection"
 
 interface ReferenceLineTabProps {
   editingChart: ChartComponent
@@ -160,10 +159,9 @@ export function ReferenceLineTab({ editingChart, setEditingChart }: ReferenceLin
   return (
     <div className="space-y-6">
       <Tabs defaultValue="vertical" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="vertical">Vertical Lines</TabsTrigger>
           <TabsTrigger value="horizontal">Horizontal Lines</TabsTrigger>
-          <TabsTrigger value="interlock">Interlock Thresholds</TabsTrigger>
         </TabsList>
         
         <TabsContent value="vertical" className="mt-4">
@@ -182,12 +180,6 @@ export function ReferenceLineTab({ editingChart, setEditingChart }: ReferenceLin
           )}
         </TabsContent>
         
-        <TabsContent value="interlock" className="mt-4">
-          <InterlockSection
-            editingChart={editingChart}
-            setEditingChart={setEditingChart}
-          />
-        </TabsContent>
       </Tabs>
     </div>
   )
