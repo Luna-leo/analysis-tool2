@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Trash2, Plus, Settings } from "lucide-react"
 import { ChartComponent, InterlockThresholdType, InterlockDefinition, InterlockPoint } from "@/types"
 import { mockInterlockMaster, interlockThresholdColors } from "@/data/interlockMaster"
@@ -67,79 +68,188 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
     handleUpdateInterlockLine(lineId, { selectedThresholds: newThresholds })
   }
 
-  const renderInterlockEditor = (lineId: string) => {
+  const renderInterlockTableEditor = (lineId: string) => {
     const line = interlockLines.find(l => l.id === lineId)
     if (!line || !line.interlockDefinition) return null
+
+    const thresholdTypes: InterlockThresholdType[] = ["caution", "pre-alarm", "alarm", "trip"]
+    
+    // Get unique X values from all thresholds
+    const xValues = new Set<number>()
+    line.interlockDefinition.thresholds.forEach(threshold => {
+      threshold.points.forEach(point => xValues.add(point.x))
+    })
+    const sortedXValues = Array.from(xValues).sort((a, b) => a - b)
+
+    // Create a map of x -> threshold type -> y value
+    const valueMap = new Map<number, Map<InterlockThresholdType, number>>()
+    sortedXValues.forEach(x => {
+      valueMap.set(x, new Map())
+    })
+
+    line.interlockDefinition.thresholds.forEach(threshold => {
+      threshold.points.forEach(point => {
+        const xMap = valueMap.get(point.x)
+        if (xMap) {
+          xMap.set(threshold.type, point.y)
+        }
+      })
+    })
+
+    const handleCellChange = (x: number, thresholdType: InterlockThresholdType, value: number) => {
+      const newThresholds = line.interlockDefinition!.thresholds.map(threshold => {
+        if (threshold.type === thresholdType) {
+          const newPoints = threshold.points.map(point =>
+            point.x === x ? { ...point, y: value } : point
+          )
+          // If this x value doesn't exist in this threshold, add it
+          if (!newPoints.find(p => p.x === x)) {
+            newPoints.push({ x, y: value })
+            newPoints.sort((a, b) => a.x - b.x)
+          }
+          return { ...threshold, points: newPoints }
+        }
+        return threshold
+      })
+
+      handleUpdateInterlockLine(lineId, {
+        interlockDefinition: {
+          ...line.interlockDefinition!,
+          thresholds: newThresholds
+        }
+      })
+    }
+
+    const handleXChange = (oldX: number, newX: number) => {
+      const newThresholds = line.interlockDefinition!.thresholds.map(threshold => {
+        const newPoints = threshold.points.map(point =>
+          point.x === oldX ? { ...point, x: newX } : point
+        )
+        return { ...threshold, points: newPoints }
+      })
+
+      handleUpdateInterlockLine(lineId, {
+        interlockDefinition: {
+          ...line.interlockDefinition!,
+          thresholds: newThresholds
+        }
+      })
+    }
+
+    const handleAddRow = () => {
+      const maxX = Math.max(...sortedXValues, 0)
+      const newX = maxX + 10
+
+      const newThresholds = line.interlockDefinition!.thresholds.map(threshold => {
+        const lastPoint = threshold.points[threshold.points.length - 1]
+        const newY = lastPoint ? lastPoint.y : 0
+        return {
+          ...threshold,
+          points: [...threshold.points, { x: newX, y: newY }].sort((a, b) => a.x - b.x)
+        }
+      })
+
+      handleUpdateInterlockLine(lineId, {
+        interlockDefinition: {
+          ...line.interlockDefinition!,
+          thresholds: newThresholds
+        }
+      })
+    }
+
+    const handleRemoveRow = (x: number) => {
+      const newThresholds = line.interlockDefinition!.thresholds.map(threshold => ({
+        ...threshold,
+        points: threshold.points.filter(point => point.x !== x)
+      }))
+
+      handleUpdateInterlockLine(lineId, {
+        interlockDefinition: {
+          ...line.interlockDefinition!,
+          thresholds: newThresholds
+        }
+      })
+    }
 
     return (
       <div className="mt-4 p-4 border rounded-lg bg-muted/50 space-y-4">
         <div className="flex justify-between items-center">
           <h4 className="text-sm font-medium">Edit Interlock Points</h4>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowInterlockEditor(null)}
-          >
-            Close
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAddRow}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add Row
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowInterlockEditor(null)}
+            >
+              Close
+            </Button>
+          </div>
         </div>
         
-        {line.interlockDefinition.thresholds.map((threshold) => (
-          <div key={threshold.type} className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <span
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: interlockThresholdColors[threshold.type] }}
-              />
-              {threshold.type.charAt(0).toUpperCase() + threshold.type.slice(1)}
-            </Label>
-            <div className="grid grid-cols-2 gap-2">
-              {threshold.points.map((point, idx) => (
-                <div key={idx} className="flex gap-2 items-center text-sm">
-                  <Input
-                    type="number"
-                    value={point.x}
-                    onChange={(e) => {
-                      const newPoints = [...threshold.points]
-                      newPoints[idx] = { ...point, x: parseFloat(e.target.value) || 0 }
-                      const newThresholds = line.interlockDefinition!.thresholds.map(t =>
-                        t.type === threshold.type ? { ...t, points: newPoints } : t
-                      )
-                      handleUpdateInterlockLine(lineId, {
-                        interlockDefinition: {
-                          ...line.interlockDefinition!,
-                          thresholds: newThresholds
-                        }
-                      })
-                    }}
-                    className="h-7"
-                    placeholder="X"
-                  />
-                  <span>:</span>
-                  <Input
-                    type="number"
-                    value={point.y}
-                    onChange={(e) => {
-                      const newPoints = [...threshold.points]
-                      newPoints[idx] = { ...point, y: parseFloat(e.target.value) || 0 }
-                      const newThresholds = line.interlockDefinition!.thresholds.map(t =>
-                        t.type === threshold.type ? { ...t, points: newPoints } : t
-                      )
-                      handleUpdateInterlockLine(lineId, {
-                        interlockDefinition: {
-                          ...line.interlockDefinition!,
-                          thresholds: newThresholds
-                        }
-                      })
-                    }}
-                    className="h-7"
-                    placeholder="Y"
-                  />
-                </div>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-20">X</TableHead>
+                {thresholdTypes.map(type => (
+                  <TableHead key={type} className="w-24">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: interlockThresholdColors[type] }}
+                      />
+                      <span className="text-xs">{type}</span>
+                    </div>
+                  </TableHead>
+                ))}
+                <TableHead className="w-10"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedXValues.map((x, idx) => (
+                <TableRow key={idx}>
+                  <TableCell>
+                    <Input
+                      type="number"
+                      value={x}
+                      onChange={(e) => handleXChange(x, parseFloat(e.target.value) || 0)}
+                      className="h-8 w-20"
+                    />
+                  </TableCell>
+                  {thresholdTypes.map(type => (
+                    <TableCell key={type}>
+                      <Input
+                        type="number"
+                        value={valueMap.get(x)?.get(type) || 0}
+                        onChange={(e) => handleCellChange(x, type, parseFloat(e.target.value) || 0)}
+                        className="h-8 w-24"
+                      />
+                    </TableCell>
+                  ))}
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveRow(x)}
+                      className="h-8 w-8 p-0"
+                      disabled={sortedXValues.length <= 1}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
               ))}
-            </div>
-          </div>
-        ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     )
   }
@@ -243,15 +353,47 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
                             thresholds: [
                               {
                                 type: "caution",
-                                points: Array(5).fill(0).map((_, i) => ({ x: i * 50, y: i * 10 }))
+                                points: [
+                                  { x: 0, y: 2 },
+                                  { x: 10, y: 5 },
+                                  { x: 20, y: 5 },
+                                  { x: 30, y: 60 },
+                                  { x: 40, y: 60 },
+                                  { x: 50, y: 80 }
+                                ]
+                              },
+                              {
+                                type: "pre-alarm",
+                                points: [
+                                  { x: 0, y: 100 },
+                                  { x: 10, y: 100 },
+                                  { x: 20, y: 100 },
+                                  { x: 30, y: 100 },
+                                  { x: 40, y: 100 },
+                                  { x: 50, y: 100 }
+                                ]
                               },
                               {
                                 type: "alarm",
-                                points: Array(5).fill(0).map((_, i) => ({ x: i * 50, y: i * 15 }))
+                                points: [
+                                  { x: 0, y: 5 },
+                                  { x: 10, y: 7 },
+                                  { x: 20, y: 7 },
+                                  { x: 30, y: 80 },
+                                  { x: 40, y: 80 },
+                                  { x: 50, y: 90 }
+                                ]
                               },
                               {
                                 type: "trip",
-                                points: Array(5).fill(0).map((_, i) => ({ x: i * 50, y: i * 20 }))
+                                points: [
+                                  { x: 0, y: 120 },
+                                  { x: 10, y: 120 },
+                                  { x: 20, y: 120 },
+                                  { x: 30, y: 120 },
+                                  { x: 40, y: 120 },
+                                  { x: 50, y: 120 }
+                                ]
                               }
                             ]
                           }
@@ -300,7 +442,7 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
                 </div>
               )}
 
-              {showInterlockEditor === line.id && renderInterlockEditor(line.id)}
+              {showInterlockEditor === line.id && renderInterlockTableEditor(line.id)}
             </div>
 
             <div className="flex justify-end">

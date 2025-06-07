@@ -78,7 +78,7 @@ export function Sidebar() {
       case "database":
         return (
           <>
-            <h2 className="text-sm font-semibold px-4 py-2">Data Sources</h2>
+            <h2 className="text-sm font-semibold px-4 py-2">Database</h2>
             <div className="px-2 space-y-1">
               <Button
                 variant="ghost"
