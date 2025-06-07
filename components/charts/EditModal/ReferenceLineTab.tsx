@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Trash2, Plus } from "lucide-react"
 import { ChartComponent, ReferenceLineType } from "@/types"
+import { InterlockSection } from "./InterlockSection"
 
 interface ReferenceLineTabProps {
   editingChart: ChartComponent
@@ -15,13 +16,13 @@ interface ReferenceLineTabProps {
 }
 
 export function ReferenceLineTab({ editingChart, setEditingChart }: ReferenceLineTabProps) {
-  const handleAddReferenceLine = (type: ReferenceLineType) => {
+  const handleAddReferenceLine = (type: "vertical" | "horizontal") => {
     const newReferenceLine = {
       id: Date.now().toString(),
       type,
       value: 0,
-      label: type === "vertical" ? "Vertical Line" : type === "horizontal" ? "Horizontal Line" : "Interlock Threshold",
-      color: type === "vertical" ? "#0000ff" : type === "horizontal" ? "#00ff00" : "#ff0000",
+      label: type === "vertical" ? "Vertical Line" : "Horizontal Line",
+      color: type === "vertical" ? "#0000ff" : "#00ff00",
       style: "solid" as const,
     }
     
@@ -47,7 +48,7 @@ export function ReferenceLineTab({ editingChart, setEditingChart }: ReferenceLin
     })
   }
 
-  const renderLineSection = (type: ReferenceLineType, title: string, description: string) => {
+  const renderLineSection = (type: "vertical" | "horizontal", title: string, description: string) => {
     const lines = editingChart.referenceLines?.filter(line => line.type === type) || []
     
     return (
@@ -182,11 +183,10 @@ export function ReferenceLineTab({ editingChart, setEditingChart }: ReferenceLin
         </TabsContent>
         
         <TabsContent value="interlock" className="mt-4">
-          {renderLineSection(
-            "interlock",
-            "Interlock Thresholds",
-            "Define interlock value thresholds for monitoring and alerts"
-          )}
+          <InterlockSection
+            editingChart={editingChart}
+            setEditingChart={setEditingChart}
+          />
         </TabsContent>
       </Tabs>
     </div>
