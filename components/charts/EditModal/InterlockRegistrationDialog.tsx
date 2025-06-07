@@ -221,15 +221,15 @@ export function InterlockRegistrationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl w-[90vw] h-[90vh] flex flex-col">
+      <DialogContent className="max-w-5xl w-[80vw] h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {initialDefinition ? "Edit Interlock Definition" : "New Interlock Registration"}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <div className="flex-1 overflow-y-auto space-y-2">
+          <div className="grid grid-cols-2 gap-2">
             <div className="space-y-2">
               <Label htmlFor="interlock-name">Name</Label>
               <Input
@@ -250,7 +250,7 @@ export function InterlockRegistrationDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-2">
             <div className="space-y-2">
               <Label htmlFor="x-parameter">X Parameter</Label>
               <Input
@@ -271,8 +271,8 @@ export function InterlockRegistrationDialog({
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="space-y-4">
+          <div className="space-y-2">
+            <div className="space-y-2">
               <h4 className="text-sm font-medium">Select Thresholds to Display</h4>
               <div className="grid grid-cols-2 gap-3">
                 {thresholds.map((threshold) => (
@@ -322,7 +322,7 @@ export function InterlockRegistrationDialog({
             <div className="overflow-x-auto">
               <Table className="text-sm table-auto">
                 <TableHeader>
-                  <TableRow className="h-8">
+                  <TableRow className="h-6">
                     <TableHead className="px-2 py-1 text-xs text-left">X</TableHead>
                     {thresholds.map(threshold => (
                       <TableHead key={threshold.id} className="px-2 py-1 text-left">
@@ -378,7 +378,7 @@ export function InterlockRegistrationDialog({
                 </TableHeader>
                 <TableBody>
                   {sortedXValues.map((x, idx) => (
-                    <TableRow key={idx} className="h-8">
+                    <TableRow key={idx} className="h-6">
                       <TableCell className="px-2 py-1 text-left">
                         <span className="text-xs font-mono">{idx + 1}</span>
                       </TableCell>
@@ -411,7 +411,7 @@ export function InterlockRegistrationDialog({
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 pt-4 border-t">
+        <div className="flex justify-end gap-2 pt-2 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
