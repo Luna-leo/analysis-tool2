@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { X, Settings, Plus, ChevronDown } from "lucide-react"
+import { X, Plus, ChevronDown } from "lucide-react"
 import { ChartComponent, InterlockDefinition } from "@/types"
 import { mockInterlockMaster } from "@/data/interlockMaster"
 import { InterlockRegistrationDialog } from "./InterlockRegistrationDialog"
@@ -41,15 +41,19 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
     setSearchQuery("")
   }, [openComboboxIndex])
 
-  const handleInterlockSave = (interlockDefinition: InterlockDefinition, selectedThresholds: string[]) => {
+  const handleInterlockSave = (interlockDefinition: InterlockDefinition, selectedThresholds: string[], plant: string, machineNo: string) => {
     if (editingInterlockIndex !== null) {
       const newParams = [...(editingChart.yAxisParams || [])]
+      // 選択された閾値がない場合は、デフォルトですべての閾値を選択
+      const finalSelectedThresholds = selectedThresholds.length > 0 
+        ? selectedThresholds 
+        : interlockDefinition.thresholds.map(t => t.id)
       newParams[editingInterlockIndex] = {
         ...newParams[editingInterlockIndex],
         interlockDefinition,
         parameter: interlockDefinition.name,
         interlockSource: "custom",
-        selectedThresholds
+        selectedThresholds: finalSelectedThresholds
       }
       setEditingChart({ ...editingChart, yAxisParams: newParams })
     }
@@ -87,13 +91,15 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
     const selectedMaster = mockInterlockMaster.find(m => m.id === value)
     if (selectedMaster) {
       const newParams = [...(editingChart.yAxisParams || [])]
+      // デフォルトですべての閾値を選択
+      const allThresholdIds = selectedMaster.definition.thresholds.map(t => t.id)
       newParams[index] = {
         ...newParams[index],
         interlockId: value,
         interlockSource: "master",
         interlockDefinition: selectedMaster.definition,
         parameter: selectedMaster.name,
-        selectedThresholds: []
+        selectedThresholds: allThresholdIds
       }
       setEditingChart({ ...editingChart, yAxisParams: newParams })
     }
@@ -116,7 +122,27 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
     })
   }
 
+  const handleThresholdRemove = (paramIndex: number, thresholdId: string) => {
+    const newParams = [...(editingChart.yAxisParams || [])]
+    const currentSelectedThresholds = newParams[paramIndex].selectedThresholds || []
+    newParams[paramIndex] = {
+      ...newParams[paramIndex],
+      selectedThresholds: currentSelectedThresholds.filter(id => id !== thresholdId)
+    }
+    setEditingChart({ ...editingChart, yAxisParams: newParams })
+  }
 
+  const handleThresholdAdd = (paramIndex: number, thresholdId: string) => {
+    const newParams = [...(editingChart.yAxisParams || [])]
+    const currentSelectedThresholds = newParams[paramIndex].selectedThresholds || []
+    if (!currentSelectedThresholds.includes(thresholdId)) {
+      newParams[paramIndex] = {
+        ...newParams[paramIndex],
+        selectedThresholds: [...currentSelectedThresholds, thresholdId]
+      }
+      setEditingChart({ ...editingChart, yAxisParams: newParams })
+    }
+  }
 
   return (
     <div className="flex flex-col space-y-4 h-full">
@@ -302,53 +328,76 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
-                          {param.selectedThresholds && param.selectedThresholds.length > 0 && (
-                            <div className="flex gap-1 flex-wrap">
-                              {param.selectedThresholds.map(thresholdId => {
+                          {(param.selectedThresholds && param.selectedThresholds.length > 0) || param.interlockDefinition ? (
+                            <div className="flex gap-1 flex-wrap items-center relative">
+                              {param.selectedThresholds?.map(thresholdId => {
                                 const threshold = param.interlockDefinition?.thresholds.find(t => t.id === thresholdId)
                                 return threshold ? (
                                   <Badge 
                                     key={thresholdId} 
                                     variant="secondary" 
-                                    className="text-xs px-1.5 py-0 h-5"
+                                    className="text-xs px-1.5 py-0 h-5 flex items-center gap-1"
                                     style={{ 
                                       backgroundColor: threshold.color + '20',
                                       borderColor: threshold.color,
                                       color: threshold.color
                                     }}
                                   >
-                                    {threshold.name}
+                                    <span>{threshold.name}</span>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleThresholdRemove(index, thresholdId)
+                                      }}
+                                      className="hover:bg-black/10 rounded-full p-0.5"
+                                    >
+                                      <X className="h-2 w-2" />
+                                    </button>
                                   </Badge>
                                 ) : null
                               })}
+                              {param.interlockDefinition && (
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-5 w-5 p-0 border border-dashed border-gray-400 hover:border-gray-600 absolute -right-6 top-0 z-10"
+                                    >
+                                      <Plus className="h-3 w-3" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-48 p-1">
+                                    <div className="space-y-1">
+                                      {param.interlockDefinition.thresholds
+                                        .filter(threshold => !param.selectedThresholds?.includes(threshold.id))
+                                        .map(threshold => (
+                                          <button
+                                            key={threshold.id}
+                                            onClick={() => handleThresholdAdd(index, threshold.id)}
+                                            className="w-full text-left px-2 py-1 text-xs hover:bg-muted rounded flex items-center gap-2"
+                                          >
+                                            <span
+                                              className="w-2 h-2 rounded-full"
+                                              style={{ backgroundColor: threshold.color }}
+                                            />
+                                            {threshold.name}
+                                          </button>
+                                        ))}
+                                      {param.interlockDefinition.thresholds.every(threshold => 
+                                        param.selectedThresholds?.includes(threshold.id)
+                                      ) && (
+                                        <div className="px-2 py-1 text-xs text-muted-foreground">
+                                          All thresholds selected
+                                        </div>
+                                      )}
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
+                              )}
                             </div>
-                          )}
+                          ) : null}
                         </div>
-                        {param.interlockId && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0 flex-shrink-0"
-                            onClick={() => {
-                              setEditingInterlockIndex(index)
-                              setShowInterlockDialog(true)
-                              
-                              if (param.interlockSource === "master") {
-                                // Set the current interlock as custom for editing
-                                const newParams = [...(editingChart.yAxisParams || [])]
-                                newParams[index] = {
-                                  ...newParams[index],
-                                  interlockSource: "custom",
-                                  interlockDefinition: param.interlockDefinition ? { ...param.interlockDefinition } : undefined,
-                                  selectedThresholds: newParams[index]?.selectedThresholds || []
-                                }
-                                setEditingChart({ ...editingChart, yAxisParams: newParams })
-                              }
-                            }}
-                          >
-                            <Settings className="h-4 w-4" />
-                          </Button>
-                        )}
                       </div>
                     ) : (
                       <Input

@@ -17,9 +17,11 @@ import { defaultThresholdColors } from "@/data/interlockMaster"
 interface InterlockRegistrationDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSave: (interlockDefinition: InterlockDefinition, selectedThresholds: string[]) => void
+  onSave: (interlockDefinition: InterlockDefinition, selectedThresholds: string[], plant: string, machineNo: string) => void
   initialDefinition?: InterlockDefinition
   initialSelectedThresholds?: string[]
+  initialPlant?: string
+  initialMachineNo?: string
 }
 
 export function InterlockRegistrationDialog({
@@ -27,9 +29,13 @@ export function InterlockRegistrationDialog({
   onOpenChange,
   onSave,
   initialDefinition,
-  initialSelectedThresholds
+  initialSelectedThresholds,
+  initialPlant,
+  initialMachineNo
 }: InterlockRegistrationDialogProps) {
   const [name, setName] = useState(initialDefinition?.name || "")
+  const [plant, setPlant] = useState(initialPlant || "")
+  const [machineNo, setMachineNo] = useState(initialMachineNo || "")
   const [xParameter, setXParameter] = useState(initialDefinition?.xParameter || "")
   const [xUnit, setXUnit] = useState(initialDefinition?.xUnit || "")
   const [yUnit, setYUnit] = useState(initialDefinition?.yUnit || "")
@@ -74,6 +80,8 @@ export function InterlockRegistrationDialog({
   useEffect(() => {
     if (open) {
       setName(initialDefinition?.name || "")
+      setPlant(initialPlant || "")
+      setMachineNo(initialMachineNo || "")
       setXParameter(initialDefinition?.xParameter || "")
       setXUnit(initialDefinition?.xUnit || "")
       setYUnit(initialDefinition?.yUnit || "")
@@ -109,7 +117,7 @@ export function InterlockRegistrationDialog({
         }
       ])
     }
-  }, [open, initialDefinition, initialSelectedThresholds])
+  }, [open, initialDefinition, initialSelectedThresholds, initialPlant, initialMachineNo])
 
   const drawChart = useCallback(() => {
     if (!svgRef.current) return
@@ -456,7 +464,7 @@ export function InterlockRegistrationDialog({
       yUnit,
       thresholds
     }
-    onSave(interlockDefinition, selectedThresholds)
+    onSave(interlockDefinition, selectedThresholds, plant, machineNo)
     onOpenChange(false)
   }
 
@@ -487,6 +495,27 @@ export function InterlockRegistrationDialog({
                 value={yUnit}
                 onChange={(e) => setYUnit(e.target.value)}
                 placeholder="e.g., MPa"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-2">
+              <Label htmlFor="plant">Plant</Label>
+              <Input
+                id="plant"
+                value={plant}
+                onChange={(e) => setPlant(e.target.value)}
+                placeholder="e.g., Plant A"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="machine-no">Machine No</Label>
+              <Input
+                id="machine-no"
+                value={machineNo}
+                onChange={(e) => setMachineNo(e.target.value)}
+                placeholder="e.g., M-001"
               />
             </div>
           </div>
@@ -721,7 +750,7 @@ export function InterlockRegistrationDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={!name.trim()}>
+          <Button onClick={handleSave} disabled={!name.trim() || !plant.trim() || !machineNo.trim()}>
             {initialDefinition ? "Update" : "Save"}
           </Button>
         </div>
