@@ -11,8 +11,9 @@ export const mockInterlockMaster: InterlockMaster[] = [
       id: "def-001",
       name: "Temperature-Pressure Safety Interlock",
       description: "Safety interlock based on temperature and pressure relationship",
-      xParameter: "Temperature (°C)",
-      yParameter: "Pressure (MPa)",
+      xParameter: "Temperature",
+      xUnit: "°C",
+      yUnit: "MPa",
       thresholds: [
         {
           id: "caution",
@@ -77,8 +78,9 @@ export const mockInterlockMaster: InterlockMaster[] = [
       id: "def-002",
       name: "Flow-Velocity Interlock",
       description: "Process interlock for flow rate and velocity control",
-      xParameter: "Flow Rate (m³/h)",
-      yParameter: "Velocity (m/s)",
+      xParameter: "Flow Rate",
+      xUnit: "m³/h",
+      yUnit: "m/s",
       thresholds: [
         {
           id: "caution",
@@ -134,8 +136,9 @@ export const mockInterlockMaster: InterlockMaster[] = [
       id: "def-003",
       name: "Power-Current Protection",
       description: "Electrical protection interlock based on power and current",
-      xParameter: "Power (kW)",
-      yParameter: "Current (A)",
+      xParameter: "Power",
+      xUnit: "kW",
+      yUnit: "A",
       thresholds: [
         {
           id: "caution",

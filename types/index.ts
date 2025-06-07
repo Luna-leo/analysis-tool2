@@ -38,7 +38,8 @@ export interface InterlockDefinition {
   description?: string
   thresholds: InterlockThreshold[]
   xParameter?: string
-  yParameter?: string
+  xUnit?: string
+  yUnit?: string
 }
 
 export interface InterlockMaster {
