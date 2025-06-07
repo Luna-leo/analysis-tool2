@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { X, Plus, ChevronDown } from "lucide-react"
+import { X, Plus, ChevronDown, Copy } from "lucide-react"
 import { ChartComponent, InterlockDefinition } from "@/types"
 import { mockInterlockMaster } from "@/data/interlockMaster"
 import { InterlockRegistrationDialog } from "./InterlockRegistrationDialog"
@@ -25,6 +25,7 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
   const [editingInterlockIndex, setEditingInterlockIndex] = useState<number | null>(null)
   const [openComboboxIndex, setOpenComboboxIndex] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
+  const [isNewInterlock, setIsNewInterlock] = useState(false)
   const parameterInputRefs = useRef<(HTMLInputElement | null)[]>([])
 
   useEffect(() => {
@@ -78,30 +79,56 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
     setEditingChart({ ...editingChart, yAxisParams: newParams })
   }
 
-  const handleInterlockSelect = (index: number, value: string) => {
+  const handleInterlockSelect = (index: number, value: string, duplicate: boolean = false) => {
     setOpenComboboxIndex(null)
     setSearchQuery("") // Reset search query after selection
     
     if (value === "add-new") {
       setEditingInterlockIndex(index)
+      setIsNewInterlock(true)
+      // Clear any existing interlock data for truly new interlock
+      const newParams = [...(editingChart.yAxisParams || [])]
+      if (newParams[index]) {
+        newParams[index] = {
+          ...newParams[index],
+          interlockDefinition: undefined,
+          selectedThresholds: undefined
+        }
+      }
+      setEditingChart({ ...editingChart, yAxisParams: newParams })
       setShowInterlockDialog(true)
       return
     }
 
     const selectedMaster = mockInterlockMaster.find(m => m.id === value)
     if (selectedMaster) {
-      const newParams = [...(editingChart.yAxisParams || [])]
-      // デフォルトですべての閾値を選択
-      const allThresholdIds = selectedMaster.definition.thresholds.map(t => t.id)
-      newParams[index] = {
-        ...newParams[index],
-        interlockId: value,
-        interlockSource: "master",
-        interlockDefinition: selectedMaster.definition,
-        parameter: selectedMaster.name,
-        selectedThresholds: allThresholdIds
+      if (duplicate) {
+        // Open dialog with the master's definition as initial values for duplication
+        setEditingInterlockIndex(index)
+        setIsNewInterlock(false)
+        // Store the master data temporarily to pass to dialog
+        const newParams = [...(editingChart.yAxisParams || [])]
+        newParams[index] = {
+          ...newParams[index],
+          interlockDefinition: selectedMaster.definition,
+          selectedThresholds: selectedMaster.definition.thresholds.map(t => t.id)
+        }
+        setEditingChart({ ...editingChart, yAxisParams: newParams })
+        setShowInterlockDialog(true)
+      } else {
+        const newParams = [...(editingChart.yAxisParams || [])]
+        // デフォルトですべての閾値を選択
+        const allThresholdIds = selectedMaster.definition.thresholds.map(t => t.id)
+        newParams[index] = {
+          ...newParams[index],
+          interlockId: value,
+          interlockSource: "master",
+          interlockDefinition: selectedMaster.definition,
+          parameter: selectedMaster.name,
+          selectedThresholds: allThresholdIds
+        }
+        setEditingChart({ ...editingChart, yAxisParams: newParams })
       }
-      setEditingChart({ ...editingChart, yAxisParams: newParams })
     }
   }
 
@@ -288,12 +315,25 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
                                               key={master.id}
                                               value={master.id}
                                               onSelect={() => handleInterlockSelect(index, master.id)}
-                                              className="flex flex-col items-start"
+                                              className="flex items-center justify-between group"
                                             >
-                                              <span className="font-medium text-left">{master.name}</span>
-                                              <span className="text-xs text-muted-foreground text-left">
-                                                {master.plant_name} • {master.machine_no}
-                                              </span>
+                                              <div className="flex flex-col items-start flex-1">
+                                                <span className="font-medium text-left">{master.name}</span>
+                                                <span className="text-xs text-muted-foreground text-left">
+                                                  {master.plant_name} • {master.machine_no}
+                                                </span>
+                                              </div>
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                onClick={(e) => {
+                                                  e.stopPropagation()
+                                                  handleInterlockSelect(index, master.id, true)
+                                                }}
+                                              >
+                                                <Copy className="h-3 w-3" />
+                                              </Button>
                                             </CommandItem>
                                           ))}
                                           <CommandItem
@@ -451,15 +491,20 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
 
       <InterlockRegistrationDialog
         open={showInterlockDialog}
-        onOpenChange={setShowInterlockDialog}
+        onOpenChange={(open) => {
+          setShowInterlockDialog(open)
+          if (!open) {
+            setIsNewInterlock(false)
+          }
+        }}
         onSave={handleInterlockSave}
         initialDefinition={
-          editingInterlockIndex !== null 
+          editingInterlockIndex !== null && !isNewInterlock
             ? editingChart.yAxisParams?.[editingInterlockIndex]?.interlockDefinition 
             : undefined
         }
         initialSelectedThresholds={
-          editingInterlockIndex !== null 
+          editingInterlockIndex !== null && !isNewInterlock
             ? editingChart.yAxisParams?.[editingInterlockIndex]?.selectedThresholds 
             : undefined
         }
