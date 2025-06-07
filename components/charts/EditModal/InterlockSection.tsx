@@ -8,9 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Trash2, Plus, Settings } from "lucide-react"
-import { ChartComponent, InterlockThresholdType, InterlockDefinition, InterlockPoint } from "@/types"
-import { mockInterlockMaster, interlockThresholdColors } from "@/data/interlockMaster"
+import { Trash2, Plus, Settings, Edit2 } from "lucide-react"
+import { ChartComponent, InterlockDefinition, InterlockThreshold } from "@/types"
+import { mockInterlockMaster, defaultThresholdColors } from "@/data/interlockMaster"
 
 interface InterlockSectionProps {
   editingChart: ChartComponent
@@ -19,6 +19,7 @@ interface InterlockSectionProps {
 
 export function InterlockSection({ editingChart, setEditingChart }: InterlockSectionProps) {
   const [showInterlockEditor, setShowInterlockEditor] = useState<string | null>(null)
+  const [editingThresholdName, setEditingThresholdName] = useState<string | null>(null)
   
   const interlockLines = editingChart.referenceLines?.filter(line => line.type === "interlock") || []
 
@@ -31,7 +32,7 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
       color: "#ff0000",
       style: "solid" as const,
       interlockSource: "master" as const,
-      selectedThresholds: ["alarm"] as InterlockThresholdType[],
+      selectedThresholds: [] as string[],
     }
     
     setEditingChart({
@@ -56,50 +57,54 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
     })
   }
 
-  const handleThresholdToggle = (lineId: string, threshold: InterlockThresholdType) => {
+  const handleThresholdToggle = (lineId: string, thresholdId: string) => {
     const line = interlockLines.find(l => l.id === lineId)
     if (!line) return
 
     const currentThresholds = line.selectedThresholds || []
-    const newThresholds = currentThresholds.includes(threshold)
-      ? currentThresholds.filter(t => t !== threshold)
-      : [...currentThresholds, threshold]
+    const newThresholds = currentThresholds.includes(thresholdId)
+      ? currentThresholds.filter(id => id !== thresholdId)
+      : [...currentThresholds, thresholdId]
 
     handleUpdateInterlockLine(lineId, { selectedThresholds: newThresholds })
+  }
+
+  const getNextColor = (existingThresholds: InterlockThreshold[]) => {
+    const usedColors = existingThresholds.map(t => t.color)
+    return defaultThresholdColors.find(color => !usedColors.includes(color)) || defaultThresholdColors[0]
   }
 
   const renderInterlockTableEditor = (lineId: string) => {
     const line = interlockLines.find(l => l.id === lineId)
     if (!line || !line.interlockDefinition) return null
 
-    const availableThresholdTypes: InterlockThresholdType[] = ["caution", "pre-alarm", "alarm", "trip"]
-    const thresholdTypes = line.interlockDefinition.thresholds.map(t => t.type)
+    const thresholds = line.interlockDefinition.thresholds
     
     // Get unique X values from all thresholds
     const xValues = new Set<number>()
-    line.interlockDefinition.thresholds.forEach(threshold => {
+    thresholds.forEach(threshold => {
       threshold.points.forEach(point => xValues.add(point.x))
     })
     const sortedXValues = Array.from(xValues).sort((a, b) => a - b)
 
-    // Create a map of x -> threshold type -> y value
-    const valueMap = new Map<number, Map<InterlockThresholdType, number>>()
+    // Create a map of x -> threshold id -> y value
+    const valueMap = new Map<number, Map<string, number>>()
     sortedXValues.forEach(x => {
       valueMap.set(x, new Map())
     })
 
-    line.interlockDefinition.thresholds.forEach(threshold => {
+    thresholds.forEach(threshold => {
       threshold.points.forEach(point => {
         const xMap = valueMap.get(point.x)
         if (xMap) {
-          xMap.set(threshold.type, point.y)
+          xMap.set(threshold.id, point.y)
         }
       })
     })
 
-    const handleCellChange = (x: number, thresholdType: InterlockThresholdType, value: number) => {
-      const newThresholds = line.interlockDefinition!.thresholds.map(threshold => {
-        if (threshold.type === thresholdType) {
+    const handleCellChange = (x: number, thresholdId: string, value: number) => {
+      const newThresholds = thresholds.map(threshold => {
+        if (threshold.id === thresholdId) {
           const newPoints = threshold.points.map(point =>
             point.x === x ? { ...point, y: value } : point
           )
@@ -122,7 +127,7 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
     }
 
     const handleXChange = (oldX: number, newX: number) => {
-      const newThresholds = line.interlockDefinition!.thresholds.map(threshold => {
+      const newThresholds = thresholds.map(threshold => {
         const newPoints = threshold.points.map(point =>
           point.x === oldX ? { ...point, x: newX } : point
         )
@@ -141,7 +146,7 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
       const maxX = Math.max(...sortedXValues, 0)
       const newX = maxX + 10
 
-      const newThresholds = line.interlockDefinition!.thresholds.map(threshold => {
+      const newThresholds = thresholds.map(threshold => {
         const lastPoint = threshold.points[threshold.points.length - 1]
         const newY = lastPoint ? lastPoint.y : 0
         return {
@@ -159,7 +164,7 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
     }
 
     const handleRemoveRow = (x: number) => {
-      const newThresholds = line.interlockDefinition!.thresholds.map(threshold => ({
+      const newThresholds = thresholds.map(threshold => ({
         ...threshold,
         points: threshold.points.filter(point => point.x !== x)
       }))
@@ -172,14 +177,15 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
       })
     }
 
-    const handleAddColumn = (thresholdType: InterlockThresholdType) => {
-      // Create new threshold with default values for existing X points
-      const newThreshold = {
-        type: thresholdType,
+    const handleAddThreshold = () => {
+      const newThreshold: InterlockThreshold = {
+        id: `threshold_${Date.now()}`,
+        name: "New Threshold",
+        color: getNextColor(thresholds),
         points: sortedXValues.map(x => ({ x, y: 0 }))
       }
 
-      const newThresholds = [...line.interlockDefinition!.thresholds, newThreshold]
+      const newThresholds = [...thresholds, newThreshold]
 
       handleUpdateInterlockLine(lineId, {
         interlockDefinition: {
@@ -189,14 +195,12 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
       })
     }
 
-    const handleRemoveColumn = (thresholdType: InterlockThresholdType) => {
-      const newThresholds = line.interlockDefinition!.thresholds.filter(
-        threshold => threshold.type !== thresholdType
-      )
+    const handleRemoveThreshold = (thresholdId: string) => {
+      const newThresholds = thresholds.filter(threshold => threshold.id !== thresholdId)
 
       // Also remove from selected thresholds
       const newSelectedThresholds = line.selectedThresholds?.filter(
-        type => type !== thresholdType
+        id => id !== thresholdId
       ) || []
 
       handleUpdateInterlockLine(lineId, {
@@ -208,10 +212,18 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
       })
     }
 
-    const getAvailableThresholdTypes = () => {
-      return availableThresholdTypes.filter(
-        type => !thresholdTypes.includes(type)
+
+    const handleUpdateThresholdColor = (thresholdId: string, newColor: string) => {
+      const newThresholds = thresholds.map(threshold =>
+        threshold.id === thresholdId ? { ...threshold, color: newColor } : threshold
       )
+
+      handleUpdateInterlockLine(lineId, {
+        interlockDefinition: {
+          ...line.interlockDefinition!,
+          thresholds: newThresholds
+        }
+      })
     }
 
     return (
@@ -227,26 +239,14 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
               <Plus className="h-4 w-4 mr-1" />
               Add Row
             </Button>
-            {getAvailableThresholdTypes().length > 0 && (
-              <Select onValueChange={(value) => handleAddColumn(value as InterlockThresholdType)}>
-                <SelectTrigger className="w-32 h-8">
-                  <SelectValue placeholder="Add Column" />
-                </SelectTrigger>
-                <SelectContent>
-                  {getAvailableThresholdTypes().map(type => (
-                    <SelectItem key={type} value={type}>
-                      <div className="flex items-center gap-2">
-                        <span
-                          className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: interlockThresholdColors[type] }}
-                        />
-                        {type}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAddThreshold}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add Threshold
+            </Button>
             <Button
               variant="ghost"
               size="sm"
@@ -262,22 +262,54 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
             <TableHeader>
               <TableRow className="h-8">
                 <TableHead className="w-16 px-2 py-1 text-xs">X</TableHead>
-                {thresholdTypes.map(type => (
-                  <TableHead key={type} className="w-20 px-2 py-1">
+                {thresholds.map(threshold => (
+                  <TableHead key={threshold.id} className="w-24 px-2 py-1">
                     <div className="flex items-center justify-between gap-1">
-                      <div className="flex items-center gap-1">
-                        <span
-                          className="w-2 h-2 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: interlockThresholdColors[type] }}
+                      <div className="flex items-center gap-1 flex-1 min-w-0">
+                        <Input
+                          type="color"
+                          value={threshold.color}
+                          onChange={(e) => handleUpdateThresholdColor(threshold.id, e.target.value)}
+                          className="w-4 h-4 p-0 border-none cursor-pointer flex-shrink-0"
                         />
-                        <span className="text-xs truncate">{type}</span>
+                        {editingThresholdName === threshold.id ? (
+                          <Input
+                            value={threshold.name}
+                            onChange={(e) => {
+                              const newThresholds = thresholds.map(t =>
+                                t.id === threshold.id ? { ...t, name: e.target.value } : t
+                              )
+                              handleUpdateInterlockLine(lineId, {
+                                interlockDefinition: {
+                                  ...line.interlockDefinition!,
+                                  thresholds: newThresholds
+                                }
+                              })
+                            }}
+                            onBlur={() => setEditingThresholdName(null)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === 'Escape') {
+                                setEditingThresholdName(null)
+                              }
+                            }}
+                            className="h-6 text-xs px-1 flex-1 min-w-0"
+                            autoFocus
+                          />
+                        ) : (
+                          <button
+                            onClick={() => setEditingThresholdName(threshold.id)}
+                            className="text-xs truncate text-left flex-1 min-w-0 hover:bg-muted px-1 py-1 rounded"
+                          >
+                            {threshold.name}
+                          </button>
+                        )}
                       </div>
-                      {thresholdTypes.length > 1 && (
+                      {thresholds.length > 1 && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleRemoveColumn(type)}
-                          className="h-4 w-4 p-0 opacity-50 hover:opacity-100"
+                          onClick={() => handleRemoveThreshold(threshold.id)}
+                          className="h-4 w-4 p-0 opacity-50 hover:opacity-100 flex-shrink-0"
                         >
                           <Trash2 className="h-2 w-2" />
                         </Button>
@@ -299,12 +331,12 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
                       className="h-6 w-16 text-xs px-1"
                     />
                   </TableCell>
-                  {thresholdTypes.map(type => (
-                    <TableCell key={type} className="px-2 py-1">
+                  {thresholds.map(threshold => (
+                    <TableCell key={threshold.id} className="px-2 py-1">
                       <Input
                         type="number"
-                        value={valueMap.get(x)?.get(type) || 0}
-                        onChange={(e) => handleCellChange(x, type, parseFloat(e.target.value) || 0)}
+                        value={valueMap.get(x)?.get(threshold.id) || 0}
+                        onChange={(e) => handleCellChange(x, threshold.id, parseFloat(e.target.value) || 0)}
                         className="h-6 w-20 text-xs px-1"
                       />
                     </TableCell>
@@ -427,7 +459,9 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
                             name: line.label,
                             thresholds: [
                               {
-                                type: "caution",
+                                id: "caution",
+                                name: "Caution",
+                                color: "#FFA500",
                                 points: [
                                   { x: 0, y: 2 },
                                   { x: 10, y: 5 },
@@ -438,18 +472,9 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
                                 ]
                               },
                               {
-                                type: "pre-alarm",
-                                points: [
-                                  { x: 0, y: 100 },
-                                  { x: 10, y: 100 },
-                                  { x: 20, y: 100 },
-                                  { x: 30, y: 100 },
-                                  { x: 40, y: 100 },
-                                  { x: 50, y: 100 }
-                                ]
-                              },
-                              {
-                                type: "alarm",
+                                id: "alarm",
+                                name: "Alarm",
+                                color: "#FF0000",
                                 points: [
                                   { x: 0, y: 5 },
                                   { x: 10, y: 7 },
@@ -457,17 +482,6 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
                                   { x: 30, y: 80 },
                                   { x: 40, y: 80 },
                                   { x: 50, y: 90 }
-                                ]
-                              },
-                              {
-                                type: "trip",
-                                points: [
-                                  { x: 0, y: 120 },
-                                  { x: 10, y: 120 },
-                                  { x: 20, y: 120 },
-                                  { x: 30, y: 120 },
-                                  { x: 40, y: 120 },
-                                  { x: 50, y: 120 }
                                 ]
                               }
                             ]
@@ -495,21 +509,21 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
                   <Label>Select Thresholds to Display</Label>
                   <div className="space-y-2">
                     {line.interlockDefinition.thresholds.map((threshold) => (
-                      <div key={threshold.type} className="flex items-center space-x-2">
+                      <div key={threshold.id} className="flex items-center space-x-2">
                         <Checkbox
-                          id={`${line.id}-${threshold.type}`}
-                          checked={line.selectedThresholds?.includes(threshold.type) || false}
-                          onCheckedChange={() => handleThresholdToggle(line.id, threshold.type)}
+                          id={`${line.id}-${threshold.id}`}
+                          checked={line.selectedThresholds?.includes(threshold.id) || false}
+                          onCheckedChange={() => handleThresholdToggle(line.id, threshold.id)}
                         />
                         <Label
-                          htmlFor={`${line.id}-${threshold.type}`}
+                          htmlFor={`${line.id}-${threshold.id}`}
                           className="text-sm font-normal flex items-center gap-2 cursor-pointer"
                         >
                           <span
                             className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: interlockThresholdColors[threshold.type] }}
+                            style={{ backgroundColor: threshold.color }}
                           />
-                          {threshold.type.charAt(0).toUpperCase() + threshold.type.slice(1)}
+                          {threshold.name}
                         </Label>
                       </div>
                     ))}

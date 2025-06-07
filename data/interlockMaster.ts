@@ -1,4 +1,4 @@
-import { InterlockMaster, InterlockThresholdType } from "@/types"
+import { InterlockMaster } from "@/types"
 
 export const mockInterlockMaster: InterlockMaster[] = [
   {
@@ -13,7 +13,9 @@ export const mockInterlockMaster: InterlockMaster[] = [
       yParameter: "Pressure (MPa)",
       thresholds: [
         {
-          type: "caution",
+          id: "caution",
+          name: "Caution",
+          color: "#FFA500",
           points: [
             { x: 0, y: 0.5 },
             { x: 50, y: 1.0 },
@@ -23,7 +25,9 @@ export const mockInterlockMaster: InterlockMaster[] = [
           ]
         },
         {
-          type: "pre-alarm",
+          id: "pre-alarm",
+          name: "Pre-alarm",
+          color: "#FF6B6B",
           points: [
             { x: 0, y: 0.7 },
             { x: 50, y: 1.3 },
@@ -33,7 +37,9 @@ export const mockInterlockMaster: InterlockMaster[] = [
           ]
         },
         {
-          type: "alarm",
+          id: "alarm",
+          name: "Alarm",
+          color: "#FF0000",
           points: [
             { x: 0, y: 0.9 },
             { x: 50, y: 1.6 },
@@ -43,7 +49,9 @@ export const mockInterlockMaster: InterlockMaster[] = [
           ]
         },
         {
-          type: "trip",
+          id: "trip",
+          name: "Trip",
+          color: "#8B0000",
           points: [
             { x: 0, y: 1.0 },
             { x: 50, y: 1.8 },
@@ -69,7 +77,9 @@ export const mockInterlockMaster: InterlockMaster[] = [
       yParameter: "Velocity (m/s)",
       thresholds: [
         {
-          type: "caution",
+          id: "caution",
+          name: "Caution",
+          color: "#FFA500",
           points: [
             { x: 0, y: 0 },
             { x: 10, y: 2 },
@@ -80,7 +90,9 @@ export const mockInterlockMaster: InterlockMaster[] = [
           ]
         },
         {
-          type: "alarm",
+          id: "alarm",
+          name: "Alarm",
+          color: "#FF0000",
           points: [
             { x: 0, y: 0 },
             { x: 10, y: 2.5 },
@@ -91,7 +103,9 @@ export const mockInterlockMaster: InterlockMaster[] = [
           ]
         },
         {
-          type: "trip",
+          id: "trip",
+          name: "Trip",
+          color: "#8B0000",
           points: [
             { x: 0, y: 0 },
             { x: 10, y: 3 },
@@ -118,7 +132,9 @@ export const mockInterlockMaster: InterlockMaster[] = [
       yParameter: "Current (A)",
       thresholds: [
         {
-          type: "caution",
+          id: "caution",
+          name: "Caution",
+          color: "#FFA500",
           points: [
             { x: 0, y: 0 },
             { x: 100, y: 150 },
@@ -129,7 +145,9 @@ export const mockInterlockMaster: InterlockMaster[] = [
           ]
         },
         {
-          type: "pre-alarm",
+          id: "pre-alarm",
+          name: "Pre-alarm",
+          color: "#FF6B6B",
           points: [
             { x: 0, y: 0 },
             { x: 100, y: 170 },
@@ -140,7 +158,9 @@ export const mockInterlockMaster: InterlockMaster[] = [
           ]
         },
         {
-          type: "alarm",
+          id: "alarm",
+          name: "Alarm",
+          color: "#FF0000",
           points: [
             { x: 0, y: 0 },
             { x: 100, y: 190 },
@@ -151,7 +171,9 @@ export const mockInterlockMaster: InterlockMaster[] = [
           ]
         },
         {
-          type: "trip",
+          id: "trip",
+          name: "Trip",
+          color: "#8B0000",
           points: [
             { x: 0, y: 0 },
             { x: 100, y: 200 },
@@ -168,9 +190,14 @@ export const mockInterlockMaster: InterlockMaster[] = [
   }
 ]
 
-export const interlockThresholdColors: Record<InterlockThresholdType, string> = {
-  "caution": "#FFA500",    // Orange
-  "pre-alarm": "#FF6B6B",  // Light Red
-  "alarm": "#FF0000",      // Red
-  "trip": "#8B0000"        // Dark Red
-}
+// Default colors for new threshold types
+export const defaultThresholdColors = [
+  "#FFA500", // Orange
+  "#FF6B6B", // Light Red  
+  "#FF0000", // Red
+  "#8B0000", // Dark Red
+  "#800080", // Purple
+  "#008080", // Teal
+  "#808000", // Olive
+  "#FF1493", // Deep Pink
+]

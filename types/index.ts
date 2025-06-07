@@ -20,15 +20,15 @@ export type LineStyle = "solid" | "dashed" | "dotted"
 
 export type ReferenceLineType = "vertical" | "horizontal" | "interlock"
 
-export type InterlockThresholdType = "caution" | "pre-alarm" | "alarm" | "trip"
-
 export interface InterlockPoint {
   x: number
   y: number
 }
 
 export interface InterlockThreshold {
-  type: InterlockThresholdType
+  id: string
+  name: string
+  color: string
   points: InterlockPoint[]
 }
 
@@ -61,7 +61,7 @@ export interface ReferenceLine {
   interlockId?: string
   interlockSource?: "master" | "custom"
   interlockDefinition?: InterlockDefinition
-  selectedThresholds?: InterlockThresholdType[]
+  selectedThresholds?: string[]
 }
 
 export interface ChartComponent {
