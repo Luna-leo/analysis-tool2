@@ -10,10 +10,10 @@ import { EventInfo, SearchResult } from "@/types"
 import { Search } from "lucide-react"
 import { useSearchConditions } from '@/hooks/useSearchConditions'
 import { useSearchPeriod } from '@/hooks/useSearchPeriod'
-import { SearchPeriodSection } from './SearchPeriodSection'
-import { SearchConditionsSection } from './SearchConditionsSection'
-import { SearchResultsSection } from './SearchResultsSection'
-import { SaveConditionDialog } from './SaveConditionDialog'
+import { SearchPeriodSection } from '../search/SearchPeriodSection'
+import { SearchConditionsSection } from '../search/SearchConditionsSection'
+import { SearchResultsSection } from '../search/SearchResultsSection'
+import { SaveConditionDialog } from '../search/SaveConditionDialog'
 
 interface TriggerSignalDialogProps {
   isOpen: boolean

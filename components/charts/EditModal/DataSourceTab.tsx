@@ -32,8 +32,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
-import { ManualEntryDialog } from "../../ManualEntryDialog"
-import { TriggerSignalDialog } from "../../search/TriggerSignalDialog"
+import { ManualEntryDialog, TriggerSignalDialog } from "../../dialogs"
 import { useManualEntry } from "@/hooks/useManualEntry"
 import { EventInfo } from "@/types"
 

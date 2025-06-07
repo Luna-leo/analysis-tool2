@@ -2,8 +2,8 @@
 
 import React from "react"
 import { ResizablePanelGroup, ResizablePanel } from "@/components/ui/resizable"
-import { Sidebar, TabHeader, BreadcrumbNavigation, WelcomeMessage } from "./layout"
-import { ChartGrid, ChartEditModal } from "./charts"
+import { Sidebar, TabHeader, BreadcrumbNavigation, WelcomeMessage } from "../layout"
+import { ChartGrid, ChartEditModal } from "../charts"
 import { useAnalysisStore } from "@/stores/useAnalysisStore"
 
 export default function AnalysisTool() {

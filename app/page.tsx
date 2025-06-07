@@ -1,5 +1,5 @@
-import Component from "@/components/analysis-tool-refactored"
+import { AnalysisTool } from "@/components/analysis"
 
 export default function Page() {
-  return <Component />
+  return <AnalysisTool />
 }
