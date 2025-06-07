@@ -36,6 +36,11 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
     }
   }, [lastAddedParamIndex, editingChart?.yAxisParams?.length])
 
+  // Reset search query when switching between different comboboxes
+  useEffect(() => {
+    setSearchQuery("")
+  }, [openComboboxIndex])
+
   const handleInterlockSave = (interlockDefinition: InterlockDefinition, selectedThresholds: string[]) => {
     if (editingInterlockIndex !== null) {
       const newParams = [...(editingChart.yAxisParams || [])]
@@ -229,7 +234,7 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
                                     open={openComboboxIndex === index} 
                                     onOpenChange={(open) => {
                                       setOpenComboboxIndex(open ? index : null)
-                                      if (!open) setSearchQuery("") // Reset search when closing
+                                      setSearchQuery("") // Always reset search query
                                     }}
                                   >
                                     <PopoverTrigger asChild>
