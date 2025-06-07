@@ -100,20 +100,19 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
   }
 
   const filterInterlocks = (interlocks: typeof mockInterlockMaster) => {
-    if (!searchQuery) return interlocks
-    
-    // Split search query by spaces and convert to lowercase
-    const searchTerms = searchQuery.toLowerCase().split(/\s+/).filter(term => term.length > 0)
-    
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return interlocks
+
     return interlocks.filter(master => {
       const searchableText = [
-        master.name.toLowerCase(),
-        master.plant_name.toLowerCase(),
-        master.machine_no.toLowerCase()
-      ].join(" ")
-      
-      // Check if all search terms are found in the searchable text
-      return searchTerms.every(term => searchableText.includes(term))
+        master.name,
+        master.plant_name,
+        master.machine_no
+      ]
+        .join(" ")
+        .toLowerCase()
+
+      return searchableText.includes(query)
     })
   }
 
