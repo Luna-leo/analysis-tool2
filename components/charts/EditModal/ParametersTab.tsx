@@ -27,12 +27,48 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
   const [searchQuery, setSearchQuery] = useState("")
   const [isNewInterlock, setIsNewInterlock] = useState(false)
   const parameterInputRefs = useRef<(HTMLInputElement | null)[]>([])
+  const parameterTypeSelectRefs = useRef<(HTMLSelectElement | null)[]>([])
 
   useEffect(() => {
-    if (lastAddedParamIndex !== null && parameterInputRefs.current[lastAddedParamIndex]) {
-      const inputElement = parameterInputRefs.current[lastAddedParamIndex]
-      inputElement?.focus()
-      inputElement?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    if (!editingChart.yAxisParams || editingChart.yAxisParams.length === 0) {
+      const defaultParam = {
+        parameterType: "Parameter" as "Parameter" | "Formula" | "Interlock",
+        parameter: "",
+        axisNo: 1,
+        axisName: "",
+        range: {
+          auto: true,
+          min: 0,
+          max: 100,
+        },
+        line: {
+          width: 2,
+          color: "#000000",
+          style: "solid" as const,
+        },
+      }
+      setEditingChart({
+        ...editingChart,
+        yAxisParams: [defaultParam],
+      })
+    }
+  }, [editingChart, setEditingChart])
+
+  useEffect(() => {
+    if (lastAddedParamIndex !== null && parameterTypeSelectRefs.current[lastAddedParamIndex]) {
+      const selectElement = parameterTypeSelectRefs.current[lastAddedParamIndex]
+      selectElement?.focus()
+      selectElement?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      // Show dropdown after focusing
+      setTimeout(() => {
+        if (selectElement && typeof selectElement.showPicker === 'function') {
+          selectElement.showPicker()
+        } else {
+          // Fallback for browsers that don't support showPicker
+          const event = new MouseEvent('mousedown', { bubbles: true })
+          selectElement?.dispatchEvent(event)
+        }
+      }, 100)
       setLastAddedParamIndex(null)
     }
   }, [lastAddedParamIndex, editingChart?.yAxisParams?.length])
@@ -42,7 +78,7 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
     setSearchQuery("")
   }, [openComboboxIndex])
 
-  const handleInterlockSave = (interlockDefinition: InterlockDefinition, selectedThresholds: string[], plant: string, machineNo: string) => {
+  const handleInterlockSave = (interlockDefinition: InterlockDefinition, selectedThresholds: string[], _plant: string, _machineNo: string) => {
     if (editingInterlockIndex !== null) {
       const newParams = [...(editingChart.yAxisParams || [])]
       // 選択された閾値がない場合は、デフォルトですべての閾値を選択
@@ -265,6 +301,9 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
                 <div className="flex gap-2 p-1">
                   <div className="w-28 flex-shrink-0">
                     <select
+                      ref={(el) => {
+                        parameterTypeSelectRefs.current[index] = el
+                      }}
                       value={param.parameterType || "Parameter"}
                       onChange={(e) => handleParameterTypeChange(index, e.target.value as "Parameter" | "Formula" | "Interlock")}
                       className="w-full h-7 px-2 py-1 border rounded-md text-sm"
