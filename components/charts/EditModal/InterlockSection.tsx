@@ -72,7 +72,8 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
     const line = interlockLines.find(l => l.id === lineId)
     if (!line || !line.interlockDefinition) return null
 
-    const thresholdTypes: InterlockThresholdType[] = ["caution", "pre-alarm", "alarm", "trip"]
+    const availableThresholdTypes: InterlockThresholdType[] = ["caution", "pre-alarm", "alarm", "trip"]
+    const thresholdTypes = line.interlockDefinition.thresholds.map(t => t.type)
     
     // Get unique X values from all thresholds
     const xValues = new Set<number>()
@@ -171,6 +172,48 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
       })
     }
 
+    const handleAddColumn = (thresholdType: InterlockThresholdType) => {
+      // Create new threshold with default values for existing X points
+      const newThreshold = {
+        type: thresholdType,
+        points: sortedXValues.map(x => ({ x, y: 0 }))
+      }
+
+      const newThresholds = [...line.interlockDefinition!.thresholds, newThreshold]
+
+      handleUpdateInterlockLine(lineId, {
+        interlockDefinition: {
+          ...line.interlockDefinition!,
+          thresholds: newThresholds
+        }
+      })
+    }
+
+    const handleRemoveColumn = (thresholdType: InterlockThresholdType) => {
+      const newThresholds = line.interlockDefinition!.thresholds.filter(
+        threshold => threshold.type !== thresholdType
+      )
+
+      // Also remove from selected thresholds
+      const newSelectedThresholds = line.selectedThresholds?.filter(
+        type => type !== thresholdType
+      ) || []
+
+      handleUpdateInterlockLine(lineId, {
+        interlockDefinition: {
+          ...line.interlockDefinition!,
+          thresholds: newThresholds
+        },
+        selectedThresholds: newSelectedThresholds
+      })
+    }
+
+    const getAvailableThresholdTypes = () => {
+      return availableThresholdTypes.filter(
+        type => !thresholdTypes.includes(type)
+      )
+    }
+
     return (
       <div className="mt-4 p-4 border rounded-lg bg-muted/50 space-y-4">
         <div className="flex justify-between items-center">
@@ -184,6 +227,26 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
               <Plus className="h-4 w-4 mr-1" />
               Add Row
             </Button>
+            {getAvailableThresholdTypes().length > 0 && (
+              <Select onValueChange={(value) => handleAddColumn(value as InterlockThresholdType)}>
+                <SelectTrigger className="w-32 h-8">
+                  <SelectValue placeholder="Add Column" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getAvailableThresholdTypes().map(type => (
+                    <SelectItem key={type} value={type}>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: interlockThresholdColors[type] }}
+                        />
+                        {type}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -195,54 +258,66 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
         </div>
         
         <div className="overflow-x-auto">
-          <Table>
+          <Table className="text-sm">
             <TableHeader>
-              <TableRow>
-                <TableHead className="w-20">X</TableHead>
+              <TableRow className="h-8">
+                <TableHead className="w-16 px-2 py-1 text-xs">X</TableHead>
                 {thresholdTypes.map(type => (
-                  <TableHead key={type} className="w-24">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: interlockThresholdColors[type] }}
-                      />
-                      <span className="text-xs">{type}</span>
+                  <TableHead key={type} className="w-20 px-2 py-1">
+                    <div className="flex items-center justify-between gap-1">
+                      <div className="flex items-center gap-1">
+                        <span
+                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: interlockThresholdColors[type] }}
+                        />
+                        <span className="text-xs truncate">{type}</span>
+                      </div>
+                      {thresholdTypes.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveColumn(type)}
+                          className="h-4 w-4 p-0 opacity-50 hover:opacity-100"
+                        >
+                          <Trash2 className="h-2 w-2" />
+                        </Button>
+                      )}
                     </div>
                   </TableHead>
                 ))}
-                <TableHead className="w-10"></TableHead>
+                <TableHead className="w-8 px-1"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {sortedXValues.map((x, idx) => (
-                <TableRow key={idx}>
-                  <TableCell>
+                <TableRow key={idx} className="h-8">
+                  <TableCell className="px-2 py-1">
                     <Input
                       type="number"
                       value={x}
                       onChange={(e) => handleXChange(x, parseFloat(e.target.value) || 0)}
-                      className="h-8 w-20"
+                      className="h-6 w-16 text-xs px-1"
                     />
                   </TableCell>
                   {thresholdTypes.map(type => (
-                    <TableCell key={type}>
+                    <TableCell key={type} className="px-2 py-1">
                       <Input
                         type="number"
                         value={valueMap.get(x)?.get(type) || 0}
                         onChange={(e) => handleCellChange(x, type, parseFloat(e.target.value) || 0)}
-                        className="h-8 w-24"
+                        className="h-6 w-20 text-xs px-1"
                       />
                     </TableCell>
                   ))}
-                  <TableCell>
+                  <TableCell className="px-1 py-1">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => handleRemoveRow(x)}
-                      className="h-8 w-8 p-0"
+                      className="h-6 w-6 p-0"
                       disabled={sortedXValues.length <= 1}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 className="h-3 w-3" />
                     </Button>
                   </TableCell>
                 </TableRow>
