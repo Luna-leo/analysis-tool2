@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Trash2, Plus, Settings, Edit2 } from "lucide-react"
+import { InterlockRegistrationDialog } from "./InterlockRegistrationDialog"
 import { ChartComponent, InterlockDefinition, InterlockThreshold } from "@/types"
 import { mockInterlockMaster, defaultThresholdColors } from "@/data/interlockMaster"
 
@@ -20,6 +21,8 @@ interface InterlockSectionProps {
 export function InterlockSection({ editingChart, setEditingChart }: InterlockSectionProps) {
   const [showInterlockEditor, setShowInterlockEditor] = useState<string | null>(null)
   const [editingThresholdName, setEditingThresholdName] = useState<string | null>(null)
+  const [showInterlockDialog, setShowInterlockDialog] = useState(false)
+  const [editingLineId, setEditingLineId] = useState<string | null>(null)
   
   const interlockLines = editingChart.referenceLines?.filter(line => line.type === "interlock") || []
 
@@ -55,6 +58,26 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
       ...editingChart,
       referenceLines: editingChart.referenceLines?.filter((line) => line.id !== id),
     })
+  }
+
+  const handleInterlockSave = (
+    definition: InterlockDefinition,
+    selectedThresholds: string[],
+    _plant: string,
+    _machineNo: string
+  ) => {
+    if (editingLineId) {
+      const finalThresholds =
+        selectedThresholds.length > 0
+          ? selectedThresholds
+          : definition.thresholds.map(t => t.id)
+      handleUpdateInterlockLine(editingLineId, {
+        interlockDefinition: definition,
+        interlockSource: "custom",
+        selectedThresholds: finalThresholds,
+      })
+    }
+    setEditingLineId(null)
   }
 
   const handleThresholdToggle = (lineId: string, thresholdId: string) => {
@@ -362,6 +385,7 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
   }
 
   return (
+    <>
     <div className="space-y-4">
       <div className="flex justify-between items-start">
         <div>
@@ -450,8 +474,8 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
                         variant="outline"
                         size="icon"
                         onClick={() => {
-                          // TODO: Implement edit functionality
-                          console.log("Edit interlock master:", line.interlockId)
+                          setEditingLineId(line.id)
+                          setShowInterlockDialog(true)
                         }}
                         className="h-10 w-10"
                       >
@@ -570,5 +594,27 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
         </div>
       )}
     </div>
+    <InterlockRegistrationDialog
+      open={showInterlockDialog}
+      onOpenChange={(open) => {
+        setShowInterlockDialog(open)
+        if (!open) {
+          setEditingLineId(null)
+        }
+      }}
+      onSave={handleInterlockSave}
+      mode="edit"
+      initialDefinition={
+        editingLineId
+          ? editingChart.referenceLines?.find(l => l.id === editingLineId)?.interlockDefinition
+          : undefined
+      }
+      initialSelectedThresholds={
+        editingLineId
+          ? editingChart.referenceLines?.find(l => l.id === editingLineId)?.selectedThresholds
+          : undefined
+      }
+    />
+    </>
   )
 }
