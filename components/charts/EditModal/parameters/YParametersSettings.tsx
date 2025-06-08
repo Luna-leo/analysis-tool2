@@ -308,7 +308,7 @@ export function YParametersSettings({ editingChart, setEditingChart }: YParamete
       ...editingChart,
       yAxisParams: newParams,
     })
-    // Don't set lastAddedParamIndex for new axis groups to avoid opening Parameter Type dropdown
+    setLastAddedParamIndex(newParams.length - 1)
     setLastAddedAxisNo(newAxisNo)
   }
 
@@ -366,8 +366,11 @@ export function YParametersSettings({ editingChart, setEditingChart }: YParamete
                   const axisNo = parseInt(axisNoStr)
                   const firstParam = editingChart.yAxisParams![paramIndexes[0]]
                   const axisLabel = editingChart.yAxisLabels?.[axisNo] || ""
-                  const axisRange = firstParam.range || { auto: true, min: 0, max: 100 }
-
+                  const axisRange = { 
+                    auto: firstParam.range?.auto ?? true, 
+                    min: firstParam.range?.min ?? 0, 
+                    max: firstParam.range?.max ?? 100 
+                  }
                   return (
                     <YAxisGroup
                       key={axisNo}

@@ -28,9 +28,9 @@ export function XParameterSettings({ editingChart, setEditingChart }: XParameter
           </CollapsibleTrigger>
         </div>
         <CollapsibleContent>
-          <div className="px-3 pb-3 space-y-4">
-            <div className="flex gap-2">
-              <div className="w-38">
+          <div className="px-3 pb-3">
+            <div className="flex gap-2 items-end">
+              <div className="w-32">
                 <Label htmlFor="x-axis-type" className="text-sm mb-1 block">Parameter Type</Label>
                 <select
                   id="x-axis-type"
@@ -66,32 +66,30 @@ export function XParameterSettings({ editingChart, setEditingChart }: XParameter
                   className="h-8 text-sm"
                 />
               </div>
-            </div>
 
-            <div>
-              <Label htmlFor="x-axis-label" className="text-sm mb-1 block">X-axis Label</Label>
-              <Input
-                id="x-axis-label"
-                value={editingChart.xLabel || ""}
-                onChange={(e) => {
-                  setEditingChart({
-                    ...editingChart,
-                    xLabel: e.target.value,
-                  })
-                }}
-                placeholder="Enter X-axis label"
-                className="h-8 text-sm"
-              />
-            </div>
+              <div className="flex-1">
+                <Label htmlFor="x-axis-label" className="text-sm mb-1 block">X-axis Label</Label>
+                <Input
+                  id="x-axis-label"
+                  value={editingChart.xLabel || ""}
+                  onChange={(e) => {
+                    setEditingChart({
+                      ...editingChart,
+                      xLabel: e.target.value,
+                    })
+                  }}
+                  placeholder="Enter X-axis label"
+                  className="h-8 text-sm"
+                />
+              </div>
 
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Label className="text-sm">X-axis Range</Label>
+              <div className="w-36">
+                <Label className="text-sm mb-1 block">Range</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-7 text-xs">
-                      {editingChart.xAxisRange?.auto !== false ? "Range: Auto" : 
-                        `Range: ${editingChart.xAxisRange.min || 0} - ${editingChart.xAxisRange.max || 100}`}
+                    <Button variant="outline" size="sm" className="h-8 text-xs w-full justify-start">
+                      {editingChart.xAxisRange?.auto !== false ? "Auto" : 
+                        `${editingChart.xAxisRange.min || 0} - ${editingChart.xAxisRange.max || 100}`}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-80">
