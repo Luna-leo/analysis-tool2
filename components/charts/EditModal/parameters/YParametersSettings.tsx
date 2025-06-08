@@ -332,8 +332,12 @@ export function YParametersSettings({ editingChart, setEditingChart }: YParamete
 
   return (
     <>
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <div className="border rounded-lg bg-muted/30">
+      <Collapsible
+        open={isOpen}
+        onOpenChange={setIsOpen}
+        className="h-full flex flex-col"
+      >
+        <div className="border rounded-lg bg-muted/30 flex flex-col flex-1">
           <div className="flex items-center gap-2 p-3 border-b bg-muted/20">
             <CollapsibleTrigger className="flex items-center gap-2 text-left hover:bg-muted/50 transition-colors p-1 rounded">
               {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -348,10 +352,8 @@ export function YParametersSettings({ editingChart, setEditingChart }: YParamete
               New Axis Group
             </Button>
           </div>
-          <CollapsibleContent>
-            <div className="px-3 pb-3">
-              <div className="max-h-[50vh] overflow-y-auto">
-                <div className="space-y-4">
+          <CollapsibleContent className="flex-1 overflow-y-auto">
+            <div className="px-3 pb-3 space-y-4">
                   {editingChart.yAxisParams && editingChart.yAxisParams.length > 0 ? (
                     Object.entries(groupParametersByAxis()).map(([axisNoStr, paramIndexes]) => {
                       const axisNo = parseInt(axisNoStr)
@@ -392,8 +394,6 @@ export function YParametersSettings({ editingChart, setEditingChart }: YParamete
                   ) : (
                     <p className="text-sm text-muted-foreground px-1">No Y parameters added yet.</p>
                   )}
-                </div>
-              </div>
             </div>
           </CollapsibleContent>
         </div>
