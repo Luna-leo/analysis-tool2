@@ -67,7 +67,14 @@ export function ReferenceLinesSettings({ editingChart, referenceLines, onUpdateR
     ))
   }
 
-  const handleUpdateRange = (id: string, rangeType: 'xRange' | 'yRange', field: keyof ReferenceLineConfig['xRange'], value: any) => {
+  type RangeField = keyof NonNullable<ReferenceLineConfig['xRange']> | keyof NonNullable<ReferenceLineConfig['yRange']>
+  
+  const handleUpdateRange = (
+    id: string,
+    rangeType: 'xRange' | 'yRange',
+    field: RangeField,
+    value: any
+  ) => {
     onUpdateReferenceLines(referenceLines.map(line => {
       if (line.id !== id) return line
       return {

@@ -166,7 +166,7 @@ export function YAxisGroup({
         {/* Collapsible parameter table */}
         <CollapsibleContent>
           <div className="px-2 pb-2">
-            <div className="space-y-0.5 pt-1 border-t">
+            <div className="pt-1 border-t">
               <div className="flex gap-2 mb-1 px-1 text-xs font-medium text-muted-foreground border-b pb-1 mt-1">
                 <div className="w-24">Type</div>
                 <div className="flex-1">Parameter</div>
@@ -182,25 +182,29 @@ export function YAxisGroup({
                 </div>
               </div>
 
-              {paramIndexes.map((index) => (
-                <ParameterRow
-                  key={index}
-                  index={index}
-                  editingChart={editingChart}
-                  setEditingChart={setEditingChart}
-                  parameterInputRefs={parameterInputRefs}
-                  parameterTypeSelectRefs={parameterTypeSelectRefs}
-                  openComboboxIndex={openComboboxIndex}
-                  setOpenComboboxIndex={setOpenComboboxIndex}
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                  handleParameterTypeChange={handleParameterTypeChange}
-                  handleInterlockSelect={handleInterlockSelect}
-                  filterInterlocks={filterInterlocks}
-                  handleThresholdRemove={handleThresholdRemove}
-                  handleThresholdAdd={handleThresholdAdd}
-                />
-              ))}
+              <div className="max-h-48 overflow-y-auto">
+                <div className="space-y-0.5">
+                  {paramIndexes.map((index) => (
+                    <ParameterRow
+                      key={index}
+                      index={index}
+                      editingChart={editingChart}
+                      setEditingChart={setEditingChart}
+                      parameterInputRefs={parameterInputRefs}
+                      parameterTypeSelectRefs={parameterTypeSelectRefs}
+                      openComboboxIndex={openComboboxIndex}
+                      setOpenComboboxIndex={setOpenComboboxIndex}
+                      searchQuery={searchQuery}
+                      setSearchQuery={setSearchQuery}
+                      handleParameterTypeChange={handleParameterTypeChange}
+                      handleInterlockSelect={handleInterlockSelect}
+                      filterInterlocks={filterInterlocks}
+                      handleThresholdRemove={handleThresholdRemove}
+                      handleThresholdAdd={handleThresholdAdd}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </CollapsibleContent>
