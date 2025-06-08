@@ -20,9 +20,10 @@ import { InterlockRegistrationDialog } from "./InterlockRegistrationDialog"
 interface YParametersSettingsProps {
   editingChart: ChartComponent
   setEditingChart: (chart: ChartComponent) => void
+  isReferenceLinesOpen?: boolean
 }
 
-export function YParametersSettings({ editingChart, setEditingChart }: YParametersSettingsProps) {
+export function YParametersSettings({ editingChart, setEditingChart, isReferenceLinesOpen }: YParametersSettingsProps) {
   const [isOpen, setIsOpen] = useState(true)
   const [lastAddedParamIndex, setLastAddedParamIndex] = useState<number | null>(null)
   const [lastAddedAxisNo, setLastAddedAxisNo] = useState<number | null>(null)
@@ -360,7 +361,7 @@ export function YParametersSettings({ editingChart, setEditingChart }: YParamete
             </Button>
           </div>
           <CollapsibleContent>
-            <div className="px-3 pt-3 pb-3 max-h-96 overflow-y-auto">
+            <div className={`px-3 pt-3 pb-3 overflow-y-auto ${isReferenceLinesOpen ? 'max-h-48' : 'max-h-96'}`}>
               <div className="space-y-4">
                 {editingChart.yAxisParams && editingChart.yAxisParams.length > 0 ? (
                   Object.entries(groupParametersByAxis()).map(([axisNoStr, paramIndexes]) => {

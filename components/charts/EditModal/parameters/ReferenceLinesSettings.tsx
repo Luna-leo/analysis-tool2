@@ -33,13 +33,20 @@ interface ReferenceLinesSettingsProps {
   editingChart: ChartComponent
   referenceLines: ReferenceLineConfig[]
   onUpdateReferenceLines: (lines: ReferenceLineConfig[]) => void
+  isOpen?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
-export function ReferenceLinesSettings({ editingChart, referenceLines, onUpdateReferenceLines }: ReferenceLinesSettingsProps) {
-  const [isOpen, setIsOpen] = useState(false)
+export function ReferenceLinesSettings({ 
+  editingChart, 
+  referenceLines, 
+  onUpdateReferenceLines, 
+  isOpen = false,
+  onOpenChange 
+}: ReferenceLinesSettingsProps) {
   
   const handleAddReferenceLine = () => {
-    setIsOpen(true)
+    onOpenChange?.(true)
     const newReferenceLine: ReferenceLineConfig = {
       id: Date.now().toString(),
       type: "vertical",
@@ -92,9 +99,9 @@ export function ReferenceLinesSettings({ editingChart, referenceLines, onUpdateR
   }
 
   return (
-    <div className="border rounded-lg bg-muted/30 h-full flex flex-col">
-      <Collapsible open={isOpen} onOpenChange={setIsOpen} className="flex flex-col flex-1">
-        <div className="flex items-center gap-2 p-3">
+    <div className="border rounded-lg bg-muted/30">
+      <Collapsible open={isOpen} onOpenChange={onOpenChange} className="w-full">
+        <div className="flex items-center gap-2 p-3 border-b bg-muted/20 relative z-20">
           <CollapsibleTrigger className="flex items-center gap-2 text-left hover:bg-muted/50 transition-colors p-1 rounded">
             {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             <h4 className="font-medium text-sm">Reference Lines Settings</h4>
@@ -110,8 +117,8 @@ export function ReferenceLinesSettings({ editingChart, referenceLines, onUpdateR
             Add Reference Line
           </Button>
         </div>
-        <CollapsibleContent className="flex-1 overflow-y-auto">
-          <div className="px-3 pb-3">
+        <CollapsibleContent>
+          <div className="px-3 pt-3 pb-3 max-h-48 overflow-y-auto">
 
       <div className="flex gap-2 mb-2 px-1 pb-1 border-b">
         <div className="w-20 text-xs font-medium text-muted-foreground">Type</div>
