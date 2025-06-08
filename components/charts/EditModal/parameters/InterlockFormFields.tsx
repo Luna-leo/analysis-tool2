@@ -7,10 +7,6 @@ import { Label } from "@/components/ui/label"
 interface InterlockFormFieldsProps {
   name: string
   onNameChange: (name: string) => void
-  plant: string
-  onPlantChange: (plant: string) => void
-  machineNo: string
-  onMachineNoChange: (machineNo: string) => void
   xParameter: string
   onXParameterChange: (xParameter: string) => void
   xUnit: string
@@ -22,10 +18,6 @@ interface InterlockFormFieldsProps {
 export function InterlockFormFields({
   name,
   onNameChange,
-  plant,
-  onPlantChange,
-  machineNo,
-  onMachineNoChange,
   xParameter,
   onXParameterChange,
   xUnit,
@@ -81,28 +73,6 @@ export function InterlockFormFields({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <div className="space-y-1">
-          <Label htmlFor="plant" className="text-sm">Plant</Label>
-          <Input
-            id="plant"
-            value={plant}
-            onChange={(e) => onPlantChange(e.target.value)}
-            placeholder="Plant A"
-            className="h-8"
-          />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="machine-no" className="text-sm">Machine No</Label>
-          <Input
-            id="machine-no"
-            value={machineNo}
-            onChange={(e) => onMachineNoChange(e.target.value)}
-            placeholder="M-001"
-            className="h-8"
-          />
-        </div>
-      </div>
     </div>
   )
 }

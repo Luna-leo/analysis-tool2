@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { InterlockDefinition, InterlockThreshold } from "@/types"
 import { InterlockFormFields } from "./InterlockFormFields"
+import { PlantMachineFields } from "./PlantMachineFields"
 import { ThresholdColorSection } from "./ThresholdColorSection"
 import { ThresholdPointsTable } from "./ThresholdPointsTable"
 import { InterlockChart } from "./InterlockChart"
@@ -144,38 +145,14 @@ export function InterlockRegistrationDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-hidden flex gap-4">
-          {/* Left Panel - Form and Settings */}
-          <div className="w-1/2 overflow-y-auto space-y-2 pr-2">
-            <InterlockFormFields
-              name={name}
-              onNameChange={setName}
+          {/* Left Panel - Graph */}
+          <div className="w-1/2 pr-2 flex flex-col">
+            <PlantMachineFields
               plant={plant}
               onPlantChange={setPlant}
               machineNo={machineNo}
               onMachineNoChange={setMachineNo}
-              xParameter={xParameter}
-              onXParameterChange={setXParameter}
-              xUnit={xUnit}
-              onXUnitChange={setXUnit}
-              yUnit={yUnit}
-              onYUnitChange={setYUnit}
             />
-
-            <ThresholdColorSection
-              thresholds={thresholds}
-              onUpdateThresholds={setThresholds}
-            />
-
-            <ThresholdPointsTable
-              thresholds={thresholds}
-              onUpdateThresholds={setThresholds}
-              xParameter={xParameter}
-              xUnit={xUnit}
-            />
-          </div>
-
-          {/* Right Panel - Graph */}
-          <div className="w-1/2 pl-2 flex flex-col">
             <div className="flex items-center justify-between mb-2">
               <h4 className="text-sm font-medium">Interlock Graph</h4>
               <div className="flex items-center gap-2">
@@ -205,6 +182,32 @@ export function InterlockRegistrationDialog({
                 height={400}
               />
             </div>
+          </div>
+
+          {/* Right Panel - Form and Settings */}
+          <div className="w-1/2 overflow-y-auto space-y-2 pl-2">
+            <InterlockFormFields
+              name={name}
+              onNameChange={setName}
+              xParameter={xParameter}
+              onXParameterChange={setXParameter}
+              xUnit={xUnit}
+              onXUnitChange={setXUnit}
+              yUnit={yUnit}
+              onYUnitChange={setYUnit}
+            />
+
+            <ThresholdColorSection
+              thresholds={thresholds}
+              onUpdateThresholds={setThresholds}
+            />
+
+            <ThresholdPointsTable
+              thresholds={thresholds}
+              onUpdateThresholds={setThresholds}
+              xParameter={xParameter}
+              xUnit={xUnit}
+            />
           </div>
         </div>
 
