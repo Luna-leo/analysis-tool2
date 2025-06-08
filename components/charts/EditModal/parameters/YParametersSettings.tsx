@@ -65,8 +65,6 @@ export function YParametersSettings({ editingChart, setEditingChart }: YParamete
       const selectElement = parameterTypeSelectRefs.current[lastAddedParamIndex]
       selectElement?.focus()
       selectElement?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-      // Note: showPicker() requires user gesture, so we can't automatically open it
-      // User will need to click on the select element
       setLastAddedParamIndex(null)
     }
   }, [lastAddedParamIndex, editingChart?.yAxisParams?.length])
@@ -352,48 +350,53 @@ export function YParametersSettings({ editingChart, setEditingChart }: YParamete
               New Axis Group
             </Button>
           </div>
-          <CollapsibleContent className="flex-1 overflow-y-auto">
-            <div className="px-3 pb-3 space-y-4">
-                  {editingChart.yAxisParams && editingChart.yAxisParams.length > 0 ? (
-                    Object.entries(groupParametersByAxis()).map(([axisNoStr, paramIndexes]) => {
-                      const axisNo = parseInt(axisNoStr)
-                      const firstParam = editingChart.yAxisParams![paramIndexes[0]]
-                      const axisLabel = editingChart.yAxisLabels?.[axisNo] || ""
-                      const axisRange = { 
-                        auto: firstParam.range?.auto ?? true, 
-                        min: firstParam.range?.min ?? 0, 
-                        max: firstParam.range?.max ?? 100 
-                      }
-                      return (
-                        <YAxisGroup
-                          key={axisNo}
-                          axisNo={axisNo}
-                          paramIndexes={paramIndexes}
-                          axisLabel={axisLabel}
-                          axisRange={axisRange}
-                          editingChart={editingChart}
-                          setEditingChart={setEditingChart}
-                          updateAxisLabel={updateAxisLabel}
-                          updateAxisRange={updateAxisRange}
-                          addParameterToAxis={addParameterToAxis}
-                          parameterInputRefs={parameterInputRefs}
-                          parameterTypeSelectRefs={parameterTypeSelectRefs}
-                          axisLabelInputRef={axisLabelInputRefs}
-                          openComboboxIndex={openComboboxIndex}
-                          setOpenComboboxIndex={setOpenComboboxIndex}
-                          searchQuery={searchQuery}
-                          setSearchQuery={setSearchQuery}
-                          handleParameterTypeChange={handleParameterTypeChange}
-                          handleInterlockSelect={handleInterlockSelect}
-                          filterInterlocks={filterInterlocks}
-                          handleThresholdRemove={handleThresholdRemove}
-                          handleThresholdAdd={handleThresholdAdd}
-                        />
-                      )
-                    })
-                  ) : (
-                    <p className="text-sm text-muted-foreground px-1">No Y parameters added yet.</p>
-                  )}
+          <CollapsibleContent>
+            <div className="px-3 pb-3">
+
+        <div className="flex-1 overflow-y-auto min-h-0 max-h-96">
+          <div className="space-y-4">
+              {editingChart.yAxisParams && editingChart.yAxisParams.length > 0 ? (
+                Object.entries(groupParametersByAxis()).map(([axisNoStr, paramIndexes]) => {
+                  const axisNo = parseInt(axisNoStr)
+                  const firstParam = editingChart.yAxisParams![paramIndexes[0]]
+                  const axisLabel = editingChart.yAxisLabels?.[axisNo] || ""
+                  const axisRange = { 
+                    auto: firstParam.range?.auto ?? true, 
+                    min: firstParam.range?.min ?? 0, 
+                    max: firstParam.range?.max ?? 100 
+                  }
+                  return (
+                    <YAxisGroup
+                      key={axisNo}
+                      axisNo={axisNo}
+                      paramIndexes={paramIndexes}
+                      axisLabel={axisLabel}
+                      axisRange={axisRange}
+                      editingChart={editingChart}
+                      setEditingChart={setEditingChart}
+                      updateAxisLabel={updateAxisLabel}
+                      updateAxisRange={updateAxisRange}
+                      addParameterToAxis={addParameterToAxis}
+                      parameterInputRefs={parameterInputRefs}
+                      parameterTypeSelectRefs={parameterTypeSelectRefs}
+                      axisLabelInputRef={axisLabelInputRefs}
+                      openComboboxIndex={openComboboxIndex}
+                      setOpenComboboxIndex={setOpenComboboxIndex}
+                      searchQuery={searchQuery}
+                      setSearchQuery={setSearchQuery}
+                      handleParameterTypeChange={handleParameterTypeChange}
+                      handleInterlockSelect={handleInterlockSelect}
+                      filterInterlocks={filterInterlocks}
+                      handleThresholdRemove={handleThresholdRemove}
+                      handleThresholdAdd={handleThresholdAdd}
+                    />
+                  )
+                })
+              ) : (
+                <p className="text-sm text-muted-foreground px-1">No Y parameters added yet.</p>
+              )}
+          </div>
+        </div>
             </div>
           </CollapsibleContent>
         </div>
