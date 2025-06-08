@@ -28,24 +28,24 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
   const [referenceLines, setReferenceLines] = useState<ReferenceLineConfig[]>([])
 
   return (
-    <div className="flex flex-col h-full gap-4">
+    <div className="flex flex-col h-full gap-4 overflow-hidden">
       <div className="flex-shrink-0">
-        <XParameterSettings 
-          editingChart={editingChart} 
-          setEditingChart={setEditingChart} 
+        <XParameterSettings
+          editingChart={editingChart}
+          setEditingChart={setEditingChart}
         />
       </div>
-      
-      <div className="max-h-[60vh] overflow-hidden">
-        <YParametersSettings 
-          editingChart={editingChart} 
-          setEditingChart={setEditingChart} 
+
+      <div className="flex-1 min-h-[8rem] overflow-hidden">
+        <YParametersSettings
+          editingChart={editingChart}
+          setEditingChart={setEditingChart}
         />
       </div>
-      
-      <div className="flex-shrink-0">
-        <ReferenceLinesSettings 
-          editingChart={editingChart} 
+
+      <div className="flex-1 min-h-[8rem] overflow-hidden">
+        <ReferenceLinesSettings
+          editingChart={editingChart}
           referenceLines={referenceLines}
           onUpdateReferenceLines={setReferenceLines}
         />
