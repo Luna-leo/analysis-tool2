@@ -1,14 +1,11 @@
 "use client"
 
-import React, { useState } from "react"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Settings } from "lucide-react"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { ChartComponent, MarkerType, LineStyle } from "@/types"
+import { ChartComponent } from "@/types"
+import { ChartTypeSelector } from "./ChartTypeSelector"
+import { TitleAndOptionsSection } from "./TitleAndOptionsSection"
+import { XAxisSettings } from "./XAxisSettings"
+import { YAxisSettings } from "./YAxisSettings"
+import { PlotStyleTable } from "./PlotStyleTable"
 
 interface AppearanceTabProps {
   editingChart: ChartComponent
