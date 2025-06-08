@@ -3,7 +3,10 @@
 import React, { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ChartComponent } from "@/types"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { ChartComponent, TimeUnit } from "@/types"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { ChevronDown, ChevronRight } from "lucide-react"
 
@@ -25,7 +28,7 @@ export function XParameterSettings({ editingChart, setEditingChart }: XParameter
           </CollapsibleTrigger>
         </div>
         <CollapsibleContent>
-          <div className="px-3 pb-3">
+          <div className="px-3 pb-3 space-y-4">
             <div className="flex gap-2">
               <div className="w-38">
                 <Label htmlFor="x-axis-type" className="text-sm mb-1 block">Parameter Type</Label>
@@ -62,6 +65,173 @@ export function XParameterSettings({ editingChart, setEditingChart }: XParameter
                   disabled={editingChart.xAxisType !== "parameter"}
                   className="h-8 text-sm"
                 />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="x-axis-label" className="text-sm mb-1 block">X-axis Label</Label>
+              <Input
+                id="x-axis-label"
+                value={editingChart.xLabel || ""}
+                onChange={(e) => {
+                  setEditingChart({
+                    ...editingChart,
+                    xLabel: e.target.value,
+                  })
+                }}
+                placeholder="Enter X-axis label"
+                className="h-8 text-sm"
+              />
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Label className="text-sm">X-axis Range</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className="h-7 text-xs">
+                      {editingChart.xAxisRange?.auto !== false ? "Range: Auto" : 
+                        `Range: ${editingChart.xAxisRange.min || 0} - ${editingChart.xAxisRange.max || 100}`}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="x-auto-range"
+                          checked={editingChart.xAxisRange?.auto !== false}
+                          onCheckedChange={(checked) => {
+                            setEditingChart({
+                              ...editingChart,
+                              xAxisRange: {
+                                ...editingChart.xAxisRange,
+                                auto: checked === true,
+                                min: editingChart.xAxisRange?.min || 0,
+                                max: editingChart.xAxisRange?.max || 100,
+                              }
+                            })
+                          }}
+                        />
+                        <Label htmlFor="x-auto-range" className="text-sm">Auto Range</Label>
+                      </div>
+                      
+                      {editingChart.xAxisType === "time" && (
+                        <div>
+                          <Label className="text-xs">Time Unit</Label>
+                          <select
+                            value={editingChart.xAxisRange?.unit || "sec"}
+                            onChange={(e) => {
+                              setEditingChart({
+                                ...editingChart,
+                                xAxisRange: {
+                                  ...editingChart.xAxisRange,
+                                  unit: e.target.value as TimeUnit,
+                                  auto: editingChart.xAxisRange?.auto !== false,
+                                  min: editingChart.xAxisRange?.min || 0,
+                                  max: editingChart.xAxisRange?.max || 100,
+                                }
+                              })
+                            }}
+                            className="w-full h-8 px-2 py-1 border rounded-md text-sm mt-1"
+                          >
+                            <option value="sec">Seconds</option>
+                            <option value="min">Minutes</option>
+                            <option value="hr">Hours</option>
+                          </select>
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        <div>
+                          <Label htmlFor="x-min" className="text-xs">Min Value</Label>
+                          {editingChart.xAxisType === "datetime" ? (
+                            <Input
+                              id="x-min"
+                              type="datetime-local"
+                              value={editingChart.xAxisRange?.min || ""}
+                              onChange={(e) => {
+                                setEditingChart({
+                                  ...editingChart,
+                                  xAxisRange: {
+                                    ...editingChart.xAxisRange,
+                                    min: e.target.value,
+                                    max: editingChart.xAxisRange?.max || "",
+                                    auto: editingChart.xAxisRange?.auto !== false,
+                                  }
+                                })
+                              }}
+                              disabled={editingChart.xAxisRange?.auto !== false}
+                              className="h-8"
+                            />
+                          ) : (
+                            <Input
+                              id="x-min"
+                              type="number"
+                              value={editingChart.xAxisRange?.min || ""}
+                              onChange={(e) => {
+                                setEditingChart({
+                                  ...editingChart,
+                                  xAxisRange: {
+                                    ...editingChart.xAxisRange,
+                                    min: parseFloat(e.target.value) || 0,
+                                    max: editingChart.xAxisRange?.max || 100,
+                                    auto: editingChart.xAxisRange?.auto !== false,
+                                  }
+                                })
+                              }}
+                              disabled={editingChart.xAxisRange?.auto !== false}
+                              placeholder={editingChart.xAxisType === "time" ? `Start (${editingChart.xAxisRange?.unit || "sec"})` : "Min"}
+                              className="h-8"
+                            />
+                          )}
+                        </div>
+                        <div>
+                          <Label htmlFor="x-max" className="text-xs">Max Value</Label>
+                          {editingChart.xAxisType === "datetime" ? (
+                            <Input
+                              id="x-max"
+                              type="datetime-local"
+                              value={editingChart.xAxisRange?.max || ""}
+                              onChange={(e) => {
+                                setEditingChart({
+                                  ...editingChart,
+                                  xAxisRange: {
+                                    ...editingChart.xAxisRange,
+                                    min: editingChart.xAxisRange?.min || "",
+                                    max: e.target.value,
+                                    auto: editingChart.xAxisRange?.auto !== false,
+                                  }
+                                })
+                              }}
+                              disabled={editingChart.xAxisRange?.auto !== false}
+                              className="h-8"
+                            />
+                          ) : (
+                            <Input
+                              id="x-max"
+                              type="number"
+                              value={editingChart.xAxisRange?.max || ""}
+                              onChange={(e) => {
+                                setEditingChart({
+                                  ...editingChart,
+                                  xAxisRange: {
+                                    ...editingChart.xAxisRange,
+                                    min: editingChart.xAxisRange?.min || 0,
+                                    max: parseFloat(e.target.value) || 100,
+                                    auto: editingChart.xAxisRange?.auto !== false,
+                                  }
+                                })
+                              }}
+                              disabled={editingChart.xAxisRange?.auto !== false}
+                              placeholder={editingChart.xAxisType === "time" ? `End (${editingChart.xAxisRange?.unit || "sec"})` : "Max"}
+                              className="h-8"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
           </div>
