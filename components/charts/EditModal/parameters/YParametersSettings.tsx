@@ -25,6 +25,7 @@ interface YParametersSettingsProps {
 export function YParametersSettings({ editingChart, setEditingChart }: YParametersSettingsProps) {
   const [isOpen, setIsOpen] = useState(true)
   const [lastAddedParamIndex, setLastAddedParamIndex] = useState<number | null>(null)
+  const [lastAddedAxisNo, setLastAddedAxisNo] = useState<number | null>(null)
   const [showInterlockDialog, setShowInterlockDialog] = useState(false)
   const [editingInterlockIndex, setEditingInterlockIndex] = useState<number | null>(null)
   const [openComboboxIndex, setOpenComboboxIndex] = useState<number | null>(null)
@@ -32,6 +33,7 @@ export function YParametersSettings({ editingChart, setEditingChart }: YParamete
   const [interlockMode, setInterlockMode] = useState<"create" | "edit" | "duplicate">("create")
   const parameterInputRefs = useRef<(HTMLInputElement | null)[]>([])
   const parameterTypeSelectRefs = useRef<(HTMLSelectElement | null)[]>([])
+  const axisLabelInputRefs = useRef<Record<number, HTMLInputElement | null>>({})
 
   useEffect(() => {
     if (!editingChart.yAxisParams || editingChart.yAxisParams.length === 0) {
@@ -81,6 +83,16 @@ export function YParametersSettings({ editingChart, setEditingChart }: YParamete
   useEffect(() => {
     setSearchQuery("")
   }, [openComboboxIndex])
+
+  // Focus on Y-axis label input when new axis group is added
+  useEffect(() => {
+    if (lastAddedAxisNo !== null && axisLabelInputRefs.current[lastAddedAxisNo]) {
+      const inputElement = axisLabelInputRefs.current[lastAddedAxisNo]
+      inputElement?.focus()
+      inputElement?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+      setLastAddedAxisNo(null)
+    }
+  }, [lastAddedAxisNo, editingChart?.yAxisParams?.length])
 
   const handleInterlockSave = (interlockDefinition: InterlockDefinition, selectedThresholds: string[], _plant: string, _machineNo: string) => {
     if (editingInterlockIndex !== null) {
@@ -296,7 +308,8 @@ export function YParametersSettings({ editingChart, setEditingChart }: YParamete
       ...editingChart,
       yAxisParams: newParams,
     })
-    setLastAddedParamIndex(newParams.length - 1)
+    // Don't set lastAddedParamIndex for new axis groups to avoid opening Parameter Type dropdown
+    setLastAddedAxisNo(newAxisNo)
   }
 
   // Add parameter to specific axis
@@ -369,6 +382,7 @@ export function YParametersSettings({ editingChart, setEditingChart }: YParamete
                       addParameterToAxis={addParameterToAxis}
                       parameterInputRefs={parameterInputRefs}
                       parameterTypeSelectRefs={parameterTypeSelectRefs}
+                      axisLabelInputRef={axisLabelInputRefs}
                       openComboboxIndex={openComboboxIndex}
                       setOpenComboboxIndex={setOpenComboboxIndex}
                       searchQuery={searchQuery}
