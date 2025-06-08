@@ -302,6 +302,15 @@ export function YParametersSettings({ editingChart, setEditingChart }: YParamete
     setLastAddedAxisNo(newAxisNo)
   }
 
+  // Remove axis group and all its parameters
+  const removeAxisGroup = (axisNo: number) => {
+    const newParams = (editingChart.yAxisParams || []).filter(param => param.axisNo !== axisNo)
+    setEditingChart({
+      ...editingChart,
+      yAxisParams: newParams,
+    })
+  }
+
   // Add parameter to specific axis
   const addParameterToAxis = (axisNo: number) => {
     const newParam = {
@@ -351,7 +360,7 @@ export function YParametersSettings({ editingChart, setEditingChart }: YParamete
             </Button>
           </div>
           <CollapsibleContent>
-            <div className="px-3 pb-3 max-h-96 overflow-y-auto">
+            <div className="px-3 pt-3 pb-3 max-h-96 overflow-y-auto">
               <div className="space-y-4">
                 {editingChart.yAxisParams && editingChart.yAxisParams.length > 0 ? (
                   Object.entries(groupParametersByAxis()).map(([axisNoStr, paramIndexes]) => {
@@ -375,6 +384,8 @@ export function YParametersSettings({ editingChart, setEditingChart }: YParamete
                         updateAxisLabel={updateAxisLabel}
                         updateAxisRange={updateAxisRange}
                         addParameterToAxis={addParameterToAxis}
+                        removeAxisGroup={removeAxisGroup}
+                        totalAxisGroups={Object.keys(groupParametersByAxis()).length}
                         parameterInputRefs={parameterInputRefs}
                         parameterTypeSelectRefs={parameterTypeSelectRefs}
                         axisLabelInputRef={axisLabelInputRefs}

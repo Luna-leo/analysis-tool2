@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Plus, ChevronDown, ChevronRight } from "lucide-react"
+import { Plus, ChevronDown, ChevronRight, Trash2 } from "lucide-react"
 import { ChartComponent } from "@/types"
 import { mockInterlockMaster } from "@/data/interlockMaster"
 import { ParameterRow } from "./ParameterRow"
@@ -25,6 +25,8 @@ interface YAxisGroupProps {
     rangeUpdate: Partial<{ auto: boolean; min: number; max: number }>
   ) => void
   addParameterToAxis: (axisNo: number) => void
+  removeAxisGroup: (axisNo: number) => void
+  totalAxisGroups: number
   parameterInputRefs: React.RefObject<(HTMLInputElement | null)[]>
   parameterTypeSelectRefs: React.RefObject<(HTMLSelectElement | null)[]>
   axisLabelInputRef?: React.RefObject<Record<number, HTMLInputElement | null>>
@@ -49,6 +51,8 @@ export function YAxisGroup({
   updateAxisLabel,
   updateAxisRange,
   addParameterToAxis,
+  removeAxisGroup,
+  totalAxisGroups,
   parameterInputRefs,
   parameterTypeSelectRefs,
   axisLabelInputRef,
@@ -159,6 +163,16 @@ export function YAxisGroup({
                 }}
                 className="w-12 h-7 text-xs px-1"
               />
+              {totalAxisGroups > 1 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeAxisGroup(axisNo)}
+                  className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
             </div>
           </div>
         </div>
