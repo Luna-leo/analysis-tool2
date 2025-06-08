@@ -45,18 +45,31 @@ export function ThresholdPointsTable({
     })
   })
 
-  const handleCellChange = (x: number, thresholdId: string, value: number) => {
+  const handleCellChange = (x: number, thresholdId: string, value: string) => {
     const updatedThresholds = thresholds.map(threshold => {
       if (threshold.id === thresholdId) {
-        const newPoints = threshold.points.map(point =>
-          point.x === x ? { ...point, y: value } : point
-        )
-        // If this x value doesn't exist in this threshold, add it
-        if (!newPoints.find(p => p.x === x)) {
-          newPoints.push({ x, y: value })
-          newPoints.sort((a, b) => a.x - b.x)
+        // If value is empty, remove the point
+        if (value === '') {
+          const newPoints = threshold.points.filter(point => point.x !== x)
+          return { ...threshold, points: newPoints }
         }
-        return { ...threshold, points: newPoints }
+        
+        const numValue = parseFloat(value)
+        if (isNaN(numValue)) return threshold
+        
+        const existingPointIndex = threshold.points.findIndex(p => p.x === x)
+        
+        if (existingPointIndex >= 0) {
+          // Update existing point
+          const newPoints = [...threshold.points]
+          newPoints[existingPointIndex] = { x, y: numValue }
+          return { ...threshold, points: newPoints }
+        } else {
+          // Add new point
+          const newPoints = [...threshold.points, { x, y: numValue }]
+          newPoints.sort((a, b) => a.x - b.x)
+          return { ...threshold, points: newPoints }
+        }
       }
       return threshold
     })
@@ -77,13 +90,19 @@ export function ThresholdPointsTable({
     const maxX = Math.max(...sortedXValues, 0)
     const newX = maxX + 10
 
-    const updatedThresholds = thresholds.map(threshold => {
-      const lastPoint = threshold.points[threshold.points.length - 1]
-      const newY = lastPoint ? lastPoint.y : 0
-      return {
-        ...threshold,
-        points: [...threshold.points, { x: newX, y: newY }].sort((a, b) => a.x - b.x)
+    // Add a new X value to at least the first threshold to ensure the row appears
+    // Users can then fill in values for other thresholds as needed
+    const updatedThresholds = thresholds.map((threshold, index) => {
+      if (index === 0) {
+        // Only add to the first threshold to create the row
+        const lastPoint = threshold.points[threshold.points.length - 1]
+        const newY = lastPoint ? lastPoint.y : 0
+        return {
+          ...threshold,
+          points: [...threshold.points, { x: newX, y: newY }].sort((a, b) => a.x - b.x)
+        }
       }
+      return threshold
     })
     onUpdateThresholds(updatedThresholds)
   }
@@ -195,9 +214,10 @@ export function ThresholdPointsTable({
                   >
                     <Input
                       type="number"
-                      value={valueMap.get(x)?.get(threshold.id) || 0}
-                      onChange={(e) => handleCellChange(x, threshold.id, parseFloat(e.target.value) || 0)}
+                      value={valueMap.get(x)?.get(threshold.id) ?? ''}
+                      onChange={(e) => handleCellChange(x, threshold.id, e.target.value)}
                       className="h-5 w-full text-xs px-1"
+                      placeholder="-"
                     />
                   </TableCell>
                 ))}
