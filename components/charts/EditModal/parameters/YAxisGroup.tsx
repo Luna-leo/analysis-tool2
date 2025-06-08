@@ -182,25 +182,27 @@ export function YAxisGroup({
                 </div>
               </div>
 
-              {paramIndexes.map((index) => (
-                <ParameterRow
-                  key={index}
-                  index={index}
-                  editingChart={editingChart}
-                  setEditingChart={setEditingChart}
-                  parameterInputRefs={parameterInputRefs}
-                  parameterTypeSelectRefs={parameterTypeSelectRefs}
-                  openComboboxIndex={openComboboxIndex}
-                  setOpenComboboxIndex={setOpenComboboxIndex}
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                  handleParameterTypeChange={handleParameterTypeChange}
-                  handleInterlockSelect={handleInterlockSelect}
-                  filterInterlocks={filterInterlocks}
-                  handleThresholdRemove={handleThresholdRemove}
-                  handleThresholdAdd={handleThresholdAdd}
-                />
-              ))}
+              <div className="max-h-48 overflow-y-auto">
+                {paramIndexes.map((index) => (
+                  <ParameterRow
+                    key={index}
+                    index={index}
+                    editingChart={editingChart}
+                    setEditingChart={setEditingChart}
+                    parameterInputRefs={parameterInputRefs}
+                    parameterTypeSelectRefs={parameterTypeSelectRefs}
+                    openComboboxIndex={openComboboxIndex}
+                    setOpenComboboxIndex={setOpenComboboxIndex}
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    handleParameterTypeChange={handleParameterTypeChange}
+                    handleInterlockSelect={handleInterlockSelect}
+                    filterInterlocks={filterInterlocks}
+                    handleThresholdRemove={handleThresholdRemove}
+                    handleThresholdAdd={handleThresholdAdd}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </CollapsibleContent>

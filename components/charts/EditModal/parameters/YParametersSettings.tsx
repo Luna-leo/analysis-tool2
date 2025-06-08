@@ -65,16 +65,6 @@ export function YParametersSettings({ editingChart, setEditingChart }: YParamete
       const selectElement = parameterTypeSelectRefs.current[lastAddedParamIndex]
       selectElement?.focus()
       selectElement?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-      // Show dropdown after focusing
-      setTimeout(() => {
-        if (selectElement && typeof selectElement.showPicker === 'function') {
-          selectElement.showPicker()
-        } else {
-          // Fallback for browsers that don't support showPicker
-          const event = new MouseEvent('mousedown', { bubbles: true })
-          selectElement?.dispatchEvent(event)
-        }
-      }, 100)
       setLastAddedParamIndex(null)
     }
   }, [lastAddedParamIndex, editingChart?.yAxisParams?.length])
@@ -359,7 +349,7 @@ export function YParametersSettings({ editingChart, setEditingChart }: YParamete
           <CollapsibleContent>
             <div className="px-3 pb-3">
 
-        <div className="flex-1 overflow-y-auto min-h-0">
+        <div className="flex-1 overflow-y-auto min-h-0 max-h-96">
           <div className="space-y-4">
               {editingChart.yAxisParams && editingChart.yAxisParams.length > 0 ? (
                 Object.entries(groupParametersByAxis()).map(([axisNoStr, paramIndexes]) => {
