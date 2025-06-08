@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { X, Plus, ChevronDown, Copy, Edit2 } from "lucide-react"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { X, Plus, ChevronDown, ChevronRight, Copy, Edit2 } from "lucide-react"
 import { ChartComponent, InterlockDefinition } from "@/types"
 import { mockInterlockMaster } from "@/data/interlockMaster"
 import { InterlockRegistrationDialog } from "./InterlockRegistrationDialog"
@@ -20,6 +21,7 @@ interface YParametersSettingsProps {
 }
 
 export function YParametersSettings({ editingChart, setEditingChart }: YParametersSettingsProps) {
+  const [isOpen, setIsOpen] = useState(true)
   const [lastAddedParamIndex, setLastAddedParamIndex] = useState<number | null>(null)
   const [showInterlockDialog, setShowInterlockDialog] = useState(false)
   const [editingInterlockIndex, setEditingInterlockIndex] = useState<number | null>(null)
@@ -219,15 +221,20 @@ export function YParametersSettings({ editingChart, setEditingChart }: YParamete
 
   return (
     <>
-      <div className="flex flex-col border rounded-lg p-3 bg-muted/30 min-h-0 flex-1">
-        <div className="flex justify-between items-center mb-2 flex-shrink-0">
-          <h4 className="font-medium text-sm">Y Parameters Settings</h4>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 text-xs"
-            onClick={() => {
-              const newParam = {
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <div className="flex flex-col border rounded-lg bg-muted/30 min-h-0 flex-1">
+          <div className="flex items-center gap-2 p-3">
+            <CollapsibleTrigger className="flex items-center gap-2 text-left hover:bg-muted/50 transition-colors p-1 rounded">
+              {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              <h4 className="font-medium text-sm">Y Parameters Settings</h4>
+            </CollapsibleTrigger>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs ml-auto"
+              onClick={() => {
+                setIsOpen(true)
+                const newParam = {
                 parameterType: "Parameter" as "Parameter" | "Formula" | "Interlock",
                 parameter: "",
                 axisNo: 1,
@@ -253,7 +260,9 @@ export function YParametersSettings({ editingChart, setEditingChart }: YParamete
           >
             Add Y Parameter
           </Button>
-        </div>
+          </div>
+          <CollapsibleContent>
+            <div className="px-3 pb-3">
 
         <div className="flex gap-2 mb-2 px-1 pb-1 border-b flex-shrink-0">
           <div className="w-28 flex-shrink-0 text-xs font-medium text-muted-foreground">Parameter Type</div>
@@ -509,7 +518,10 @@ export function YParametersSettings({ editingChart, setEditingChart }: YParamete
             )) || <p className="text-sm text-muted-foreground px-1">No Y parameters added yet.</p>}
           </div>
         </div>
-      </div>
+            </div>
+          </CollapsibleContent>
+        </div>
+      </Collapsible>
 
       <InterlockRegistrationDialog
         open={showInterlockDialog}

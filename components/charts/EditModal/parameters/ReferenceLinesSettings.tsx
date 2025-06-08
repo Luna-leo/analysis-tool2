@@ -4,7 +4,10 @@ import React, { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { X } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { X, ChevronDown, ChevronRight } from "lucide-react"
 import { ChartComponent } from "@/types"
 
 interface ReferenceLineConfig {
@@ -13,10 +16,17 @@ interface ReferenceLineConfig {
   label: string
   xValue?: string
   yValue?: string
-  yRangeMin?: string
-  yRangeMax?: string
-  xRangeMin?: string
-  xRangeMax?: string
+  axisNo?: number
+  yRange?: {
+    auto: boolean
+    min: string
+    max: string
+  }
+  xRange?: {
+    auto: boolean
+    min: string
+    max: string
+  }
 }
 
 interface ReferenceLinesSettingsProps {
@@ -26,25 +36,48 @@ interface ReferenceLinesSettingsProps {
 }
 
 export function ReferenceLinesSettings({ editingChart, referenceLines, onUpdateReferenceLines }: ReferenceLinesSettingsProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  
   const handleAddReferenceLine = () => {
+    setIsOpen(true)
     const newReferenceLine: ReferenceLineConfig = {
       id: Date.now().toString(),
       type: "vertical",
       label: "",
       xValue: "",
       yValue: "",
-      yRangeMin: "",
-      yRangeMax: "",
-      xRangeMin: "",
-      xRangeMax: "",
+      axisNo: 1,
+      yRange: {
+        auto: true,
+        min: "0",
+        max: "100"
+      },
+      xRange: {
+        auto: true,
+        min: "0",
+        max: "100"
+      }
     }
     onUpdateReferenceLines([...referenceLines, newReferenceLine])
   }
 
-  const handleUpdateReferenceLine = (id: string, field: keyof ReferenceLineConfig, value: string) => {
+  const handleUpdateReferenceLine = (id: string, field: keyof ReferenceLineConfig, value: any) => {
     onUpdateReferenceLines(referenceLines.map(line => 
       line.id === id ? { ...line, [field]: value } : line
     ))
+  }
+
+  const handleUpdateRange = (id: string, rangeType: 'xRange' | 'yRange', field: keyof ReferenceLineConfig['xRange'], value: any) => {
+    onUpdateReferenceLines(referenceLines.map(line => {
+      if (line.id !== id) return line
+      return {
+        ...line,
+        [rangeType]: {
+          ...line[rangeType],
+          [field]: value
+        }
+      }
+    }))
   }
 
   const handleRemoveReferenceLine = (id: string) => {
@@ -52,25 +85,33 @@ export function ReferenceLinesSettings({ editingChart, referenceLines, onUpdateR
   }
 
   return (
-    <div className="border rounded-lg p-3 bg-muted/30">
-      <div className="flex justify-between items-center mb-2">
-        <h4 className="font-medium text-sm">Reference Lines Settings</h4>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-7 text-xs"
-          onClick={handleAddReferenceLine}
-        >
-          Add Reference Line
-        </Button>
-      </div>
+    <div className="border rounded-lg bg-muted/30">
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <div className="flex items-center gap-2 p-3">
+          <CollapsibleTrigger className="flex items-center gap-2 text-left hover:bg-muted/50 transition-colors p-1 rounded">
+            {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            <h4 className="font-medium text-sm">Reference Lines Settings</h4>
+          </CollapsibleTrigger>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 text-xs ml-auto"
+            onClick={() => {
+              handleAddReferenceLine()
+            }}
+          >
+            Add Reference Line
+          </Button>
+        </div>
+        <CollapsibleContent>
+          <div className="px-3 pb-3">
 
       <div className="flex gap-2 mb-2 px-1 pb-1 border-b">
         <div className="w-20 text-xs font-medium text-muted-foreground">Type</div>
         <div className="flex-1 text-xs font-medium text-muted-foreground">Label</div>
         <div className="w-24 text-xs font-medium text-muted-foreground">Value</div>
-        <div className="w-24 text-xs font-medium text-muted-foreground">Range Min</div>
-        <div className="w-24 text-xs font-medium text-muted-foreground">Range Max</div>
+        <div className="w-16 text-xs font-medium text-muted-foreground">Axis No</div>
+        <div className="w-24 text-xs font-medium text-muted-foreground">Range</div>
         <div className="w-7"></div>
       </div>
 
@@ -97,12 +138,22 @@ export function ReferenceLinesSettings({ editingChart, referenceLines, onUpdateR
             </div>
             <div className="w-24">
               {line.type === "vertical" ? (
-                <Input
-                  value={line.xValue || ""}
-                  onChange={(e) => handleUpdateReferenceLine(line.id, "xValue", e.target.value)}
-                  placeholder="X value"
-                  className="h-7 text-xs"
-                />
+                editingChart.xAxisType === "datetime" ? (
+                  <Input
+                    type="datetime-local"
+                    value={line.xValue || ""}
+                    onChange={(e) => handleUpdateReferenceLine(line.id, "xValue", e.target.value)}
+                    className="h-7 text-xs"
+                  />
+                ) : (
+                  <Input
+                    type="number"
+                    value={line.xValue || ""}
+                    onChange={(e) => handleUpdateReferenceLine(line.id, "xValue", e.target.value)}
+                    placeholder={editingChart.xAxisType === "time" ? "Time(s)" : "X value"}
+                    className="h-7 text-xs"
+                  />
+                )
               ) : (
                 <Input
                   type="number"
@@ -113,56 +164,133 @@ export function ReferenceLinesSettings({ editingChart, referenceLines, onUpdateR
                 />
               )}
             </div>
-            <div className="w-24">
-              {line.type === "vertical" ? (
+            <div className="w-16">
+              {line.type === "horizontal" ? (
                 <Input
                   type="number"
-                  value={line.yRangeMin || ""}
-                  onChange={(e) => handleUpdateReferenceLine(line.id, "yRangeMin", e.target.value)}
-                  placeholder="Y Min"
-                  className="h-7 text-xs"
-                />
-              ) : editingChart.xAxisType === "datetime" ? (
-                <Input
-                  type="datetime-local"
-                  value={line.xRangeMin || ""}
-                  onChange={(e) => handleUpdateReferenceLine(line.id, "xRangeMin", e.target.value)}
+                  min="1"
+                  max="10"
+                  value={line.axisNo || 1}
+                  onChange={(e) => handleUpdateReferenceLine(line.id, "axisNo", parseInt(e.target.value) || 1)}
                   className="h-7 text-xs"
                 />
               ) : (
-                <Input
-                  type="number"
-                  value={line.xRangeMin || ""}
-                  onChange={(e) => handleUpdateReferenceLine(line.id, "xRangeMin", e.target.value)}
-                  placeholder={editingChart.xAxisType === "time" ? "Start(s)" : "X Min"}
-                  className="h-7 text-xs"
-                />
+                <div className="h-7" />
               )}
             </div>
             <div className="w-24">
               {line.type === "vertical" ? (
-                <Input
-                  type="number"
-                  value={line.yRangeMax || ""}
-                  onChange={(e) => handleUpdateReferenceLine(line.id, "yRangeMax", e.target.value)}
-                  placeholder="Y Max"
-                  className="h-7 text-xs"
-                />
-              ) : editingChart.xAxisType === "datetime" ? (
-                <Input
-                  type="datetime-local"
-                  value={line.xRangeMax || ""}
-                  onChange={(e) => handleUpdateReferenceLine(line.id, "xRangeMax", e.target.value)}
-                  className="h-7 text-xs"
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="h-7 w-full justify-start text-xs">
+                      {line.yRange?.auto ? "Range: Auto" : `Range: ${line.yRange?.min || 0} - ${line.yRange?.max || 100}`}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`y-auto-${line.id}`}
+                          checked={line.yRange?.auto ?? true}
+                          onCheckedChange={(checked) => handleUpdateRange(line.id, 'yRange', 'auto', checked)}
+                        />
+                        <Label htmlFor={`y-auto-${line.id}`} className="text-sm">Auto Range</Label>
+                      </div>
+                      <div className="space-y-2">
+                        <div>
+                          <Label htmlFor={`y-min-${line.id}`} className="text-xs">Min Value</Label>
+                          <Input
+                            id={`y-min-${line.id}`}
+                            type="number"
+                            value={line.yRange?.min || "0"}
+                            onChange={(e) => handleUpdateRange(line.id, 'yRange', 'min', e.target.value)}
+                            disabled={line.yRange?.auto ?? true}
+                            className="h-8"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`y-max-${line.id}`} className="text-xs">Max Value</Label>
+                          <Input
+                            id={`y-max-${line.id}`}
+                            type="number"
+                            value={line.yRange?.max || "100"}
+                            onChange={(e) => handleUpdateRange(line.id, 'yRange', 'max', e.target.value)}
+                            disabled={line.yRange?.auto ?? true}
+                            className="h-8"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               ) : (
-                <Input
-                  type="number"
-                  value={line.xRangeMax || ""}
-                  onChange={(e) => handleUpdateReferenceLine(line.id, "xRangeMax", e.target.value)}
-                  placeholder={editingChart.xAxisType === "time" ? "End(s)" : "X Max"}
-                  className="h-7 text-xs"
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="h-7 w-full justify-start text-xs">
+                      {line.xRange?.auto ? "Range: Auto" : `Range: ${line.xRange?.min || 0} - ${line.xRange?.max || 100}`}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`x-auto-${line.id}`}
+                          checked={line.xRange?.auto ?? true}
+                          onCheckedChange={(checked) => handleUpdateRange(line.id, 'xRange', 'auto', checked)}
+                        />
+                        <Label htmlFor={`x-auto-${line.id}`} className="text-sm">Auto Range</Label>
+                      </div>
+                      <div className="space-y-2">
+                        <div>
+                          <Label htmlFor={`x-min-${line.id}`} className="text-xs">Min Value</Label>
+                          {editingChart.xAxisType === "datetime" ? (
+                            <Input
+                              id={`x-min-${line.id}`}
+                              type="datetime-local"
+                              value={line.xRange?.min || ""}
+                              onChange={(e) => handleUpdateRange(line.id, 'xRange', 'min', e.target.value)}
+                              disabled={line.xRange?.auto ?? true}
+                              className="h-8"
+                            />
+                          ) : (
+                            <Input
+                              id={`x-min-${line.id}`}
+                              type="number"
+                              value={line.xRange?.min || "0"}
+                              onChange={(e) => handleUpdateRange(line.id, 'xRange', 'min', e.target.value)}
+                              disabled={line.xRange?.auto ?? true}
+                              placeholder={editingChart.xAxisType === "time" ? "Start(s)" : "Min"}
+                              className="h-8"
+                            />
+                          )}
+                        </div>
+                        <div>
+                          <Label htmlFor={`x-max-${line.id}`} className="text-xs">Max Value</Label>
+                          {editingChart.xAxisType === "datetime" ? (
+                            <Input
+                              id={`x-max-${line.id}`}
+                              type="datetime-local"
+                              value={line.xRange?.max || ""}
+                              onChange={(e) => handleUpdateRange(line.id, 'xRange', 'max', e.target.value)}
+                              disabled={line.xRange?.auto ?? true}
+                              className="h-8"
+                            />
+                          ) : (
+                            <Input
+                              id={`x-max-${line.id}`}
+                              type="number"
+                              value={line.xRange?.max || "100"}
+                              onChange={(e) => handleUpdateRange(line.id, 'xRange', 'max', e.target.value)}
+                              disabled={line.xRange?.auto ?? true}
+                              placeholder={editingChart.xAxisType === "time" ? "End(s)" : "Max"}
+                              className="h-8"
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               )}
             </div>
             <div className="w-7">
@@ -185,6 +313,9 @@ export function ReferenceLinesSettings({ editingChart, referenceLines, onUpdateR
           <p className="text-sm">Click "Add Reference Line" to create one.</p>
         </div>
       )}
+          </div>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   )
 }
