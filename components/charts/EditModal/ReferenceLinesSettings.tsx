@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
 import { ChartComponent } from "@/types"
 
-interface ReferenceLineConfig {
+export interface ReferenceLineConfig {
   id: string
   type: "vertical" | "horizontal"
   label: string
