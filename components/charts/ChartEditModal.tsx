@@ -7,13 +7,12 @@ import { useAnalysisStore } from "@/stores/useAnalysisStore"
 import { DataSourceTab } from "./EditModal/data-source"
 import { ParametersTab } from "./EditModal/parameters"
 import { AppearanceTab } from "./EditModal/appearance"
-import { ReferenceLineTab } from "./EditModal/reference-lines"
 import { ChartPreview } from "./ChartPreview"
 import { EventInfo } from "@/types"
 
 export function ChartEditModal() {
   const { editingChart, editModalOpen, setEditingChart, setEditModalOpen } = useAnalysisStore()
-  const [activeTab, setActiveTab] = useState<"parameters" | "datasource" | "appearance" | "reference-lines">("datasource")
+  const [activeTab, setActiveTab] = useState<"parameters" | "datasource" | "appearance">("datasource")
   const [selectedDataSourceItems, setSelectedDataSourceItems] = useState<EventInfo[]>([])
 
   if (!editingChart) return null
@@ -61,14 +60,6 @@ export function ChartEditModal() {
                 >
                   Appearance
                 </button>
-                <button
-                  className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
-                    activeTab === "reference-lines" ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/80"
-                  }`}
-                  onClick={() => setActiveTab("reference-lines")}
-                >
-                  Reference lines
-                </button>
               </div>
 
               <div className="flex-1 min-h-0">
@@ -91,14 +82,6 @@ export function ChartEditModal() {
                       editingChart={editingChart}
                       setEditingChart={setEditingChart}
                       selectedDataSourceItems={selectedDataSourceItems}
-                    />
-                  </div>
-                )}
-                {activeTab === "reference-lines" && (
-                  <div className="h-full overflow-y-auto">
-                    <ReferenceLineTab
-                      editingChart={editingChart}
-                      setEditingChart={setEditingChart}
                     />
                   </div>
                 )}
