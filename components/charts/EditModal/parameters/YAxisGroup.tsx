@@ -25,9 +25,9 @@ interface YAxisGroupProps {
     rangeUpdate: Partial<{ auto: boolean; min: number; max: number }>
   ) => void
   addParameterToAxis: (axisNo: number) => void
-  parameterInputRefs: React.MutableRefObject<(HTMLInputElement | null)[]>
-  parameterTypeSelectRefs: React.MutableRefObject<(HTMLSelectElement | null)[]>
-  axisLabelInputRef?: React.MutableRefObject<Record<number, HTMLInputElement | null>>
+  parameterInputRefs: React.RefObject<(HTMLInputElement | null)[]>
+  parameterTypeSelectRefs: React.RefObject<(HTMLSelectElement | null)[]>
+  axisLabelInputRef?: React.RefObject<Record<number, HTMLInputElement | null>>
   openComboboxIndex: number | null
   setOpenComboboxIndex: (index: number | null) => void
   searchQuery: string

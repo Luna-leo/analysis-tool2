@@ -118,7 +118,7 @@ export function ReferenceLinesSettings({ editingChart, referenceLines, onUpdateR
       <div className="space-y-2 max-h-48 overflow-y-auto">
         {referenceLines.map((line) => (
           <div key={line.id} className="flex gap-2 p-1">
-            <div className="w-20">
+            <div className="w-24">
               <select
                 value={line.type}
                 onChange={(e) => handleUpdateReferenceLine(line.id, "type", e.target.value)}
