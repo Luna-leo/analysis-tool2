@@ -420,30 +420,45 @@ export function InterlockSection({ editingChart, setEditingChart }: InterlockSec
               {line.interlockSource === "master" ? (
                 <div className="space-y-2">
                   <Label htmlFor={`interlock-${line.id}`}>Select Interlock Master</Label>
-                  <Select
-                    value={line.interlockId}
-                    onValueChange={(value) => {
-                      const selectedMaster = mockInterlockMaster.find(m => m.id === value)
-                      if (selectedMaster) {
-                        handleUpdateInterlockLine(line.id, {
-                          interlockId: value,
-                          interlockDefinition: selectedMaster.definition,
-                          label: selectedMaster.name
-                        })
-                      }
-                    }}
-                  >
-                    <SelectTrigger id={`interlock-${line.id}`}>
-                      <SelectValue placeholder="Select an interlock" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {mockInterlockMaster.map((master) => (
-                        <SelectItem key={master.id} value={master.id}>
-                          {master.name} ({master.category})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-2">
+                    <Select
+                      value={line.interlockId}
+                      onValueChange={(value) => {
+                        const selectedMaster = mockInterlockMaster.find(m => m.id === value)
+                        if (selectedMaster) {
+                          handleUpdateInterlockLine(line.id, {
+                            interlockId: value,
+                            interlockDefinition: selectedMaster.definition,
+                            label: selectedMaster.name
+                          })
+                        }
+                      }}
+                    >
+                      <SelectTrigger id={`interlock-${line.id}`} className="flex-1">
+                        <SelectValue placeholder="Select an interlock" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {mockInterlockMaster.map((master) => (
+                          <SelectItem key={master.id} value={master.id}>
+                            {master.name} ({master.category})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {line.interlockId && (
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          // TODO: Implement edit functionality
+                          console.log("Edit interlock master:", line.interlockId)
+                        }}
+                        className="h-10 w-10"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-2">

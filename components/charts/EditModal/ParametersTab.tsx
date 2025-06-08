@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { X, Plus, ChevronDown, Copy } from "lucide-react"
+import { X, Plus, ChevronDown, Copy, Edit2 } from "lucide-react"
 import { ChartComponent, InterlockDefinition } from "@/types"
 import { mockInterlockMaster } from "@/data/interlockMaster"
 import { InterlockRegistrationDialog } from "./InterlockRegistrationDialog"
@@ -25,7 +25,7 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
   const [editingInterlockIndex, setEditingInterlockIndex] = useState<number | null>(null)
   const [openComboboxIndex, setOpenComboboxIndex] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
-  const [isNewInterlock, setIsNewInterlock] = useState(false)
+  const [interlockMode, setInterlockMode] = useState<"create" | "edit" | "duplicate">("create")
   const parameterInputRefs = useRef<(HTMLInputElement | null)[]>([])
   const parameterTypeSelectRefs = useRef<(HTMLSelectElement | null)[]>([])
 
@@ -115,13 +115,13 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
     setEditingChart({ ...editingChart, yAxisParams: newParams })
   }
 
-  const handleInterlockSelect = (index: number, value: string, duplicate: boolean = false) => {
+  const handleInterlockSelect = (index: number, value: string, mode: "select" | "edit" | "duplicate" = "select") => {
     setOpenComboboxIndex(null)
     setSearchQuery("") // Reset search query after selection
     
     if (value === "add-new") {
       setEditingInterlockIndex(index)
-      setIsNewInterlock(true)
+      setInterlockMode("create")
       // Clear any existing interlock data for truly new interlock
       const newParams = [...(editingChart.yAxisParams || [])]
       if (newParams[index]) {
@@ -138,16 +138,26 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
 
     const selectedMaster = mockInterlockMaster.find(m => m.id === value)
     if (selectedMaster) {
-      if (duplicate) {
-        // Open dialog with the master's definition as initial values for duplication
+      if (mode === "edit" || mode === "duplicate") {
+        // Open dialog with the master's definition as initial values
         setEditingInterlockIndex(index)
-        setIsNewInterlock(false)
+        setInterlockMode(mode)
         // Store the master data temporarily to pass to dialog
         const newParams = [...(editingChart.yAxisParams || [])]
+        
+        // For duplicate mode, append " (Copy)" to the name
+        const definitionToUse = mode === "duplicate" 
+          ? {
+              ...selectedMaster.definition,
+              name: `${selectedMaster.definition.name} (Copy)`
+            }
+          : selectedMaster.definition
+        
         newParams[index] = {
           ...newParams[index],
-          interlockDefinition: selectedMaster.definition,
-          selectedThresholds: selectedMaster.definition.thresholds.map(t => t.id)
+          interlockDefinition: definitionToUse,
+          selectedThresholds: selectedMaster.definition.thresholds.map(t => t.id),
+          interlockSource: "custom", // Always create as custom when editing/duplicating
         }
         setEditingChart({ ...editingChart, yAxisParams: newParams })
         setShowInterlockDialog(true)
@@ -353,7 +363,7 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
                                             <CommandItem
                                               key={master.id}
                                               value={master.id}
-                                              onSelect={() => handleInterlockSelect(index, master.id)}
+                                              onSelect={() => handleInterlockSelect(index, master.id, "select")}
                                               className="flex items-center justify-between group"
                                             >
                                               <div className="flex flex-col items-start flex-1">
@@ -362,17 +372,32 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
                                                   {master.plant_name} • {master.machine_no}
                                                 </span>
                                               </div>
-                                              <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                onClick={(e) => {
-                                                  e.stopPropagation()
-                                                  handleInterlockSelect(index, master.id, true)
-                                                }}
-                                              >
-                                                <Copy className="h-3 w-3" />
-                                              </Button>
+                                              <div className="flex gap-1">
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    handleInterlockSelect(index, master.id, "edit")
+                                                  }}
+                                                  title="Edit interlock"
+                                                >
+                                                  <Edit2 className="h-3 w-3" />
+                                                </Button>
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    handleInterlockSelect(index, master.id, "duplicate")
+                                                  }}
+                                                  title="Duplicate interlock"
+                                                >
+                                                  <Copy className="h-3 w-3" />
+                                                </Button>
+                                              </div>
                                             </CommandItem>
                                           ))}
                                           <CommandItem
@@ -533,17 +558,18 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
         onOpenChange={(open) => {
           setShowInterlockDialog(open)
           if (!open) {
-            setIsNewInterlock(false)
+            setInterlockMode("create")
           }
         }}
         onSave={handleInterlockSave}
+        mode={interlockMode}
         initialDefinition={
-          editingInterlockIndex !== null && !isNewInterlock
+          editingInterlockIndex !== null && interlockMode !== "create"
             ? editingChart.yAxisParams?.[editingInterlockIndex]?.interlockDefinition 
             : undefined
         }
         initialSelectedThresholds={
-          editingInterlockIndex !== null && !isNewInterlock
+          editingInterlockIndex !== null && interlockMode !== "create"
             ? editingChart.yAxisParams?.[editingInterlockIndex]?.selectedThresholds 
             : undefined
         }

@@ -19,6 +19,7 @@ interface InterlockRegistrationDialogProps {
   initialSelectedThresholds?: string[]
   initialPlant?: string
   initialMachineNo?: string
+  mode?: "create" | "edit" | "duplicate"
 }
 
 export function InterlockRegistrationDialog({
@@ -28,7 +29,8 @@ export function InterlockRegistrationDialog({
   initialDefinition,
   initialSelectedThresholds,
   initialPlant,
-  initialMachineNo
+  initialMachineNo,
+  mode = "create"
 }: InterlockRegistrationDialogProps) {
   const [name, setName] = useState(initialDefinition?.name || "")
   const [plant, setPlant] = useState(initialPlant || "")
@@ -135,7 +137,9 @@ export function InterlockRegistrationDialog({
       <DialogContent className="max-w-7xl w-[90vw] h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
-            {initialDefinition ? "Edit Interlock Definition" : "New Interlock Registration"}
+            {mode === "edit" ? "Edit Interlock Definition" : 
+             mode === "duplicate" ? "Duplicate Interlock Definition" : 
+             "New Interlock Registration"}
           </DialogTitle>
         </DialogHeader>
 
@@ -209,7 +213,7 @@ export function InterlockRegistrationDialog({
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={!name.trim() || !plant.trim() || !machineNo.trim()}>
-            {initialDefinition ? "Update" : "Save"}
+            {mode === "edit" ? "Update" : "Create"}
           </Button>
         </div>
       </DialogContent>
