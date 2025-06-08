@@ -118,18 +118,19 @@ export function ReferenceLinesSettings({
           </Button>
         </div>
         <CollapsibleContent>
-          <div className="px-3 pt-3 pb-3 max-h-48 overflow-y-auto">
+          <div className="px-3 pb-3">
+            <div className="pt-3 border-t">
+              <div className="flex gap-2 mb-1 px-1 text-xs font-medium text-muted-foreground border-b pb-1 mt-1">
+                <div className="w-20">Type</div>
+                <div className="flex-1">Label</div>
+                <div className="w-24">Value</div>
+                <div className="w-16">Axis No</div>
+                <div className="w-24">Range</div>
+                <div className="w-7"></div>
+              </div>
 
-      <div className="flex gap-2 mb-2 px-1 pb-1 border-b">
-        <div className="w-20 text-xs font-medium text-muted-foreground">Type</div>
-        <div className="flex-1 text-xs font-medium text-muted-foreground">Label</div>
-        <div className="w-24 text-xs font-medium text-muted-foreground">Value</div>
-        <div className="w-16 text-xs font-medium text-muted-foreground">Axis No</div>
-        <div className="w-24 text-xs font-medium text-muted-foreground">Range</div>
-        <div className="w-7"></div>
-      </div>
-
-      <div className="space-y-2">
+              <div className="max-h-48 overflow-y-auto">
+                <div className="space-y-2">
         {referenceLines.map((line) => (
           <div key={line.id} className="flex gap-2 p-1">
             <div className="w-24">
@@ -319,14 +320,16 @@ export function ReferenceLinesSettings({
             </div>
           </div>
         ))}
-      </div>
 
-      {referenceLines.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
-          <p className="text-sm">No reference lines added yet.</p>
-          <p className="text-sm">Click "Add Reference Line" to create one.</p>
-        </div>
-      )}
+                  {referenceLines.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
+                      <p className="text-sm">No reference lines added yet.</p>
+                      <p className="text-sm">Click "Add Reference Line" to create one.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </CollapsibleContent>
       </Collapsible>
