@@ -14,12 +14,12 @@ import { ChartComponent, InterlockDefinition } from "@/types"
 import { mockInterlockMaster } from "@/data/interlockMaster"
 import { InterlockRegistrationDialog } from "./InterlockRegistrationDialog"
 
-interface ParametersTabProps {
+interface YParametersSettingsProps {
   editingChart: ChartComponent
   setEditingChart: (chart: ChartComponent) => void
 }
 
-export function ParametersTab({ editingChart, setEditingChart }: ParametersTabProps) {
+export function YParametersSettings({ editingChart, setEditingChart }: YParametersSettingsProps) {
   const [lastAddedParamIndex, setLastAddedParamIndex] = useState<number | null>(null)
   const [showInterlockDialog, setShowInterlockDialog] = useState(false)
   const [editingInterlockIndex, setEditingInterlockIndex] = useState<number | null>(null)
@@ -217,89 +217,8 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
     }
   }
 
-  interface ReferenceLineConfig {
-    id: string
-    type: "vertical" | "horizontal"
-    label: string
-    xValue?: string
-    yValue?: string
-    yRangeMin?: string
-    yRangeMax?: string
-    xRangeMin?: string
-    xRangeMax?: string
-  }
-
-  const [referenceLines, setReferenceLines] = useState<ReferenceLineConfig[]>([])
-
-  const handleAddReferenceLine = () => {
-    const newReferenceLine: ReferenceLineConfig = {
-      id: Date.now().toString(),
-      type: "vertical",
-      label: "",
-      xValue: "",
-      yValue: "",
-      yRangeMin: "",
-      yRangeMax: "",
-      xRangeMin: "",
-      xRangeMax: "",
-    }
-    setReferenceLines([...referenceLines, newReferenceLine])
-  }
-
-  const handleUpdateReferenceLine = (id: string, field: keyof ReferenceLineConfig, value: string) => {
-    setReferenceLines(referenceLines.map(line => 
-      line.id === id ? { ...line, [field]: value } : line
-    ))
-  }
-
-  const handleRemoveReferenceLine = (id: string) => {
-    setReferenceLines(referenceLines.filter(line => line.id !== id))
-  }
-
   return (
-    <div className="flex flex-col space-y-4 h-full">
-      <div className="border rounded-lg p-3 bg-muted/30">
-        <h4 className="font-medium text-sm mb-2">X Parameter Settings</h4>
-        <div className="flex gap-2">
-          <div className="w-38">
-            <Label htmlFor="x-axis-type" className="text-sm mb-1 block">Parameter Type</Label>
-            <select
-              id="x-axis-type"
-              className="w-full h-8 px-2 py-1 border rounded-md text-sm"
-              value={editingChart.xAxisType || "datetime"}
-              onChange={(e) => {
-                setEditingChart({
-                  ...editingChart,
-                  xAxisType: e.target.value as "datetime" | "time" | "parameter",
-                  ...(e.target.value !== "parameter" && { xParameter: "" }),
-                })
-              }}
-            >
-              <option value="datetime">Datetime</option>
-              <option value="time">Time (elapsed)</option>
-              <option value="parameter">Parameter</option>
-            </select>
-          </div>
-
-          <div className="flex-1">
-            <Label htmlFor="x-parameter" className="text-sm mb-1 block">Parameter</Label>
-            <Input
-              id="x-parameter"
-              value={editingChart.xParameter || ""}
-              onChange={(e) => {
-                setEditingChart({
-                  ...editingChart,
-                  xParameter: e.target.value,
-                })
-              }}
-              placeholder="Enter parameter"
-              disabled={editingChart.xAxisType !== "parameter"}
-              className="h-8 text-sm"
-            />
-          </div>
-        </div>
-      </div>
-
+    <>
       <div className="flex flex-col border rounded-lg p-3 bg-muted/30 min-h-0 flex-1">
         <div className="flex justify-between items-center mb-2 flex-shrink-0">
           <h4 className="font-medium text-sm">Y Parameters Settings</h4>
@@ -592,141 +511,6 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
         </div>
       </div>
 
-      <div className="border rounded-lg p-3 bg-muted/30">
-        <div className="flex justify-between items-center mb-2">
-          <h4 className="font-medium text-sm">Reference Lines Settings</h4>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 text-xs"
-            onClick={handleAddReferenceLine}
-          >
-            Add Reference Line
-          </Button>
-        </div>
-
-        <div className="flex gap-2 mb-2 px-1 pb-1 border-b">
-          <div className="w-20 text-xs font-medium text-muted-foreground">Type</div>
-          <div className="flex-1 text-xs font-medium text-muted-foreground">Label</div>
-          <div className="w-24 text-xs font-medium text-muted-foreground">Value</div>
-          <div className="w-24 text-xs font-medium text-muted-foreground">Range Min</div>
-          <div className="w-24 text-xs font-medium text-muted-foreground">Range Max</div>
-          <div className="w-7"></div>
-        </div>
-
-        <div className="space-y-2 max-h-48 overflow-y-auto">
-          {referenceLines.map((line) => (
-            <div key={line.id} className="flex gap-2 p-1">
-              <div className="w-20">
-                <select
-                  value={line.type}
-                  onChange={(e) => handleUpdateReferenceLine(line.id, "type", e.target.value)}
-                  className="w-full h-7 px-2 py-1 border rounded-md text-xs"
-                >
-                  <option value="vertical">Vertical</option>
-                  <option value="horizontal">Horizontal</option>
-                </select>
-              </div>
-              <div className="flex-1">
-                <Input
-                  value={line.label}
-                  onChange={(e) => handleUpdateReferenceLine(line.id, "label", e.target.value)}
-                  placeholder="Label"
-                  className="h-7 text-xs"
-                />
-              </div>
-              <div className="w-24">
-                {line.type === "vertical" ? (
-                  <Input
-                    value={line.xValue || ""}
-                    onChange={(e) => handleUpdateReferenceLine(line.id, "xValue", e.target.value)}
-                    placeholder="X value"
-                    className="h-7 text-xs"
-                  />
-                ) : (
-                  <Input
-                    type="number"
-                    value={line.yValue || ""}
-                    onChange={(e) => handleUpdateReferenceLine(line.id, "yValue", e.target.value)}
-                    placeholder="Y value"
-                    className="h-7 text-xs"
-                  />
-                )}
-              </div>
-              <div className="w-24">
-                {line.type === "vertical" ? (
-                  <Input
-                    type="number"
-                    value={line.yRangeMin || ""}
-                    onChange={(e) => handleUpdateReferenceLine(line.id, "yRangeMin", e.target.value)}
-                    placeholder="Y Min"
-                    className="h-7 text-xs"
-                  />
-                ) : editingChart.xAxisType === "datetime" ? (
-                  <Input
-                    type="datetime-local"
-                    value={line.xRangeMin || ""}
-                    onChange={(e) => handleUpdateReferenceLine(line.id, "xRangeMin", e.target.value)}
-                    className="h-7 text-xs"
-                  />
-                ) : (
-                  <Input
-                    type="number"
-                    value={line.xRangeMin || ""}
-                    onChange={(e) => handleUpdateReferenceLine(line.id, "xRangeMin", e.target.value)}
-                    placeholder={editingChart.xAxisType === "time" ? "Start(s)" : "X Min"}
-                    className="h-7 text-xs"
-                  />
-                )}
-              </div>
-              <div className="w-24">
-                {line.type === "vertical" ? (
-                  <Input
-                    type="number"
-                    value={line.yRangeMax || ""}
-                    onChange={(e) => handleUpdateReferenceLine(line.id, "yRangeMax", e.target.value)}
-                    placeholder="Y Max"
-                    className="h-7 text-xs"
-                  />
-                ) : editingChart.xAxisType === "datetime" ? (
-                  <Input
-                    type="datetime-local"
-                    value={line.xRangeMax || ""}
-                    onChange={(e) => handleUpdateReferenceLine(line.id, "xRangeMax", e.target.value)}
-                    className="h-7 text-xs"
-                  />
-                ) : (
-                  <Input
-                    type="number"
-                    value={line.xRangeMax || ""}
-                    onChange={(e) => handleUpdateReferenceLine(line.id, "xRangeMax", e.target.value)}
-                    placeholder={editingChart.xAxisType === "time" ? "End(s)" : "X Max"}
-                    className="h-7 text-xs"
-                  />
-                )}
-              </div>
-              <div className="w-7">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleRemoveReferenceLine(line.id)}
-                  className="h-7 w-7 p-0"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {referenceLines.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
-            <p className="text-sm">No reference lines added yet.</p>
-            <p className="text-sm">Click "Add Reference Line" to create one.</p>
-          </div>
-        )}
-      </div>
-
       <InterlockRegistrationDialog
         open={showInterlockDialog}
         onOpenChange={(open) => {
@@ -748,6 +532,6 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
             : undefined
         }
       />
-    </div>
+    </>
   )
 }
