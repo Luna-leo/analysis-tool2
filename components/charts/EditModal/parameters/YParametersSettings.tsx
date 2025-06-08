@@ -330,9 +330,13 @@ export function YParametersSettings({ editingChart, setEditingChart }: YParamete
 
   return (
     <>
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-        <div className="flex flex-col border rounded-lg bg-muted/30 min-h-0 flex-1">
-          <div className="flex items-center gap-2 p-3">
+      <Collapsible
+        open={isOpen}
+        onOpenChange={setIsOpen}
+        className="h-full flex flex-col"
+      >
+        <div className="border rounded-lg bg-muted/30 flex flex-col flex-1">
+          <div className="flex items-center gap-2 p-3 border-b bg-muted/20 sticky top-0 z-10">
             <CollapsibleTrigger className="flex items-center gap-2 text-left hover:bg-muted/50 transition-colors p-1 rounded">
               {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               <h4 className="font-medium text-sm">Y Parameters Settings</h4>

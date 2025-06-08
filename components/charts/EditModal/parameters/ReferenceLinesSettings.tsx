@@ -67,7 +67,14 @@ export function ReferenceLinesSettings({ editingChart, referenceLines, onUpdateR
     ))
   }
 
-  const handleUpdateRange = (id: string, rangeType: 'xRange' | 'yRange', field: keyof ReferenceLineConfig['xRange'], value: any) => {
+  type RangeField = keyof NonNullable<ReferenceLineConfig['xRange']> | keyof NonNullable<ReferenceLineConfig['yRange']>
+  
+  const handleUpdateRange = (
+    id: string,
+    rangeType: 'xRange' | 'yRange',
+    field: RangeField,
+    value: any
+  ) => {
     onUpdateReferenceLines(referenceLines.map(line => {
       if (line.id !== id) return line
       return {
@@ -85,8 +92,8 @@ export function ReferenceLinesSettings({ editingChart, referenceLines, onUpdateR
   }
 
   return (
-    <div className="border rounded-lg bg-muted/30">
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+    <div className="border rounded-lg bg-muted/30 h-full flex flex-col">
+      <Collapsible open={isOpen} onOpenChange={setIsOpen} className="flex flex-col flex-1">
         <div className="flex items-center gap-2 p-3">
           <CollapsibleTrigger className="flex items-center gap-2 text-left hover:bg-muted/50 transition-colors p-1 rounded">
             {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
@@ -103,7 +110,7 @@ export function ReferenceLinesSettings({ editingChart, referenceLines, onUpdateR
             Add Reference Line
           </Button>
         </div>
-        <CollapsibleContent>
+        <CollapsibleContent className="flex-1 overflow-y-auto">
           <div className="px-3 pb-3">
 
       <div className="flex gap-2 mb-2 px-1 pb-1 border-b">
@@ -115,7 +122,7 @@ export function ReferenceLinesSettings({ editingChart, referenceLines, onUpdateR
         <div className="w-7"></div>
       </div>
 
-      <div className="space-y-2 max-h-48 overflow-y-auto">
+      <div className="space-y-2">
         {referenceLines.map((line) => (
           <div key={line.id} className="flex gap-2 p-1">
             <div className="w-24">

@@ -22,6 +22,12 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
         editingChart={editingChart} 
         setEditingChart={setEditingChart} 
       />
+      
+      <ReferenceLinesSettings
+          editingChart={editingChart}
+          referenceLines={referenceLines}
+          onUpdateReferenceLines={setReferenceLines}
+      />
     </div>
   )
 }

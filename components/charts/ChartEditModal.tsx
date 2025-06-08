@@ -71,28 +71,36 @@ export function ChartEditModal() {
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 min-h-0">
                 {activeTab === "datasource" && (
-                  <DataSourceTab
-                    selectedDataSourceItems={selectedDataSourceItems}
-                    setSelectedDataSourceItems={setSelectedDataSourceItems}
-                  />
+                  <div className="h-full overflow-y-auto">
+                    <DataSourceTab
+                      selectedDataSourceItems={selectedDataSourceItems}
+                      setSelectedDataSourceItems={setSelectedDataSourceItems}
+                    />
+                  </div>
                 )}
                 {activeTab === "parameters" && (
-                  <ParametersTab editingChart={editingChart} setEditingChart={setEditingChart} />
+                  <div className="h-full">
+                    <ParametersTab editingChart={editingChart} setEditingChart={setEditingChart} />
+                  </div>
                 )}
                 {activeTab === "appearance" && (
-                  <AppearanceTab
-                    editingChart={editingChart}
-                    setEditingChart={setEditingChart}
-                    selectedDataSourceItems={selectedDataSourceItems}
-                  />
+                  <div className="h-full overflow-y-auto">
+                    <AppearanceTab
+                      editingChart={editingChart}
+                      setEditingChart={setEditingChart}
+                      selectedDataSourceItems={selectedDataSourceItems}
+                    />
+                  </div>
                 )}
                 {activeTab === "reference-lines" && (
-                  <ReferenceLineTab
-                    editingChart={editingChart}
-                    setEditingChart={setEditingChart}
-                  />
+                  <div className="h-full overflow-y-auto">
+                    <ReferenceLineTab
+                      editingChart={editingChart}
+                      setEditingChart={setEditingChart}
+                    />
+                  </div>
                 )}
               </div>
             </div>
