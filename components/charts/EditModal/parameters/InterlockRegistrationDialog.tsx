@@ -178,12 +178,6 @@ export function InterlockRegistrationDialog({
                 onMachineNoChange={setMachineNo}
               />
             </div>
-            <div className="shrink-0 mb-2">
-              <ThresholdColorSection
-                thresholds={thresholds}
-                onUpdateThresholds={setThresholds}
-              />
-            </div>
             <div ref={chartContainerRef} className="flex-1 min-h-0 bg-gray-50 rounded-lg p-1 flex items-center justify-center">
               <div style={{ width: '100%', height: '100%', overflow: 'hidden' }}>
                 <InterlockChart
@@ -213,6 +207,12 @@ export function InterlockRegistrationDialog({
                 yUnit={yUnit}
                 onYUnitChange={setYUnit}
               />
+              <div className="mt-2">
+                <ThresholdColorSection
+                  thresholds={thresholds}
+                  onUpdateThresholds={setThresholds}
+                />
+              </div>
             </div>
 
             <div className="mt-2 flex-1 min-h-0">

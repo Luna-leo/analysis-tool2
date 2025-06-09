@@ -62,6 +62,8 @@ export function DataSourceTab({
         id: `manual_${Date.now()}`,
       }
       dataSource.setPeriodPool([...dataSource.periodPool, newEntry])
+      // Automatically select the newly added period
+      dataSource.setSelectedPoolIds(new Set([...dataSource.selectedPoolIds, newEntry.id]))
     }
     manualEntry.close()
   }

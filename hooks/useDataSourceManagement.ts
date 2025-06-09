@@ -49,12 +49,16 @@ export function useDataSourceManagement() {
 
   const handleAddEventsToPool = (eventsToAdd: EventInfo[]) => {
     const newPool = [...periodPool]
+    const newlyAddedIds: string[] = []
     eventsToAdd.forEach((event) => {
       if (!newPool.find((p) => p.id === event.id)) {
         newPool.push(event)
+        newlyAddedIds.push(event.id)
       }
     })
     setPeriodPool(newPool)
+    // Automatically select newly added periods
+    setSelectedPoolIds(new Set([...selectedPoolIds, ...newlyAddedIds]))
   }
 
   const handleRemoveFromPool = (periodId: string) => {
