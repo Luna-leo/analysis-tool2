@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { FormulaMaster } from "@/data/formulaMaster"
 import { FormulaBuilder, FormulaElement } from "./FormulaBuilder"
-import { FormulaPreview } from "./FormulaPreview"
+import { FormulaValidation } from "./FormulaValidation"
 
 interface FormulaRegistrationDialogProps {
   open: boolean
@@ -121,7 +121,7 @@ export function FormulaRegistrationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl w-[90vw] h-[90vh] flex flex-col">
+      <DialogContent className="max-w-3xl w-[90vw] max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {mode === "edit" ? "Edit Formula" : 
@@ -130,36 +130,18 @@ export function FormulaRegistrationDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden flex gap-4">
-          {/* Left Panel - Form */}
-          <div className="w-1/2 overflow-y-auto space-y-4 pr-2">
-            {/* Basic Information */}
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="formula-name">Formula Name</Label>
-                <Input
-                  id="formula-name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g., Temperature Difference"
-                  className="mt-1"
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="formula-description">Description</Label>
-                <Textarea
-                  id="formula-description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Describe what this formula calculates..."
-                  className="mt-1 h-20 resize-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label htmlFor="formula-category">Category</Label>
+        <div className="flex-1 overflow-y-auto space-y-6">
+          {/* Step 1: Basic Information */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">1</div>
+              <h3 className="text-lg font-semibold">Basic Information</h3>
+            </div>
+            
+            <div className="pl-10 space-y-3">
+              <div className="grid grid-cols-12 gap-3">
+                <div className="col-span-3">
+                  <Label htmlFor="formula-category">Category *</Label>
                   <Select value={category} onValueChange={setCategory}>
                     <SelectTrigger id="formula-category" className="mt-1">
                       <SelectValue placeholder="Select category" />
@@ -173,8 +155,17 @@ export function FormulaRegistrationDialog({
                     </SelectContent>
                   </Select>
                 </div>
-
-                <div>
+                <div className="col-span-6">
+                  <Label htmlFor="formula-name">Formula Name *</Label>
+                  <Input
+                    id="formula-name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g., Temperature Difference"
+                    className="mt-1"
+                  />
+                </div>
+                <div className="col-span-3">
                   <Label htmlFor="formula-unit">Unit</Label>
                   <Input
                     id="formula-unit"
@@ -185,31 +176,64 @@ export function FormulaRegistrationDialog({
                   />
                 </div>
               </div>
-            </div>
 
-            {/* Formula Builder */}
-            <FormulaBuilder
-              elements={elements}
-              onElementsChange={setElements}
-            />
+              <div>
+                <Label htmlFor="formula-description">Description</Label>
+                <Textarea
+                  id="formula-description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe what this formula calculates..."
+                  className="mt-1 min-h-[40px] resize-y"
+                  style={{ height: 'auto' }}
+                  onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = 'auto';
+                    target.style.height = target.scrollHeight + 'px';
+                  }}
+                />
+              </div>
+            </div>
           </div>
 
-          {/* Right Panel - Preview */}
-          <div className="w-1/2 overflow-y-auto pl-2">
-            <FormulaPreview
-              elements={elements}
-              formulaName={name}
-              unit={unit}
-            />
+          {/* Step 2: Build Formula */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">2</div>
+              <h3 className="text-lg font-semibold">Build Formula</h3>
+            </div>
+            
+            <div className="pl-10">
+              <FormulaBuilder
+                elements={elements}
+                onElementsChange={setElements}
+              />
+            </div>
+          </div>
+
+          {/* Step 3: Preview & Validate */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">3</div>
+              <h3 className="text-lg font-semibold">Validate</h3>
+            </div>
+            
+            <div className="pl-10">
+              <FormulaValidation
+                elements={elements}
+                formulaName={name}
+                unit={unit}
+              />
+            </div>
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 pt-2 border-t">
+        <div className="flex justify-end gap-2 pt-4 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={!isValid}>
-            {mode === "edit" ? "Update" : "Create"}
+            {mode === "edit" ? "Update Formula" : "Create Formula"}
           </Button>
         </div>
       </DialogContent>

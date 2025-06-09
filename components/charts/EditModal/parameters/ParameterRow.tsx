@@ -85,10 +85,17 @@ export function ParameterRow({
                       }}
                     >
                       <PopoverTrigger asChild>
-                        <Button variant="outline" role="combobox" className="h-7 w-full justify-start text-sm font-normal min-w-0">
-                          <span className="truncate text-left mr-auto">
-                            {param.parameter || "Select Formula"}
-                          </span>
+                        <Button variant="outline" role="combobox" className="h-auto w-full justify-start text-sm font-normal min-w-0 py-2">
+                          <div className="flex flex-col items-start text-left mr-auto min-w-0 flex-1">
+                            <span className="truncate font-medium">
+                              {param.parameter || "Select Formula"}
+                            </span>
+                            {param.formulaDefinition?.expression && (
+                              <span className="text-xs text-muted-foreground truncate font-mono mt-0.5">
+                                {param.formulaDefinition.expression}
+                              </span>
+                            )}
+                          </div>
                           <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0 ml-2" />
                         </Button>
                       </PopoverTrigger>
@@ -181,10 +188,76 @@ export function ParameterRow({
                       }}
                     >
                       <PopoverTrigger asChild>
-                        <Button variant="outline" role="combobox" className="h-7 w-full justify-start text-sm font-normal min-w-0">
-                          <span className="truncate text-left mr-auto">
-                            {param.parameter || "Select Interlock"}
-                          </span>
+                        <Button variant="outline" role="combobox" className="h-auto w-full justify-start text-sm font-normal min-w-0 py-2">
+                          <div className="flex flex-col items-start text-left mr-auto min-w-0 flex-1">
+                            <span className="truncate font-medium">
+                              {param.parameter || "Select Interlock"}
+                            </span>
+                            {param.selectedThresholds && param.selectedThresholds.length > 0 && param.interlockDefinition && (
+                              <div className="flex gap-1 flex-wrap items-center mt-1">
+                                {param.selectedThresholds.map((thresholdId) => {
+                                  const threshold = param.interlockDefinition?.thresholds.find((t) => t.id === thresholdId)
+                                  return threshold ? (
+                                    <Badge
+                                      key={thresholdId}
+                                      variant="secondary"
+                                      className="text-xs pl-1.5 pr-0.5 py-0 h-4 flex items-center gap-1 group"
+                                      style={{
+                                        backgroundColor: threshold.color + "20",
+                                        borderColor: threshold.color,
+                                        color: threshold.color,
+                                      }}
+                                    >
+                                      <span>{threshold.name}</span>
+                                      <div
+                                        className="h-3.5 w-3.5 p-0 flex items-center justify-center rounded-sm hover:bg-black/10 transition-all cursor-pointer opacity-40 hover:opacity-100"
+                                        onClick={(e) => {
+                                          e.preventDefault()
+                                          e.stopPropagation()
+                                          handleThresholdRemove(index, thresholdId)
+                                        }}
+                                      >
+                                        <X className="h-2 w-2" />
+                                      </div>
+                                    </Badge>
+                                  ) : null
+                                })}
+                                {param.interlockDefinition && (
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <div
+                                        className="h-4 w-4 p-0 border border-dashed border-gray-400 hover:border-gray-600 rounded cursor-pointer inline-flex items-center justify-center bg-transparent hover:bg-muted/50 transition-colors"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <Plus className="h-2.5 w-2.5" />
+                                      </div>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-48 p-1">
+                                      <div className="space-y-1">
+                                        {param.interlockDefinition.thresholds
+                                          .filter((threshold) => !param.selectedThresholds?.includes(threshold.id))
+                                          .map((threshold) => (
+                                            <button
+                                              key={threshold.id}
+                                              onClick={() => handleThresholdAdd(index, threshold.id)}
+                                              className="w-full text-left px-2 py-1 text-xs hover:bg-muted rounded flex items-center gap-2"
+                                            >
+                                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: threshold.color }} />
+                                              {threshold.name}
+                                            </button>
+                                          ))}
+                                        {param.interlockDefinition.thresholds.every((threshold) =>
+                                          param.selectedThresholds?.includes(threshold.id)
+                                        ) && (
+                                          <div className="px-2 py-1 text-xs text-muted-foreground">All thresholds selected</div>
+                                        )}
+                                      </div>
+                                    </PopoverContent>
+                                  </Popover>
+                                )}
+                              </div>
+                            )}
+                          </div>
                           <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0 ml-2" />
                         </Button>
                       </PopoverTrigger>
@@ -294,71 +367,6 @@ export function ParameterRow({
             />
           )}
 
-          {param.parameterType === "Interlock" &&
-            ((param.selectedThresholds && param.selectedThresholds.length > 0) || param.interlockDefinition) && (
-              <div className="flex gap-1 flex-wrap items-center mt-1">
-                {param.selectedThresholds?.map((thresholdId) => {
-                  const threshold = param.interlockDefinition?.thresholds.find((t) => t.id === thresholdId)
-                  return threshold ? (
-                    <Badge
-                      key={thresholdId}
-                      variant="secondary"
-                      className="text-xs px-1.5 py-0 h-5 flex items-center gap-1"
-                      style={{
-                        backgroundColor: threshold.color + "20",
-                        borderColor: threshold.color,
-                        color: threshold.color,
-                      }}
-                    >
-                      <span>{threshold.name}</span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleThresholdRemove(index, thresholdId)
-                        }}
-                        className="hover:bg-black/10 rounded-full p-0.5"
-                      >
-                        <X className="h-2 w-2" />
-                      </button>
-                    </Badge>
-                  ) : null
-                })}
-                {param.interlockDefinition && (
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-5 w-5 p-0 border border-dashed border-gray-400 hover:border-gray-600"
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-48 p-1">
-                      <div className="space-y-1">
-                        {param.interlockDefinition.thresholds
-                          .filter((threshold) => !param.selectedThresholds?.includes(threshold.id))
-                          .map((threshold) => (
-                            <button
-                              key={threshold.id}
-                              onClick={() => handleThresholdAdd(index, threshold.id)}
-                              className="w-full text-left px-2 py-1 text-xs hover:bg-muted rounded flex items-center gap-2"
-                            >
-                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: threshold.color }} />
-                              {threshold.name}
-                            </button>
-                          ))}
-                        {param.interlockDefinition.thresholds.every((threshold) =>
-                          param.selectedThresholds?.includes(threshold.id)
-                        ) && (
-                          <div className="px-2 py-1 text-xs text-muted-foreground">All thresholds selected</div>
-                        )}
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                )}
-              </div>
-            )}
         </div>
       </div>
 
