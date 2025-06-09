@@ -1,40 +1,18 @@
 "use client"
 
 import React, { useState } from "react"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { X, Settings, Plus, ChevronDown, Search, FileText, Database, CalendarDays } from "lucide-react"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+import { FileText, Database, CalendarDays } from "lucide-react"
 import { ManualEntryDialog, TriggerSignalDialog } from "../../../dialogs"
 import { useManualEntry } from "@/hooks/useManualEntry"
 import { EventInfo } from "@/types"
+import {
+  ManualEntrySection,
+  SignalSearchSection,
+  EventInformationSection,
+  TimeOffsetSettings,
+  SelectedDataSourceTable
+} from "./components"
 
 type DataSourceType = 'manual' | 'signal' | 'event'
 
@@ -87,7 +65,6 @@ export function DataSourceTab({
 
   const manualEntry = useManualEntry()
   const [triggerSignalDialogOpen, setTriggerSignalDialogOpen] = useState(false)
-  const [eventSearchTerm, setEventSearchTerm] = useState("")
 
   const [startOffset, setStartOffset] = useState(0)
   const [startOffsetUnit, setStartOffsetUnit] = useState<'min' | 'sec'>('min')
@@ -126,9 +103,6 @@ export function DataSourceTab({
   const handleAddTriggerSignalResults = (results: EventInfo[]) => {
     setSelectedDataSourceItems([...selectedDataSourceItems, ...results])
   }
-
-  const resetStartOffset = () => setStartOffset(0)
-  const resetEndOffset = () => setEndOffset(0)
 
   return (
     <>
@@ -169,195 +143,29 @@ export function DataSourceTab({
 
         {/* Active Data Source Section */}
         {activeDataSourceType === 'manual' && (
-          <div className="border rounded-lg p-3">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-medium">Manual Entry</h4>
-              <Button
-                variant="default"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={manualEntry.openForNew}
-              >
-                <Plus className="h-3 w-3 mr-1" />
-                Create Manual Entry
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Click "Create Manual Entry" to add custom data points with specific time ranges and labels.
-            </p>
-          </div>
+          <ManualEntrySection onCreateManualEntry={manualEntry.openForNew} />
         )}
 
         {activeDataSourceType === 'signal' && (
-          <div className="border rounded-lg p-3">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-medium">Signal Search</h4>
-              <Button
-                variant="default"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => setTriggerSignalDialogOpen(true)}
-              >
-                <Search className="h-3 w-3 mr-1" />
-                Search Signals
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Search for trigger signals to automatically identify events based on conditions.
-            </p>
-          </div>
+          <SignalSearchSection onSearchSignals={() => setTriggerSignalDialogOpen(true)} />
         )}
 
         {activeDataSourceType === 'event' && (
-          <div className="border rounded-lg">
-            <div className="p-3 border-b">
-              <div className="flex justify-between items-center">
-                <h4 className="text-sm font-medium">Event Information</h4>
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="h-7 text-xs"
-                  disabled={selectedEventIds.size === 0}
-                  onClick={() => {
-                    const selectedEvents = events.filter((event) => selectedEventIds.has(event.id))
-                    const newItems = [...selectedDataSourceItems]
-                    selectedEvents.forEach((event) => {
-                      if (!newItems.find((item) => item.id === event.id)) {
-                        newItems.push(event)
-                      }
-                    })
-                    setSelectedDataSourceItems(newItems)
-                    setSelectedEventIds(new Set())
-                  }}
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Add Selected ({selectedEventIds.size})
-                </Button>
-              </div>
-            </div>
-            <div className="p-2 border-b bg-muted/50 flex items-center gap-2">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <Input
-                value={eventSearchTerm}
-                onChange={(e) => setEventSearchTerm(e.target.value)}
-                placeholder="Search events"
-                className="h-8 text-sm"
-              />
-            </div>
-            <div className="max-h-64 overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-5 px-1">
-                      <Checkbox
-                        checked={selectedEventIds.size > 0 && events.filter((event) => {
-                          if (!eventSearchTerm) return true
-                          const searchLower = eventSearchTerm.toLowerCase()
-                          return (
-                            event.plant.toLowerCase().includes(searchLower) ||
-                            event.machineNo.toLowerCase().includes(searchLower) ||
-                            event.label.toLowerCase().includes(searchLower) ||
-                            event.labelDescription?.toLowerCase().includes(searchLower) ||
-                            event.event.toLowerCase().includes(searchLower) ||
-                            event.eventDetail?.toLowerCase().includes(searchLower)
-                          )
-                        }).length === selectedEventIds.size}
-                        onCheckedChange={(checked) => {
-                          const filteredEvents = events.filter((event) => {
-                            if (!eventSearchTerm) return true
-                            const searchLower = eventSearchTerm.toLowerCase()
-                            return (
-                              event.plant.toLowerCase().includes(searchLower) ||
-                              event.machineNo.toLowerCase().includes(searchLower) ||
-                              event.label.toLowerCase().includes(searchLower) ||
-                              event.labelDescription?.toLowerCase().includes(searchLower) ||
-                              event.event.toLowerCase().includes(searchLower) ||
-                              event.eventDetail?.toLowerCase().includes(searchLower)
-                            )
-                          })
-                          if (checked) {
-                            const newSelected = new Set(selectedEventIds)
-                            filteredEvents.forEach((event) => newSelected.add(event.id))
-                            setSelectedEventIds(newSelected)
-                          } else {
-                            const newSelected = new Set(selectedEventIds)
-                            filteredEvents.forEach((event) => newSelected.delete(event.id))
-                            setSelectedEventIds(newSelected)
-                          }
-                        }}
-                        className="h-3 w-3"
-                      />
-                    </TableHead>
-                    <TableHead className="h-8 text-xs px-2">Plant</TableHead>
-                    <TableHead className="h-8 text-xs px-2">Machine</TableHead>
-                    <TableHead className="h-8 text-xs px-2">Label</TableHead>
-                    <TableHead className="h-8 text-xs px-2">Event</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {events
-                    .filter((event) => {
-                      if (!eventSearchTerm) return true
-                      const searchLower = eventSearchTerm.toLowerCase()
-                      return (
-                        event.plant.toLowerCase().includes(searchLower) ||
-                        event.machineNo.toLowerCase().includes(searchLower) ||
-                        event.label.toLowerCase().includes(searchLower) ||
-                        event.labelDescription?.toLowerCase().includes(searchLower) ||
-                        event.event.toLowerCase().includes(searchLower) ||
-                        event.eventDetail?.toLowerCase().includes(searchLower)
-                      )
-                    })
-                    .map((event) => {
-                      const isInSelectedDataSource = selectedDataSourceItems.some((item) => item.id === event.id)
-                      return (
-                        <TableRow
-                          key={event.id}
-                          className={`cursor-pointer ${selectedEventIds.has(event.id) ? 'bg-muted/50' : ''} ${isInSelectedDataSource ? 'opacity-50' : ''}`}
-                          title={`${event.event}\nStart: ${event.start.replace('T', ' ')}\nEnd: ${event.end.replace('T', ' ')}`}
-                        >
-                          <TableCell className="px-1 py-1">
-                            <Checkbox
-                              checked={selectedEventIds.has(event.id)}
-                              disabled={isInSelectedDataSource}
-                              onCheckedChange={(checked) => {
-                                const newSelectedIds = new Set(selectedEventIds)
-                                if (checked) {
-                                  newSelectedIds.add(event.id)
-                                } else {
-                                  newSelectedIds.delete(event.id)
-                                }
-                                setSelectedEventIds(newSelectedIds)
-                              }}
-                              className="h-3 w-3"
-                            />
-                          </TableCell>
-                          <TableCell className="px-2 py-1 text-xs">{event.plant}</TableCell>
-                          <TableCell className="px-2 py-1 text-xs">{event.machineNo}</TableCell>
-                          <TableCell className="px-2 py-1 text-xs">
-                            <div className="leading-tight">
-                              <div>{event.label}</div>
-                              <div className="text-muted-foreground">{event.labelDescription || ''}</div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="px-2 py-1 text-xs">
-                            <div className="leading-tight">
-                              <div className="flex items-center gap-1">
-                                {event.event}
-                                {isInSelectedDataSource && (
-                                  <Badge variant="secondary" className="h-4 text-[10px] px-1">Added</Badge>
-                                )}
-                              </div>
-                              <div className="text-muted-foreground">{event.eventDetail || ''}</div>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
+          <EventInformationSection
+            events={events}
+            selectedEventIds={selectedEventIds}
+            setSelectedEventIds={setSelectedEventIds}
+            selectedDataSourceItems={selectedDataSourceItems}
+            onAddSelectedEvents={(selectedEvents) => {
+              const newItems = [...selectedDataSourceItems]
+              selectedEvents.forEach((event) => {
+                if (!newItems.find((item) => item.id === event.id)) {
+                  newItems.push(event)
+                }
+              })
+              setSelectedDataSourceItems(newItems)
+            }}
+          />
         )}
 
         {/* Selected Data Source */}
@@ -368,163 +176,28 @@ export function DataSourceTab({
 
           {selectedDataSourceItems.length > 0 ? (
             <div className="space-y-3">
-              <div className="border rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="h-8 text-xs px-2">Plant</TableHead>
-                      <TableHead className="h-8 text-xs px-2">Machine No</TableHead>
-                      <TableHead className="h-8 text-xs px-2">Legend</TableHead>
-                      <TableHead className="h-8 text-xs px-2">Start</TableHead>
-                      <TableHead className="h-8 text-xs px-2">End</TableHead>
-                      <TableHead className="h-8 text-xs w-8"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {selectedDataSourceItems.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell className="px-2 py-1 text-xs">{item.plant}</TableCell>
-                        <TableCell className="px-2 py-1 text-xs">{item.machineNo}</TableCell>
-                        <TableCell className="px-2 py-1 text-xs">
-                          {item.labelDescription ? `${item.label} (${item.labelDescription})` : item.label}
-                        </TableCell>
-                        <TableCell className="px-2 py-1 text-xs">
-                          <div>
-                            <div>{item.start.split("T")[0]}</div>
-                            <div>{item.start.split("T")[1]}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="px-2 py-1 text-xs">
-                          <div>
-                            <div>{item.end.split("T")[0]}</div>
-                            <div>{item.end.split("T")[1]}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="px-1 py-1">
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0"
-                              onClick={() => manualEntry.openForEdit(item)}
-                            >
-                              <Settings className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0"
-                              onClick={() => {
-                                setSelectedDataSourceItems(
-                                  selectedDataSourceItems.filter((i) => i.id !== item.id)
-                                )
-                              }}
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+              <SelectedDataSourceTable
+                selectedDataSourceItems={selectedDataSourceItems}
+                onEditItem={(item) => manualEntry.openForEdit(item)}
+                onRemoveItem={(itemId) => {
+                  setSelectedDataSourceItems(
+                    selectedDataSourceItems.filter((i) => i.id !== itemId)
+                  )
+                }}
+              />
 
-              <Collapsible open={offsetSectionOpen} onOpenChange={setOffsetSectionOpen}>
-                <div className="border rounded-lg p-3 bg-background">
-                  <CollapsibleTrigger asChild>
-                    <div className="flex items-center justify-between cursor-pointer">
-                      <div className="flex items-center gap-2">
-                        <h4 className="text-sm font-medium">Time Offset</h4>
-                        {!offsetSectionOpen && (startOffset !== 0 || endOffset !== 0) && (
-                          <div className="text-xs text-muted-foreground">
-                            {startOffset !== 0 && `Start: ${startOffset > 0 ? '+' : ''}${startOffset}${startOffsetUnit}`}
-                            {startOffset !== 0 && endOffset !== 0 && ', '}
-                            {endOffset !== 0 && `End: ${endOffset > 0 ? '+' : ''}${endOffset}${endOffsetUnit}`}
-                          </div>
-                        )}
-                      </div>
-                      <ChevronDown className={`h-4 w-4 transition-transform ${offsetSectionOpen ? 'rotate-180' : ''}`} />
-                    </div>
-                  </CollapsibleTrigger>
-
-                  <CollapsibleContent className="overflow-hidden">
-                    <div className="grid grid-cols-2 gap-4 mt-3">
-                      <div className="space-y-2">
-                        <Label className="text-xs font-medium">Start Offset:</Label>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            value={startOffset}
-                            onChange={(e) => setStartOffset(Number(e.target.value))}
-                            className="w-16 h-7 text-xs"
-                            placeholder="0"
-                          />
-                          <Select value={startOffsetUnit} onValueChange={(value: 'min' | 'sec') => setStartOffsetUnit(value)}>
-                            <SelectTrigger className="w-16 h-7 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="min">min</SelectItem>
-                              <SelectItem value="sec">sec</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          {startOffset !== 0 && (
-                            <span className="text-xs text-muted-foreground">
-                              ({startOffset > 0 ? '+' : ''}{startOffset}{startOffsetUnit})
-                            </span>
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 text-xs px-2"
-                            onClick={resetStartOffset}
-                            disabled={startOffset === 0}
-                          >
-                            Reset
-                          </Button>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-xs font-medium">End Offset:</Label>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            value={endOffset}
-                            onChange={(e) => setEndOffset(Number(e.target.value))}
-                            className="w-16 h-7 text-xs"
-                            placeholder="0"
-                          />
-                          <Select value={endOffsetUnit} onValueChange={(value: 'min' | 'sec') => setEndOffsetUnit(value)}>
-                            <SelectTrigger className="w-16 h-7 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="min">min</SelectItem>
-                              <SelectItem value="sec">sec</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          {endOffset !== 0 && (
-                            <span className="text-xs text-muted-foreground">
-                              ({endOffset > 0 ? '+' : ''}{endOffset}{endOffsetUnit})
-                            </span>
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-7 text-xs px-2"
-                            onClick={resetEndOffset}
-                            disabled={endOffset === 0}
-                          >
-                            Reset
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  </CollapsibleContent>
-                </div>
-              </Collapsible>
+              <TimeOffsetSettings
+                startOffset={startOffset}
+                setStartOffset={setStartOffset}
+                startOffsetUnit={startOffsetUnit}
+                setStartOffsetUnit={setStartOffsetUnit}
+                endOffset={endOffset}
+                setEndOffset={setEndOffset}
+                endOffsetUnit={endOffsetUnit}
+                setEndOffsetUnit={setEndOffsetUnit}
+                offsetSectionOpen={offsetSectionOpen}
+                setOffsetSectionOpen={setOffsetSectionOpen}
+              />
             </div>
           ) : (
             <p className="text-xs text-muted-foreground">No data source items selected. Use the options above to add data sources.</p>
