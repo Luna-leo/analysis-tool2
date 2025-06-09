@@ -162,17 +162,8 @@ export function ThresholdPointsTable({
   return (
     <div className="h-full flex flex-col">
       <div className="shrink-0 space-y-3">
-        <div className="flex items-center justify-between">
+        <div>
           <h4 className="text-sm font-semibold text-gray-900">Threshold Points</h4>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleAddRow}
-            className="h-7 text-xs"
-          >
-            <Plus className="h-3 w-3 mr-1" />
-            Add Row
-          </Button>
         </div>
         
         {/* Line Type Selection */}
@@ -302,6 +293,23 @@ export function ThresholdPointsTable({
                   </td>
                 </tr>
               ))}
+              {/* Add Row button as last table row */}
+              <tr className="hover:bg-gray-50 transition-colors">
+                <td 
+                  colSpan={thresholds.length + 2}
+                  className="text-center py-2"
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleAddRow}
+                    className="h-6 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Add Row
+                  </Button>
+                </td>
+              </tr>
             </tbody>
             </table>
           </div>
