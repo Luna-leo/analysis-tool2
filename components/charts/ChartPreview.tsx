@@ -207,7 +207,9 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
       // X axis
       g.append("g")
         .attr("transform", `translate(0,${height})`)
-        .call(d3.axisBottom(xScale).tickFormat((d) => d3.timeFormat("%H:%M")(d as Date)))
+        .call(d3.axisBottom(xScale)
+          .ticks(5)
+          .tickFormat((d) => d3.timeFormat("%H:%M")(d as Date)))
       
       // Y axis
       g.append("g")
@@ -286,7 +288,9 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
 
     g.append("g")
       .attr("transform", `translate(0,${height})`)
-      .call(d3.axisBottom(xScale).tickFormat((d) => d3.timeFormat("%H:%M")(d as Date)))
+      .call(d3.axisBottom(xScale)
+        .ticks(5)
+        .tickFormat((d) => d3.timeFormat("%H:%M")(d as Date)))
 
     g.append("g")
       .call(d3.axisLeft(yScale))
@@ -344,7 +348,7 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
 
     g.append("g")
       .attr("transform", `translate(0,${height})`)
-      .call(d3.axisBottom(xScale))
+      .call(d3.axisBottom(xScale).ticks(5))
 
     g.append("g")
       .call(d3.axisLeft(yScale))
