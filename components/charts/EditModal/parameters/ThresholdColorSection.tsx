@@ -158,7 +158,7 @@ export function ThresholdColorSection({
                                 ? "opacity-50 cursor-not-allowed" 
                                 : "hover:bg-accent hover:text-accent-foreground"
                             )}
-                            disabled={isNameUsed}
+                            disabled={!!isNameUsed}
                           >
                             Add "{thresholdNameInputs[threshold.id]}"
                             {isNameUsed && <span className="text-xs text-red-500 ml-1">(already used)</span>}

@@ -23,18 +23,21 @@ export const COLORS = {
       border: "border-green-200",
       text: "text-green-600",
       textDark: "text-green-800",
+      hover: "hover:text-green-800",
     },
     warning: {
       bg: "bg-yellow-50",
       border: "border-yellow-200",
       text: "text-yellow-600",
       textDark: "text-yellow-800",
+      hover: "hover:text-yellow-800",
     },
     error: {
       bg: "bg-red-50",
       border: "border-red-200",
       text: "text-red-600",
       textDark: "text-red-800",
+      hover: "hover:text-red-800",
     },
   },
 } as const

@@ -2,7 +2,7 @@
 
 import React from "react"
 import { Button } from "@/components/ui/button"
-import { Settings, X } from "lucide-react"
+import { Pencil, Trash2 } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -65,7 +65,7 @@ export function SelectedDataSourceTable({
                     className="h-6 w-6 p-0"
                     onClick={() => onEditItem(item)}
                   >
-                    <Settings className="h-3 w-3" />
+                    <Pencil className="h-3 w-3" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -73,7 +73,7 @@ export function SelectedDataSourceTable({
                     className="h-6 w-6 p-0"
                     onClick={() => onRemoveItem(item.id)}
                   >
-                    <X className="h-3 w-3" />
+                    <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
               </TableCell>

@@ -95,16 +95,16 @@ export function InterlockChart({
     // Add grid lines
     const xAxisGrid = d3.axisBottom(xScale)
       .tickSize(-chartHeight)
-      .tickFormat("")
+      .tickFormat(() => "")
 
     const yAxisGrid = d3.axisLeft(yScale)
       .tickSize(-chartWidth)
-      .tickFormat("")
+      .tickFormat(() => "")
 
     g.append("g")
       .attr("class", "grid")
       .attr("transform", `translate(0,${chartHeight})`)
-      .call(xAxisGrid)
+      .call(xAxisGrid as any)
       .selectAll("line")
       .style("stroke", "#e0e0e0")
       .style("stroke-width", "1px")
@@ -112,7 +112,7 @@ export function InterlockChart({
 
     g.append("g")
       .attr("class", "grid")
-      .call(yAxisGrid)
+      .call(yAxisGrid as any)
       .selectAll("line")
       .style("stroke", "#e0e0e0")
       .style("stroke-width", "1px")

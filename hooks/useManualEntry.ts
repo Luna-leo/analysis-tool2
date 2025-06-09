@@ -47,7 +47,16 @@ export const useManualEntry = () => {
       ? `${item.label} (${item.labelDescription})` 
       : item.label
     
-    setData({ ...item, legend })
+    // Format dates for datetime-local input
+    const formattedStart = item.start ? formatDateTimeLocal(new Date(item.start)) : ''
+    const formattedEnd = item.end ? formatDateTimeLocal(new Date(item.end)) : ''
+    
+    setData({ 
+      ...item, 
+      start: formattedStart,
+      end: formattedEnd,
+      legend 
+    })
     setEditingItemId(item.id)
     setIsOpen(true)
   }

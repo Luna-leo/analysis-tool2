@@ -2,19 +2,20 @@
 
 import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { FileText, Database, CalendarDays } from "lucide-react"
-import { ManualEntryDialog, TriggerSignalDialog } from "../../../dialogs"
+import { Plus, Calendar, Filter, Check, Trash2, Pencil, Search, X, ChevronDown, ChevronRight } from "lucide-react"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import { ManualEntryDialog } from "../../../dialogs/ManualEntryDialog"
+import { TriggerSignalDialog } from "../../../dialogs/TriggerSignalDialog"
+import { EventSelectionDialog } from "../../../dialogs/EventSelectionDialog"
 import { useManualEntry } from "@/hooks/useManualEntry"
-import { EventInfo } from "@/types"
+import { EventInfo, SearchCondition, SearchResult } from "@/types"
 import {
-  ManualEntrySection,
-  SignalSearchSection,
-  EventInformationSection,
   TimeOffsetSettings,
   SelectedDataSourceTable
 } from "./components"
-
-type DataSourceType = 'manual' | 'signal' | 'event'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
 
 interface DataSourceTabProps {
   selectedDataSourceItems: EventInfo[]
@@ -60,10 +61,20 @@ export function DataSourceTab({
       end: "2024-01-15T14:45:00",
     },
   ])
-  const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set())
-  const [activeDataSourceType, setActiveDataSourceType] = useState<DataSourceType>('event')
 
+  // Period pool state
+  const [periodPool, setPeriodPool] = useState<EventInfo[]>([])
+  const [selectedPoolIds, setSelectedPoolIds] = useState<Set<string>>(new Set())
+  
+  // Search results state
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const [selectedResultIds, setSelectedResultIds] = useState<Set<string>>(new Set())
+  const [resultLabels, setResultLabels] = useState<Map<string, string>>(new Map())
+  const [isSearching, setIsSearching] = useState(false)
+  const [appliedConditions, setAppliedConditions] = useState<SearchCondition[]>([])
+  
   const manualEntry = useManualEntry()
+  const [eventSelectionOpen, setEventSelectionOpen] = useState(false)
   const [triggerSignalDialogOpen, setTriggerSignalDialogOpen] = useState(false)
 
   const [startOffset, setStartOffset] = useState(0)
@@ -71,114 +82,464 @@ export function DataSourceTab({
   const [endOffset, setEndOffset] = useState(0)
   const [endOffsetUnit, setEndOffsetUnit] = useState<'min' | 'sec'>('min')
   const [offsetSectionOpen, setOffsetSectionOpen] = useState(false)
+  
+  // Collapsible states
+  const [periodPoolOpen, setPeriodPoolOpen] = useState(true)
+  const [searchResultsOpen, setSearchResultsOpen] = useState(true)
 
   const handleSaveManualEntry = (data: any, editingItemId: string | null) => {
-    if (editingItemId) {
-      const updatedItem = { ...data }
-      if (data.legend) {
-        const legendMatch = data.legend.match(/^(.+?)\s*\((.+)\)$/)
-        if (legendMatch) {
-          updatedItem.label = legendMatch[1].trim()
-          updatedItem.labelDescription = legendMatch[2].trim()
-        } else {
-          updatedItem.label = data.legend
-          updatedItem.labelDescription = ""
-        }
+    const processedData = { ...data }
+    if (data.legend) {
+      const legendMatch = data.legend.match(/^(.+?)\s*\((.+)\)$/)
+      if (legendMatch) {
+        processedData.label = legendMatch[1].trim()
+        processedData.labelDescription = legendMatch[2].trim()
+      } else {
+        processedData.label = data.legend
+        processedData.labelDescription = ""
       }
-      setSelectedDataSourceItems(
-        selectedDataSourceItems.map((item) =>
-          item.id === editingItemId ? updatedItem : item
+    }
+
+    if (editingItemId) {
+      // Check if editing item from pool or from selected data sources
+      const isInPool = periodPool.some(item => item.id === editingItemId)
+      const isInDataSource = selectedDataSourceItems.some(item => item.id === editingItemId)
+      
+      if (isInPool) {
+        setPeriodPool(
+          periodPool.map((item) =>
+            item.id === editingItemId ? processedData : item
+          )
         )
-      )
+      } else if (isInDataSource) {
+        setSelectedDataSourceItems(
+          selectedDataSourceItems.map((item) =>
+            item.id === editingItemId ? processedData : item
+          )
+        )
+      }
     } else {
       const newEntry: EventInfo = {
-        ...data,
-        id: Date.now().toString(),
+        ...processedData,
+        id: `manual_${Date.now()}`,
       }
-      setSelectedDataSourceItems([...selectedDataSourceItems, newEntry])
+      setPeriodPool([...periodPool, newEntry])
     }
     manualEntry.close()
   }
 
-  const handleAddTriggerSignalResults = (results: EventInfo[]) => {
-    setSelectedDataSourceItems([...selectedDataSourceItems, ...results])
+  const handleAddEventsToPool = (eventsToAdd: EventInfo[]) => {
+    const newPool = [...periodPool]
+    eventsToAdd.forEach((event) => {
+      // Avoid duplicates
+      if (!newPool.find((p) => p.id === event.id)) {
+        newPool.push(event)
+      }
+    })
+    setPeriodPool(newPool)
+  }
+
+  const handleAddToDataSource = () => {
+    const selectedPeriods = periodPool.filter(p => selectedPoolIds.has(p.id))
+    const newItems = [...selectedDataSourceItems]
+    
+    selectedPeriods.forEach((period) => {
+      if (!newItems.find((item) => item.id === period.id)) {
+        newItems.push(period)
+      }
+    })
+    
+    setSelectedDataSourceItems(newItems)
+    // Remove added items from pool
+    setPeriodPool(periodPool.filter(p => !selectedPoolIds.has(p.id)))
+    setSelectedPoolIds(new Set())
+  }
+
+  const handleApplyConditions = async (conditions: SearchCondition[]) => {
+    setAppliedConditions(conditions)
+    setIsSearching(true)
+    
+    // Get periods to search
+    const periodsToSearch = selectedPoolIds.size > 0 
+      ? periodPool.filter(p => selectedPoolIds.has(p.id))
+      : periodPool
+    
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    // Generate mock search results based on selected periods
+    const mockResults: SearchResult[] = []
+    
+    periodsToSearch.forEach((period) => {
+      // Generate 2-3 results per period
+      const resultsCount = 2 + Math.floor(Math.random() * 2)
+      for (let i = 0; i < resultsCount; i++) {
+        const startTime = new Date(period.start)
+        const endTime = new Date(period.end)
+        const timeDiff = endTime.getTime() - startTime.getTime()
+        const randomTime = new Date(startTime.getTime() + Math.random() * timeDiff)
+        
+        mockResults.push({
+          id: `${period.id}_result_${i}`,
+          timestamp: randomTime.toISOString(),
+          plant: period.plant,
+          machineNo: period.machineNo,
+          parameters: { 
+            temperature: 80 + Math.random() * 20, 
+            pressure: 10 + Math.random() * 5, 
+            flow: 40 + Math.random() * 20, 
+            speed: 50 + Math.random() * 20 
+          },
+          matchedConditions: conditions.map(c => `${c.parameter} ${c.operator} ${c.value}`)
+        })
+      }
+    })
+    
+    setSearchResults(mockResults)
+    setIsSearching(false)
+  }
+  
+  const handleAddSearchResults = () => {
+    const selectedResults = searchResults.filter(r => selectedResultIds.has(r.id))
+    const eventsToAdd: EventInfo[] = selectedResults.map(result => {
+      const resultLabel = resultLabels.get(result.id) || 'Signal Detection'
+      const duration = 10 // Default 10 minutes
+      const startTime = new Date(result.timestamp)
+      const endTime = new Date(startTime.getTime() + duration * 60 * 1000)
+      
+      return {
+        id: `trigger_${result.id}_${Date.now()}`,
+        plant: result.plant || 'Unknown',
+        machineNo: result.machineNo || 'Unknown',
+        label: resultLabel,
+        labelDescription: 'Detected by filter conditions',
+        event: 'Trigger Event',
+        eventDetail: `Auto-detected at ${result.timestamp}`,
+        start: result.timestamp,
+        end: endTime.toISOString()
+      }
+    })
+    
+    setSelectedDataSourceItems([...selectedDataSourceItems, ...eventsToAdd])
+    // Remove only the added results from search results
+    const remainingResults = searchResults.filter(r => !selectedResultIds.has(r.id))
+    setSearchResults(remainingResults)
+    // Clear labels only for selected results
+    const remainingLabels = new Map(resultLabels)
+    selectedResultIds.forEach(id => remainingLabels.delete(id))
+    setResultLabels(remainingLabels)
+    // Clear selection
+    setSelectedResultIds(new Set())
+  }
+
+  const handleTogglePeriod = (periodId: string) => {
+    const newSelectedIds = new Set(selectedPoolIds)
+    if (newSelectedIds.has(periodId)) {
+      newSelectedIds.delete(periodId)
+    } else {
+      newSelectedIds.add(periodId)
+    }
+    setSelectedPoolIds(newSelectedIds)
+  }
+
+  const handleSelectAll = () => {
+    if (selectedPoolIds.size === periodPool.length) {
+      setSelectedPoolIds(new Set())
+    } else {
+      setSelectedPoolIds(new Set(periodPool.map(p => p.id)))
+    }
+  }
+
+  const handleRemoveFromPool = (periodId: string) => {
+    setPeriodPool(periodPool.filter(p => p.id !== periodId))
+    selectedPoolIds.delete(periodId)
+    setSelectedPoolIds(new Set(selectedPoolIds))
+  }
+
+  const handleEditPeriod = (period: EventInfo) => {
+    manualEntry.openForEdit(period)
+  }
+
+  const handleFilterByConditions = () => {
+    setTriggerSignalDialogOpen(true)
   }
 
   return (
     <>
       <div className="space-y-4">
-        {/* Data Source Type Selection */}
-        <div className="border rounded-lg p-3">
-          <h4 className="text-sm font-medium mb-3">Add Data Source</h4>
-          <div className="grid grid-cols-3 gap-2">
-            <Button
-              variant={activeDataSourceType === 'manual' ? 'default' : 'outline'}
-              size="sm"
-              className="h-10 justify-start gap-2 px-3"
-              onClick={() => setActiveDataSourceType('manual')}
-            >
-              <FileText className="h-4 w-4 shrink-0" />
-              <span className="text-xs">Manual Entry</span>
-            </Button>
-            <Button
-              variant={activeDataSourceType === 'signal' ? 'default' : 'outline'}
-              size="sm"
-              className="h-10 justify-start gap-2 px-3"
-              onClick={() => setActiveDataSourceType('signal')}
-            >
-              <Database className="h-4 w-4 shrink-0" />
-              <span className="text-xs">Signal Search</span>
-            </Button>
-            <Button
-              variant={activeDataSourceType === 'event' ? 'default' : 'outline'}
-              size="sm"
-              className="h-10 justify-start gap-2 px-3"
-              onClick={() => setActiveDataSourceType('event')}
-            >
-              <CalendarDays className="h-4 w-4 shrink-0" />
-              <span className="text-xs">Event Information</span>
-            </Button>
-          </div>
+        {/* Period Pool */}
+        <div className="border rounded-lg bg-muted/30">
+          <Collapsible open={periodPoolOpen} onOpenChange={setPeriodPoolOpen}>
+            <div className="p-3">
+              <CollapsibleTrigger className="flex items-center gap-2 text-left hover:bg-muted/50 transition-colors p-1 rounded">
+                {periodPoolOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                <h4 className="font-medium text-sm">Period Pool</h4>
+                {periodPool.length > 0 && (
+                  <span className="text-xs text-muted-foreground">({periodPool.length})</span>
+                )}
+              </CollapsibleTrigger>
+            </div>
+            
+            <CollapsibleContent>
+              <div className="px-3 pb-3">
+                <div className="flex justify-end gap-2 mb-3">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={manualEntry.openForNew}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Manual Entry
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setEventSelectionOpen(true)}
+                  >
+                    <Calendar className="h-4 w-4 mr-2" />
+                    From Events
+                  </Button>
+                </div>
+
+                {periodPool.length > 0 ? (
+                  <>
+                    <div className="border rounded-lg overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="h-8 text-xs px-2 w-[40px]">
+                              <Checkbox
+                                checked={selectedPoolIds.size === periodPool.length && periodPool.length > 0}
+                                onCheckedChange={handleSelectAll}
+                              />
+                            </TableHead>
+                            <TableHead className="h-8 text-xs px-2">Source</TableHead>
+                            <TableHead className="h-8 text-xs px-2">Plant</TableHead>
+                            <TableHead className="h-8 text-xs px-2">Machine No</TableHead>
+                            <TableHead className="h-8 text-xs px-2">Label</TableHead>
+                            <TableHead className="h-8 text-xs px-2">Start</TableHead>
+                            <TableHead className="h-8 text-xs px-2">End</TableHead>
+                            <TableHead className="h-8 text-xs w-20"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {periodPool.map((period) => (
+                            <TableRow key={period.id}>
+                              <TableCell className="px-2 py-1">
+                                <Checkbox
+                                  checked={selectedPoolIds.has(period.id)}
+                                  onCheckedChange={() => handleTogglePeriod(period.id)}
+                                />
+                              </TableCell>
+                              <TableCell className="px-2 py-1 text-xs">
+                                <span className="text-muted-foreground">
+                                  {period.id.startsWith('manual_') ? 'Manual' : 'Event'}
+                                </span>
+                              </TableCell>
+                              <TableCell className="px-2 py-1 text-xs">{period.plant}</TableCell>
+                              <TableCell className="px-2 py-1 text-xs">{period.machineNo}</TableCell>
+                              <TableCell className="px-2 py-1 text-xs">{period.label}</TableCell>
+                              <TableCell className="px-2 py-1 text-xs">
+                                <div>
+                                  <div>{period.start.split("T")[0]}</div>
+                                  <div>{period.start.split("T")[1]}</div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="px-2 py-1 text-xs">
+                                <div>
+                                  <div>{period.end.split("T")[0]}</div>
+                                  <div>{period.end.split("T")[1]}</div>
+                                </div>
+                              </TableCell>
+                              <TableCell className="px-1 py-1">
+                                <div className="flex gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleEditPeriod(period)}
+                                    className="h-6 w-6 p-0"
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleRemoveFromPool(period.id)}
+                                    className="h-6 w-6 p-0"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-2 mt-3">
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={handleAddToDataSource}
+                        disabled={selectedPoolIds.size === 0}
+                        className="flex-1"
+                      >
+                        <Check className="h-4 w-4 mr-2" />
+                        Add to Data Source ({selectedPoolIds.size} selected)
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={handleFilterByConditions}
+                        disabled={periodPool.length === 0}
+                        className="flex-1"
+                      >
+                        <Filter className="h-4 w-4 mr-2" />
+                        Filter by Conditions
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-8 text-sm text-muted-foreground">
+                    No periods in pool. Add periods using the buttons above.
+                  </div>
+                )}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
-
-        {/* Active Data Source Section */}
-        {activeDataSourceType === 'manual' && (
-          <ManualEntrySection onCreateManualEntry={manualEntry.openForNew} />
+        
+        {/* Search Results */}
+        {searchResults.length > 0 && (
+          <div className="border rounded-lg bg-muted/30">
+            <Collapsible open={searchResultsOpen} onOpenChange={setSearchResultsOpen}>
+              <div className="p-3">
+                <div className="flex items-center justify-between">
+                  <CollapsibleTrigger className="flex items-center gap-2 text-left hover:bg-muted/50 transition-colors p-1 rounded flex-1">
+                    {searchResultsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    <div>
+                      <h5 className="font-medium text-sm">Search Results</h5>
+                      <p className="text-xs text-muted-foreground">
+                        {searchResults.length} results found using filter conditions
+                      </p>
+                    </div>
+                  </CollapsibleTrigger>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setSearchResults([])
+                      setSelectedResultIds(new Set())
+                      setResultLabels(new Map())
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              <CollapsibleContent>
+                <div className="px-3 pb-3">
+                  <div className="border rounded-lg overflow-hidden max-h-64 overflow-y-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="h-8 text-xs px-2 w-[40px]">
+                            <Checkbox
+                              checked={selectedResultIds.size === searchResults.length && searchResults.length > 0}
+                              onCheckedChange={() => {
+                                if (selectedResultIds.size === searchResults.length) {
+                                  setSelectedResultIds(new Set())
+                                } else {
+                                  setSelectedResultIds(new Set(searchResults.map(r => r.id)))
+                                }
+                              }}
+                            />
+                          </TableHead>
+                          <TableHead className="h-8 text-xs px-2">Timestamp</TableHead>
+                          <TableHead className="h-8 text-xs px-2">Plant</TableHead>
+                          <TableHead className="h-8 text-xs px-2">Machine</TableHead>
+                          <TableHead className="h-8 text-xs px-2">Label</TableHead>
+                          <TableHead className="h-8 text-xs px-2">Matched Conditions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {searchResults.map((result) => (
+                          <TableRow key={result.id}>
+                            <TableCell className="px-2 py-1">
+                              <Checkbox
+                                checked={selectedResultIds.has(result.id)}
+                                onCheckedChange={() => {
+                                  const newSelected = new Set(selectedResultIds)
+                                  if (newSelected.has(result.id)) {
+                                    newSelected.delete(result.id)
+                                  } else {
+                                    newSelected.add(result.id)
+                                  }
+                                  setSelectedResultIds(newSelected)
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell className="px-2 py-1 text-xs">
+                              <div>
+                                <div>{result.timestamp.split("T")[0]}</div>
+                                <div>{result.timestamp.split("T")[1]}</div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="px-2 py-1 text-xs">{result.plant}</TableCell>
+                            <TableCell className="px-2 py-1 text-xs">{result.machineNo}</TableCell>
+                            <TableCell className="px-2 py-1">
+                              <Input
+                                value={resultLabels.get(result.id) || ''}
+                                onChange={(e) => {
+                                  const newLabels = new Map(resultLabels)
+                                  newLabels.set(result.id, e.target.value)
+                                  setResultLabels(newLabels)
+                                }}
+                                placeholder="Enter label"
+                                className="h-6 text-xs"
+                              />
+                            </TableCell>
+                            <TableCell className="px-2 py-1 text-xs text-muted-foreground">
+                              {result.matchedConditions.join(', ')}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={handleAddSearchResults}
+                    disabled={selectedResultIds.size === 0}
+                    className="w-full mt-3"
+                  >
+                    <Check className="h-4 w-4 mr-2" />
+                    Add Selected Results to Data Source ({selectedResultIds.size} selected)
+                  </Button>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
         )}
 
-        {activeDataSourceType === 'signal' && (
-          <SignalSearchSection onSearchSignals={() => setTriggerSignalDialogOpen(true)} />
-        )}
-
-        {activeDataSourceType === 'event' && (
-          <EventInformationSection
-            events={events}
-            selectedEventIds={selectedEventIds}
-            setSelectedEventIds={setSelectedEventIds}
-            selectedDataSourceItems={selectedDataSourceItems}
-            onAddSelectedEvents={(selectedEvents) => {
-              const newItems = [...selectedDataSourceItems]
-              selectedEvents.forEach((event) => {
-                if (!newItems.find((item) => item.id === event.id)) {
-                  newItems.push(event)
-                }
-              })
-              setSelectedDataSourceItems(newItems)
-            }}
-          />
-        )}
-
-        {/* Selected Data Source */}
+        {/* Selected Data Sources */}
         <div className="border rounded-lg p-3 bg-muted/30">
           <div className="flex justify-between items-center mb-2">
-            <h4 className="text-sm font-medium">Selected Data Source</h4>
+            <h4 className="text-sm font-medium">Selected Data Sources</h4>
           </div>
 
           {selectedDataSourceItems.length > 0 ? (
             <div className="space-y-3">
               <SelectedDataSourceTable
                 selectedDataSourceItems={selectedDataSourceItems}
-                onEditItem={(item) => manualEntry.openForEdit(item)}
+                onEditItem={(item) => {
+                  manualEntry.openForEdit(item)
+                }}
                 onRemoveItem={(itemId) => {
                   setSelectedDataSourceItems(
                     selectedDataSourceItems.filter((i) => i.id !== itemId)
@@ -200,7 +561,9 @@ export function DataSourceTab({
               />
             </div>
           ) : (
-            <p className="text-xs text-muted-foreground">No data source items selected. Use the options above to add data sources.</p>
+            <p className="text-xs text-muted-foreground">
+              No data source items selected. Add periods to the pool and then add them here.
+            </p>
           )}
         </div>
       </div>
@@ -215,13 +578,21 @@ export function DataSourceTab({
         isValid={manualEntry.isValid()}
       />
 
+      <EventSelectionDialog
+        isOpen={eventSelectionOpen}
+        onClose={() => setEventSelectionOpen(false)}
+        events={events}
+        onAddEvents={handleAddEventsToPool}
+      />
+
       <TriggerSignalDialog
         isOpen={triggerSignalDialogOpen}
         onClose={() => setTriggerSignalDialogOpen(false)}
-        onAddToDataSource={handleAddTriggerSignalResults}
-        availableEvents={events}
+        onApplyConditions={handleApplyConditions}
+        selectedDataSourceItems={selectedPoolIds.size > 0 
+          ? periodPool.filter(p => selectedPoolIds.has(p.id))
+          : periodPool}
       />
     </>
   )
 }
-
