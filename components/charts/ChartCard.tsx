@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { BarChart3, LineChart, PieChart, Edit } from "lucide-react"
+import { LineChart, Edit } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ChartComponent } from "@/types"
@@ -50,13 +50,7 @@ export function ChartCard({ chart, isCompactLayout, cardMinHeight, chartMinHeigh
           isCompactLayout ? "text-sm mb-2" : "text-lg mb-4"
         )}
       >
-        {chart.chartType === "bar" ? (
-          <BarChart3 className={cn(isCompactLayout ? "h-4 w-4" : "h-5 w-5")} />
-        ) : chart.chartType === "line" ? (
-          <LineChart className={cn(isCompactLayout ? "h-4 w-4" : "h-5 w-5")} />
-        ) : (
-          <PieChart className={cn(isCompactLayout ? "h-4 w-4" : "h-5 w-5")} />
-        )}
+        <LineChart className={cn(isCompactLayout ? "h-4 w-4" : "h-5 w-5")} />
         <span className="truncate">{chart.title}</span>
       </h3>
       <div
@@ -68,7 +62,7 @@ export function ChartCard({ chart, isCompactLayout, cardMinHeight, chartMinHeigh
         <div className="text-center">
           <div className={cn(isCompactLayout ? "text-2xl mb-1" : "text-4xl mb-2")}>📊</div>
           <p className={cn("text-muted-foreground", isCompactLayout ? "text-xs" : "text-sm")}>
-            {chart.chartType?.toUpperCase()} Chart
+            Chart Preview
           </p>
           <p className={cn("text-muted-foreground mt-1", isCompactLayout ? "text-xs" : "text-sm")}>
             {chart.data.length} data points

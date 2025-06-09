@@ -15,27 +15,11 @@ interface EmptyChartProps {
 }
 
 export const renderEmptyChart = ({ g, width, height, chartType, editingChart, scalesRef }: EmptyChartProps) => {
-  if (chartType === "pie") {
-    // For pie charts, show a circle placeholder
-    const radius = Math.min(width, height) / 2
-    const centerX = width / 2
-    const centerY = height / 2
-    
-    g.append("circle")
-      .attr("cx", centerX)
-      .attr("cy", centerY)
-      .attr("r", radius - 10)
-      .attr("fill", "none")
-      .attr("stroke", "#d1d5db")
-      .attr("stroke-width", 2)
-      .attr("stroke-dasharray", "5,5")
-    
-  } else {
-    // For line and bar charts, show axes with placeholder scales
-    let xDomain: [Date, Date] | [number, number]
-    let xScale: d3.ScaleTime<number, number> | d3.ScaleLinear<number, number>
-    
-    const xAxisType = editingChart.xAxisType || "datetime"
+  // Always show axes with placeholder scales for line/scatter charts
+  let xDomain: [Date, Date] | [number, number]
+  let xScale: d3.ScaleTime<number, number> | d3.ScaleLinear<number, number>
+  
+  const xAxisType = editingChart.xAxisType || "datetime"
     
     if (xAxisType === "datetime") {
       // Datetime: 1 month ago to current time
@@ -113,7 +97,6 @@ export const renderEmptyChart = ({ g, width, height, chartType, editingChart, sc
       .style("font-size", "12px")
       .text(firstYAxisLabel)
     
-    // Store scales for reference lines
-    scalesRef.current = { xScale, yScale }
-  }
+  // Store scales for reference lines
+  scalesRef.current = { xScale, yScale }
 }

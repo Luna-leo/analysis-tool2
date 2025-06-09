@@ -6,8 +6,6 @@ import { ChartComponent, EventInfo } from "@/types"
 import { 
   renderEmptyChart, 
   renderLineChart, 
-  renderBarChart, 
-  renderPieChart, 
   ReferenceLines,
   generateMockData
 } from "./ChartPreview/index"
@@ -31,7 +29,7 @@ export function ChartPreviewGraph({ editingChart, selectedDataSourceItems, setEd
   const chartConfigWithoutRefLines = React.useMemo(() => {
     const { referenceLines, ...rest } = editingChart
     return rest
-  }, [editingChart.chartType, editingChart.title, editingChart.xAxisType, editingChart.xParameter, 
+  }, [editingChart.title, editingChart.xAxisType, editingChart.xParameter, 
       editingChart.xLabel, editingChart.xAxisRange, editingChart.yAxisParams, editingChart.yAxisLabels])
 
   useEffect(() => {
@@ -54,20 +52,13 @@ export function ChartPreviewGraph({ editingChart, selectedDataSourceItems, setEd
       .attr("transform", `translate(${margin.left},${margin.top})`)
 
     const data = generateMockData(editingChart, selectedDataSourceItems)
-    const chartType = editingChart.chartType || "line"
     
     if (data.length > 0) {
-      // Render chart with data
-      if (chartType === "line") {
-        renderLineChart({ g, data, width, height, editingChart, scalesRef })
-      } else if (chartType === "bar") {
-        renderBarChart({ g, data, width, height, editingChart, scalesRef })
-      } else if (chartType === "pie") {
-        renderPieChart({ g, data, width, height, editingChart })
-      }
+      // Always render as line/scatter chart
+      renderLineChart({ g, data, width, height, editingChart, scalesRef })
     } else {
       // Render empty chart with axes
-      renderEmptyChart({ g, width, height, chartType, editingChart, scalesRef })
+      renderEmptyChart({ g, width, height, chartType: "line", editingChart, scalesRef })
     }
 
   }, [chartConfigWithoutRefLines, selectedDataSourceItems])

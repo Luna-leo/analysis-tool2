@@ -2,7 +2,6 @@ export type ActiveView = "explorer" | "search" | "database" | "calculator" | "se
 
 export type ConditionMode = "predefined" | "manual"
 
-export type ChartType = "bar" | "line" | "pie"
 
 export type AxisType = "datetime" | "time" | "numeric" | "category" | "parameter"
 
@@ -71,7 +70,6 @@ export interface ChartComponent {
   id: string
   title: string
   showTitle?: boolean
-  chartType: ChartType
   data: Array<{ name: string; value: number }>
   legend?: boolean
   xLabel?: string
@@ -132,7 +130,6 @@ export interface FileNode {
   name: string
   type: "file" | "folder"
   children?: FileNode[]
-  chartType?: ChartType
   dataSources?: string[]
   charts?: ChartComponent[]
 }

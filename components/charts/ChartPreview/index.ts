@@ -1,6 +1,4 @@
 export { renderEmptyChart } from './EmptyChart'
 export { renderLineChart } from './LineChart'
-export { renderBarChart } from './BarChart'
-export { renderPieChart } from './PieChart'
 export { ReferenceLines } from './ReferenceLines'
 export { generateMockData, getTimeFormat } from './utils'

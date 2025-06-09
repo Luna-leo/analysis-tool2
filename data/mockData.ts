@@ -71,39 +71,17 @@ function generateTurbineCharts(prefix: string, count: number): ChartComponent[] 
   
   for (let i = 0; i < Math.min(count, shuffled.length); i++) {
     const sensorName = shuffled[i]
-    const chartTypes: Array<"line" | "bar" | "pie"> = ["line", "bar", "pie"]
-    const chartType = i % 10 < 7 ? "line" : i % 10 < 9 ? "bar" : "pie"
     
-    // Generate appropriate data based on sensor type
-    let data = []
-    
-    if (chartType === "line") {
-      // Time series data
-      const timePoints = ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"]
-      data = timePoints.map(time => ({
-        name: time,
-        value: generateSensorValue(sensorName)
-      }))
-    } else if (chartType === "bar") {
-      // Comparative data
-      const units = ["Unit 1", "Unit 2", "Unit 3", "Unit 4"]
-      data = units.map(unit => ({
-        name: unit,
-        value: generateSensorValue(sensorName)
-      }))
-    } else {
-      // Status distribution
-      data = [
-        { name: "Normal", value: 70 + Math.random() * 20 },
-        { name: "Warning", value: 5 + Math.random() * 15 },
-        { name: "Alert", value: Math.random() * 10 }
-      ]
-    }
+    // Always generate time series data for line/scatter charts
+    const timePoints = ["00:00", "04:00", "08:00", "12:00", "16:00", "20:00"]
+    const data = timePoints.map(time => ({
+      name: time,
+      value: generateSensorValue(sensorName)
+    }))
 
     charts.push({
       id: `${prefix}-chart-${i + 1}`,
       title: sensorName,
-      chartType,
       data,
       dataSource: {
         name: getDataSourceForSensor(sensorName),

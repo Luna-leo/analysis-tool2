@@ -1,7 +1,6 @@
 "use client"
 
 import { ChartComponent } from "@/types"
-import { ChartTypeSelector } from "./ChartTypeSelector"
 import { TitleAndOptionsSection } from "./TitleAndOptionsSection"
 import { PlotStyleTable } from "./PlotStyleTable"
 
@@ -24,7 +23,6 @@ export function AppearanceTab({
 }: AppearanceTabProps) {
   return (
     <div className="space-y-4">
-      <ChartTypeSelector editingChart={editingChart} setEditingChart={setEditingChart} />
       <TitleAndOptionsSection editingChart={editingChart} setEditingChart={setEditingChart} />
       <PlotStyleTable
         editingChart={editingChart}
