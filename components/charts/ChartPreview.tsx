@@ -108,15 +108,36 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
         .text("Select data sources and add parameters")
     } else {
       // For line and bar charts, show axes with placeholder scales
-      const now = new Date()
-      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
+      let xDomain: [Date, Date]
+      if (editingChart.xAxisRange?.auto === false && editingChart.xAxisRange.min && editingChart.xAxisRange.max) {
+        if ((editingChart.xAxisType || "datetime") === "datetime") {
+          xDomain = [new Date(editingChart.xAxisRange.min), new Date(editingChart.xAxisRange.max)]
+        } else {
+          const now = new Date()
+          const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
+          xDomain = [oneHourAgo, now]
+        }
+      } else {
+        const now = new Date()
+        const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
+        xDomain = [oneHourAgo, now]
+      }
       
       const xScale = d3.scaleTime()
-        .domain([oneHourAgo, now])
+        .domain(xDomain)
         .range([0, width])
       
+      // Y-axis scale based on parameter settings
+      let yDomain: [number, number] = [0, 100]
+      if (editingChart.yAxisParams && editingChart.yAxisParams.length > 0) {
+        const firstParam = editingChart.yAxisParams[0]
+        if (firstParam.range?.auto === false) {
+          yDomain = [firstParam.range.min || 0, firstParam.range.max || 100]
+        }
+      }
+      
       const yScale = d3.scaleLinear()
-        .domain([0, 100])
+        .domain(yDomain)
         .nice()
         .range([height, 0])
       
@@ -136,7 +157,7 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
         .attr("text-anchor", "middle")
         .attr("fill", "#6b7280")
         .style("font-size", "12px")
-        .text(editingChart.xAxis?.label || "Time")
+        .text(editingChart.xLabel || "Time")
       
       // Y axis label
       const yAxisLabels = editingChart.yAxisLabels || {}
@@ -173,14 +194,46 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
   }
 
   const renderLineChart = (g: d3.Selection<SVGGElement, unknown, null, undefined>, data: any[], width: number, height: number) => {
+    // X-axis scale with range settings
+    let xDomain: [Date, Date]
+    if (editingChart.xAxisRange?.auto === false && editingChart.xAxisRange.min && editingChart.xAxisRange.max) {
+      if ((editingChart.xAxisType || "datetime") === "datetime") {
+        xDomain = [new Date(editingChart.xAxisRange.min), new Date(editingChart.xAxisRange.max)]
+      } else {
+        // For time/parameter types, still use data extent for now
+        xDomain = d3.extent(data, d => d.timestamp) as [Date, Date]
+      }
+    } else {
+      xDomain = d3.extent(data, d => d.timestamp) as [Date, Date]
+    }
+    
     const xScale = d3.scaleTime()
-      .domain(d3.extent(data, d => d.timestamp) as [Date, Date])
+      .domain(xDomain)
       .range([0, width])
 
     const yParams = editingChart.yAxisParams || []
-    const allValues = data.flatMap(d => yParams.map(p => d[p.parameter] || 0))
+    
+    // Group parameters by axis for separate Y scales
+    const groupedByAxis: Record<number, typeof yParams> = {}
+    yParams.forEach(param => {
+      const axisNo = param.axisNo || 1
+      if (!groupedByAxis[axisNo]) groupedByAxis[axisNo] = []
+      groupedByAxis[axisNo].push(param)
+    })
+
+    // Use first axis for primary Y scale (for simplicity in preview)
+    const firstAxisParams = Object.values(groupedByAxis)[0] || []
+    let yDomain: [number, number]
+    
+    if (firstAxisParams.length > 0 && firstAxisParams[0].range?.auto === false) {
+      yDomain = [firstAxisParams[0].range.min || 0, firstAxisParams[0].range.max || 100]
+    } else {
+      const allValues = data.flatMap(d => firstAxisParams.map(p => d[p.parameter] || 0))
+      yDomain = d3.extent(allValues) as [number, number] || [0, 100]
+    }
+    
     const yScale = d3.scaleLinear()
-      .domain(d3.extent(allValues) as [number, number])
+      .domain(yDomain)
       .nice()
       .range([height, 0])
 
@@ -226,8 +279,16 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
       .range([0, width])
       .padding(0.1)
 
+    // Y-axis scale with range settings
+    let yDomain: [number, number]
+    if (param.range?.auto === false) {
+      yDomain = [param.range.min || 0, param.range.max || 100]
+    } else {
+      yDomain = [0, d3.max(data, d => d[param.parameter] || 0)] as [number, number] || [0, 100]
+    }
+
     const yScale = d3.scaleLinear()
-      .domain([0, d3.max(data, d => d[param.parameter] || 0)] as [number, number])
+      .domain(yDomain)
       .nice()
       .range([height, 0])
 
