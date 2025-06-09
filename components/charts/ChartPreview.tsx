@@ -73,6 +73,86 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
 
   }, [editingChart, selectedDataSourceItems])
 
+  const drawReferenceLines = (
+    g: d3.Selection<SVGGElement, unknown, null, undefined>, 
+    xScale: d3.ScaleTime<number, number>, 
+    yScale: d3.ScaleLinear<number, number>, 
+    width: number, 
+    height: number
+  ) => {
+    const referenceLines = editingChart.referenceLines || []
+    
+    referenceLines.forEach(line => {
+      const color = line.color || "#999999"
+      const strokeDasharray = line.style === "dashed" ? "5,5" : line.style === "dotted" ? "2,2" : "none"
+      
+      if (line.type === "vertical") {
+        // Vertical reference line
+        let xPos: number
+        if ((editingChart.xAxisType || "datetime") === "datetime") {
+          // For datetime, convert value to date
+          const date = new Date(line.value)
+          xPos = xScale(date)
+        } else {
+          // For numeric values, need to map to time scale (simplified)
+          const domain = xScale.domain()
+          const range = domain[1].getTime() - domain[0].getTime()
+          const normalizedValue = line.value / 100 // Assume 0-100 range for simplicity
+          xPos = xScale(new Date(domain[0].getTime() + range * normalizedValue))
+        }
+        
+        if (xPos >= 0 && xPos <= width) {
+          // Draw vertical line
+          g.append("line")
+            .attr("x1", xPos)
+            .attr("x2", xPos)
+            .attr("y1", 0)
+            .attr("y2", height)
+            .attr("stroke", color)
+            .attr("stroke-width", 1)
+            .attr("stroke-dasharray", strokeDasharray)
+            .attr("opacity", 0.7)
+          
+          // Draw label
+          if (line.label) {
+            g.append("text")
+              .attr("x", xPos + 3)
+              .attr("y", 15)
+              .attr("fill", color)
+              .style("font-size", "10px")
+              .text(line.label)
+          }
+        }
+      } else if (line.type === "horizontal") {
+        // Horizontal reference line
+        const yPos = yScale(line.value)
+        
+        if (yPos >= 0 && yPos <= height) {
+          // Draw horizontal line
+          g.append("line")
+            .attr("x1", 0)
+            .attr("x2", width)
+            .attr("y1", yPos)
+            .attr("y2", yPos)
+            .attr("stroke", color)
+            .attr("stroke-width", 1)
+            .attr("stroke-dasharray", strokeDasharray)
+            .attr("opacity", 0.7)
+          
+          // Draw label
+          if (line.label) {
+            g.append("text")
+              .attr("x", 3)
+              .attr("y", yPos - 3)
+              .attr("fill", color)
+              .style("font-size", "10px")
+              .text(line.label)
+          }
+        }
+      }
+    })
+  }
+
   const renderEmptyChart = (g: d3.Selection<SVGGElement, unknown, null, undefined>, width: number, height: number, chartType: string) => {
     if (chartType === "pie") {
       // For pie charts, show a circle placeholder
@@ -89,23 +169,6 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
         .attr("stroke-width", 2)
         .attr("stroke-dasharray", "5,5")
       
-      g.append("text")
-        .attr("x", centerX)
-        .attr("y", centerY)
-        .attr("text-anchor", "middle")
-        .attr("dominant-baseline", "middle")
-        .attr("fill", "#6b7280")
-        .style("font-size", "14px")
-        .text("No data to preview")
-        
-      g.append("text")
-        .attr("x", centerX)
-        .attr("y", centerY + 20)
-        .attr("text-anchor", "middle")
-        .attr("dominant-baseline", "middle")
-        .attr("fill", "#9ca3af")
-        .style("font-size", "12px")
-        .text("Select data sources and add parameters")
     } else {
       // For line and bar charts, show axes with placeholder scales
       let xDomain: [Date, Date]
@@ -172,24 +235,8 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
         .style("font-size", "12px")
         .text(firstYAxisLabel)
       
-      // Placeholder message
-      g.append("text")
-        .attr("x", width / 2)
-        .attr("y", height / 2 - 10)
-        .attr("text-anchor", "middle")
-        .attr("dominant-baseline", "middle")
-        .attr("fill", "#6b7280")
-        .style("font-size", "14px")
-        .text("No data to preview")
-        
-      g.append("text")
-        .attr("x", width / 2)
-        .attr("y", height / 2 + 10)
-        .attr("text-anchor", "middle")
-        .attr("dominant-baseline", "middle")
-        .attr("fill", "#9ca3af")
-        .style("font-size", "12px")
-        .text("Select data sources and add Y parameters")
+      // Draw reference lines on empty chart
+      drawReferenceLines(g, xScale, yScale, width, height)
     }
   }
 
@@ -267,6 +314,9 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
         .style("font-size", "12px")
         .text(param.parameter)
     })
+
+    // Draw reference lines
+    drawReferenceLines(g, xScale, yScale, width, height)
   }
 
   const renderBarChart = (g: d3.Selection<SVGGElement, unknown, null, undefined>, data: any[], width: number, height: number) => {
@@ -308,6 +358,16 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
       .attr("y", d => yScale(d[param.parameter] || 0))
       .attr("height", d => height - yScale(d[param.parameter] || 0))
       .attr("fill", param.line?.color || "#3b82f6")
+
+    // Create scales for reference lines (simplified time scale for bar chart)
+    const now = new Date()
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
+    const timeScale = d3.scaleTime()
+      .domain([oneHourAgo, now])
+      .range([0, width])
+
+    // Draw reference lines
+    drawReferenceLines(g, timeScale, yScale, width, height)
   }
 
   const renderPieChart = (g: d3.Selection<SVGGElement, unknown, null, undefined>, data: any[], width: number, height: number) => {
@@ -363,16 +423,18 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
         />
       </div>
       <div className="mt-2 space-y-2">
-        {selectedDataSourceItems.length > 0 && (
-          <div className="p-2 bg-muted/30 rounded text-xs">
-            <div className="font-medium mb-1">Data Sources:</div>
-            {selectedDataSourceItems.map((item, index) => (
+        <div className="p-2 bg-muted/30 rounded text-xs">
+          <div className="font-medium mb-1">Data Sources:</div>
+          {selectedDataSourceItems.length > 0 ? (
+            selectedDataSourceItems.map((item, index) => (
               <div key={item.id} className="text-muted-foreground">
                 {index + 1}. {item.plant} - {item.machineNo} ({item.label})
               </div>
-            ))}
-          </div>
-        )}
+            ))
+          ) : (
+            <div className="text-muted-foreground">Not set</div>
+          )}
+        </div>
         
         {/* Range Settings Display */}
         <div className="p-2 bg-muted/30 rounded text-xs">
@@ -428,6 +490,50 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
               </div>
             )}
           </div>
+        </div>
+        
+        {/* Y Parameter Settings Display */}
+        <div className="p-2 bg-muted/30 rounded text-xs">
+          <div className="font-medium mb-1">Y Parameter Settings:</div>
+          {editingChart.yAxisParams && editingChart.yAxisParams.length > 0 ? (
+            <div className="space-y-1 text-muted-foreground">
+              {editingChart.yAxisParams.map((param, index) => (
+                <div key={index} className="flex flex-col space-y-1">
+                  <div>
+                    <span className="font-medium">{param.parameter || `Parameter ${index + 1}`}</span>
+                    <span className="ml-2">Axis {param.axisNo || 1}</span>
+                  </div>
+                  <div className="ml-2 flex flex-wrap gap-2 text-[10px]">
+                    {param.line?.color ? (
+                      <span className="flex items-center gap-1">
+                        <div 
+                          className="w-2 h-2 rounded" 
+                          style={{ backgroundColor: param.line.color }}
+                        />
+                        Color
+                      </span>
+                    ) : (
+                      <span>Color: Not set</span>
+                    )}
+                    {param.line?.width ? (
+                      <span>Width: {param.line.width}px</span>
+                    ) : (
+                      <span>Width: Not set</span>
+                    )}
+                    {param.range && !param.range.auto ? (
+                      <span>Range: {param.range.min || 0} - {param.range.max || 100}</span>
+                    ) : param.range?.auto ? (
+                      <span>Range: Auto</span>
+                    ) : (
+                      <span>Range: Not set</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-muted-foreground">Not set</div>
+          )}
         </div>
       </div>
     </div>

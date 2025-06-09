@@ -211,7 +211,7 @@ export function ReferenceLinesSettings({
                         <Checkbox
                           id={`y-auto-${line.id}`}
                           checked={line.yRange?.auto ?? true}
-                          onCheckedChange={(checked) => handleUpdateRange(line.id, 'yRange', 'auto', checked)}
+                          onCheckedChange={(checked) => handleUpdateRange(line.id, 'yRange', 'auto', !!checked)}
                         />
                         <Label htmlFor={`y-auto-${line.id}`} className="text-sm">Auto Range</Label>
                       </div>
@@ -259,7 +259,7 @@ export function ReferenceLinesSettings({
                         <Checkbox
                           id={`x-auto-${line.id}`}
                           checked={line.xRange?.auto ?? true}
-                          onCheckedChange={(checked) => handleUpdateRange(line.id, 'xRange', 'auto', checked)}
+                          onCheckedChange={(checked) => handleUpdateRange(line.id, 'xRange', 'auto', !!checked)}
                         />
                         <Label htmlFor={`x-auto-${line.id}`} className="text-sm">Auto Range</Label>
                       </div>
