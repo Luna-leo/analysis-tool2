@@ -129,10 +129,19 @@ export function ChartPreview({ editingChart, selectedDataSourceItems, setEditing
     }
   }
 
+  // Create a memoized version of editingChart without referenceLines to prevent re-renders
+  const chartConfigWithoutRefLines = React.useMemo(() => {
+    const { referenceLines, ...rest } = editingChart
+    return rest
+  }, [editingChart.chartType, editingChart.title, editingChart.xAxisType, editingChart.xParameter, 
+      editingChart.xLabel, editingChart.xAxisRange, editingChart.yAxisParams, editingChart.yAxisLabels])
+
   useEffect(() => {
     if (!svgRef.current || draggingLine) return
 
     const svg = d3.select(svgRef.current)
+    
+    // Clear all content
     svg.selectAll("*").remove()
 
     const margin = { top: 20, right: 80, bottom: 40, left: 60 }
@@ -159,7 +168,7 @@ export function ChartPreview({ editingChart, selectedDataSourceItems, setEditing
       renderEmptyChart(g, width, height, chartType)
     }
 
-  }, [editingChart, selectedDataSourceItems, draggingLine])
+  }, [chartConfigWithoutRefLines, selectedDataSourceItems])
 
   // Separate effect for drawing reference lines to prevent full re-render during drag
   useEffect(() => {
@@ -170,10 +179,14 @@ export function ChartPreview({ editingChart, selectedDataSourceItems, setEditing
     const width = 400 - margin.left - margin.right
     const height = 300 - margin.top - margin.bottom
 
-    // Ensure reference lines layer exists
-    let refLinesLayer = svg.select<SVGGElement>(".reference-lines-layer")
+    // Find the main chart group
+    const mainGroup = svg.select("g")
+    if (mainGroup.empty()) return
+
+    // Ensure reference lines layer exists and is properly positioned
+    let refLinesLayer = mainGroup.select<SVGGElement>(".reference-lines-layer")
     if (refLinesLayer.empty()) {
-      refLinesLayer = svg.select("g")
+      refLinesLayer = mainGroup
         .append<SVGGElement>("g")
         .attr("class", "reference-lines-layer")
     }
@@ -185,7 +198,12 @@ export function ChartPreview({ editingChart, selectedDataSourceItems, setEditing
       width,
       height
     )
-  }, [editingChart.referenceLines, hoveredLine, draggingLine])
+  }, [
+    // Use JSON.stringify to ensure stable dependency
+    JSON.stringify(editingChart.referenceLines || []),
+    hoveredLine,
+    draggingLine
+  ])
 
   // Store scales in refs to avoid recreation during drag
   const scalesRef = useRef<{
@@ -206,60 +224,7 @@ export function ChartPreview({ editingChart, selectedDataSourceItems, setEditing
     })
   }, [editingChart, setEditingChart])
 
-  // Handle drag operations
-  useEffect(() => {
-    if (!svgRef.current || !draggingLine || !setEditingChart || !scalesRef.current.xScale || !scalesRef.current.yScale) return
-
-    const svg = svgRef.current
-    const margin = { top: 20, right: 80, bottom: 40, left: 60 }
-    const width = 400 - margin.left - margin.right
-    const height = 300 - margin.top - margin.bottom
-
-    // Use stored scales
-    const xScale = scalesRef.current.xScale
-    const yScale = scalesRef.current.yScale
-
-    const handleMouseMove = (event: MouseEvent) => {
-      const rect = svg.getBoundingClientRect()
-      const x = event.clientX - rect.left - margin.left
-      const y = event.clientY - rect.top - margin.top
-
-      if (draggingLine.type === "vertical") {
-        // Calculate new X value
-        const clampedX = Math.max(0, Math.min(width, x))
-        const newDate = xScale.invert(clampedX)
-        
-        if ((editingChart.xAxisType || "datetime") === "datetime") {
-          // Format as datetime string
-          const formatted = newDate.toISOString().slice(0, 19)
-          updateReferenceLine(draggingLine.id, formatted)
-        } else {
-          // For numeric values
-          const domain = xScale.domain()
-          const range = domain[1].getTime() - domain[0].getTime()
-          const normalized = (newDate.getTime() - domain[0].getTime()) / range
-          updateReferenceLine(draggingLine.id, Math.round(normalized * 100))
-        }
-      } else {
-        // Horizontal line
-        const clampedY = Math.max(0, Math.min(height, y))
-        const newValue = yScale.invert(clampedY)
-        updateReferenceLine(draggingLine.id, Math.round(newValue * 10) / 10)
-      }
-    }
-
-    const handleMouseUp = () => {
-      setDraggingLine(null)
-    }
-
-    window.addEventListener("mousemove", handleMouseMove)
-    window.addEventListener("mouseup", handleMouseUp)
-
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove)
-      window.removeEventListener("mouseup", handleMouseUp)
-    }
-  }, [draggingLine, setEditingChart, updateReferenceLine, editingChart.xAxisType])
+  // Note: drag operations are now handled by d3.drag() in drawReferenceLines
 
   const drawReferenceLines = (
     g: d3.Selection<SVGGElement, unknown, null, undefined>, 
@@ -338,6 +303,50 @@ export function ChartPreview({ editingChart, selectedDataSourceItems, setEditing
           if (isInteractive) {
             let interactiveLine = group.select<SVGLineElement>(".interactive-line")
             if (interactiveLine.empty()) {
+              // Create drag behavior
+              const drag = d3.drag<SVGLineElement, unknown>()
+                .on("start", function() {
+                  setHoveredLine(line.id)
+                  setDraggingLine({ id: line.id, type: "vertical" })
+                })
+                .on("drag", function(event) {
+                  const clampedX = Math.max(0, Math.min(width, event.x))
+                  
+                  // Update all elements in the group
+                  const parent = d3.select(this.parentNode as SVGGElement)
+                  parent.select(".main-line")
+                    .attr("x1", clampedX)
+                    .attr("x2", clampedX)
+                  
+                  parent.select(".interactive-line")
+                    .attr("x1", clampedX)
+                    .attr("x2", clampedX)
+                  
+                  parent.select(".line-label")
+                    .attr("x", clampedX + 3)
+                  
+                  parent.select(".line-handle")
+                    .attr("cx", clampedX)
+                })
+                .on("end", function(event) {
+                  const clampedX = Math.max(0, Math.min(width, event.x))
+                  const newDate = xScale.invert(clampedX)
+                  
+                  if ((editingChart.xAxisType || "datetime") === "datetime") {
+                    const formatted = newDate.toISOString().slice(0, 19)
+                    updateReferenceLine(line.id, formatted)
+                  } else {
+                    const domain = xScale.domain()
+                    const range = domain[1].getTime() - domain[0].getTime()
+                    const normalized = (newDate.getTime() - domain[0].getTime()) / range
+                    updateReferenceLine(line.id, Math.round(normalized * 100))
+                  }
+                  
+                  // Clear dragging and hover state after update
+                  setDraggingLine(null)
+                  setHoveredLine(null)
+                })
+
               interactiveLine = group.append("line")
                 .attr("class", "interactive-line")
                 .attr("stroke", "transparent")
@@ -345,10 +354,7 @@ export function ChartPreview({ editingChart, selectedDataSourceItems, setEditing
                 .style("cursor", "ew-resize")
                 .on("mouseenter", () => setHoveredLine(line.id))
                 .on("mouseleave", () => setHoveredLine(null))
-                .on("mousedown", (event) => {
-                  event.preventDefault()
-                  setDraggingLine({ id: line.id, type: "vertical" })
-                })
+                .call(drag)
             }
             interactiveLine
               .attr("x1", xPos)
@@ -420,6 +426,42 @@ export function ChartPreview({ editingChart, selectedDataSourceItems, setEditing
           if (isInteractive) {
             let interactiveLine = group.select<SVGLineElement>(".interactive-line")
             if (interactiveLine.empty()) {
+              // Create drag behavior
+              const drag = d3.drag<SVGLineElement, unknown>()
+                .on("start", function() {
+                  setHoveredLine(line.id)
+                  setDraggingLine({ id: line.id, type: "horizontal" })
+                })
+                .on("drag", function(event) {
+                  const clampedY = Math.max(0, Math.min(height, event.y))
+                  
+                  // Update all elements in the group
+                  const parent = d3.select(this.parentNode as SVGGElement)
+                  parent.select(".main-line")
+                    .attr("y1", clampedY)
+                    .attr("y2", clampedY)
+                  
+                  parent.select(".interactive-line")
+                    .attr("y1", clampedY)
+                    .attr("y2", clampedY)
+                  
+                  parent.select(".line-label")
+                    .attr("y", clampedY - 3)
+                  
+                  parent.select(".line-handle")
+                    .attr("cy", clampedY)
+                })
+                .on("end", function(event) {
+                  const clampedY = Math.max(0, Math.min(height, event.y))
+                  const newValue = yScale.invert(clampedY)
+                  
+                  updateReferenceLine(line.id, Math.round(newValue * 10) / 10)
+                  
+                  // Clear dragging and hover state after update
+                  setDraggingLine(null)
+                  setHoveredLine(null)
+                })
+
               interactiveLine = group.append("line")
                 .attr("class", "interactive-line")
                 .attr("stroke", "transparent")
@@ -427,10 +469,7 @@ export function ChartPreview({ editingChart, selectedDataSourceItems, setEditing
                 .style("cursor", "ns-resize")
                 .on("mouseenter", () => setHoveredLine(line.id))
                 .on("mouseleave", () => setHoveredLine(null))
-                .on("mousedown", (event) => {
-                  event.preventDefault()
-                  setDraggingLine({ id: line.id, type: "horizontal" })
-                })
+                .call(drag)
             }
             interactiveLine
               .attr("x1", 0)

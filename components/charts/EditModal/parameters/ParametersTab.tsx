@@ -29,6 +29,8 @@ interface ReferenceLineConfig {
     min: string
     max: string
   }
+  color?: string
+  style?: "solid" | "dashed" | "dotted"
 }
 
 export function ParametersTab({ editingChart, setEditingChart, selectedDataSourceItems }: ParametersTabProps) {
@@ -57,7 +59,9 @@ export function ParametersTab({ editingChart, setEditingChart, selectedDataSourc
           auto: true,
           min: "0",
           max: "100"
-        }
+        },
+        color: line.color,
+        style: line.style
       }
     })
     setReferenceLineConfigs(newConfigs)
@@ -88,8 +92,8 @@ export function ParametersTab({ editingChart, setEditingChart, selectedDataSourc
         type: line.type === "vertical" ? "vertical" as const : "horizontal" as const,
         value: value,
         label: line.label,
-        color: "#ff0000",
-        style: "solid" as const
+        color: line.color || "#ff0000",
+        style: line.style || "solid" as const
       }
     })
 
