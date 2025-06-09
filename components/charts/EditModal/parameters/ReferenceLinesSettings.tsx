@@ -1,33 +1,12 @@
 "use client"
 
 import React from "react"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { X, ChevronDown, ChevronRight } from "lucide-react"
+import { ChevronDown, ChevronRight } from "lucide-react"
 import { ChartComponent, EventInfo } from "@/types"
-
-interface ReferenceLineConfig {
-  id: string
-  type: "vertical" | "horizontal"
-  label: string
-  xValue?: string
-  yValue?: string
-  axisNo?: number
-  yRange?: {
-    auto: boolean
-    min: string
-    max: string
-  }
-  xRange?: {
-    auto: boolean
-    min: string
-    max: string
-  }
-}
+import { ReferenceLineRow, ReferenceLineConfig } from "./ReferenceLineRow"
+import { useReferenceLinesDefaults } from "./useReferenceLinesDefaults"
 
 interface ReferenceLinesSettingsProps {
   editingChart: ChartComponent
@@ -47,69 +26,7 @@ export function ReferenceLinesSettings({
   selectedDataSourceItems 
 }: ReferenceLinesSettingsProps) {
   
-  const formatDateTimeForInput = (date: Date): string => {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    const hours = String(date.getHours()).padStart(2, '0')
-    const minutes = String(date.getMinutes()).padStart(2, '0')
-    const seconds = String(date.getSeconds()).padStart(2, '0')
-    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
-  }
-
-  const getDefaultValues = () => {
-    const now = new Date()
-    let defaultXValue = ""
-    let defaultYValue = "50" // Always use midpoint of 0-100 range
-
-    // Calculate default X value based on chart's X-axis type
-    const xAxisType = editingChart.xAxisType || "datetime"
-    
-    if (xAxisType === "datetime") {
-      // If data sources are available and have valid dates, use their midpoint
-      if (selectedDataSourceItems.length > 0) {
-        const validDates: Date[] = []
-
-        selectedDataSourceItems.forEach(dataSource => {
-          const startTime = new Date(dataSource.start)
-          const endTime = new Date(dataSource.end)
-
-          if (!isNaN(startTime.getTime())) {
-            validDates.push(startTime)
-          }
-          if (!isNaN(endTime.getTime())) {
-            validDates.push(endTime)
-          }
-        })
-        
-        if (validDates.length >= 2) {
-          const sortedDates = validDates.sort((a, b) => a.getTime() - b.getTime())
-          const earliestStart = sortedDates[0]
-          const latestEnd = sortedDates[sortedDates.length - 1]
-          const midTime = new Date((earliestStart.getTime() + latestEnd.getTime()) / 2)
-          defaultXValue = formatDateTimeForInput(midTime)
-        } else {
-          // Default: midpoint between 1 month ago and now
-          const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-          const midTime = new Date((oneMonthAgo.getTime() + now.getTime()) / 2)
-          defaultXValue = formatDateTimeForInput(midTime)
-        }
-      } else {
-        // Default: midpoint between 1 month ago and now
-        const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-        const midTime = new Date((oneMonthAgo.getTime() + now.getTime()) / 2)
-        defaultXValue = formatDateTimeForInput(midTime)
-      }
-    } else if (xAxisType === "time") {
-      // Time (elapsed): midpoint of 0-30 minutes
-      defaultXValue = "15"
-    } else {
-      // Parameter: midpoint of 0-100
-      defaultXValue = "50"
-    }
-
-    return { defaultXValue, defaultYValue }
-  }
+  const { getDefaultValues } = useReferenceLinesDefaults(editingChart, selectedDataSourceItems)
 
   const handleAddVerticalLine = () => {
     onOpenChange?.(true)
@@ -248,198 +165,16 @@ export function ReferenceLinesSettings({
 
               <div className="max-h-48 overflow-y-auto">
                 <div className="space-y-2">
-        {referenceLines.map((line) => (
-          <div key={line.id} className="flex gap-2 p-1">
-            <div className="w-16">
-              <div className="h-7 px-2 py-1 text-xs flex items-center">
-                {line.type === "vertical" ? "V" : "H"}
-              </div>
-            </div>
-            <div className="flex-1">
-              <Input
-                value={line.label}
-                onChange={(e) => handleUpdateReferenceLine(line.id, "label", e.target.value)}
-                placeholder="Label"
-                className="h-7 text-xs"
-              />
-            </div>
-            <div className="w-40">
-              {line.type === "vertical" ? (
-                (editingChart.xAxisType || "datetime") === "datetime" ? (
-                  <Input
-                    type="datetime-local"
-                    value={line.xValue || ""}
-                    onChange={(e) => handleUpdateReferenceLine(line.id, "xValue", e.target.value)}
-                    className="h-7 text-xs w-full [&::-webkit-calendar-picker-indicator]:ml-auto [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-                  />
-                ) : (
-                  <Input
-                    type="number"
-                    value={line.xValue || ""}
-                    onChange={(e) => handleUpdateReferenceLine(line.id, "xValue", e.target.value)}
-                    placeholder={(editingChart.xAxisType || "datetime") === "time" ? "Time(s)" : "X value"}
-                    className="h-7 text-xs"
-                  />
-                )
-              ) : (
-                <Input
-                  type="number"
-                  value={line.yValue || ""}
-                  onChange={(e) => handleUpdateReferenceLine(line.id, "yValue", e.target.value)}
-                  placeholder="Y value"
-                  className="h-7 text-xs"
-                />
-              )}
-            </div>
-            <div className="w-16">
-              {line.type === "horizontal" ? (
-                <Input
-                  type="number"
-                  min="1"
-                  max="10"
-                  value={line.axisNo || 1}
-                  onChange={(e) => handleUpdateReferenceLine(line.id, "axisNo", parseInt(e.target.value) || 1)}
-                  className="h-7 text-xs"
-                />
-              ) : (
-                <div className="h-7" />
-              )}
-            </div>
-            <div className="w-24">
-              {line.type === "vertical" ? (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      className="h-7 w-full justify-start text-xs"
-                      title={line.yRange?.auto ? "Auto range based on data" : `Min: ${line.yRange?.min || 0}, Max: ${line.yRange?.max || 100}`}
-                    >
-                      {line.yRange?.auto ? "Range: Auto" : "Range: Custom"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80">
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`y-auto-${line.id}`}
-                          checked={line.yRange?.auto ?? true}
-                          onCheckedChange={(checked) => handleUpdateRange(line.id, 'yRange', 'auto', !!checked)}
-                        />
-                        <Label htmlFor={`y-auto-${line.id}`} className="text-sm">Auto Range</Label>
-                      </div>
-                      <div className="space-y-2">
-                        <div>
-                          <Label htmlFor={`y-min-${line.id}`} className="text-xs">Min Value</Label>
-                          <Input
-                            id={`y-min-${line.id}`}
-                            type="number"
-                            value={line.yRange?.min || "0"}
-                            onChange={(e) => handleUpdateRange(line.id, 'yRange', 'min', e.target.value)}
-                            disabled={line.yRange?.auto ?? true}
-                            className="h-8"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor={`y-max-${line.id}`} className="text-xs">Max Value</Label>
-                          <Input
-                            id={`y-max-${line.id}`}
-                            type="number"
-                            value={line.yRange?.max || "100"}
-                            onChange={(e) => handleUpdateRange(line.id, 'yRange', 'max', e.target.value)}
-                            disabled={line.yRange?.auto ?? true}
-                            className="h-8"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              ) : (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      className="h-7 w-full justify-start text-xs"
-                      title={line.xRange?.auto ? "Auto range based on data" : `Min: ${line.xRange?.min || "Not set"}, Max: ${line.xRange?.max || "Not set"}`}
-                    >
-                      {line.xRange?.auto ? "Range: Auto" : "Range: Custom"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80">
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`x-auto-${line.id}`}
-                          checked={line.xRange?.auto ?? true}
-                          onCheckedChange={(checked) => handleUpdateRange(line.id, 'xRange', 'auto', !!checked)}
-                        />
-                        <Label htmlFor={`x-auto-${line.id}`} className="text-sm">Auto Range</Label>
-                      </div>
-                      <div className="space-y-2">
-                        <div>
-                          <Label htmlFor={`x-min-${line.id}`} className="text-xs">Min Value</Label>
-                          {(editingChart.xAxisType || "datetime") === "datetime" ? (
-                            <Input
-                              id={`x-min-${line.id}`}
-                              type="datetime-local"
-                              value={line.xRange?.min || ""}
-                              onChange={(e) => handleUpdateRange(line.id, 'xRange', 'min', e.target.value)}
-                              disabled={line.xRange?.auto ?? true}
-                              className="h-8 [&::-webkit-calendar-picker-indicator]:ml-auto [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-                            />
-                          ) : (
-                            <Input
-                              id={`x-min-${line.id}`}
-                              type="number"
-                              value={line.xRange?.min || "0"}
-                              onChange={(e) => handleUpdateRange(line.id, 'xRange', 'min', e.target.value)}
-                              disabled={line.xRange?.auto ?? true}
-                              placeholder={(editingChart.xAxisType || "datetime") === "time" ? "Start(s)" : "Min"}
-                              className="h-8"
-                            />
-                          )}
-                        </div>
-                        <div>
-                          <Label htmlFor={`x-max-${line.id}`} className="text-xs">Max Value</Label>
-                          {(editingChart.xAxisType || "datetime") === "datetime" ? (
-                            <Input
-                              id={`x-max-${line.id}`}
-                              type="datetime-local"
-                              value={line.xRange?.max || ""}
-                              onChange={(e) => handleUpdateRange(line.id, 'xRange', 'max', e.target.value)}
-                              disabled={line.xRange?.auto ?? true}
-                              className="h-8 [&::-webkit-calendar-picker-indicator]:ml-auto [&::-webkit-calendar-picker-indicator]:cursor-pointer"
-                            />
-                          ) : (
-                            <Input
-                              id={`x-max-${line.id}`}
-                              type="number"
-                              value={line.xRange?.max || "100"}
-                              onChange={(e) => handleUpdateRange(line.id, 'xRange', 'max', e.target.value)}
-                              disabled={line.xRange?.auto ?? true}
-                              placeholder={(editingChart.xAxisType || "datetime") === "time" ? "End(s)" : "Max"}
-                              className="h-8"
-                            />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              )}
-            </div>
-            <div className="w-7">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleRemoveReferenceLine(line.id)}
-                className="h-7 w-7 p-0"
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </div>
-          </div>
-        ))}
+                  {referenceLines.map((line) => (
+                    <ReferenceLineRow
+                      key={line.id}
+                      line={line}
+                      editingChart={editingChart}
+                      onUpdateReferenceLine={handleUpdateReferenceLine}
+                      onUpdateRange={handleUpdateRange}
+                      onRemoveReferenceLine={handleRemoveReferenceLine}
+                    />
+                  ))}
 
                   {referenceLines.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">

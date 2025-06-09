@@ -1,23 +1,14 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from "react"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Checkbox } from "@/components/ui/checkbox"
-import { X, Plus, ChevronDown, ChevronRight, Copy, Edit2 } from "lucide-react"
-import { YAxisGroup } from "./YAxisGroup"
-import { ChartComponent, InterlockDefinition } from "@/types"
-import { mockInterlockMaster } from "@/data/interlockMaster"
-import { mockFormulaMaster, FormulaMaster } from "@/data/formulaMaster"
-import { InterlockRegistrationDialog } from "./InterlockRegistrationDialog"
-import { FormulaRegistrationDialog } from "./FormulaRegistrationDialog"
+import { ChevronDown, ChevronRight } from "lucide-react"
+import { ChartComponent } from "@/types"
+import { YParameterList } from "./YParameterList"
+import { YParameterDialogs } from "./YParameterDialogs"
+import { useYParameterHandlers } from "./useYParameterHandlers"
+import { useYParameterGrouping } from "./useYParameterGrouping"
 
 interface YParametersSettingsProps {
   editingChart: ChartComponent
@@ -41,6 +32,7 @@ export function YParametersSettings({ editingChart, setEditingChart, isReference
   const parameterTypeSelectRefs = useRef<(HTMLSelectElement | null)[]>([])
   const axisLabelInputRefs = useRef<Record<number, HTMLInputElement | null>>({})
 
+  // Initialize default parameter if none exist
   useEffect(() => {
     if (!editingChart.yAxisParams || editingChart.yAxisParams.length === 0) {
       const defaultParam = {
@@ -66,6 +58,7 @@ export function YParametersSettings({ editingChart, setEditingChart, isReference
     }
   }, [editingChart, setEditingChart])
 
+  // Focus on newly added parameter type select
   useEffect(() => {
     if (lastAddedParamIndex !== null && parameterTypeSelectRefs.current[lastAddedParamIndex]) {
       const selectElement = parameterTypeSelectRefs.current[lastAddedParamIndex]
@@ -90,173 +83,49 @@ export function YParametersSettings({ editingChart, setEditingChart, isReference
     }
   }, [lastAddedAxisNo, editingChart?.yAxisParams?.length])
 
-  const handleFormulaSave = (formula: FormulaMaster) => {
+  // Use custom hooks for handlers and grouping
+  const handlers = useYParameterHandlers({
+    editingChart,
+    setEditingChart,
+    setEditingInterlockIndex,
+    setInterlockMode,
+    setShowInterlockDialog,
+    setEditingFormulaIndex,
+    setFormulaMode,
+    setShowFormulaDialog,
+    setOpenComboboxIndex,
+    setSearchQuery
+  })
+
+  // Wrap save handlers to include index
+  const handleFormulaSave = (formula: any) => {
     if (editingFormulaIndex !== null) {
-      const newParams = [...(editingChart.yAxisParams || [])]
-      newParams[editingFormulaIndex] = {
-        ...newParams[editingFormulaIndex],
-        parameter: formula.name,
-        formulaId: formula.id,
-        formulaDefinition: formula
-      }
-      setEditingChart({ ...editingChart, yAxisParams: newParams })
-      
-      // In a real app, you would also save the formula to the backend here
-      // For now, we'll just add it to the mockFormulaMaster if it's new
-      if (!mockFormulaMaster.find(f => f.id === formula.id)) {
-        mockFormulaMaster.push(formula)
-      } else {
-        // Update existing formula
-        const index = mockFormulaMaster.findIndex(f => f.id === formula.id)
-        if (index >= 0) {
-          mockFormulaMaster[index] = formula
-        }
-      }
+      handlers.handleFormulaSave(formula, editingFormulaIndex)
     }
-    setEditingFormulaIndex(null)
   }
 
-  const handleInterlockSave = (interlockDefinition: InterlockDefinition, selectedThresholds: string[], _plant: string, _machineNo: string) => {
+  const handleInterlockSave = (interlockDefinition: any, selectedThresholds: string[], plant: string, machineNo: string) => {
     if (editingInterlockIndex !== null) {
-      const newParams = [...(editingChart.yAxisParams || [])]
-      // 選択された閾値がない場合は、デフォルトですべての閾値を選択
-      const finalSelectedThresholds = selectedThresholds.length > 0 
-        ? selectedThresholds 
-        : interlockDefinition.thresholds.map(t => t.id)
-      newParams[editingInterlockIndex] = {
-        ...newParams[editingInterlockIndex],
-        interlockDefinition,
-        parameter: interlockDefinition.name,
-        interlockSource: "custom",
-        selectedThresholds: finalSelectedThresholds
-      }
-      setEditingChart({ ...editingChart, yAxisParams: newParams })
-    }
-    setEditingInterlockIndex(null)
-  }
-
-  const handleParameterTypeChange = (index: number, newType: "Parameter" | "Formula" | "Interlock") => {
-    const newParams = [...(editingChart.yAxisParams || [])]
-    newParams[index] = { 
-      ...newParams[index], 
-      parameterType: newType,
-      parameter: "", // Clear parameter
-      axisNo: 1, // Reset axis number to default
-      // Reset type-specific fields
-      ...(newType !== "Interlock" && {
-        interlockId: undefined,
-        interlockSource: undefined,
-        interlockDefinition: undefined,
-        selectedThresholds: undefined
-      }),
-      ...(newType !== "Formula" && {
-        formulaId: undefined,
-        formulaDefinition: undefined
-      })
-    }
-    setEditingChart({ ...editingChart, yAxisParams: newParams })
-  }
-
-  const handleFormulaSelect = (index: number, value: string, mode: "select" | "edit" | "duplicate" = "select") => {
-    setOpenComboboxIndex(null)
-    setSearchQuery("")
-    
-    if (value === "add-new") {
-      setEditingFormulaIndex(index)
-      setFormulaMode("create")
-      setShowFormulaDialog(true)
-      return
-    }
-
-    const selectedFormula = mockFormulaMaster.find(f => f.id === value)
-    if (selectedFormula) {
-      if (mode === "edit" || mode === "duplicate") {
-        setEditingFormulaIndex(index)
-        setFormulaMode(mode)
-        const newParams = [...(editingChart.yAxisParams || [])]
-        newParams[index] = {
-          ...newParams[index],
-          formulaDefinition: selectedFormula
-        }
-        setEditingChart({ ...editingChart, yAxisParams: newParams })
-        setShowFormulaDialog(true)
-      } else {
-        const newParams = [...(editingChart.yAxisParams || [])]
-        newParams[index] = {
-          ...newParams[index],
-          parameter: selectedFormula.name,
-          formulaId: value,
-          formulaDefinition: selectedFormula
-        }
-        setEditingChart({ ...editingChart, yAxisParams: newParams })
-      }
+      handlers.handleInterlockSave(interlockDefinition, selectedThresholds, plant, machineNo, editingInterlockIndex)
     }
   }
 
-  const handleInterlockSelect = (index: number, value: string, mode: "select" | "edit" | "duplicate" = "select") => {
-    setOpenComboboxIndex(null)
-    setSearchQuery("") // Reset search query after selection
-    
-    if (value === "add-new") {
-      setEditingInterlockIndex(index)
-      setInterlockMode("create")
-      // Clear any existing interlock data for truly new interlock
-      const newParams = [...(editingChart.yAxisParams || [])]
-      if (newParams[index]) {
-        newParams[index] = {
-          ...newParams[index],
-          interlockDefinition: undefined,
-          selectedThresholds: undefined
-        }
-      }
-      setEditingChart({ ...editingChart, yAxisParams: newParams })
-      setShowInterlockDialog(true)
-      return
-    }
+  const {
+    groupParametersByAxis,
+    updateAxisLabel,
+    updateAxisRange,
+    addNewAxisGroup,
+    removeAxisGroup,
+    addParameterToAxis
+  } = useYParameterGrouping({
+    editingChart,
+    setEditingChart,
+    setLastAddedParamIndex,
+    setLastAddedAxisNo
+  })
 
-    const selectedMaster = mockInterlockMaster.find(m => m.id === value)
-    if (selectedMaster) {
-      if (mode === "edit" || mode === "duplicate") {
-        // Open dialog with the master's definition as initial values
-        setEditingInterlockIndex(index)
-        setInterlockMode(mode)
-        // Store the master data temporarily to pass to dialog
-        const newParams = [...(editingChart.yAxisParams || [])]
-        
-        // For duplicate mode, append " (Copy)" to the name
-        const definitionToUse = mode === "duplicate" 
-          ? {
-              ...selectedMaster.definition,
-              name: `${selectedMaster.definition.name} (Copy)`
-            }
-          : selectedMaster.definition
-        
-        newParams[index] = {
-          ...newParams[index],
-          interlockDefinition: definitionToUse,
-          selectedThresholds: selectedMaster.definition.thresholds.map(t => t.id),
-          interlockSource: "custom", // Always create as custom when editing/duplicating
-        }
-        setEditingChart({ ...editingChart, yAxisParams: newParams })
-        setShowInterlockDialog(true)
-      } else {
-        const newParams = [...(editingChart.yAxisParams || [])]
-        // デフォルトですべての閾値を選択
-        const allThresholdIds = selectedMaster.definition.thresholds.map(t => t.id)
-        newParams[index] = {
-          ...newParams[index],
-          interlockId: value,
-          interlockSource: "master",
-          interlockDefinition: selectedMaster.definition,
-          parameter: selectedMaster.name,
-          selectedThresholds: allThresholdIds
-        }
-        setEditingChart({ ...editingChart, yAxisParams: newParams })
-      }
-    }
-  }
-
-  const filterFormulas = (formulas: FormulaMaster[]) => {
+  // Override filter functions to use searchQuery from state
+  const filterFormulasWithQuery = (formulas: any[]) => {
     const query = searchQuery.trim().toLowerCase()
     if (!query) return formulas
 
@@ -275,7 +144,7 @@ export function YParametersSettings({ editingChart, setEditingChart, isReference
     })
   }
 
-  const filterInterlocks = (interlocks: typeof mockInterlockMaster) => {
+  const filterInterlocksWithQuery = (interlocks: any[]) => {
     const query = searchQuery.trim().toLowerCase()
     if (!query) return interlocks
 
@@ -290,142 +159,6 @@ export function YParametersSettings({ editingChart, setEditingChart, isReference
 
       return searchableText.includes(query)
     })
-  }
-
-  const handleThresholdRemove = (paramIndex: number, thresholdId: string) => {
-    const newParams = [...(editingChart.yAxisParams || [])]
-    const currentSelectedThresholds = newParams[paramIndex].selectedThresholds || []
-    newParams[paramIndex] = {
-      ...newParams[paramIndex],
-      selectedThresholds: currentSelectedThresholds.filter(id => id !== thresholdId)
-    }
-    setEditingChart({ ...editingChart, yAxisParams: newParams })
-  }
-
-  const handleThresholdAdd = (paramIndex: number, thresholdId: string) => {
-    const newParams = [...(editingChart.yAxisParams || [])]
-    const currentSelectedThresholds = newParams[paramIndex].selectedThresholds || []
-    if (!currentSelectedThresholds.includes(thresholdId)) {
-      newParams[paramIndex] = {
-        ...newParams[paramIndex],
-        selectedThresholds: [...currentSelectedThresholds, thresholdId]
-      }
-      setEditingChart({ ...editingChart, yAxisParams: newParams })
-    }
-  }
-
-  // Group parameters by axis number
-  const groupParametersByAxis = () => {
-    const groups: Record<number, number[]> = {}
-    editingChart.yAxisParams?.forEach((param, index) => {
-      const axisNo = param.axisNo || 1
-      if (!groups[axisNo]) {
-        groups[axisNo] = []
-      }
-      groups[axisNo].push(index)
-    })
-    return groups
-  }
-
-  // Update axis label for all parameters on the same axis
-  const updateAxisLabel = (axisNo: number, label: string) => {
-    setEditingChart({
-      ...editingChart,
-      yAxisLabels: {
-        ...editingChart.yAxisLabels,
-        [axisNo]: label
-      }
-    })
-  }
-
-  // Update axis range for all parameters on the same axis
-  const updateAxisRange = (axisNo: number, rangeUpdate: Partial<{ auto: boolean; min: number; max: number }>) => {
-    const newParams = [...(editingChart.yAxisParams || [])]
-    newParams.forEach((param, index) => {
-      if (param.axisNo === axisNo) {
-        newParams[index] = {
-          ...param,
-          range: {
-            ...param.range,
-            ...rangeUpdate,
-            min: rangeUpdate.min ?? param.range?.min ?? 0,
-            max: rangeUpdate.max ?? param.range?.max ?? 100,
-          }
-        }
-      }
-    })
-    setEditingChart({ ...editingChart, yAxisParams: newParams })
-  }
-
-  // Get next available axis number
-  const getNextAxisNumber = () => {
-    const existingAxisNumbers = (editingChart.yAxisParams || []).map(param => param.axisNo || 1)
-    const maxAxis = Math.max(...existingAxisNumbers, 0)
-    return maxAxis + 1
-  }
-
-  // Add new axis group
-  const addNewAxisGroup = () => {
-    setIsOpen(true)
-    const newAxisNo = getNextAxisNumber()
-    const newParam = {
-      parameterType: "Parameter" as "Parameter" | "Formula" | "Interlock",
-      parameter: "",
-      axisNo: newAxisNo,
-      axisName: "",
-      range: {
-        auto: true,
-        min: 0,
-        max: 100,
-      },
-      line: {
-        width: 2,
-        color: "#000000",
-        style: "solid" as const,
-      },
-    }
-    const newParams = [...(editingChart.yAxisParams || []), newParam]
-    setEditingChart({
-      ...editingChart,
-      yAxisParams: newParams,
-    })
-    setLastAddedParamIndex(newParams.length - 1)
-    setLastAddedAxisNo(newAxisNo)
-  }
-
-  // Remove axis group and all its parameters
-  const removeAxisGroup = (axisNo: number) => {
-    const newParams = (editingChart.yAxisParams || []).filter(param => param.axisNo !== axisNo)
-    setEditingChart({
-      ...editingChart,
-      yAxisParams: newParams,
-    })
-  }
-
-  // Add parameter to specific axis
-  const addParameterToAxis = (axisNo: number) => {
-    const newParam = {
-      parameterType: "Parameter" as "Parameter" | "Formula" | "Interlock",
-      parameter: "",
-      axisNo: axisNo,
-      axisName: "",
-      range: {
-        auto: true,
-        min: 0,
-        max: 100,
-      },
-      line: {
-        width: 2,
-        color: "#000000",
-        style: "solid" as const,
-      },
-    }
-    const newParams = [...(editingChart.yAxisParams || []), newParam]
-    setEditingChart({
-      ...editingChart,
-      yAxisParams: newParams,
-    })
-    setLastAddedParamIndex(newParams.length - 1)
   }
 
   return (
@@ -452,94 +185,48 @@ export function YParametersSettings({ editingChart, setEditingChart, isReference
           </div>
           <CollapsibleContent>
             <div className={`px-3 pt-3 pb-3 overflow-y-auto ${isReferenceLinesOpen ? 'max-h-48' : 'max-h-96'}`}>
-              <div className="space-y-4">
-                {editingChart.yAxisParams && editingChart.yAxisParams.length > 0 ? (
-                  Object.entries(groupParametersByAxis()).map(([axisNoStr, paramIndexes]) => {
-                    const axisNo = parseInt(axisNoStr)
-                    const firstParam = editingChart.yAxisParams![paramIndexes[0]]
-                    const axisLabel = editingChart.yAxisLabels?.[axisNo] || ""
-                    const axisRange = { 
-                      auto: firstParam.range?.auto ?? true, 
-                      min: firstParam.range?.min ?? 0, 
-                      max: firstParam.range?.max ?? 100 
-                    }
-                    return (
-                      <YAxisGroup
-                        key={axisNo}
-                        axisNo={axisNo}
-                        paramIndexes={paramIndexes}
-                        axisLabel={axisLabel}
-                        axisRange={axisRange}
-                        editingChart={editingChart}
-                        setEditingChart={setEditingChart}
-                        updateAxisLabel={updateAxisLabel}
-                        updateAxisRange={updateAxisRange}
-                        addParameterToAxis={addParameterToAxis}
-                        removeAxisGroup={removeAxisGroup}
-                        totalAxisGroups={Object.keys(groupParametersByAxis()).length}
-                        parameterInputRefs={parameterInputRefs}
-                        parameterTypeSelectRefs={parameterTypeSelectRefs}
-                        axisLabelInputRef={axisLabelInputRefs}
-                        openComboboxIndex={openComboboxIndex}
-                        setOpenComboboxIndex={setOpenComboboxIndex}
-                        searchQuery={searchQuery}
-                        setSearchQuery={setSearchQuery}
-                        handleParameterTypeChange={handleParameterTypeChange}
-                        handleFormulaSelect={handleFormulaSelect}
-                        handleInterlockSelect={handleInterlockSelect}
-                        filterFormulas={filterFormulas}
-                        filterInterlocks={filterInterlocks}
-                        handleThresholdRemove={handleThresholdRemove}
-                        handleThresholdAdd={handleThresholdAdd}
-                      />
-                    )
-                  })
-                ) : (
-                  <p className="text-sm text-muted-foreground px-1">No Y parameters added yet.</p>
-                )}
-              </div>
+              <YParameterList
+                editingChart={editingChart}
+                setEditingChart={setEditingChart}
+                parameterInputRefs={parameterInputRefs}
+                parameterTypeSelectRefs={parameterTypeSelectRefs}
+                axisLabelInputRefs={axisLabelInputRefs}
+                openComboboxIndex={openComboboxIndex}
+                setOpenComboboxIndex={setOpenComboboxIndex}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                handleParameterTypeChange={handlers.handleParameterTypeChange}
+                handleFormulaSelect={handlers.handleFormulaSelect}
+                handleInterlockSelect={handlers.handleInterlockSelect}
+                filterFormulas={filterFormulasWithQuery}
+                filterInterlocks={filterInterlocksWithQuery}
+                handleThresholdRemove={handlers.handleThresholdRemove}
+                handleThresholdAdd={handlers.handleThresholdAdd}
+                updateAxisLabel={updateAxisLabel}
+                updateAxisRange={updateAxisRange}
+                addParameterToAxis={addParameterToAxis}
+                removeAxisGroup={removeAxisGroup}
+                groupParametersByAxis={groupParametersByAxis}
+              />
             </div>
           </CollapsibleContent>
         </div>
       </Collapsible>
 
-      <InterlockRegistrationDialog
-        open={showInterlockDialog}
-        onOpenChange={(open) => {
-          setShowInterlockDialog(open)
-          if (!open) {
-            setInterlockMode("create")
-          }
-        }}
-        onSave={handleInterlockSave}
-        mode={interlockMode}
-        initialDefinition={
-          editingInterlockIndex !== null && interlockMode !== "create"
-            ? editingChart.yAxisParams?.[editingInterlockIndex]?.interlockDefinition 
-            : undefined
-        }
-        initialSelectedThresholds={
-          editingInterlockIndex !== null && interlockMode !== "create"
-            ? editingChart.yAxisParams?.[editingInterlockIndex]?.selectedThresholds 
-            : undefined
-        }
-      />
-
-      <FormulaRegistrationDialog
-        open={showFormulaDialog}
-        onOpenChange={(open) => {
-          setShowFormulaDialog(open)
-          if (!open) {
-            setFormulaMode("create")
-          }
-        }}
-        onSave={handleFormulaSave}
-        mode={formulaMode}
-        initialFormula={
-          editingFormulaIndex !== null && formulaMode !== "create"
-            ? editingChart.yAxisParams?.[editingFormulaIndex]?.formulaDefinition
-            : undefined
-        }
+      <YParameterDialogs
+        showInterlockDialog={showInterlockDialog}
+        setShowInterlockDialog={setShowInterlockDialog}
+        showFormulaDialog={showFormulaDialog}
+        setShowFormulaDialog={setShowFormulaDialog}
+        interlockMode={interlockMode}
+        setInterlockMode={setInterlockMode}
+        formulaMode={formulaMode}
+        setFormulaMode={setFormulaMode}
+        editingInterlockIndex={editingInterlockIndex}
+        editingFormulaIndex={editingFormulaIndex}
+        editingChart={editingChart}
+        handleInterlockSave={handleInterlockSave}
+        handleFormulaSave={handleFormulaSave}
       />
     </>
   )
