@@ -59,6 +59,11 @@ export interface ReferenceLine {
   label: string
   color: string
   style: LineStyle
+  // Label position offset from default position
+  labelOffset?: {
+    x: number
+    y: number
+  }
   // For interlock type
   interlockId?: string
   interlockSource?: "master" | "custom"

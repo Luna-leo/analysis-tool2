@@ -118,10 +118,14 @@ export function ReferenceLinesSettings({
     onOpenChange?.(true)
     const { defaultXValue } = getDefaultValues()
     
+    // Count existing vertical lines to generate unique label
+    const verticalLineCount = referenceLines.filter(line => line.type === "vertical").length
+    const defaultLabel = `V-Line ${verticalLineCount + 1}`
+    
     const newReferenceLine: ReferenceLineConfig = {
       id: Date.now().toString(),
       type: "vertical",
-      label: "",
+      label: defaultLabel,
       xValue: defaultXValue,
       yValue: "",
       axisNo: 1,
@@ -143,10 +147,14 @@ export function ReferenceLinesSettings({
     onOpenChange?.(true)
     const { defaultYValue } = getDefaultValues()
     
+    // Count existing horizontal lines to generate unique label
+    const horizontalLineCount = referenceLines.filter(line => line.type === "horizontal").length
+    const defaultLabel = `H-Line ${horizontalLineCount + 1}`
+    
     const newReferenceLine: ReferenceLineConfig = {
       id: Date.now().toString(),
       type: "horizontal",
-      label: "",
+      label: defaultLabel,
       xValue: "",
       yValue: defaultYValue,
       axisNo: 1,

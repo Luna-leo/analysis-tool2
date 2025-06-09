@@ -31,6 +31,10 @@ interface ReferenceLineConfig {
   }
   color?: string
   style?: "solid" | "dashed" | "dotted"
+  labelOffset?: {
+    x: number
+    y: number
+  }
 }
 
 export function ParametersTab({ editingChart, setEditingChart, selectedDataSourceItems }: ParametersTabProps) {
@@ -58,7 +62,8 @@ export function ParametersTab({ editingChart, setEditingChart, selectedDataSourc
           max: "100"
         },
         color: line.color,
-        style: line.style
+        style: line.style,
+        labelOffset: line.labelOffset
       }
     })
     setReferenceLineConfigs(newConfigs)
@@ -94,7 +99,8 @@ export function ParametersTab({ editingChart, setEditingChart, selectedDataSourc
         value: value,
         label: line.label,
         color: line.color || "#ff0000",
-        style: line.style || "solid" as const
+        style: line.style || "solid" as const,
+        labelOffset: line.labelOffset
       }
     })
 

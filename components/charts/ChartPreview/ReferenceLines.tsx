@@ -16,7 +16,9 @@ interface ReferenceLinesProps {
 
 export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRef }: ReferenceLinesProps) {
   const [draggingLine, setDraggingLine] = React.useState<{ id: string; type: 'vertical' | 'horizontal' } | null>(null)
+  const [draggingLabel, setDraggingLabel] = React.useState<{ id: string; type: 'vertical' | 'horizontal' } | null>(null)
   const dragPositionRef = useRef<{ [key: string]: number }>({})
+  const labelDragPositionRef = useRef<{ [key: string]: { x: number; y: number } }>({})
   
   // Keep a ref to the current editingChart to avoid closure issues
   const editingChartRef = useRef<ChartComponent>(editingChart)
@@ -59,6 +61,7 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
     editingChart.referenceLines,
     editingChart.xAxisType,
     draggingLine,
+    draggingLabel,
     svgRef,
     scalesRef
   ])
@@ -158,9 +161,18 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
             
             // Create drag behavior with proper context
             const currentLineId = line.id
+            let labelOffsetX: number | null = null
             const drag = d3.drag<SVGLineElement, any>()
               .on("start", function() {
                 setDraggingLine({ id: currentLineId, type: "vertical" })
+                // Store the current label offset at drag start
+                const currentGroup = d3.select(this.parentNode as SVGGElement)
+                const currentLabel = currentGroup.select(".line-label")
+                if (!currentLabel.empty()) {
+                  const labelX = parseFloat(currentLabel.attr("x"))
+                  const lineX = parseFloat(currentGroup.select(".main-line").attr("x1"))
+                  labelOffsetX = labelX - lineX
+                }
               })
               .on("drag", function(event) {
                 const clampedX = Math.max(0, Math.min(width, event.x))
@@ -176,8 +188,12 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
                 currentGroup.select(".interactive-line")
                   .attr("x1", clampedX)
                   .attr("x2", clampedX)
-                currentGroup.select(".line-label")
-                  .attr("x", clampedX + 3)
+                const currentLabel = currentGroup.select(".line-label")
+                if (!currentLabel.empty() && labelOffsetX !== null) {
+                  // Update label position maintaining the offset
+                  currentLabel
+                    .attr("x", clampedX + labelOffsetX)
+                }
               })
               .on("end", function(event) {
                 const clampedX = Math.max(0, Math.min(width, event.x))
@@ -236,15 +252,88 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
           // Update or create label - ensure it's always on top
           if (line.label) {
             let labelText = group.select<SVGTextElement>(".line-label")
+            
+            // Calculate label position
+            let labelX = xPos + 3
+            let labelY = 15
+            
+            // Use drag position if label is being dragged
+            if (draggingLabel?.id === line.id && labelDragPositionRef.current[line.id]) {
+              labelX = labelDragPositionRef.current[line.id].x
+              labelY = labelDragPositionRef.current[line.id].y
+            } else if (line.labelOffset) {
+              // Use saved offset
+              labelX = xPos + (line.labelOffset.x || 3)
+              labelY = line.labelOffset.y || 15
+            }
+            
             if (labelText.empty()) {
               labelText = group.append("text")
                 .attr("class", "line-label")
                 .style("font-size", "10px")
-                .style("pointer-events", "none") // Ensure label doesn't interfere with dragging
+                .style("cursor", "move")
             }
+            
+            // Create label drag behavior
+            if (isInteractive) {
+              const currentLineId = line.id
+              const labelDrag = d3.drag<SVGTextElement, any>()
+                .on("start", function() {
+                  setDraggingLabel({ id: currentLineId, type: "vertical" })
+                  // Store initial position
+                  const currentX = parseFloat(d3.select(this).attr("x"))
+                  const currentY = parseFloat(d3.select(this).attr("y"))
+                  labelDragPositionRef.current[currentLineId] = { x: currentX, y: currentY }
+                })
+                .on("drag", function(event) {
+                  // Update label position during drag
+                  const newX = event.x
+                  const newY = event.y
+                  
+                  labelDragPositionRef.current[currentLineId] = { x: newX, y: newY }
+                  
+                  d3.select(this)
+                    .attr("x", newX)
+                    .attr("y", newY)
+                })
+                .on("end", function(event) {
+                  // Calculate offset from line position
+                  const lineX = xScale(line.type === "vertical" && editingChartRef.current.xAxisType === "datetime" 
+                    ? new Date(line.value as string)
+                    : (line.value as number))
+                  const offsetX = event.x - lineX
+                  const offsetY = event.y
+                  
+                  // Clear dragging state
+                  setDraggingLabel(null)
+                  
+                  // Update the data model with label offset
+                  if (setEditingChart) {
+                    const currentChart = editingChartRef.current
+                    const updatedReferenceLines = (currentChart.referenceLines || []).map((refLine) => 
+                      refLine.id === currentLineId 
+                        ? { ...refLine, labelOffset: { x: offsetX, y: offsetY } } 
+                        : refLine
+                    )
+                    
+                    setEditingChart({
+                      ...currentChart,
+                      referenceLines: updatedReferenceLines
+                    })
+                    
+                    // Clear drag position
+                    setTimeout(() => {
+                      delete labelDragPositionRef.current[currentLineId]
+                    }, 100)
+                  }
+                })
+                
+              labelText.call(labelDrag)
+            }
+            
             labelText
-              .attr("x", xPos + 3)
-              .attr("y", 15)
+              .attr("x", labelX)
+              .attr("y", labelY)
               .attr("fill", color)
               .style("font-weight", "normal")
               .text(line.label)
@@ -295,9 +384,18 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
             
             // Create drag behavior with proper context
             const currentLineId = line.id
+            let labelOffsetY: number | null = null
             const drag = d3.drag<SVGLineElement, any>()
               .on("start", function() {
                 setDraggingLine({ id: currentLineId, type: "horizontal" })
+                // Store the current label offset at drag start
+                const currentGroup = d3.select(this.parentNode as SVGGElement)
+                const currentLabel = currentGroup.select(".line-label")
+                if (!currentLabel.empty()) {
+                  const labelY = parseFloat(currentLabel.attr("y"))
+                  const lineY = parseFloat(currentGroup.select(".main-line").attr("y1"))
+                  labelOffsetY = labelY - lineY
+                }
               })
               .on("drag", function(event) {
                 const clampedY = Math.max(0, Math.min(height, event.y))
@@ -313,8 +411,12 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
                 currentGroup.select(".interactive-line")
                   .attr("y1", clampedY)
                   .attr("y2", clampedY)
-                currentGroup.select(".line-label")
-                  .attr("y", clampedY - 3)
+                const currentLabel = currentGroup.select(".line-label")
+                if (!currentLabel.empty() && labelOffsetY !== null) {
+                  // Update label position maintaining the offset
+                  currentLabel
+                    .attr("y", clampedY + labelOffsetY)
+                }
               })
               .on("end", function(event) {
                 const clampedY = Math.max(0, Math.min(height, event.y))
@@ -364,15 +466,86 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
           // Update or create label
           if (line.label) {
             let labelText = group.select<SVGTextElement>(".line-label")
+            
+            // Calculate label position
+            let labelX = 5
+            let labelY = yPos - 3
+            
+            // Use drag position if label is being dragged
+            if (draggingLabel?.id === line.id && labelDragPositionRef.current[line.id]) {
+              labelX = labelDragPositionRef.current[line.id].x
+              labelY = labelDragPositionRef.current[line.id].y
+            } else if (line.labelOffset) {
+              // Use saved offset
+              labelX = line.labelOffset.x || 5
+              labelY = yPos + (line.labelOffset.y || -3)
+            }
+            
             if (labelText.empty()) {
               labelText = group.append("text")
                 .attr("class", "line-label")
                 .style("font-size", "10px")
-                .style("pointer-events", "none")
+                .style("cursor", "move")
             }
+            
+            // Create label drag behavior
+            if (isInteractive) {
+              const currentLineId = line.id
+              const labelDrag = d3.drag<SVGTextElement, any>()
+                .on("start", function() {
+                  setDraggingLabel({ id: currentLineId, type: "horizontal" })
+                  // Store initial position
+                  const currentX = parseFloat(d3.select(this).attr("x"))
+                  const currentY = parseFloat(d3.select(this).attr("y"))
+                  labelDragPositionRef.current[currentLineId] = { x: currentX, y: currentY }
+                })
+                .on("drag", function(event) {
+                  // Update label position during drag
+                  const newX = event.x
+                  const newY = event.y
+                  
+                  labelDragPositionRef.current[currentLineId] = { x: newX, y: newY }
+                  
+                  d3.select(this)
+                    .attr("x", newX)
+                    .attr("y", newY)
+                })
+                .on("end", function(event) {
+                  // Calculate offset from line position
+                  const lineY = yScale(line.value as number)
+                  const offsetX = event.x
+                  const offsetY = event.y - lineY
+                  
+                  // Clear dragging state
+                  setDraggingLabel(null)
+                  
+                  // Update the data model with label offset
+                  if (setEditingChart) {
+                    const currentChart = editingChartRef.current
+                    const updatedReferenceLines = (currentChart.referenceLines || []).map((refLine) => 
+                      refLine.id === currentLineId 
+                        ? { ...refLine, labelOffset: { x: offsetX, y: offsetY } } 
+                        : refLine
+                    )
+                    
+                    setEditingChart({
+                      ...currentChart,
+                      referenceLines: updatedReferenceLines
+                    })
+                    
+                    // Clear drag position
+                    setTimeout(() => {
+                      delete labelDragPositionRef.current[currentLineId]
+                    }, 100)
+                  }
+                })
+                
+              labelText.call(labelDrag)
+            }
+            
             labelText
-              .attr("x", 5)
-              .attr("y", yPos - 3)
+              .attr("x", labelX)
+              .attr("y", labelY)
               .attr("fill", color)
               .style("font-weight", "normal")
               .text(line.label)
