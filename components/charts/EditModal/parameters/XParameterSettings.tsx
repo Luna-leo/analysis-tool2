@@ -6,17 +6,101 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { ChartComponent, TimeUnit } from "@/types"
+import { ChartComponent, TimeUnit, EventInfo } from "@/types"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { ChevronDown, ChevronRight } from "lucide-react"
 
 interface XParameterSettingsProps {
   editingChart: ChartComponent
   setEditingChart: (chart: ChartComponent) => void
+  selectedDataSourceItems?: EventInfo[]
 }
 
-export function XParameterSettings({ editingChart, setEditingChart }: XParameterSettingsProps) {
+export function XParameterSettings({ editingChart, setEditingChart, selectedDataSourceItems }: XParameterSettingsProps) {
   const [isOpen, setIsOpen] = useState(true)
+
+  const formatDateTimeForInput = (dateString: string): string => {
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) return dateString
+      
+      // Format as YYYY-MM-DDTHH:mm:ss for datetime-local input
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      const hours = String(date.getHours()).padStart(2, '0')
+      const minutes = String(date.getMinutes()).padStart(2, '0')
+      const seconds = String(date.getSeconds()).padStart(2, '0')
+      
+      return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+    } catch {
+      return dateString
+    }
+  }
+
+  const formatDateTimeForDisplay = (dateString: string): string => {
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) return dateString
+      
+      return date.toLocaleString()
+    } catch {
+      return dateString
+    }
+  }
+
+  const calculateOverallTimeRange = () => {
+    if (!selectedDataSourceItems || selectedDataSourceItems.length === 0) {
+      return null
+    }
+
+    let earliestStart: Date | null = null
+    let latestEnd: Date | null = null
+
+    selectedDataSourceItems.forEach(dataSource => {
+      const startTime = new Date(dataSource.start)
+      const endTime = new Date(dataSource.end)
+
+      if (!isNaN(startTime.getTime())) {
+        if (!earliestStart || startTime < earliestStart) {
+          earliestStart = startTime
+        }
+      }
+
+      if (!isNaN(endTime.getTime())) {
+        if (!latestEnd || endTime > latestEnd) {
+          latestEnd = endTime
+        }
+      }
+    })
+
+    if (!earliestStart || !latestEnd) {
+      return null
+    }
+
+    return { earliestStart, latestEnd }
+  }
+
+  const setRangeFromDataSource = () => {
+    const timeRange = calculateOverallTimeRange()
+    if (!timeRange) {
+      console.warn('Invalid date ranges in data source items')
+      return
+    }
+
+    const startTime = formatDateTimeForInput(timeRange.earliestStart)
+    const endTime = formatDateTimeForInput(timeRange.latestEnd)
+
+    setEditingChart({
+      ...editingChart,
+      xAxisRange: {
+        auto: false,
+        min: startTime,
+        max: endTime,
+        unit: editingChart.xAxisRange?.unit || "sec"
+      }
+    })
+  }
 
   return (
     <div className="border rounded-lg bg-muted/30">
@@ -116,6 +200,38 @@ export function XParameterSettings({ editingChart, setEditingChart }: XParameter
                         />
                         <Label htmlFor="x-auto-range" className="text-sm">Auto Range</Label>
                       </div>
+                      
+                      {/* Auto from DataSource Button */}
+                      {selectedDataSourceItems && selectedDataSourceItems.length > 0 && (editingChart.xAxisType || "datetime") === "datetime" && (
+                        <div className="pt-2 border-t">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={setRangeFromDataSource}
+                            className="w-full h-8 text-xs"
+                          >
+                            Auto from DataSource{selectedDataSourceItems.length > 1 ? 's' : ''}
+                          </Button>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {(() => {
+                              const timeRange = calculateOverallTimeRange()
+                              if (timeRange && timeRange.earliestStart && timeRange.latestEnd) {
+                                try {
+                                  return `Set range from: ${formatDateTimeForDisplay((timeRange.earliestStart as Date).toISOString())} ~ ${formatDateTimeForDisplay((timeRange.latestEnd as Date).toISOString())}`
+                                } catch {
+                                  return "Set range from DataSource period"
+                                }
+                              }
+                              return "Set range from DataSource period"
+                            })()}
+                            {selectedDataSourceItems.length > 1 && (
+                              <span className="block text-[10px] text-muted-foreground/60 mt-0.5">
+                                ({selectedDataSourceItems.length} data sources)
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                      )}
                       
                       {(editingChart.xAxisType || "datetime") === "time" && (
                         <div>

@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { ChartComponent } from "@/types"
+import { ChartComponent, EventInfo } from "@/types"
 import { XParameterSettings } from "./XParameterSettings"
 import { YParametersSettings } from "./YParametersSettings"
 import { ReferenceLinesSettings } from "./ReferenceLinesSettings"
@@ -9,6 +9,7 @@ import { ReferenceLinesSettings } from "./ReferenceLinesSettings"
 interface ParametersTabProps {
   editingChart: ChartComponent
   setEditingChart: (chart: ChartComponent) => void
+  selectedDataSourceItems: EventInfo[]
 }
 
 interface ReferenceLineConfig {
@@ -30,7 +31,7 @@ interface ReferenceLineConfig {
   }
 }
 
-export function ParametersTab({ editingChart, setEditingChart }: ParametersTabProps) {
+export function ParametersTab({ editingChart, setEditingChart, selectedDataSourceItems }: ParametersTabProps) {
   const [isReferenceLinesOpen, setIsReferenceLinesOpen] = useState(false)
   const [referenceLineConfigs, setReferenceLineConfigs] = useState<ReferenceLineConfig[]>([])
 
@@ -87,7 +88,7 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
         type: line.type === "vertical" ? "vertical" as const : "horizontal" as const,
         value: value,
         label: line.label,
-        color: "#666666",
+        color: "#ff0000",
         style: "solid" as const
       }
     })
@@ -102,7 +103,8 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
     <div className="flex flex-col space-y-4 h-full">
       <XParameterSettings 
         editingChart={editingChart} 
-        setEditingChart={setEditingChart} 
+        setEditingChart={setEditingChart}
+        selectedDataSourceItems={selectedDataSourceItems}
       />
       
       <YParametersSettings 
@@ -117,6 +119,7 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
         onUpdateReferenceLines={handleUpdateReferenceLines}
         isOpen={isReferenceLinesOpen}
         onOpenChange={setIsReferenceLinesOpen}
+        selectedDataSourceItems={selectedDataSourceItems}
       />
     </div>
   )

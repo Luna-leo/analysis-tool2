@@ -73,7 +73,11 @@ export function ChartEditModal() {
                 )}
                 {activeTab === "parameters" && (
                   <div className="h-full">
-                    <ParametersTab editingChart={editingChart} setEditingChart={setEditingChart} />
+                    <ParametersTab 
+                      editingChart={editingChart} 
+                      setEditingChart={setEditingChart}
+                      selectedDataSourceItems={selectedDataSourceItems}
+                    />
                   </div>
                 )}
                 {activeTab === "appearance" && (
@@ -94,6 +98,7 @@ export function ChartEditModal() {
                 <ChartPreview
                   editingChart={editingChart}
                   selectedDataSourceItems={selectedDataSourceItems}
+                  setEditingChart={setEditingChart}
                 />
               </div>
             </div>

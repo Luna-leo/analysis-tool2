@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { X, ChevronDown, ChevronRight } from "lucide-react"
-import { ChartComponent } from "@/types"
+import { ChartComponent, EventInfo } from "@/types"
 
 interface ReferenceLineConfig {
   id: string
@@ -35,6 +35,7 @@ interface ReferenceLinesSettingsProps {
   onUpdateReferenceLines: (lines: ReferenceLineConfig[]) => void
   isOpen?: boolean
   onOpenChange?: (open: boolean) => void
+  selectedDataSourceItems: EventInfo[]
 }
 
 export function ReferenceLinesSettings({ 
@@ -42,17 +43,105 @@ export function ReferenceLinesSettings({
   referenceLines, 
   onUpdateReferenceLines, 
   isOpen = false,
-  onOpenChange 
+  onOpenChange,
+  selectedDataSourceItems 
 }: ReferenceLinesSettingsProps) {
   
+  const formatDateTimeForInput = (date: Date): string => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    const seconds = String(date.getSeconds()).padStart(2, '0')
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+  }
+
+  const getDefaultValues = () => {
+    const now = new Date()
+    let defaultXValue = ""
+    let defaultYValue = "50"
+
+    // Calculate default X value based on chart's X-axis settings
+    if ((editingChart.xAxisType || "datetime") === "datetime") {
+      if (editingChart.xAxisRange?.auto === false && editingChart.xAxisRange.min && editingChart.xAxisRange.max) {
+        // Use midpoint of custom range
+        const startTime = new Date(editingChart.xAxisRange.min)
+        const endTime = new Date(editingChart.xAxisRange.max)
+        
+        if (!isNaN(startTime.getTime()) && !isNaN(endTime.getTime())) {
+          const midTime = new Date((startTime.getTime() + endTime.getTime()) / 2)
+          defaultXValue = formatDateTimeForInput(midTime)
+        } else {
+          defaultXValue = formatDateTimeForInput(now)
+        }
+      } else if (selectedDataSourceItems.length > 0) {
+        // Use midpoint of overall data source time range
+        let earliestStart: Date | null = null
+        let latestEnd: Date | null = null
+
+        selectedDataSourceItems.forEach(dataSource => {
+          const startTime = new Date(dataSource.start)
+          const endTime = new Date(dataSource.end)
+
+          if (!isNaN(startTime.getTime())) {
+            if (!earliestStart || startTime < earliestStart) {
+              earliestStart = startTime
+            }
+          }
+
+          if (!isNaN(endTime.getTime())) {
+            if (!latestEnd || endTime > latestEnd) {
+              latestEnd = endTime
+            }
+          }
+        })
+        
+        if (earliestStart && latestEnd) {
+          try {
+            const midTime = new Date(((earliestStart as Date).getTime() + (latestEnd as Date).getTime()) / 2)
+            if (!isNaN(midTime.getTime())) {
+              defaultXValue = formatDateTimeForInput(midTime)
+            } else {
+              defaultXValue = formatDateTimeForInput(now)
+            }
+          } catch {
+            defaultXValue = formatDateTimeForInput(now)
+          }
+        } else {
+          defaultXValue = formatDateTimeForInput(now)
+        }
+      } else {
+        // Use current time as default
+        defaultXValue = formatDateTimeForInput(now)
+      }
+    } else {
+      // For numeric/time axis, use 50 as default midpoint
+      defaultXValue = "50"
+    }
+
+    // Calculate default Y value based on first Y parameter range
+    if (editingChart.yAxisParams && editingChart.yAxisParams.length > 0) {
+      const firstParam = editingChart.yAxisParams[0]
+      if (firstParam.range?.auto === false) {
+        const midY = ((firstParam.range.min || 0) + (firstParam.range.max || 100)) / 2
+        defaultYValue = midY.toString()
+      }
+    }
+
+    return { defaultXValue, defaultYValue }
+  }
+
   const handleAddReferenceLine = () => {
     onOpenChange?.(true)
+    const { defaultXValue, defaultYValue } = getDefaultValues()
+    
     const newReferenceLine: ReferenceLineConfig = {
       id: Date.now().toString(),
       type: "vertical",
       label: "",
-      xValue: "",
-      yValue: "",
+      xValue: defaultXValue,
+      yValue: defaultYValue,
       axisNo: 1,
       yRange: {
         auto: true,
@@ -69,9 +158,28 @@ export function ReferenceLinesSettings({
   }
 
   const handleUpdateReferenceLine = (id: string, field: keyof ReferenceLineConfig, value: any) => {
-    onUpdateReferenceLines(referenceLines.map(line => 
-      line.id === id ? { ...line, [field]: value } : line
-    ))
+    onUpdateReferenceLines(referenceLines.map(line => {
+      if (line.id !== id) return line
+      
+      const updatedLine = { ...line, [field]: value }
+      
+      // If type is being changed, set appropriate default values
+      if (field === 'type') {
+        const { defaultXValue, defaultYValue } = getDefaultValues()
+        
+        if (value === 'vertical') {
+          // Switching to vertical - set default X value, clear Y value
+          updatedLine.xValue = defaultXValue
+          updatedLine.yValue = ""
+        } else if (value === 'horizontal') {
+          // Switching to horizontal - set default Y value, clear X value
+          updatedLine.yValue = defaultYValue
+          updatedLine.xValue = ""
+        }
+      }
+      
+      return updatedLine
+    }))
   }
 
   type RangeField = keyof NonNullable<ReferenceLineConfig['xRange']> | keyof NonNullable<ReferenceLineConfig['yRange']>

@@ -1,25 +1,93 @@
 "use client"
 
-import React, { useEffect, useRef } from "react"
+import React, { useEffect, useRef, useCallback } from "react"
 import * as d3 from "d3"
 import { ChartComponent, EventInfo } from "@/types"
 
 interface ChartPreviewProps {
   editingChart: ChartComponent
   selectedDataSourceItems: EventInfo[]
+  setEditingChart?: (chart: ChartComponent) => void
 }
 
-export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPreviewProps) {
+export function ChartPreview({ editingChart, selectedDataSourceItems, setEditingChart }: ChartPreviewProps) {
   const svgRef = useRef<SVGSVGElement>(null)
+  const [draggingLine, setDraggingLine] = React.useState<{ id: string; type: 'vertical' | 'horizontal' } | null>(null)
+  const [hoveredLine, setHoveredLine] = React.useState<string | null>(null)
 
   const generateMockData = () => {
-    if (!selectedDataSourceItems.length || !editingChart.yAxisParams?.length) {
+    if (!editingChart.yAxisParams?.length) {
       return []
     }
 
     const data: Array<{ timestamp: Date; [key: string]: Date | number }> = []
-    const startTime = new Date(selectedDataSourceItems[0].start)
-    const endTime = new Date(selectedDataSourceItems[0].end)
+    
+    // Determine time range for data generation
+    let startTime: Date
+    let endTime: Date
+    
+    // Use X-axis range if custom range is set
+    if (editingChart.xAxisRange?.auto === false && editingChart.xAxisRange.min && editingChart.xAxisRange.max) {
+      if ((editingChart.xAxisType || "datetime") === "datetime") {
+        startTime = new Date(editingChart.xAxisRange.min)
+        endTime = new Date(editingChart.xAxisRange.max)
+      } else {
+        // Fallback to data source or default
+        if (selectedDataSourceItems.length > 0) {
+          startTime = new Date(selectedDataSourceItems[0].start)
+          endTime = new Date(selectedDataSourceItems[0].end)
+        } else {
+          const now = new Date()
+          startTime = new Date(now.getTime() - 60 * 60 * 1000)
+          endTime = now
+        }
+      }
+    } else {
+      // Use data source range or default
+      if (selectedDataSourceItems.length > 0) {
+        // Calculate overall range from all data sources
+        let earliestStart: Date | null = null
+        let latestEnd: Date | null = null
+
+        selectedDataSourceItems.forEach(dataSource => {
+          const sourceStart = new Date(dataSource.start)
+          const sourceEnd = new Date(dataSource.end)
+
+          if (!isNaN(sourceStart.getTime())) {
+            if (!earliestStart || sourceStart < earliestStart) {
+              earliestStart = sourceStart
+            }
+          }
+
+          if (!isNaN(sourceEnd.getTime())) {
+            if (!latestEnd || sourceEnd > latestEnd) {
+              latestEnd = sourceEnd
+            }
+          }
+        })
+
+        if (earliestStart && latestEnd) {
+          startTime = earliestStart
+          endTime = latestEnd
+        } else {
+          // Fallback to first data source
+          startTime = new Date(selectedDataSourceItems[0].start)
+          endTime = new Date(selectedDataSourceItems[0].end)
+        }
+      } else {
+        const now = new Date()
+        startTime = new Date(now.getTime() - 60 * 60 * 1000)
+        endTime = now
+      }
+    }
+
+    // Validate dates
+    if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+      const now = new Date()
+      startTime = new Date(now.getTime() - 60 * 60 * 1000)
+      endTime = now
+    }
+
     const duration = endTime.getTime() - startTime.getTime()
     const points = Math.min(50, Math.max(10, Math.floor(duration / (5 * 60 * 1000))))
 
@@ -93,6 +161,106 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
 
   }, [editingChart, selectedDataSourceItems])
 
+  // Separate effect for drawing reference lines to prevent full re-render during drag
+  useEffect(() => {
+    if (!svgRef.current || !scalesRef.current.xScale || !scalesRef.current.yScale) return
+
+    const svg = d3.select(svgRef.current)
+    const margin = { top: 20, right: 80, bottom: 40, left: 60 }
+    const width = 400 - margin.left - margin.right
+    const height = 300 - margin.top - margin.bottom
+
+    // Ensure reference lines layer exists
+    let refLinesLayer = svg.select<SVGGElement>(".reference-lines-layer")
+    if (refLinesLayer.empty()) {
+      refLinesLayer = svg.select("g")
+        .append<SVGGElement>("g")
+        .attr("class", "reference-lines-layer")
+    }
+
+    drawReferenceLines(
+      refLinesLayer,
+      scalesRef.current.xScale,
+      scalesRef.current.yScale,
+      width,
+      height
+    )
+  }, [editingChart.referenceLines, hoveredLine, draggingLine])
+
+  // Store scales in refs to avoid recreation during drag
+  const scalesRef = useRef<{
+    xScale: d3.ScaleTime<number, number> | null,
+    yScale: d3.ScaleLinear<number, number> | null
+  }>({ xScale: null, yScale: null })
+
+  const updateReferenceLine = useCallback((lineId: string, newValue: number | string) => {
+    if (!setEditingChart) return
+    
+    const updatedLines = (editingChart.referenceLines || []).map(line => 
+      line.id === lineId ? { ...line, value: newValue } : line
+    )
+    
+    setEditingChart({
+      ...editingChart,
+      referenceLines: updatedLines
+    })
+  }, [editingChart, setEditingChart])
+
+  // Handle drag operations
+  useEffect(() => {
+    if (!svgRef.current || !draggingLine || !setEditingChart || !scalesRef.current.xScale || !scalesRef.current.yScale) return
+
+    const svg = svgRef.current
+    const margin = { top: 20, right: 80, bottom: 40, left: 60 }
+    const width = 400 - margin.left - margin.right
+    const height = 300 - margin.top - margin.bottom
+
+    // Use stored scales
+    const xScale = scalesRef.current.xScale
+    const yScale = scalesRef.current.yScale
+
+    const handleMouseMove = (event: MouseEvent) => {
+      const rect = svg.getBoundingClientRect()
+      const x = event.clientX - rect.left - margin.left
+      const y = event.clientY - rect.top - margin.top
+
+      if (draggingLine.type === "vertical") {
+        // Calculate new X value
+        const clampedX = Math.max(0, Math.min(width, x))
+        const newDate = xScale.invert(clampedX)
+        
+        if ((editingChart.xAxisType || "datetime") === "datetime") {
+          // Format as datetime string
+          const formatted = newDate.toISOString().slice(0, 19)
+          updateReferenceLine(draggingLine.id, formatted)
+        } else {
+          // For numeric values
+          const domain = xScale.domain()
+          const range = domain[1].getTime() - domain[0].getTime()
+          const normalized = (newDate.getTime() - domain[0].getTime()) / range
+          updateReferenceLine(draggingLine.id, Math.round(normalized * 100))
+        }
+      } else {
+        // Horizontal line
+        const clampedY = Math.max(0, Math.min(height, y))
+        const newValue = yScale.invert(clampedY)
+        updateReferenceLine(draggingLine.id, Math.round(newValue * 10) / 10)
+      }
+    }
+
+    const handleMouseUp = () => {
+      setDraggingLine(null)
+    }
+
+    window.addEventListener("mousemove", handleMouseMove)
+    window.addEventListener("mouseup", handleMouseUp)
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove)
+      window.removeEventListener("mouseup", handleMouseUp)
+    }
+  }, [draggingLine, setEditingChart, updateReferenceLine, editingChart.xAxisType])
+
   const drawReferenceLines = (
     g: d3.Selection<SVGGElement, unknown, null, undefined>, 
     xScale: d3.ScaleTime<number, number>, 
@@ -100,80 +268,212 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
     width: number, 
     height: number
   ) => {
-    const referenceLines = editingChart.referenceLines || []
+    // Store scales for drag operations
+    scalesRef.current = { xScale, yScale }
     
-    referenceLines.forEach(line => {
-      const color = line.color || "#999999"
+    const referenceLines = editingChart.referenceLines || []
+    const isInteractive = !!setEditingChart
+    
+    // Data join for reference line groups
+    const lineGroups = g.selectAll<SVGGElement, typeof referenceLines[0]>(".reference-line-group")
+      .data(referenceLines, d => d.id)
+    
+    // Remove exit selection
+    lineGroups.exit().remove()
+    
+    // Enter selection - create new groups
+    const lineGroupsEnter = lineGroups.enter()
+      .append("g")
+      .attr("class", "reference-line-group")
+      .attr("data-line-id", d => d.id)
+    
+    // Update selection - merge enter and update
+    const lineGroupsMerged = lineGroupsEnter.merge(lineGroups)
+    
+    // Update each line group
+    lineGroupsMerged.each(function(line) {
+      const group = d3.select(this)
+      const color = line.color || "#ff0000"
       const strokeDasharray = line.style === "dashed" ? "5,5" : line.style === "dotted" ? "2,2" : "none"
+      const isHovered = hoveredLine === line.id
+      const isDragging = draggingLine?.id === line.id
       
       if (line.type === "vertical") {
         // Vertical reference line
         let xPos: number
         if ((editingChart.xAxisType || "datetime") === "datetime") {
-          // For datetime, line.value should be a string (datetime-local format) or parseable as date
           const date = new Date(line.value)
-          
-          // Check if date is valid
           if (!isNaN(date.getTime())) {
             xPos = xScale(date)
           } else {
             console.warn('Invalid date for vertical reference line:', line.value)
-            return // Skip this reference line
+            return
           }
         } else {
-          // For numeric values, need to map to time scale (simplified)
           const domain = xScale.domain()
           const range = domain[1].getTime() - domain[0].getTime()
-          const normalizedValue = line.value / 100 // Assume 0-100 range for simplicity
+          const normalizedValue = (typeof line.value === 'number' ? line.value : parseFloat(line.value)) / 100
           xPos = xScale(new Date(domain[0].getTime() + range * normalizedValue))
         }
         
         if (xPos >= 0 && xPos <= width) {
-          // Draw vertical line
-          g.append("line")
+          // Update or create main line
+          let mainLine = group.select<SVGLineElement>(".main-line")
+          if (mainLine.empty()) {
+            mainLine = group.append("line")
+              .attr("class", "main-line")
+          }
+          mainLine
             .attr("x1", xPos)
             .attr("x2", xPos)
             .attr("y1", 0)
             .attr("y2", height)
             .attr("stroke", color)
-            .attr("stroke-width", 1)
+            .attr("stroke-width", isHovered || isDragging ? 2 : 1)
             .attr("stroke-dasharray", strokeDasharray)
-            .attr("opacity", 0.7)
+            .attr("opacity", isHovered || isDragging ? 1 : 0.7)
+            .style("transition", "all 0.2s ease")
           
-          // Draw label
+          // Update or create interactive area
+          if (isInteractive) {
+            let interactiveLine = group.select<SVGLineElement>(".interactive-line")
+            if (interactiveLine.empty()) {
+              interactiveLine = group.append("line")
+                .attr("class", "interactive-line")
+                .attr("stroke", "transparent")
+                .attr("stroke-width", 10)
+                .style("cursor", "ew-resize")
+                .on("mouseenter", () => setHoveredLine(line.id))
+                .on("mouseleave", () => setHoveredLine(null))
+                .on("mousedown", (event) => {
+                  event.preventDefault()
+                  setDraggingLine({ id: line.id, type: "vertical" })
+                })
+            }
+            interactiveLine
+              .attr("x1", xPos)
+              .attr("x2", xPos)
+              .attr("y1", 0)
+              .attr("y2", height)
+          }
+          
+          // Update or create label
           if (line.label) {
-            g.append("text")
+            let labelText = group.select<SVGTextElement>(".line-label")
+            if (labelText.empty()) {
+              labelText = group.append("text")
+                .attr("class", "line-label")
+                .style("font-size", "10px")
+            }
+            labelText
               .attr("x", xPos + 3)
               .attr("y", 15)
               .attr("fill", color)
-              .style("font-size", "10px")
+              .style("font-weight", isHovered || isDragging ? "bold" : "normal")
               .text(line.label)
+          } else {
+            group.select(".line-label").remove()
+          }
+          
+          // Update or create handle
+          if (isInteractive && (isHovered || isDragging)) {
+            let handle = group.select<SVGCircleElement>(".line-handle")
+            if (handle.empty()) {
+              handle = group.append("circle")
+                .attr("class", "line-handle")
+                .attr("r", 4)
+                .attr("stroke", "white")
+                .attr("stroke-width", 2)
+                .style("cursor", "ew-resize")
+            }
+            handle
+              .attr("cx", xPos)
+              .attr("cy", height / 2)
+              .attr("fill", color)
+          } else {
+            group.select(".line-handle").remove()
           }
         }
       } else if (line.type === "horizontal") {
         // Horizontal reference line
-        const yPos = yScale(line.value)
+        const yPos = yScale(typeof line.value === 'number' ? line.value : parseFloat(line.value))
         
         if (yPos >= 0 && yPos <= height) {
-          // Draw horizontal line
-          g.append("line")
+          // Update or create main line
+          let mainLine = group.select<SVGLineElement>(".main-line")
+          if (mainLine.empty()) {
+            mainLine = group.append("line")
+              .attr("class", "main-line")
+          }
+          mainLine
             .attr("x1", 0)
             .attr("x2", width)
             .attr("y1", yPos)
             .attr("y2", yPos)
             .attr("stroke", color)
-            .attr("stroke-width", 1)
+            .attr("stroke-width", isHovered || isDragging ? 2 : 1)
             .attr("stroke-dasharray", strokeDasharray)
-            .attr("opacity", 0.7)
+            .attr("opacity", isHovered || isDragging ? 1 : 0.7)
+            .style("transition", "all 0.2s ease")
           
-          // Draw label
+          // Update or create interactive area
+          if (isInteractive) {
+            let interactiveLine = group.select<SVGLineElement>(".interactive-line")
+            if (interactiveLine.empty()) {
+              interactiveLine = group.append("line")
+                .attr("class", "interactive-line")
+                .attr("stroke", "transparent")
+                .attr("stroke-width", 10)
+                .style("cursor", "ns-resize")
+                .on("mouseenter", () => setHoveredLine(line.id))
+                .on("mouseleave", () => setHoveredLine(null))
+                .on("mousedown", (event) => {
+                  event.preventDefault()
+                  setDraggingLine({ id: line.id, type: "horizontal" })
+                })
+            }
+            interactiveLine
+              .attr("x1", 0)
+              .attr("x2", width)
+              .attr("y1", yPos)
+              .attr("y2", yPos)
+          }
+          
+          // Update or create label
           if (line.label) {
-            g.append("text")
+            let labelText = group.select<SVGTextElement>(".line-label")
+            if (labelText.empty()) {
+              labelText = group.append("text")
+                .attr("class", "line-label")
+                .style("font-size", "10px")
+            }
+            labelText
               .attr("x", 3)
               .attr("y", yPos - 3)
               .attr("fill", color)
-              .style("font-size", "10px")
+              .style("font-weight", isHovered || isDragging ? "bold" : "normal")
               .text(line.label)
+          } else {
+            group.select(".line-label").remove()
+          }
+          
+          // Update or create handle
+          if (isInteractive && (isHovered || isDragging)) {
+            let handle = group.select<SVGCircleElement>(".line-handle")
+            if (handle.empty()) {
+              handle = group.append("circle")
+                .attr("class", "line-handle")
+                .attr("r", 4)
+                .attr("stroke", "white")
+                .attr("stroke-width", 2)
+                .style("cursor", "ns-resize")
+            }
+            handle
+              .attr("cx", width / 2)
+              .attr("cy", yPos)
+              .attr("fill", color)
+          } else {
+            group.select(".line-handle").remove()
           }
         }
       }
@@ -265,8 +565,8 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
         .style("font-size", "12px")
         .text(firstYAxisLabel)
       
-      // Draw reference lines on empty chart
-      drawReferenceLines(g, xScale, yScale, width, height)
+      // Store scales for reference lines
+      scalesRef.current = { xScale, yScale }
     }
   }
 
@@ -349,8 +649,8 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
         .text(param.parameter)
     })
 
-    // Draw reference lines
-    drawReferenceLines(g, xScale, yScale, width, height)
+    // Store scales for reference lines
+    scalesRef.current = { xScale, yScale }
   }
 
   const renderBarChart = (g: d3.Selection<SVGGElement, unknown, null, undefined>, data: any[], width: number, height: number) => {
@@ -401,8 +701,8 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
       .domain([oneHourAgo, now])
       .range([0, width])
 
-    // Draw reference lines
-    drawReferenceLines(g, timeScale, yScale, width, height)
+    // Store scales for reference lines (use time scale as x scale)
+    scalesRef.current = { xScale: timeScale, yScale }
   }
 
   const renderPieChart = (g: d3.Selection<SVGGElement, unknown, null, undefined>, data: any[], width: number, height: number) => {
@@ -455,6 +755,11 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
           height="100%" 
           viewBox="0 0 400 300"
           className="border rounded"
+          style={{
+            cursor: draggingLine 
+              ? (draggingLine.type === "vertical" ? "ew-resize" : "ns-resize")
+              : "default"
+          }}
         />
       </div>
       <div className="mt-2 space-y-2">
