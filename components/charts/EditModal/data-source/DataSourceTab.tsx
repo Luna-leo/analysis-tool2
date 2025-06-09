@@ -19,7 +19,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Layers,
-  Undo2
+  Undo2,
+  ChevronDown,
+  ChevronRight
 } from "lucide-react"
 import { 
   DropdownMenu,
@@ -99,8 +101,12 @@ export function DataSourceTab({
   // Track source of items in selected data sources
   const [itemSources, setItemSources] = useState<Map<string, 'available' | 'filtered'>>(new Map())
   
-  // Active section state
-  const [activeSection, setActiveSection] = useState<'available' | 'filtered' | 'selected'>('available')
+  // Collapsed sections state
+  const [collapsedSections, setCollapsedSections] = useState({
+    available: false,
+    filtered: true,
+    selected: true
+  })
 
   // Time offset states
   const [startOffset, setStartOffset] = useState(0)
@@ -112,7 +118,7 @@ export function DataSourceTab({
   // Event list for EventSelectionDialog
   const [events, setEvents] = useState<EventInfo[]>([
     {
-      id: "1",
+      id: "event_1",
       plant: "Plant A",
       machineNo: "M001",
       label: "Maintenance",
@@ -123,7 +129,7 @@ export function DataSourceTab({
       end: "2024-01-15T12:00:00",
     },
     {
-      id: "2",
+      id: "event_2",
       plant: "Plant A",
       machineNo: "M002",
       label: "Production",
@@ -134,7 +140,7 @@ export function DataSourceTab({
       end: "2024-01-15T16:00:00",
     },
     {
-      id: "3",
+      id: "event_3",
       plant: "Plant B",
       machineNo: "M003",
       label: "Alert",
@@ -264,9 +270,9 @@ export function DataSourceTab({
     await new Promise(resolve => setTimeout(resolve, 1000))
     
     // Generate filtered periods based on conditions
-    const filtered = periodsToSearch.slice(0, Math.max(1, Math.floor(periodsToSearch.length / 2))).map(p => ({
+    const filtered = periodsToSearch.slice(0, Math.max(1, Math.floor(periodsToSearch.length / 2))).map((p, index) => ({
       ...p,
-      id: `filtered_${p.id}_${Date.now()}`,
+      id: `filtered_${p.id}_${Date.now()}_${index}`,
       label: `Filtered: ${p.label}`,
       labelDescription: `Matched conditions: ${conditions.map(c => `${c.parameter} ${c.operator} ${c.value}`).join(', ')}`
     }))
@@ -303,37 +309,74 @@ export function DataSourceTab({
     )
   })
 
+  // Toggle section collapse
+  const toggleSection = (section: 'available' | 'filtered' | 'selected') => {
+    if (collapsedSections[section]) {
+      // Opening a section, close others
+      setCollapsedSections({
+        available: section !== 'available',
+        filtered: section !== 'filtered',
+        selected: section !== 'selected'
+      })
+    } else {
+      // Section is already open, do nothing or optionally close it
+      // For now, we'll keep at least one section open
+    }
+  }
+
   return (
     <>
       <div className="h-full flex flex-col gap-3 overflow-y-auto">
         {/* Available Periods */}
-        <Card className="p-4 flex flex-col h-[280px] flex-shrink-0">
-          <SectionHeader 
-            title="Available Periods" 
-            count={availablePeriods.length}
-            actions={
+        <Card className={cn(
+          "p-4 flex flex-col transition-all",
+          collapsedSections.available ? "h-auto" : "flex-1"
+        )}>
+          <div 
+            className="flex items-center justify-between cursor-pointer"
+            onClick={() => toggleSection('available')}
+          >
+            <div className="flex items-center gap-2">
+              {collapsedSections.available ? 
+                <ChevronRight className="h-4 w-4 text-muted-foreground" /> : 
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              }
+              <h3 className="font-semibold text-sm">Available Periods</h3>
+              <Badge variant="secondary" className="h-5 text-xs">
+                {availablePeriods.length}
+              </Badge>
+            </div>
+            {!collapsedSections.available && (
               <div className="flex gap-2">
-                <Button size="sm" variant="ghost" onClick={manualEntry.openForNew}>
+                <Button size="sm" variant="ghost" onClick={(e) => {
+                  e.stopPropagation()
+                  manualEntry.openForNew()
+                }}>
                   <Plus className="h-4 w-4" />
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => setEventSelectionOpen(true)}>
+                <Button size="sm" variant="ghost" onClick={(e) => {
+                  e.stopPropagation()
+                  setEventSelectionOpen(true)
+                }}>
                   <Calendar className="h-4 w-4" />
                 </Button>
               </div>
-            }
-          />
-          
-          <div className="relative mb-3">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search periods..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-8 h-9"
-            />
+            )}
           </div>
           
-          <div className="border rounded-lg overflow-hidden">
+          {!collapsedSections.available && (
+            <>
+              <div className="relative mb-3 mt-3">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search periods..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-8 h-9"
+                />
+              </div>
+              
+              <div className="border rounded-lg overflow-hidden flex-1 flex flex-col">
             {availablePeriods.length === 0 ? (
               <div className="p-8 text-center">
                 <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
@@ -344,7 +387,7 @@ export function DataSourceTab({
                 </p>
               </div>
             ) : (
-              <ScrollArea className="h-[200px]">
+              <ScrollArea className="flex-1">
                 <Table>
                   <TableHeader className="sticky top-0 bg-background z-10">
                     <TableRow className="h-8">
@@ -434,11 +477,11 @@ export function DataSourceTab({
                 </Table>
               </ScrollArea>
             )}
-          </div>
-          
-          <Separator className="my-3" />
-          
-          <div className="flex gap-2">
+              </div>
+              
+              <Separator className="my-3" />
+              
+              <div className="flex gap-2">
             <Button 
               variant="outline" 
               size="sm" 
@@ -477,28 +520,49 @@ export function DataSourceTab({
               <Plus className="h-4 w-4 mr-2" />
               Add All DataSource
             </Button>
-          </div>
+              </div>
+            </>
+          )}
         </Card>
 
         {/* Filtered Results */}
         {filterActive && (
-          <Card className="p-4 border-orange-200 bg-orange-50/50 h-[220px] flex-shrink-0">
-            <SectionHeader 
-              title="Filtered Results" 
-              count={filteredPeriods.length}
-              actions={
+          <Card className={cn(
+            "p-4 border-orange-200 bg-orange-50/50 transition-all",
+            collapsedSections.filtered ? "h-auto" : "flex-1"
+          )}>
+            <div 
+              className="flex items-center justify-between cursor-pointer"
+              onClick={() => toggleSection('filtered')}
+            >
+              <div className="flex items-center gap-2">
+                {collapsedSections.filtered ? 
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" /> : 
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                }
+                <h3 className="font-semibold text-sm">Filtered Results</h3>
+                <Badge variant="secondary" className="h-5 text-xs">
+                  {filteredPeriods.length}
+                </Badge>
+              </div>
+              {!collapsedSections.filtered && (
                 <Button 
                   size="sm" 
                   variant="ghost"
-                  onClick={handleClearFilter}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleClearFilter()
+                  }}
                 >
                   Clear
                 </Button>
-              }
-            />
+              )}
+            </div>
             
-            <div className="border rounded-lg overflow-hidden">
-              <ScrollArea className="h-[150px]">
+            {!collapsedSections.filtered && (
+              <>
+                <div className="border rounded-lg overflow-hidden flex-1 flex flex-col mt-3">
+                  <ScrollArea className="flex-1">
                 <Table>
                   <TableHeader className="sticky top-0 bg-background z-10">
                     <TableRow className="h-8">
@@ -615,9 +679,9 @@ export function DataSourceTab({
                   </TableBody>
                 </Table>
               </ScrollArea>
-            </div>
-            
-            <div className="flex items-center justify-between mt-3">
+                </div>
+                
+                <div className="flex items-center justify-between mt-3">
               <div className="flex items-center gap-2 text-xs text-orange-700">
                 <AlertCircle className="h-3 w-3" />
                 <span>Signal patterns detected in {filteredPeriods.length} periods</span>
@@ -655,26 +719,40 @@ export function DataSourceTab({
                   Add Selected ({selectedFilteredRows.size})
                 </Button>
               )}
-            </div>
+                </div>
+              </>
+            )}
           </Card>
         )}
 
         {/* Selected Data Sources */}
-        <Card 
-          className="p-4 border-primary/20 bg-primary/5 flex flex-col flex-1"
-        >
-          <SectionHeader 
-            title="Selected Data Sources" 
-            count={selectedDataSourceItems.length}
-            actions={
-              selectedDataSourceItems.length > 0 && (
-                <CheckCircle2 className="h-4 w-4 text-primary" />
-              )
-            }
-          />
+        <Card className={cn(
+          "p-4 border-primary/20 bg-primary/5 transition-all",
+          collapsedSections.selected ? "h-auto" : "flex-1"
+        )}>
+          <div 
+            className="flex items-center justify-between cursor-pointer"
+            onClick={() => toggleSection('selected')}
+          >
+            <div className="flex items-center gap-2">
+              {collapsedSections.selected ? 
+                <ChevronRight className="h-4 w-4 text-muted-foreground" /> : 
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              }
+              <h3 className="font-semibold text-sm">Selected Data Sources</h3>
+              <Badge variant="secondary" className="h-5 text-xs">
+                {selectedDataSourceItems.length}
+              </Badge>
+            </div>
+            {!collapsedSections.selected && selectedDataSourceItems.length > 0 && (
+              <CheckCircle2 className="h-4 w-4 text-primary" />
+            )}
+          </div>
           
-          <div className="border rounded-lg overflow-hidden flex-1 flex flex-col">
-            {selectedDataSourceItems.length === 0 ? (
+          {!collapsedSections.selected && (
+            <>
+              <div className="border rounded-lg overflow-hidden flex-1 flex flex-col mt-3">
+                {selectedDataSourceItems.length === 0 ? (
               <div className="p-8 text-center">
                 <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-3">
                   <CheckCircle2 className="h-6 w-6 text-primary/60" />
@@ -803,9 +881,9 @@ export function DataSourceTab({
                 </Table>
               </ScrollArea>
             )}
-          </div>
-          
-          {selectedDataSourceItems.length > 0 && (
+              </div>
+              
+              {selectedDataSourceItems.length > 0 && (
             <>
               <Separator className="my-3" />
               <TimeOffsetSettings
@@ -820,6 +898,8 @@ export function DataSourceTab({
                 offsetSectionOpen={offsetSectionOpen}
                 setOffsetSectionOpen={setOffsetSectionOpen}
               />
+            </>
+              )}
             </>
           )}
         </Card>
