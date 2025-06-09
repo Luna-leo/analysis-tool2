@@ -4,7 +4,7 @@ import React, { useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { X, Settings, Plus, ChevronDown, Search } from "lucide-react"
+import { X, Settings, Plus, ChevronDown, Search, FileText, Database, CalendarDays } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -35,6 +35,8 @@ import {
 import { ManualEntryDialog, TriggerSignalDialog } from "../../../dialogs"
 import { useManualEntry } from "@/hooks/useManualEntry"
 import { EventInfo } from "@/types"
+
+type DataSourceType = 'manual' | 'signal' | 'event'
 
 interface DataSourceTabProps {
   selectedDataSourceItems: EventInfo[]
@@ -81,6 +83,7 @@ export function DataSourceTab({
     },
   ])
   const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set())
+  const [activeDataSourceType, setActiveDataSourceType] = useState<DataSourceType>('event')
 
   const manualEntry = useManualEntry()
   const [triggerSignalDialogOpen, setTriggerSignalDialogOpen] = useState(false)
@@ -130,29 +133,237 @@ export function DataSourceTab({
   return (
     <>
       <div className="space-y-4">
-        <div className="border rounded-lg p-3 bg-muted/30">
-          <div className="flex justify-between items-center mb-2">
-            <h4 className="text-sm font-medium">Selected Data Source</h4>
-            <div className="flex gap-2">
+        {/* Data Source Type Selection */}
+        <div className="border rounded-lg p-3">
+          <h4 className="text-sm font-medium mb-3">Add Data Source</h4>
+          <div className="grid grid-cols-3 gap-2">
+            <Button
+              variant={activeDataSourceType === 'manual' ? 'default' : 'outline'}
+              size="sm"
+              className="h-10 justify-start gap-2 px-3"
+              onClick={() => setActiveDataSourceType('manual')}
+            >
+              <FileText className="h-4 w-4 shrink-0" />
+              <span className="text-xs">Manual Entry</span>
+            </Button>
+            <Button
+              variant={activeDataSourceType === 'signal' ? 'default' : 'outline'}
+              size="sm"
+              className="h-10 justify-start gap-2 px-3"
+              onClick={() => setActiveDataSourceType('signal')}
+            >
+              <Database className="h-4 w-4 shrink-0" />
+              <span className="text-xs">Signal Search</span>
+            </Button>
+            <Button
+              variant={activeDataSourceType === 'event' ? 'default' : 'outline'}
+              size="sm"
+              className="h-10 justify-start gap-2 px-3"
+              onClick={() => setActiveDataSourceType('event')}
+            >
+              <CalendarDays className="h-4 w-4 shrink-0" />
+              <span className="text-xs">Event Information</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Active Data Source Section */}
+        {activeDataSourceType === 'manual' && (
+          <div className="border rounded-lg p-3">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-medium">Manual Entry</h4>
               <Button
-                variant="outline"
+                variant="default"
                 size="sm"
                 className="h-7 text-xs"
                 onClick={manualEntry.openForNew}
               >
                 <Plus className="h-3 w-3 mr-1" />
-                Add Manual Entry
+                Create Manual Entry
               </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Click "Create Manual Entry" to add custom data points with specific time ranges and labels.
+            </p>
+          </div>
+        )}
+
+        {activeDataSourceType === 'signal' && (
+          <div className="border rounded-lg p-3">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-medium">Signal Search</h4>
               <Button
-                variant="outline"
+                variant="default"
                 size="sm"
                 className="h-7 text-xs"
                 onClick={() => setTriggerSignalDialogOpen(true)}
               >
-                <Plus className="h-3 w-3 mr-1" />
-                Signal Search
+                <Search className="h-3 w-3 mr-1" />
+                Search Signals
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Search for trigger signals to automatically identify events based on conditions.
+            </p>
+          </div>
+        )}
+
+        {activeDataSourceType === 'event' && (
+          <div className="border rounded-lg">
+            <div className="p-3 border-b">
+              <div className="flex justify-between items-center">
+                <h4 className="text-sm font-medium">Event Information</h4>
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="h-7 text-xs"
+                  disabled={selectedEventIds.size === 0}
+                  onClick={() => {
+                    const selectedEvents = events.filter((event) => selectedEventIds.has(event.id))
+                    const newItems = [...selectedDataSourceItems]
+                    selectedEvents.forEach((event) => {
+                      if (!newItems.find((item) => item.id === event.id)) {
+                        newItems.push(event)
+                      }
+                    })
+                    setSelectedDataSourceItems(newItems)
+                    setSelectedEventIds(new Set())
+                  }}
+                >
+                  <Plus className="h-3 w-3 mr-1" />
+                  Add Selected ({selectedEventIds.size})
+                </Button>
+              </div>
+            </div>
+            <div className="p-2 border-b bg-muted/50 flex items-center gap-2">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <Input
+                value={eventSearchTerm}
+                onChange={(e) => setEventSearchTerm(e.target.value)}
+                placeholder="Search events"
+                className="h-8 text-sm"
+              />
+            </div>
+            <div className="max-h-64 overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-5 px-1">
+                      <Checkbox
+                        checked={selectedEventIds.size > 0 && events.filter((event) => {
+                          if (!eventSearchTerm) return true
+                          const searchLower = eventSearchTerm.toLowerCase()
+                          return (
+                            event.plant.toLowerCase().includes(searchLower) ||
+                            event.machineNo.toLowerCase().includes(searchLower) ||
+                            event.label.toLowerCase().includes(searchLower) ||
+                            event.labelDescription?.toLowerCase().includes(searchLower) ||
+                            event.event.toLowerCase().includes(searchLower) ||
+                            event.eventDetail?.toLowerCase().includes(searchLower)
+                          )
+                        }).length === selectedEventIds.size}
+                        onCheckedChange={(checked) => {
+                          const filteredEvents = events.filter((event) => {
+                            if (!eventSearchTerm) return true
+                            const searchLower = eventSearchTerm.toLowerCase()
+                            return (
+                              event.plant.toLowerCase().includes(searchLower) ||
+                              event.machineNo.toLowerCase().includes(searchLower) ||
+                              event.label.toLowerCase().includes(searchLower) ||
+                              event.labelDescription?.toLowerCase().includes(searchLower) ||
+                              event.event.toLowerCase().includes(searchLower) ||
+                              event.eventDetail?.toLowerCase().includes(searchLower)
+                            )
+                          })
+                          if (checked) {
+                            const newSelected = new Set(selectedEventIds)
+                            filteredEvents.forEach((event) => newSelected.add(event.id))
+                            setSelectedEventIds(newSelected)
+                          } else {
+                            const newSelected = new Set(selectedEventIds)
+                            filteredEvents.forEach((event) => newSelected.delete(event.id))
+                            setSelectedEventIds(newSelected)
+                          }
+                        }}
+                        className="h-3 w-3"
+                      />
+                    </TableHead>
+                    <TableHead className="h-8 text-xs px-2">Plant</TableHead>
+                    <TableHead className="h-8 text-xs px-2">Machine</TableHead>
+                    <TableHead className="h-8 text-xs px-2">Label</TableHead>
+                    <TableHead className="h-8 text-xs px-2">Event</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {events
+                    .filter((event) => {
+                      if (!eventSearchTerm) return true
+                      const searchLower = eventSearchTerm.toLowerCase()
+                      return (
+                        event.plant.toLowerCase().includes(searchLower) ||
+                        event.machineNo.toLowerCase().includes(searchLower) ||
+                        event.label.toLowerCase().includes(searchLower) ||
+                        event.labelDescription?.toLowerCase().includes(searchLower) ||
+                        event.event.toLowerCase().includes(searchLower) ||
+                        event.eventDetail?.toLowerCase().includes(searchLower)
+                      )
+                    })
+                    .map((event) => {
+                      const isInSelectedDataSource = selectedDataSourceItems.some((item) => item.id === event.id)
+                      return (
+                        <TableRow
+                          key={event.id}
+                          className={`cursor-pointer ${selectedEventIds.has(event.id) ? 'bg-muted/50' : ''} ${isInSelectedDataSource ? 'opacity-50' : ''}`}
+                          title={`${event.event}\nStart: ${event.start.replace('T', ' ')}\nEnd: ${event.end.replace('T', ' ')}`}
+                        >
+                          <TableCell className="px-1 py-1">
+                            <Checkbox
+                              checked={selectedEventIds.has(event.id)}
+                              disabled={isInSelectedDataSource}
+                              onCheckedChange={(checked) => {
+                                const newSelectedIds = new Set(selectedEventIds)
+                                if (checked) {
+                                  newSelectedIds.add(event.id)
+                                } else {
+                                  newSelectedIds.delete(event.id)
+                                }
+                                setSelectedEventIds(newSelectedIds)
+                              }}
+                              className="h-3 w-3"
+                            />
+                          </TableCell>
+                          <TableCell className="px-2 py-1 text-xs">{event.plant}</TableCell>
+                          <TableCell className="px-2 py-1 text-xs">{event.machineNo}</TableCell>
+                          <TableCell className="px-2 py-1 text-xs">
+                            <div className="leading-tight">
+                              <div>{event.label}</div>
+                              <div className="text-muted-foreground">{event.labelDescription || ''}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-2 py-1 text-xs">
+                            <div className="leading-tight">
+                              <div className="flex items-center gap-1">
+                                {event.event}
+                                {isInSelectedDataSource && (
+                                  <Badge variant="secondary" className="h-4 text-[10px] px-1">Added</Badge>
+                                )}
+                              </div>
+                              <div className="text-muted-foreground">{event.eventDetail || ''}</div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
+
+        {/* Selected Data Source */}
+        <div className="border rounded-lg p-3 bg-muted/30">
+          <div className="flex justify-between items-center mb-2">
+            <h4 className="text-sm font-medium">Selected Data Source</h4>
           </div>
 
           {selectedDataSourceItems.length > 0 ? (
@@ -316,156 +527,8 @@ export function DataSourceTab({
               </Collapsible>
             </div>
           ) : (
-            <p className="text-xs text-muted-foreground">No data source items selected. Select items from the table below and click 'Add Selected'.</p>
+            <p className="text-xs text-muted-foreground">No data source items selected. Use the options above to add data sources.</p>
           )}
-        </div>
-
-        <div>
-          <div className="flex justify-between items-center mb-3">
-            <h4 className="text-sm font-medium">Event Information</h4>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-xs"
-              disabled={selectedEventIds.size === 0}
-              onClick={() => {
-                const selectedEvents = events.filter((event) => selectedEventIds.has(event.id))
-                const newItems = [...selectedDataSourceItems]
-                selectedEvents.forEach((event) => {
-                  if (!newItems.find((item) => item.id === event.id)) {
-                    newItems.push(event)
-                  }
-                })
-                setSelectedDataSourceItems(newItems)
-                setSelectedEventIds(new Set())
-              }}
-            >
-              <Plus className="h-3 w-3 mr-1" />
-              Add Selected ({selectedEventIds.size})
-            </Button>
-          </div>
-          <div className="border rounded-lg overflow-hidden">
-            <div className="p-2 border-b bg-muted/50 flex items-center gap-2">
-              <Search className="h-4 w-4 text-muted-foreground" />
-              <Input
-                value={eventSearchTerm}
-                onChange={(e) => setEventSearchTerm(e.target.value)}
-                placeholder="Search events"
-                className="h-8 text-sm"
-              />
-            </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-5 px-1">
-                    <Checkbox
-                      checked={selectedEventIds.size > 0 && events.filter((event) => {
-                        if (!eventSearchTerm) return true
-                        const searchLower = eventSearchTerm.toLowerCase()
-                        return (
-                          event.plant.toLowerCase().includes(searchLower) ||
-                          event.machineNo.toLowerCase().includes(searchLower) ||
-                          event.label.toLowerCase().includes(searchLower) ||
-                          event.labelDescription?.toLowerCase().includes(searchLower) ||
-                          event.event.toLowerCase().includes(searchLower) ||
-                          event.eventDetail?.toLowerCase().includes(searchLower)
-                        )
-                      }).length === selectedEventIds.size}
-                      onCheckedChange={(checked) => {
-                        const filteredEvents = events.filter((event) => {
-                          if (!eventSearchTerm) return true
-                          const searchLower = eventSearchTerm.toLowerCase()
-                          return (
-                            event.plant.toLowerCase().includes(searchLower) ||
-                            event.machineNo.toLowerCase().includes(searchLower) ||
-                            event.label.toLowerCase().includes(searchLower) ||
-                            event.labelDescription?.toLowerCase().includes(searchLower) ||
-                            event.event.toLowerCase().includes(searchLower) ||
-                            event.eventDetail?.toLowerCase().includes(searchLower)
-                          )
-                        })
-                        if (checked) {
-                          const newSelected = new Set(selectedEventIds)
-                          filteredEvents.forEach((event) => newSelected.add(event.id))
-                          setSelectedEventIds(newSelected)
-                        } else {
-                          const newSelected = new Set(selectedEventIds)
-                          filteredEvents.forEach((event) => newSelected.delete(event.id))
-                          setSelectedEventIds(newSelected)
-                        }
-                      }}
-                      className="h-3 w-3"
-                    />
-                  </TableHead>
-                  <TableHead className="h-8 text-xs px-2">Plant</TableHead>
-                  <TableHead className="h-8 text-xs px-2">Machine</TableHead>
-                  <TableHead className="h-8 text-xs px-2">Label</TableHead>
-                  <TableHead className="h-8 text-xs px-2">Event</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {events
-                  .filter((event) => {
-                    if (!eventSearchTerm) return true
-                    const searchLower = eventSearchTerm.toLowerCase()
-                    return (
-                      event.plant.toLowerCase().includes(searchLower) ||
-                      event.machineNo.toLowerCase().includes(searchLower) ||
-                      event.label.toLowerCase().includes(searchLower) ||
-                      event.labelDescription?.toLowerCase().includes(searchLower) ||
-                      event.event.toLowerCase().includes(searchLower) ||
-                      event.eventDetail?.toLowerCase().includes(searchLower)
-                    )
-                  })
-                  .map((event) => {
-                    const isInSelectedDataSource = selectedDataSourceItems.some((item) => item.id === event.id)
-                    return (
-                      <TableRow
-                        key={event.id}
-                        className={`cursor-pointer ${selectedEventIds.has(event.id) ? 'bg-muted/50' : ''} ${isInSelectedDataSource ? 'opacity-50' : ''}`}
-                        title={`${event.event}\nStart: ${event.start.replace('T', ' ')}\nEnd: ${event.end.replace('T', ' ')}`}
-                      >
-                        <TableCell className="px-1 py-1">
-                          <Checkbox
-                            checked={selectedEventIds.has(event.id)}
-                            disabled={isInSelectedDataSource}
-                            onCheckedChange={(checked) => {
-                              const newSelectedIds = new Set(selectedEventIds)
-                              if (checked) {
-                                newSelectedIds.add(event.id)
-                              } else {
-                                newSelectedIds.delete(event.id)
-                              }
-                              setSelectedEventIds(newSelectedIds)
-                            }}
-                            className="h-3 w-3"
-                          />
-                        </TableCell>
-                        <TableCell className="px-2 py-1 text-xs">{event.plant}</TableCell>
-                        <TableCell className="px-2 py-1 text-xs">{event.machineNo}</TableCell>
-                        <TableCell className="px-2 py-1 text-xs">
-                          <div className="leading-tight">
-                            <div>{event.label}</div>
-                            <div className="text-muted-foreground">{event.labelDescription || ''}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell className="px-2 py-1 text-xs">
-                          <div className="leading-tight">
-                            <div className="flex items-center gap-1">
-                              {event.event}
-                              {isInSelectedDataSource && (
-                                <Badge variant="secondary" className="h-4 text-[10px] px-1">Added</Badge>
-                              )}
-                            </div>
-                            <div className="text-muted-foreground">{event.eventDetail || ''}</div>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
-              </TableBody>
-            </Table>
-          </div>
         </div>
       </div>
 
