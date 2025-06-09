@@ -16,9 +16,7 @@ interface ReferenceLinesProps {
 
 export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRef }: ReferenceLinesProps) {
   const [draggingLine, setDraggingLine] = React.useState<{ id: string; type: 'vertical' | 'horizontal' } | null>(null)
-  const [hoveredLine, setHoveredLine] = React.useState<string | null>(null)
   const dragPositionRef = useRef<{ [key: string]: number }>({})
-  const isDraggingRef = useRef<boolean>(false)
   
   // Keep a ref to the current editingChart to avoid closure issues
   const editingChartRef = useRef<ChartComponent>(editingChart)
@@ -60,7 +58,6 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
     // Use specific properties to avoid unnecessary re-renders
     editingChart.referenceLines,
     editingChart.xAxisType,
-    hoveredLine,
     draggingLine,
     svgRef,
     scalesRef
@@ -97,8 +94,6 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
       const group = d3.select(this)
       const color = line.color || "#ff0000"
       const strokeDasharray = line.style === "dashed" ? "5,5" : line.style === "dotted" ? "2,2" : "none"
-      const isHovered = hoveredLine === line.id
-      const isDragging = draggingLine?.id === line.id
       
       if (line.type === "vertical") {
         // Vertical reference line
@@ -153,10 +148,9 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
             .attr("y1", 0)
             .attr("y2", height)
             .attr("stroke", color)
-            .attr("stroke-width", isHovered || isDragging ? 2 : 1)
+            .attr("stroke-width", 1)
             .attr("stroke-dasharray", strokeDasharray)
-            .attr("opacity", isHovered || isDragging ? 1 : 0.7)
-            .style("transition", isDragging ? "none" : "all 0.2s ease")
+            .attr("opacity", 0.8)
           
           // Update or create interactive area
           if (isInteractive) {
@@ -166,9 +160,7 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
             const currentLineId = line.id
             const drag = d3.drag<SVGLineElement, any>()
               .on("start", function() {
-                setHoveredLine(currentLineId)
                 setDraggingLine({ id: currentLineId, type: "vertical" })
-                isDraggingRef.current = true
               })
               .on("drag", function(event) {
                 const clampedX = Math.max(0, Math.min(width, event.x))
@@ -202,8 +194,6 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
                 
                 // Clear dragging state
                 setDraggingLine(null)
-                setHoveredLine(null)
-                isDraggingRef.current = false
                 
                 // Update the data model with the current chart state
                 if (setEditingChart) {
@@ -231,15 +221,9 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
                 .attr("stroke", "transparent")
                 .attr("stroke-width", 10)
                 .style("cursor", "ew-resize")
-                .on("mouseenter", () => setHoveredLine(currentLineId))
-                .on("mouseleave", () => {
-                  if (!draggingLine || draggingLine.id !== currentLineId) {
-                    setHoveredLine(null)
-                  }
-                })
             }
             
-            // Always re-apply drag behavior to ensure it's properly bound
+            // Re-apply drag behavior (D3 will automatically replace existing drag)
             interactiveLine.call(drag)
             
             interactiveLine
@@ -250,7 +234,7 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
           }
           
           // Update or create label - ensure it's always on top
-          if (line.label && !isDragging) {
+          if (line.label) {
             let labelText = group.select<SVGTextElement>(".line-label")
             if (labelText.empty()) {
               labelText = group.append("text")
@@ -262,10 +246,10 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
               .attr("x", xPos + 3)
               .attr("y", 15)
               .attr("fill", color)
-              .style("font-weight", isHovered ? "bold" : "normal")
+              .style("font-weight", "normal")
               .text(line.label)
               .raise() // Bring to front
-          } else if (!line.label) {
+          } else {
             group.select(".line-label").remove()
           }
           
@@ -301,10 +285,9 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
             .attr("y1", yPos)
             .attr("y2", yPos)
             .attr("stroke", color)
-            .attr("stroke-width", isHovered || isDragging ? 2 : 1)
+            .attr("stroke-width", 1)
             .attr("stroke-dasharray", strokeDasharray)
-            .attr("opacity", isHovered || isDragging ? 1 : 0.7)
-            .style("transition", isDragging ? "none" : "all 0.2s ease")
+            .attr("opacity", 0.8)
           
           // Update or create interactive area
           if (isInteractive) {
@@ -314,9 +297,7 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
             const currentLineId = line.id
             const drag = d3.drag<SVGLineElement, any>()
               .on("start", function() {
-                setHoveredLine(currentLineId)
                 setDraggingLine({ id: currentLineId, type: "horizontal" })
-                isDraggingRef.current = true
               })
               .on("drag", function(event) {
                 const clampedY = Math.max(0, Math.min(height, event.y))
@@ -337,17 +318,10 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
               })
               .on("end", function(event) {
                 const clampedY = Math.max(0, Math.min(height, event.y))
-                let newValue = yScale.invert(clampedY)
-                
-                // Ensure the value is within the scale domain
-                const [minDomain, maxDomain] = yScale.domain()
-                newValue = Math.max(minDomain, Math.min(maxDomain, newValue))
-                newValue = Math.round(newValue)
+                const newValue = Math.round(yScale.invert(clampedY))
                 
                 // Clear dragging state
                 setDraggingLine(null)
-                setHoveredLine(null)
-                isDraggingRef.current = false
                 
                 // Update the data model with the current chart state
                 if (setEditingChart) {
@@ -375,15 +349,9 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
                 .attr("stroke", "transparent")
                 .attr("stroke-width", 10)
                 .style("cursor", "ns-resize")
-                .on("mouseenter", () => setHoveredLine(currentLineId))
-                .on("mouseleave", () => {
-                  if (!draggingLine || draggingLine.id !== currentLineId) {
-                    setHoveredLine(null)
-                  }
-                })
             }
             
-            // Always re-apply drag behavior to ensure it's properly bound
+            // Re-apply drag behavior (D3 will automatically replace existing drag)
             interactiveLine.call(drag)
             
             interactiveLine
@@ -394,7 +362,7 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
           }
           
           // Update or create label
-          if (line.label && !isDragging) {
+          if (line.label) {
             let labelText = group.select<SVGTextElement>(".line-label")
             if (labelText.empty()) {
               labelText = group.append("text")
@@ -406,10 +374,10 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
               .attr("x", 5)
               .attr("y", yPos - 3)
               .attr("fill", color)
-              .style("font-weight", isHovered ? "bold" : "normal")
+              .style("font-weight", "normal")
               .text(line.label)
               .raise()
-          } else if (!line.label) {
+          } else {
             group.select(".line-label").remove()
           }
           
