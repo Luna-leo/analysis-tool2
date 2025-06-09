@@ -18,7 +18,7 @@ export function PlantMachineFields({
   onMachineNoChange
 }: PlantMachineFieldsProps) {
   return (
-    <div className="grid grid-cols-2 gap-2 mb-2">
+    <div className="grid grid-cols-2 gap-2">
       <div className="space-y-1">
         <Label htmlFor="plant" className="text-sm">Plant</Label>
         <Input
@@ -30,7 +30,7 @@ export function PlantMachineFields({
         />
       </div>
       <div className="space-y-1">
-        <Label htmlFor="machine-no" className="text-sm">Machine No</Label>
+        <Label htmlFor="machine-no" className="text-sm">Machine</Label>
         <Input
           id="machine-no"
           value={machineNo}

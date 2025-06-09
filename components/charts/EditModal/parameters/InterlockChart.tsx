@@ -33,7 +33,7 @@ export function InterlockChart({
     const svg = d3.select(svgRef.current)
     svg.selectAll("*").remove()
 
-    const margin = { top: 80, right: 80, bottom: 100, left: 60 }
+    const margin = { top: 50, right: 30, bottom: 70, left: 80 }
     const chartWidth = width - margin.left - margin.right
     const chartHeight = height - margin.top - margin.bottom
 
@@ -118,36 +118,41 @@ export function InterlockChart({
       .style("stroke-width", "1px")
       .style("opacity", 0.7)
 
-    // Add axes
+    // Add axes with larger font sizes
     g.append("g")
       .attr("transform", `translate(0,${chartHeight})`)
       .call(d3.axisBottom(xScale))
+      .selectAll("text")
+      .style("font-size", "14px")
 
     g.append("g")
       .call(d3.axisLeft(yScale))
+      .selectAll("text")
+      .style("font-size", "14px")
 
     // Add title (left-aligned)
     g.append("text")
-      .attr("transform", `translate(0, -45)`)
+      .attr("transform", `translate(0, -30)`)
       .style("text-anchor", "start")
-      .style("font-size", "18px")
+      .style("font-size", "20px")
       .style("font-weight", "bold")
       .text(name || "New Interlock Registration")
 
     // Add axis labels
     g.append("text")
-      .attr("transform", `translate(${chartWidth / 2}, ${chartHeight + 50})`)
+      .attr("transform", `translate(${chartWidth / 2}, ${chartHeight + 60})`)
       .style("text-anchor", "middle")
-      .style("font-size", "14px")
+      .style("font-size", "16px")
+      .style("font-weight", "500")
       .text(xParameter ? `${xParameter} (${xUnit || ''})` : 'X')
 
     g.append("text")
       .attr("transform", "rotate(-90)")
-      .attr("y", 0 - margin.left)
+      .attr("y", 0 - margin.left + 20)
       .attr("x", 0 - (chartHeight / 2))
-      .attr("dy", "1em")
       .style("text-anchor", "middle")
-      .style("font-size", "14px")
+      .style("font-size", "16px")
+      .style("font-weight", "500")
       .text(yUnit ? `Y (${yUnit})` : 'Y')
 
     // Draw threshold lines with selected curve type
@@ -195,45 +200,7 @@ export function InterlockChart({
       }
     })
 
-    // Add legend horizontally at the bottom with wrapping
-    const legend = g.append("g")
-      .attr("transform", `translate(0, ${chartHeight + 70})`)
-
-    let legendX = 0
-    let legendY = 0
-    const maxLegendWidth = chartWidth - 20 // Leave some margin
-    const lineHeight = 18
-
-    thresholds.forEach((threshold, i) => {
-      // Calculate approximate text width
-      const textWidth = threshold.name.length * 6 + 30
-      
-      // Check if we need to wrap to next line
-      if (legendX + textWidth > maxLegendWidth && legendX > 0) {
-        legendX = 0
-        legendY += lineHeight
-      }
-
-      const legendItem = legend.append("g")
-        .attr("transform", `translate(${legendX}, ${legendY})`)
-
-      legendItem.append("line")
-        .attr("x1", 0)
-        .attr("x2", 15)
-        .attr("y1", 0)
-        .attr("y2", 0)
-        .attr("stroke", threshold.color)
-        .attr("stroke-width", 2)
-
-      legendItem.append("text")
-        .attr("x", 25)
-        .attr("y", 0)
-        .attr("dy", "0.35em")
-        .style("font-size", "12px")
-        .text(threshold.name)
-
-      legendX += textWidth
-    })
+    // Legend removed - using ThresholdColorSection below the graph instead
   }, [thresholds, xParameter, xUnit, yUnit, name, lineType, width, height])
 
   // Draw chart when props change
@@ -247,12 +214,13 @@ export function InterlockChart({
   }, [drawChart])
 
   return (
-    <div className="border rounded-lg p-2 bg-white overflow-auto">
+    <div className="w-full h-full">
       <svg
         ref={svgRef}
         width={width}
         height={height}
         className="bg-white"
+        style={{ maxWidth: '100%', display: 'block' }}
       />
     </div>
   )

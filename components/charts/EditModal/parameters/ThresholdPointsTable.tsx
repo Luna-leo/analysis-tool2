@@ -3,7 +3,7 @@
 import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Label } from "@/components/ui/label"
 import { Trash2, Plus } from "lucide-react"
 import { InterlockThreshold } from "@/types"
 
@@ -12,13 +12,17 @@ interface ThresholdPointsTableProps {
   onUpdateThresholds: (thresholds: InterlockThreshold[]) => void
   xParameter?: string
   xUnit?: string
+  lineType?: string
+  onLineTypeChange?: (lineType: string) => void
 }
 
 export function ThresholdPointsTable({
   thresholds,
   onUpdateThresholds,
   xParameter,
-  xUnit
+  xUnit,
+  lineType,
+  onLineTypeChange
 }: ThresholdPointsTableProps) {
   const [draggedThresholdId, setDraggedThresholdId] = useState<string | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
@@ -156,99 +160,152 @@ export function ThresholdPointsTable({
   }
 
   return (
-    <div className="space-y-2">
-      <h4 className="text-sm font-medium">Threshold Points</h4>
-      <div className="overflow-x-auto">
-        <Table 
-          className="text-sm table-fixed" 
-          style={{ 
-            minWidth: `${80 + (thresholds.length * 100) + 30}px`
-          }}
-        >
-          <TableHeader>
-            <TableRow className="h-6 bg-slate-100">
-              <TableHead className="sticky left-0 bg-slate-200 border-r px-2 py-1 text-xs text-left font-bold" style={{ width: '80px' }}>
-                {xParameter ? `${xParameter} (${xUnit || ''})` : 'X'}
-              </TableHead>
-              {thresholds.map((threshold, index) => (
-                <TableHead 
-                  key={threshold.id} 
-                  className={`px-1 py-1 text-left cursor-move select-none font-bold ${
-                    draggedThresholdId === threshold.id ? 'opacity-50' : ''
-                  } ${
-                    dragOverIndex === index ? 'bg-blue-200 border-l-2 border-blue-400' : 'bg-slate-100'
-                  }`}
-                  style={{ width: '100px' }}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, threshold.id)}
-                  onDragOver={(e) => handleDragOver(e, index)}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, index)}
-                  onDragEnd={handleDragEnd}
-                >
-                  <span className="text-xs truncate">{threshold.name}</span>
-                </TableHead>
-              ))}
-              <TableHead className="px-1 bg-slate-100" style={{ width: '30px' }}></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedXValues.map((x, idx) => (
-              <TableRow key={idx} className={`h-6 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-200'}`}>
-                <TableCell className={`sticky left-0 border-r px-2 py-1 text-left font-bold ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-200'}`}>
-                  <Input
-                    type="number"
-                    value={x}
-                    onChange={(e) => handleXChange(x, parseFloat(e.target.value) || 0)}
-                    className="h-5 w-full text-xs px-1 bg-transparent font-bold"
-                  />
-                </TableCell>
+    <div className="h-full flex flex-col">
+      <div className="shrink-0 space-y-3">
+        <div className="flex items-center justify-between">
+          <h4 className="text-sm font-semibold text-gray-900">Threshold Points</h4>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleAddRow}
+            className="h-7 text-xs"
+          >
+            <Plus className="h-3 w-3 mr-1" />
+            Add Row
+          </Button>
+        </div>
+        
+        {/* Line Type Selection */}
+        {lineType !== undefined && onLineTypeChange && (
+          <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
+            <Label htmlFor="line-type" className="text-sm font-medium text-gray-700">
+              Line Type:
+            </Label>
+            <select
+              id="line-type"
+              value={lineType}
+              onChange={(e) => onLineTypeChange(e.target.value)}
+              className="h-8 w-36 text-sm border border-gray-300 rounded-md px-2 py-1 bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+            >
+              <option value="linear">Linear</option>
+              <option value="step">Step</option>
+              <option value="stepBefore">Step Before</option>
+              <option value="stepAfter">Step After</option>
+            </select>
+          </div>
+        )}
+      </div>
+      
+      <div className="mt-3">
+        <div className="rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+          <div className="overflow-auto relative" style={{ maxHeight: '300px' }}>
+            <table 
+              className="text-sm w-full border-collapse" 
+              style={{ 
+                minWidth: `${80 + (thresholds.length * 90) + 35}px`
+              }}
+            >
+              <thead className="sticky top-0 z-30">
+                <tr className="bg-white border-b-2 border-gray-200">
+                  <th 
+                    className="bg-gray-50 border-r-2 border-gray-200 px-2 py-2 text-sm font-semibold text-gray-700 sticky left-0 z-40 text-left top-0" 
+                    style={{ width: '80px' }}
+                  >
+                    <div className="flex items-center gap-1">
+                      <span className="truncate">
+                        {xParameter || 'X'}
+                      </span>
+                      {xUnit && (
+                        <span className="text-gray-500 font-normal">({xUnit})</span>
+                      )}
+                    </div>
+                  </th>
                 {thresholds.map((threshold, index) => (
-                  <TableCell 
+                  <th 
                     key={threshold.id} 
-                    className={`px-1 py-1 text-left ${
+                    className={`px-2 py-2 text-center cursor-move select-none transition-all bg-gray-50 ${
+                      draggedThresholdId === threshold.id ? 'opacity-40' : ''
+                    } ${
                       dragOverIndex === index 
-                        ? 'bg-blue-100' 
-                        : idx % 2 === 0 ? 'bg-white' : 'bg-gray-200'
+                        ? 'bg-blue-100 border-l-4 border-blue-400' 
+                        : 'hover:bg-gray-100'
                     }`}
+                    style={{ width: '90px' }}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, threshold.id)}
+                    onDragOver={(e) => handleDragOver(e, index)}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, index)}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-sm font-semibold text-gray-700 truncate max-w-full px-1">
+                        {threshold.name}
+                      </span>
+                      <div 
+                        className="w-full h-1 rounded-full" 
+                        style={{ backgroundColor: threshold.color }}
+                      />
+                    </div>
+                  </th>
+                ))}
+                <th 
+                  className="bg-gray-50" 
+                  style={{ width: '35px' }}
+                ></th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortedXValues.map((x, idx) => (
+                <tr 
+                  key={idx} 
+                  className="group hover:bg-blue-50 transition-colors border-b border-gray-100"
+                >
+                  <td 
+                    className="bg-white border-r-2 border-gray-200 px-2 py-1 font-medium sticky left-0 z-20"
                   >
                     <Input
                       type="number"
-                      value={valueMap.get(x)?.get(threshold.id) ?? ''}
-                      onChange={(e) => handleCellChange(x, threshold.id, e.target.value)}
-                      className="h-5 w-full text-xs px-1"
-                      placeholder="-"
+                      value={x}
+                      onChange={(e) => handleXChange(x, parseFloat(e.target.value) || 0)}
+                      className="h-6 w-full text-xs px-1 font-semibold bg-gray-50 border-gray-300 focus:bg-white"
                     />
-                  </TableCell>
-                ))}
-                <TableCell className={`px-1 py-1 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-200'}`}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleRemoveRow(x)}
-                    className="h-5 w-5 p-0"
-                    disabled={sortedXValues.length <= 1}
-                  >
-                    <Trash2 className="h-2 w-2" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-            <TableRow className="h-6">
-              <TableCell className="sticky left-0 border-r px-2 py-1 text-left bg-gray-50" colSpan={thresholds.length + 2}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleAddRow}
-                  className="h-5 text-xs justify-start"
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Add Row
-                </Button>
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        </Table>
+                  </td>
+                  {thresholds.map((threshold, index) => (
+                    <td 
+                      key={threshold.id} 
+                      className={`px-1 py-1 ${
+                        dragOverIndex === index 
+                          ? 'bg-blue-50' 
+                          : 'bg-white group-hover:bg-blue-50'
+                      }`}
+                    >
+                      <Input
+                        type="number"
+                        value={valueMap.get(x)?.get(threshold.id) ?? ''}
+                        onChange={(e) => handleCellChange(x, threshold.id, e.target.value)}
+                        className="h-6 w-full text-xs px-1 text-center border-gray-300 focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+                        placeholder="-"
+                      />
+                    </td>
+                  ))}
+                  <td className="px-1 py-1 bg-white">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveRow(x)}
+                      className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100 hover:text-red-600"
+                      disabled={sortedXValues.length <= 1}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </div>
   )
