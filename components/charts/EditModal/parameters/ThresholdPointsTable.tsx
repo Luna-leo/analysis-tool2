@@ -111,6 +111,23 @@ export function ThresholdPointsTable({
     onUpdateThresholds(updatedThresholds)
   }
 
+  const handleAddThreshold = () => {
+    // Generate a new threshold with default values
+    const newThresholdId = `threshold_${Date.now()}`
+    const defaultColors = ["#FFA500", "#FF0000", "#0000FF", "#00FF00", "#800080"]
+    const usedColors = thresholds.map(t => t.color)
+    const newColor = defaultColors.find(color => !usedColors.includes(color)) || "#" + Math.floor(Math.random()*16777215).toString(16)
+    
+    const newThreshold: InterlockThreshold = {
+      id: newThresholdId,
+      name: `Threshold ${thresholds.length + 1}`,
+      color: newColor,
+      points: sortedXValues.map(x => ({ x, y: 0 }))
+    }
+    
+    onUpdateThresholds([...thresholds, newThreshold])
+  }
+
   const handleRemoveRow = (x: number) => {
     const updatedThresholds = thresholds.map(threshold => ({
       ...threshold,
@@ -162,29 +179,29 @@ export function ThresholdPointsTable({
   return (
     <div className="h-full flex flex-col">
       <div className="shrink-0 space-y-3">
-        <div>
+        <div className="flex items-center justify-between">
           <h4 className="text-sm font-semibold text-gray-900">Threshold Points</h4>
+          
+          {/* Line Type Selection */}
+          {lineType !== undefined && onLineTypeChange && (
+            <div className="flex items-center gap-2">
+              <Label htmlFor="line-type" className="text-sm font-medium text-gray-700">
+                Line Type:
+              </Label>
+              <select
+                id="line-type"
+                value={lineType}
+                onChange={(e) => onLineTypeChange(e.target.value)}
+                className="h-8 w-36 text-sm border border-gray-300 rounded-md px-2 py-1 bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
+              >
+                <option value="linear">Linear</option>
+                <option value="step">Step</option>
+                <option value="stepBefore">Step Before</option>
+                <option value="stepAfter">Step After</option>
+              </select>
+            </div>
+          )}
         </div>
-        
-        {/* Line Type Selection */}
-        {lineType !== undefined && onLineTypeChange && (
-          <div className="flex items-center gap-3 pb-2 border-b border-gray-200">
-            <Label htmlFor="line-type" className="text-sm font-medium text-gray-700">
-              Line Type:
-            </Label>
-            <select
-              id="line-type"
-              value={lineType}
-              onChange={(e) => onLineTypeChange(e.target.value)}
-              className="h-8 w-36 text-sm border border-gray-300 rounded-md px-2 py-1 bg-white focus:border-blue-400 focus:ring-1 focus:ring-blue-400"
-            >
-              <option value="linear">Linear</option>
-              <option value="step">Step</option>
-              <option value="stepBefore">Step Before</option>
-              <option value="stepAfter">Step After</option>
-            </select>
-          </div>
-        )}
       </div>
       
       <div className="mt-3">
@@ -193,7 +210,7 @@ export function ThresholdPointsTable({
             <table 
               className="text-sm w-full border-collapse" 
               style={{ 
-                minWidth: `${80 + (thresholds.length * 90) + 35}px`
+                minWidth: `${80 + (thresholds.length * 90) + 40}px`
               }}
             >
               <thead className="sticky top-0 z-30">
@@ -241,9 +258,19 @@ export function ThresholdPointsTable({
                   </th>
                 ))}
                 <th 
-                  className="bg-gray-50" 
-                  style={{ width: '35px' }}
-                ></th>
+                  className="bg-gray-50 px-1 sticky right-0 z-40 border-l-2 border-gray-200" 
+                  style={{ width: '40px' }}
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleAddThreshold}
+                    className="h-5 w-5 p-0 hover:bg-gray-100"
+                    title="Add Column"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -280,7 +307,7 @@ export function ThresholdPointsTable({
                       />
                     </td>
                   ))}
-                  <td className="px-1 py-1 bg-white">
+                  <td className="px-1 py-1 bg-white sticky right-0 z-20 border-l-2 border-gray-200 text-center">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -293,25 +320,19 @@ export function ThresholdPointsTable({
                   </td>
                 </tr>
               ))}
-              {/* Add Row button as last table row */}
-              <tr className="hover:bg-gray-50 transition-colors">
-                <td 
-                  colSpan={thresholds.length + 2}
-                  className="text-center py-2"
-                >
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleAddRow}
-                    className="h-6 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                  >
-                    <Plus className="h-3 w-3 mr-1" />
-                    Add Row
-                  </Button>
-                </td>
-              </tr>
             </tbody>
             </table>
+          </div>
+          <div className="border-t border-gray-200 bg-gray-50 px-2 py-1 text-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleAddRow}
+              className="h-6 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Add Row
+            </Button>
           </div>
         </div>
       </div>

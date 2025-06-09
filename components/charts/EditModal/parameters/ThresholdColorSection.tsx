@@ -64,6 +64,13 @@ export function ThresholdColorSection({
   }
 
   const handleUpdateThresholdName = (thresholdId: string, name: string) => {
+    // Check if name is already used by another threshold
+    const isNameUsed = thresholds.some(t => t.id !== thresholdId && t.name === name)
+    if (isNameUsed) {
+      // Don't update if name is already in use
+      return
+    }
+    
     const updatedThresholds = thresholds.map(threshold =>
       threshold.id === thresholdId ? { ...threshold, name } : threshold
     )
@@ -76,12 +83,22 @@ export function ThresholdColorSection({
       <div className="flex flex-wrap gap-4">
         {thresholds.map((threshold, index) => (
           <div key={threshold.id} className="flex items-center gap-2">
-            <Input
-              type="color"
-              value={threshold.color}
-              onChange={(e) => handleUpdateThresholdColor(threshold.id, e.target.value)}
-              className="w-6 h-6 p-0 border-none cursor-pointer rounded-full"
-            />
+            <label className="relative">
+              <input
+                type="color"
+                value={threshold.color}
+                onChange={(e) => handleUpdateThresholdColor(threshold.id, e.target.value)}
+                className="sr-only"
+              />
+              <div 
+                className="w-6 h-6 rounded-full cursor-pointer shadow-sm hover:shadow-md transition-shadow"
+                style={{ backgroundColor: threshold.color }}
+                onClick={(e) => {
+                  const input = e.currentTarget.previousElementSibling as HTMLInputElement
+                  input?.click()
+                }}
+              />
+            </label>
             <div className="flex items-center gap-1">
               <Popover
                 open={openThresholdNameIndex === threshold.id}
@@ -114,43 +131,74 @@ export function ThresholdColorSection({
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && thresholdNameInputs[threshold.id]?.trim()) {
                           e.preventDefault()
-                          handleUpdateThresholdName(threshold.id, thresholdNameInputs[threshold.id].trim())
-                          setOpenThresholdNameIndex(null)
+                          const inputName = thresholdNameInputs[threshold.id].trim()
+                          const isNameUsed = thresholds.some(t => t.id !== threshold.id && t.name === inputName)
+                          if (!isNameUsed) {
+                            handleUpdateThresholdName(threshold.id, inputName)
+                            setOpenThresholdNameIndex(null)
+                          }
                         }
                       }}
                     />
                     <CommandEmpty>
-                      <button
-                        onClick={() => {
-                          if (thresholdNameInputs[threshold.id]?.trim()) {
-                            handleUpdateThresholdName(threshold.id, thresholdNameInputs[threshold.id].trim())
-                            setOpenThresholdNameIndex(null)
-                          }
-                        }}
-                        className="w-full text-left px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
-                      >
-                        Add "{thresholdNameInputs[threshold.id]}"
-                      </button>
+                      {(() => {
+                        const inputName = thresholdNameInputs[threshold.id]?.trim()
+                        const isNameUsed = inputName && thresholds.some(t => t.id !== threshold.id && t.name === inputName)
+                        return (
+                          <button
+                            onClick={() => {
+                              if (inputName && !isNameUsed) {
+                                handleUpdateThresholdName(threshold.id, inputName)
+                                setOpenThresholdNameIndex(null)
+                              }
+                            }}
+                            className={cn(
+                              "w-full text-left px-2 py-1.5 text-sm",
+                              isNameUsed 
+                                ? "opacity-50 cursor-not-allowed" 
+                                : "hover:bg-accent hover:text-accent-foreground"
+                            )}
+                            disabled={isNameUsed}
+                          >
+                            Add "{thresholdNameInputs[threshold.id]}"
+                            {isNameUsed && <span className="text-xs text-red-500 ml-1">(already used)</span>}
+                          </button>
+                        )
+                      })()}
                     </CommandEmpty>
                     <CommandGroup>
-                      {predefinedThresholdNames.map((name) => (
-                        <CommandItem
-                          key={name}
-                          value={name}
-                          onSelect={() => {
-                            handleUpdateThresholdName(threshold.id, name)
-                            setOpenThresholdNameIndex(null)
-                          }}
-                        >
-                          <Check
+                      {predefinedThresholdNames.map((name) => {
+                        const isNameUsed = thresholds.some(t => t.id !== threshold.id && t.name === name)
+                        return (
+                          <CommandItem
+                            key={name}
+                            value={name}
+                            onSelect={() => {
+                              if (!isNameUsed) {
+                                handleUpdateThresholdName(threshold.id, name)
+                                setOpenThresholdNameIndex(null)
+                              }
+                            }}
+                            disabled={isNameUsed}
                             className={cn(
-                              "mr-2 h-3 w-3",
-                              threshold.name === name ? "opacity-100" : "opacity-0"
+                              isNameUsed && "opacity-50 cursor-not-allowed"
                             )}
-                          />
-                          {name}
-                        </CommandItem>
-                      ))}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-3 w-3",
+                                threshold.name === name ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <span className={cn(isNameUsed && "line-through")}>
+                              {name}
+                            </span>
+                            {isNameUsed && (
+                              <span className="ml-auto text-xs text-gray-500">(used)</span>
+                            )}
+                          </CommandItem>
+                        )
+                      })}
                     </CommandGroup>
                   </Command>
                 </PopoverContent>
