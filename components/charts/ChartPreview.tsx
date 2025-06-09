@@ -41,6 +41,26 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
     return data
   }
 
+  const getTimeFormat = (startDate: Date, endDate: Date): string => {
+    const duration = endDate.getTime() - startDate.getTime()
+    const hours = duration / (1000 * 60 * 60)
+    const days = hours / 24
+    
+    if (days > 365) {
+      return "%Y-%m"  // Year-Month for ranges over a year
+    } else if (days > 30) {
+      return "%m/%d"  // Month/Day for ranges over a month
+    } else if (days > 7) {
+      return "%m/%d"  // Month/Day for ranges over a week
+    } else if (days > 1) {
+      return "%m/%d %H:%M"  // Date and time for multi-day ranges
+    } else if (hours > 6) {
+      return "%H:%M"  // Hours:Minutes for ranges over 6 hours
+    } else {
+      return "%H:%M:%S"  // Include seconds for short ranges
+    }
+  }
+
   useEffect(() => {
     if (!svgRef.current) return
 
@@ -90,9 +110,16 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
         // Vertical reference line
         let xPos: number
         if ((editingChart.xAxisType || "datetime") === "datetime") {
-          // For datetime, convert value to date
+          // For datetime, line.value should be a string (datetime-local format) or parseable as date
           const date = new Date(line.value)
-          xPos = xScale(date)
+          
+          // Check if date is valid
+          if (!isNaN(date.getTime())) {
+            xPos = xScale(date)
+          } else {
+            console.warn('Invalid date for vertical reference line:', line.value)
+            return // Skip this reference line
+          }
         } else {
           // For numeric values, need to map to time scale (simplified)
           const domain = xScale.domain()
@@ -205,11 +232,12 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
         .range([height, 0])
       
       // X axis
+      const timeFormat = getTimeFormat(xDomain[0], xDomain[1])
       g.append("g")
         .attr("transform", `translate(0,${height})`)
         .call(d3.axisBottom(xScale)
           .ticks(5)
-          .tickFormat((d) => d3.timeFormat("%H:%M")(d as Date)))
+          .tickFormat((d) => d3.timeFormat(timeFormat)(d as Date)))
       
       // Y axis
       g.append("g")
@@ -278,7 +306,8 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
       yDomain = [firstAxisParams[0].range.min || 0, firstAxisParams[0].range.max || 100]
     } else {
       const allValues = data.flatMap(d => firstAxisParams.map(p => d[p.parameter] || 0))
-      yDomain = d3.extent(allValues) as [number, number] || [0, 100]
+      const extent = d3.extent(allValues)
+      yDomain = extent[0] !== undefined && extent[1] !== undefined ? [extent[0], extent[1]] : [0, 100]
     }
     
     const yScale = d3.scaleLinear()
@@ -286,11 +315,12 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
       .nice()
       .range([height, 0])
 
+    const timeFormat = getTimeFormat(xDomain[0], xDomain[1])
     g.append("g")
       .attr("transform", `translate(0,${height})`)
       .call(d3.axisBottom(xScale)
         .ticks(5)
-        .tickFormat((d) => d3.timeFormat("%H:%M")(d as Date)))
+        .tickFormat((d) => d3.timeFormat(timeFormat)(d as Date)))
 
     g.append("g")
       .call(d3.axisLeft(yScale))
@@ -338,7 +368,8 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
     if (param.range?.auto === false) {
       yDomain = [param.range.min || 0, param.range.max || 100]
     } else {
-      yDomain = [0, d3.max(data, d => d[param.parameter] || 0)] as [number, number] || [0, 100]
+      const maxValue = d3.max(data, d => d[param.parameter] || 0) || 100
+      yDomain = [0, maxValue]
     }
 
     const yScale = d3.scaleLinear()

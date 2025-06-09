@@ -44,7 +44,7 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
         id: line.id,
         type: line.type === "vertical" ? "vertical" as const : "horizontal" as const,
         label: line.label,
-        xValue: line.type === "vertical" ? line.value?.toString() : undefined,
+        xValue: line.type === "vertical" ? (typeof line.value === 'string' ? line.value : line.value?.toString()) : undefined,
         yValue: line.type === "horizontal" ? line.value?.toString() : undefined,
         axisNo: existingConfig?.axisNo || 1,
         yRange: existingConfig?.yRange || {
@@ -67,14 +67,30 @@ export function ParametersTab({ editingChart, setEditingChart }: ParametersTabPr
     setReferenceLineConfigs(lines)
     
     // Convert to chart format
-    const convertedLines = lines.map(line => ({
-      id: line.id,
-      type: line.type === "vertical" ? "vertical" as const : "horizontal" as const,
-      value: parseFloat(line.type === "vertical" ? (line.xValue || "0") : (line.yValue || "0")),
-      label: line.label,
-      color: "#666666",
-      style: "solid" as const
-    }))
+    const convertedLines = lines.map(line => {
+      let value: number | string
+      
+      if (line.type === "vertical") {
+        // For vertical lines, check if it's datetime or numeric
+        if ((editingChart.xAxisType || "datetime") === "datetime") {
+          value = line.xValue || ""  // Keep as string for datetime
+        } else {
+          value = parseFloat(line.xValue || "0")
+        }
+      } else {
+        // For horizontal lines, always numeric
+        value = parseFloat(line.yValue || "0")
+      }
+      
+      return {
+        id: line.id,
+        type: line.type === "vertical" ? "vertical" as const : "horizontal" as const,
+        value: value,
+        label: line.label,
+        color: "#666666",
+        style: "solid" as const
+      }
+    })
 
     setEditingChart({
       ...editingChart,

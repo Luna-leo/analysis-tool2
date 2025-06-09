@@ -56,7 +56,7 @@ export interface InterlockMaster {
 export interface ReferenceLine {
   id: string
   type: ReferenceLineType
-  value: number
+  value: number | string  // Allow both for datetime strings and numeric values
   label: string
   color: string
   style: LineStyle
