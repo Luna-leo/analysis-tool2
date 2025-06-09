@@ -1,27 +1,198 @@
 "use client"
 
 import React, { useState } from "react"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Input } from "@/components/ui/input"
+import { 
+  Plus, 
+  Calendar, 
+  Filter, 
+  Clock, 
+  Tag,
+  MoreHorizontal,
+  Edit2,
+  Trash2,
+  Search,
+  GripVertical,
+  ArrowRight,
+  CheckCircle2,
+  AlertCircle,
+  Layers
+} from "lucide-react"
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator 
+} from "@/components/ui/dropdown-menu"
+import { Separator } from "@/components/ui/separator"
+import { EventInfo, SearchCondition, SearchResult } from "@/types"
 import { ManualEntryDialog } from "../../../dialogs/ManualEntryDialog"
 import { TriggerSignalDialog } from "../../../dialogs/TriggerSignalDialog"
 import { EventSelectionDialog } from "../../../dialogs/EventSelectionDialog"
 import { useManualEntry } from "@/hooks/useManualEntry"
-import { EventInfo, SearchCondition, SearchResult } from "@/types"
-import {
-  TimeOffsetSettings,
-  SelectedDataSourceTable,
-  PeriodPool,
-  SearchResults
-} from "./components"
+import { TimeOffsetSettings } from "./components"
 
 interface DataSourceTabProps {
   selectedDataSourceItems: EventInfo[]
   setSelectedDataSourceItems: React.Dispatch<React.SetStateAction<EventInfo[]>>
 }
 
+// ミニマルな期間アイテム
+function PeriodItem({ 
+  period, 
+  variant = "default",
+  onAction,
+  isDragging = false
+}: {
+  period: EventInfo
+  variant?: "default" | "selected" | "filtered"
+  onAction?: (action: string) => void
+  isDragging?: boolean
+}) {
+  const variantStyles = {
+    default: "hover:bg-accent",
+    selected: "bg-primary/10 border-primary/20",
+    filtered: "bg-orange-50 border-orange-200"
+  }
+
+  return (
+    <div className={cn(
+      "group flex items-center gap-2 p-2 rounded-lg border transition-all cursor-move",
+      variantStyles[variant],
+      isDragging && "opacity-50"
+    )}>
+      <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100" />
+      
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium truncate">{period.label}</span>
+          <div className="flex gap-1">
+            <Badge variant="outline" className="text-xs h-5">
+              {period.plant}
+            </Badge>
+            <Badge variant="secondary" className="text-xs h-5">
+              {period.machineNo}
+            </Badge>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Clock className="h-3 w-3" />
+          <span>
+            {new Date(period.start).toLocaleDateString()} 
+            {' '}
+            {new Date(period.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {' - '}
+            {new Date(period.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+      </div>
+      
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0 opacity-0 group-hover:opacity-100">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => onAction?.('edit')}>
+            <Edit2 className="h-4 w-4 mr-2" />
+            Edit
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onAction?.('duplicate')}>
+            <Layers className="h-4 w-4 mr-2" />
+            Duplicate
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => onAction?.('remove')} className="text-destructive">
+            <Trash2 className="h-4 w-4 mr-2" />
+            Remove
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  )
+}
+
+// セクションヘッダー
+function SectionHeader({ 
+  title, 
+  count, 
+  actions 
+}: { 
+  title: string
+  count?: number
+  actions?: React.ReactNode 
+}) {
+  return (
+    <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-2">
+        <h3 className="font-semibold text-sm">{title}</h3>
+        {count !== undefined && (
+          <Badge variant="secondary" className="h-5 text-xs">
+            {count}
+          </Badge>
+        )}
+      </div>
+      {actions}
+    </div>
+  )
+}
+
+// ドロップゾーン
+function DropZone({ 
+  isActive, 
+  isEmpty, 
+  label 
+}: { 
+  isActive: boolean
+  isEmpty: boolean
+  label: string 
+}) {
+  if (!isEmpty && !isActive) return null
+
+  return (
+    <div className={cn(
+      "border-2 border-dashed rounded-lg p-8 text-center transition-all",
+      isActive ? "border-primary bg-primary/5" : "border-muted-foreground/25",
+      !isEmpty && "absolute inset-0 z-10 bg-background/80"
+    )}>
+      <p className="text-sm text-muted-foreground">{label}</p>
+    </div>
+  )
+}
+
 export function DataSourceTab({
   selectedDataSourceItems,
   setSelectedDataSourceItems,
 }: DataSourceTabProps) {
+  // Dialog states
+  const manualEntry = useManualEntry()
+  const [eventSelectionOpen, setEventSelectionOpen] = useState(false)
+  const [triggerSignalDialogOpen, setTriggerSignalDialogOpen] = useState(false)
+
+  // Available periods (pool)
+  const [availablePeriods, setAvailablePeriods] = useState<EventInfo[]>([])
+  const [filteredPeriods, setFilteredPeriods] = useState<EventInfo[]>([])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [filterActive, setFilterActive] = useState(false)
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [appliedConditions, setAppliedConditions] = useState<SearchCondition[]>([])
+
+  // Time offset states
+  const [startOffset, setStartOffset] = useState(0)
+  const [startOffsetUnit, setStartOffsetUnit] = useState<'min' | 'sec'>('min')
+  const [endOffset, setEndOffset] = useState(0)
+  const [endOffsetUnit, setEndOffsetUnit] = useState<'min' | 'sec'>('min')
+  const [offsetSectionOpen, setOffsetSectionOpen] = useState(false)
+
+  // Event list for EventSelectionDialog
   const [events, setEvents] = useState<EventInfo[]>([
     {
       id: "1",
@@ -58,31 +229,55 @@ export function DataSourceTab({
     },
   ])
 
-  // Period pool state
-  const [periodPool, setPeriodPool] = useState<EventInfo[]>([])
-  const [selectedPoolIds, setSelectedPoolIds] = useState<Set<string>>(new Set())
-  
-  // Search results state
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([])
-  const [selectedResultIds, setSelectedResultIds] = useState<Set<string>>(new Set())
-  const [resultLabels, setResultLabels] = useState<Map<string, string>>(new Map())
-  const [isSearching, setIsSearching] = useState(false)
-  const [appliedConditions, setAppliedConditions] = useState<SearchCondition[]>([])
-  
-  const manualEntry = useManualEntry()
-  const [eventSelectionOpen, setEventSelectionOpen] = useState(false)
-  const [triggerSignalDialogOpen, setTriggerSignalDialogOpen] = useState(false)
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, period: EventInfo, source: string) => {
+    e.dataTransfer.setData("period", JSON.stringify(period))
+    e.dataTransfer.setData("source", source)
+  }
 
-  const [startOffset, setStartOffset] = useState(0)
-  const [startOffsetUnit, setStartOffsetUnit] = useState<'min' | 'sec'>('min')
-  const [endOffset, setEndOffset] = useState(0)
-  const [endOffsetUnit, setEndOffsetUnit] = useState<'min' | 'sec'>('min')
-  const [offsetSectionOpen, setOffsetSectionOpen] = useState(false)
-  
-  // Collapsible states
-  const [periodPoolOpen, setPeriodPoolOpen] = useState(true)
-  const [searchResultsOpen, setSearchResultsOpen] = useState(true)
+  const handleDrop = (e: React.DragEvent, target: string) => {
+    e.preventDefault()
+    const period = JSON.parse(e.dataTransfer.getData("period"))
+    const source = e.dataTransfer.getData("source")
+    
+    if (target === "selected" && source !== "selected") {
+      if (!selectedDataSourceItems.find(item => item.id === period.id)) {
+        setSelectedDataSourceItems([...selectedDataSourceItems, period])
+      }
+    }
+  }
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+  }
+
+  // Action handlers
+  const handleAction = (action: string, period: EventInfo, list: "available" | "filtered" | "selected") => {
+    switch (action) {
+      case "remove":
+        if (list === "available") {
+          setAvailablePeriods(availablePeriods.filter(p => p.id !== period.id))
+        } else if (list === "filtered") {
+          setFilteredPeriods(filteredPeriods.filter(p => p.id !== period.id))
+        } else if (list === "selected") {
+          setSelectedDataSourceItems(selectedDataSourceItems.filter(p => p.id !== period.id))
+        }
+        break
+      case "edit":
+        manualEntry.openForEdit(period)
+        break
+      case "duplicate":
+        const duplicate = { ...period, id: `${period.id}_copy_${Date.now()}` }
+        if (list === "available") {
+          setAvailablePeriods([...availablePeriods, duplicate])
+        } else if (list === "selected") {
+          setSelectedDataSourceItems([...selectedDataSourceItems, duplicate])
+        }
+        break
+    }
+  }
+
+  // Manual entry save handler
   const handleSaveManualEntry = (data: any, editingItemId: string | null) => {
     const processedData = { ...data }
     if (data.legend) {
@@ -97,13 +292,20 @@ export function DataSourceTab({
     }
 
     if (editingItemId) {
-      // Check if editing item from pool or from selected data sources
-      const isInPool = periodPool.some(item => item.id === editingItemId)
+      // Check if editing item from available periods or from selected data sources
+      const isInAvailable = availablePeriods.some(item => item.id === editingItemId)
+      const isInFiltered = filteredPeriods.some(item => item.id === editingItemId)
       const isInDataSource = selectedDataSourceItems.some(item => item.id === editingItemId)
       
-      if (isInPool) {
-        setPeriodPool(
-          periodPool.map((item) =>
+      if (isInAvailable) {
+        setAvailablePeriods(
+          availablePeriods.map((item) =>
+            item.id === editingItemId ? processedData : item
+          )
+        )
+      } else if (isInFiltered) {
+        setFilteredPeriods(
+          filteredPeriods.map((item) =>
             item.id === editingItemId ? processedData : item
           )
         )
@@ -119,230 +321,215 @@ export function DataSourceTab({
         ...processedData,
         id: `manual_${Date.now()}`,
       }
-      setPeriodPool([...periodPool, newEntry])
+      setAvailablePeriods([...availablePeriods, newEntry])
     }
     manualEntry.close()
   }
 
   const handleAddEventsToPool = (eventsToAdd: EventInfo[]) => {
-    const newPool = [...periodPool]
+    const newPeriods = [...availablePeriods]
     eventsToAdd.forEach((event) => {
       // Avoid duplicates
-      if (!newPool.find((p) => p.id === event.id)) {
-        newPool.push(event)
+      if (!newPeriods.find((p) => p.id === event.id)) {
+        newPeriods.push(event)
       }
     })
-    setPeriodPool(newPool)
+    setAvailablePeriods(newPeriods)
   }
 
-  const handleAddToDataSource = () => {
-    const selectedPeriods = periodPool.filter(p => selectedPoolIds.has(p.id))
-    const newItems = [...selectedDataSourceItems]
-    
-    selectedPeriods.forEach((period) => {
-      if (!newItems.find((item) => item.id === period.id)) {
-        newItems.push(period)
-      }
-    })
-    
-    setSelectedDataSourceItems(newItems)
-    // Remove added items from pool
-    setPeriodPool(periodPool.filter(p => !selectedPoolIds.has(p.id)))
-    setSelectedPoolIds(new Set())
+  const handleApplyFilter = () => {
+    setTriggerSignalDialogOpen(true)
   }
 
   const handleApplyConditions = async (conditions: SearchCondition[]) => {
     setAppliedConditions(conditions)
     setIsSearching(true)
+    setFilterActive(true)
     
-    // Get periods to search
-    const periodsToSearch = selectedPoolIds.size > 0 
-      ? periodPool.filter(p => selectedPoolIds.has(p.id))
-      : periodPool
+    // Get periods to search (all available periods)
+    const periodsToSearch = availablePeriods
     
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 1000))
     
-    // Generate mock search results based on selected periods
-    const mockResults: SearchResult[] = []
+    // Generate filtered periods based on conditions
+    const filtered = periodsToSearch.slice(0, Math.max(1, Math.floor(periodsToSearch.length / 2))).map(p => ({
+      ...p,
+      id: `filtered_${p.id}_${Date.now()}`,
+      label: `Filtered: ${p.label}`,
+      labelDescription: `Matched conditions: ${conditions.map(c => `${c.parameter} ${c.operator} ${c.value}`).join(', ')}`
+    }))
     
-    periodsToSearch.forEach((period) => {
-      // Generate 2-3 results per period
-      const resultsCount = 2 + Math.floor(Math.random() * 2)
-      for (let i = 0; i < resultsCount; i++) {
-        const startTime = new Date(period.start)
-        const endTime = new Date(period.end)
-        const timeDiff = endTime.getTime() - startTime.getTime()
-        const randomTime = new Date(startTime.getTime() + Math.random() * timeDiff)
-        
-        mockResults.push({
-          id: `${period.id}_result_${i}`,
-          timestamp: randomTime.toISOString(),
-          plant: period.plant,
-          machineNo: period.machineNo,
-          parameters: { 
-            temperature: 80 + Math.random() * 20, 
-            pressure: 10 + Math.random() * 5, 
-            flow: 40 + Math.random() * 20, 
-            speed: 50 + Math.random() * 20 
-          },
-          matchedConditions: conditions.map(c => `${c.parameter} ${c.operator} ${c.value}`)
-        })
-      }
-    })
-    
-    setSearchResults(mockResults)
+    setFilteredPeriods(filtered)
     setIsSearching(false)
   }
   
-  const handleAddSearchResults = () => {
-    const selectedResults = searchResults.filter(r => selectedResultIds.has(r.id))
-    const eventsToAdd: EventInfo[] = selectedResults.map(result => {
-      const resultLabel = resultLabels.get(result.id) || 'Signal Detection'
-      const duration = 10 // Default 10 minutes
-      const startTime = new Date(result.timestamp)
-      const endTime = new Date(startTime.getTime() + duration * 60 * 1000)
-      
-      return {
-        id: `trigger_${result.id}_${Date.now()}`,
-        plant: result.plant || 'Unknown',
-        machineNo: result.machineNo || 'Unknown',
-        label: resultLabel,
-        labelDescription: 'Detected by filter conditions',
-        event: 'Trigger Event',
-        eventDetail: `Auto-detected at ${result.timestamp}`,
-        start: result.timestamp,
-        end: endTime.toISOString()
-      }
-    })
-    
-    setSelectedDataSourceItems([...selectedDataSourceItems, ...eventsToAdd])
-    // Remove only the added results from search results
-    const remainingResults = searchResults.filter(r => !selectedResultIds.has(r.id))
-    setSearchResults(remainingResults)
-    // Clear labels only for selected results
-    const remainingLabels = new Map(resultLabels)
-    selectedResultIds.forEach(id => remainingLabels.delete(id))
-    setResultLabels(remainingLabels)
-    // Clear selection
-    setSelectedResultIds(new Set())
+  const handleClearFilter = () => {
+    setFilterActive(false)
+    setFilteredPeriods([])
+    setAppliedConditions([])
   }
 
-  const handleTogglePeriod = (periodId: string) => {
-    const newSelectedIds = new Set(selectedPoolIds)
-    if (newSelectedIds.has(periodId)) {
-      newSelectedIds.delete(periodId)
-    } else {
-      newSelectedIds.add(periodId)
-    }
-    setSelectedPoolIds(newSelectedIds)
-  }
-
-  const handleSelectAll = () => {
-    if (selectedPoolIds.size === periodPool.length) {
-      setSelectedPoolIds(new Set())
-    } else {
-      setSelectedPoolIds(new Set(periodPool.map(p => p.id)))
-    }
-  }
-
-  const handleRemoveFromPool = (periodId: string) => {
-    setPeriodPool(periodPool.filter(p => p.id !== periodId))
-    selectedPoolIds.delete(periodId)
-    setSelectedPoolIds(new Set(selectedPoolIds))
-  }
-
-  const handleEditPeriod = (period: EventInfo) => {
-    manualEntry.openForEdit(period)
-  }
-
-  const handleFilterByConditions = () => {
-    setTriggerSignalDialogOpen(true)
-  }
-
-  const handleToggleResult = (resultId: string) => {
-    const newSelected = new Set(selectedResultIds)
-    if (newSelected.has(resultId)) {
-      newSelected.delete(resultId)
-    } else {
-      newSelected.add(resultId)
-    }
-    setSelectedResultIds(newSelected)
-  }
-
-  const handleSelectAllResults = () => {
-    if (selectedResultIds.size === searchResults.length) {
-      setSelectedResultIds(new Set())
-    } else {
-      setSelectedResultIds(new Set(searchResults.map(r => r.id)))
-    }
-  }
-
-  const handleLabelChange = (resultId: string, label: string) => {
-    const newLabels = new Map(resultLabels)
-    newLabels.set(resultId, label)
-    setResultLabels(newLabels)
-  }
-
-  const handleClearResults = () => {
-    setSearchResults([])
-    setSelectedResultIds(new Set())
-    setResultLabels(new Map())
-  }
+  // Filter available periods by search query
+  const displayedAvailablePeriods = availablePeriods.filter(period => {
+    if (!searchQuery) return true
+    const searchLower = searchQuery.toLowerCase()
+    return (
+      period.label.toLowerCase().includes(searchLower) ||
+      period.plant.toLowerCase().includes(searchLower) ||
+      period.machineNo.toLowerCase().includes(searchLower) ||
+      (period.labelDescription?.toLowerCase().includes(searchLower) ?? false)
+    )
+  })
 
   return (
     <>
-      <div className="space-y-4">
-        {/* Period Pool */}
-        <PeriodPool
-          periodPool={periodPool}
-          selectedPoolIds={selectedPoolIds}
-          periodPoolOpen={periodPoolOpen}
-          setPeriodPoolOpen={setPeriodPoolOpen}
-          onManualEntry={manualEntry.openForNew}
-          onEventSelection={() => setEventSelectionOpen(true)}
-          onTogglePeriod={handleTogglePeriod}
-          onSelectAll={handleSelectAll}
-          onRemoveFromPool={handleRemoveFromPool}
-          onEditPeriod={handleEditPeriod}
-          onAddToDataSource={handleAddToDataSource}
-          onFilterByConditions={handleFilterByConditions}
-        />
-        
-        {/* Search Results */}
-        <SearchResults
-          searchResults={searchResults}
-          selectedResultIds={selectedResultIds}
-          resultLabels={resultLabels}
-          searchResultsOpen={searchResultsOpen}
-          setSearchResultsOpen={setSearchResultsOpen}
-          onToggleResult={handleToggleResult}
-          onSelectAllResults={handleSelectAllResults}
-          onLabelChange={handleLabelChange}
-          onAddSearchResults={handleAddSearchResults}
-          onClearResults={handleClearResults}
-        />
+      <div className="h-full flex flex-col gap-4">
+        {/* Available Periods */}
+        <Card className="flex-1 p-4">
+          <SectionHeader 
+            title="Available Periods" 
+            count={availablePeriods.length}
+            actions={
+              <div className="flex gap-2">
+                <Button size="sm" variant="ghost" onClick={manualEntry.openForNew}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setEventSelectionOpen(true)}>
+                  <Calendar className="h-4 w-4" />
+                </Button>
+              </div>
+            }
+          />
+          
+          <div className="relative mb-3">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search periods..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8 h-9"
+            />
+          </div>
+          
+          <ScrollArea className="h-[180px]">
+            <div className="space-y-1 relative">
+              <DropZone 
+                isActive={false} 
+                isEmpty={availablePeriods.length === 0}
+                label="No periods available. Add manual entries or import from events."
+              />
+              {displayedAvailablePeriods.map((period) => (
+                <div
+                  key={period.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, period, "available")}
+                >
+                  <PeriodItem 
+                    period={period} 
+                    onAction={(action) => handleAction(action, period, "available")}
+                  />
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+          
+          <Separator className="my-3" />
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full"
+            onClick={handleApplyFilter}
+            disabled={availablePeriods.length === 0}
+          >
+            <Filter className="h-4 w-4 mr-2" />
+            Apply Signal Filter
+          </Button>
+        </Card>
+
+        {/* Filtered Results */}
+        {filterActive && (
+          <Card className="p-4 border-orange-200 bg-orange-50/50">
+            <SectionHeader 
+              title="Filtered Results" 
+              count={filteredPeriods.length}
+              actions={
+                <Button 
+                  size="sm" 
+                  variant="ghost"
+                  onClick={handleClearFilter}
+                >
+                  Clear
+                </Button>
+              }
+            />
+            
+            <div className="space-y-1">
+              {filteredPeriods.map((period) => (
+                <div
+                  key={period.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, period, "filtered")}
+                >
+                  <PeriodItem 
+                    period={period} 
+                    variant="filtered"
+                    onAction={(action) => handleAction(action, period, "filtered")}
+                  />
+                </div>
+              ))}
+            </div>
+            
+            <div className="flex items-center gap-2 mt-3 text-xs text-orange-700">
+              <AlertCircle className="h-3 w-3" />
+              <span>Signal patterns detected in {filteredPeriods.length} periods</span>
+            </div>
+          </Card>
+        )}
+
+        {/* Visual Separator with Arrow */}
+        <div className="flex items-center justify-center py-2">
+          <ArrowRight className="h-5 w-5 text-muted-foreground" />
+        </div>
 
         {/* Selected Data Sources */}
-        <div className="border rounded-lg p-3 bg-muted/30">
-          <div className="flex justify-between items-center mb-2">
-            <h4 className="text-sm font-medium">Selected Data Sources</h4>
-          </div>
-
-          {selectedDataSourceItems.length > 0 ? (
-            <div className="space-y-3">
-              <SelectedDataSourceTable
-                selectedDataSourceItems={selectedDataSourceItems}
-                onEditItem={(item) => {
-                  manualEntry.openForEdit(item)
-                }}
-                onRemoveItem={(itemId) => {
-                  setSelectedDataSourceItems(
-                    selectedDataSourceItems.filter((i) => i.id !== itemId)
-                  )
-                }}
+        <Card 
+          className="flex-1 p-4 border-primary/20 bg-primary/5"
+          onDrop={(e) => handleDrop(e, "selected")}
+          onDragOver={handleDragOver}
+        >
+          <SectionHeader 
+            title="Selected Data Sources" 
+            count={selectedDataSourceItems.length}
+            actions={
+              selectedDataSourceItems.length > 0 && (
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+              )
+            }
+          />
+          
+          <ScrollArea className="h-[200px]">
+            <div className="space-y-1 relative min-h-[100px]">
+              <DropZone 
+                isActive={false} 
+                isEmpty={selectedDataSourceItems.length === 0}
+                label="Drag periods here to use as data sources"
               />
-
+              {selectedDataSourceItems.map((period) => (
+                <PeriodItem 
+                  key={period.id}
+                  period={period} 
+                  variant="selected"
+                  onAction={(action) => handleAction(action, period, "selected")}
+                />
+              ))}
+            </div>
+          </ScrollArea>
+          
+          {selectedDataSourceItems.length > 0 && (
+            <>
+              <Separator className="my-3" />
               <TimeOffsetSettings
                 startOffset={startOffset}
                 setStartOffset={setStartOffset}
@@ -355,13 +542,9 @@ export function DataSourceTab({
                 offsetSectionOpen={offsetSectionOpen}
                 setOffsetSectionOpen={setOffsetSectionOpen}
               />
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground">
-              No data source items selected. Add periods to the pool and then add them here.
-            </p>
+            </>
           )}
-        </div>
+        </Card>
       </div>
 
       <ManualEntryDialog
@@ -385,9 +568,7 @@ export function DataSourceTab({
         isOpen={triggerSignalDialogOpen}
         onClose={() => setTriggerSignalDialogOpen(false)}
         onApplyConditions={handleApplyConditions}
-        selectedDataSourceItems={selectedPoolIds.size > 0 
-          ? periodPool.filter(p => selectedPoolIds.has(p.id))
-          : periodPool}
+        selectedDataSourceItems={availablePeriods}
       />
     </>
   )
