@@ -60,23 +60,14 @@ export function ReferenceLinesSettings({
   const getDefaultValues = () => {
     const now = new Date()
     let defaultXValue = ""
-    let defaultYValue = "50"
+    let defaultYValue = "50" // Always use midpoint of 0-100 range
 
-    // Calculate default X value based on chart's X-axis settings
-    if ((editingChart.xAxisType || "datetime") === "datetime") {
-      if (editingChart.xAxisRange?.auto === false && editingChart.xAxisRange.min && editingChart.xAxisRange.max) {
-        // Use midpoint of custom range
-        const startTime = new Date(editingChart.xAxisRange.min)
-        const endTime = new Date(editingChart.xAxisRange.max)
-        
-        if (!isNaN(startTime.getTime()) && !isNaN(endTime.getTime())) {
-          const midTime = new Date((startTime.getTime() + endTime.getTime()) / 2)
-          defaultXValue = formatDateTimeForInput(midTime)
-        } else {
-          defaultXValue = formatDateTimeForInput(now)
-        }
-      } else if (selectedDataSourceItems.length > 0) {
-        // Use midpoint of overall data source time range
+    // Calculate default X value based on chart's X-axis type
+    const xAxisType = editingChart.xAxisType || "datetime"
+    
+    if (xAxisType === "datetime") {
+      // If data sources are available and have valid dates, use their midpoint
+      if (selectedDataSourceItems.length > 0) {
         let earliestStart: Date | null = null
         let latestEnd: Date | null = null
 
@@ -98,49 +89,65 @@ export function ReferenceLinesSettings({
         })
         
         if (earliestStart && latestEnd) {
-          try {
-            const midTime = new Date(((earliestStart as Date).getTime() + (latestEnd as Date).getTime()) / 2)
-            if (!isNaN(midTime.getTime())) {
-              defaultXValue = formatDateTimeForInput(midTime)
-            } else {
-              defaultXValue = formatDateTimeForInput(now)
-            }
-          } catch {
-            defaultXValue = formatDateTimeForInput(now)
-          }
+          const midTime = new Date((earliestStart!.getTime() + latestEnd!.getTime()) / 2)
+          defaultXValue = formatDateTimeForInput(midTime)
         } else {
-          defaultXValue = formatDateTimeForInput(now)
+          // Default: midpoint between 1 month ago and now
+          const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+          const midTime = new Date((oneMonthAgo.getTime() + now.getTime()) / 2)
+          defaultXValue = formatDateTimeForInput(midTime)
         }
       } else {
-        // Use current time as default
-        defaultXValue = formatDateTimeForInput(now)
+        // Default: midpoint between 1 month ago and now
+        const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+        const midTime = new Date((oneMonthAgo.getTime() + now.getTime()) / 2)
+        defaultXValue = formatDateTimeForInput(midTime)
       }
+    } else if (xAxisType === "time") {
+      // Time (elapsed): midpoint of 0-30 minutes
+      defaultXValue = "15"
     } else {
-      // For numeric/time axis, use 50 as default midpoint
+      // Parameter: midpoint of 0-100
       defaultXValue = "50"
-    }
-
-    // Calculate default Y value based on first Y parameter range
-    if (editingChart.yAxisParams && editingChart.yAxisParams.length > 0) {
-      const firstParam = editingChart.yAxisParams[0]
-      if (firstParam.range?.auto === false) {
-        const midY = ((firstParam.range.min || 0) + (firstParam.range.max || 100)) / 2
-        defaultYValue = midY.toString()
-      }
     }
 
     return { defaultXValue, defaultYValue }
   }
 
-  const handleAddReferenceLine = () => {
+  const handleAddVerticalLine = () => {
     onOpenChange?.(true)
-    const { defaultXValue, defaultYValue } = getDefaultValues()
+    const { defaultXValue } = getDefaultValues()
     
     const newReferenceLine: ReferenceLineConfig = {
       id: Date.now().toString(),
       type: "vertical",
       label: "",
       xValue: defaultXValue,
+      yValue: "",
+      axisNo: 1,
+      yRange: {
+        auto: true,
+        min: "0",
+        max: "100"
+      },
+      xRange: {
+        auto: true,
+        min: "0",
+        max: "100"
+      }
+    }
+    onUpdateReferenceLines([...referenceLines, newReferenceLine])
+  }
+
+  const handleAddHorizontalLine = () => {
+    onOpenChange?.(true)
+    const { defaultYValue } = getDefaultValues()
+    
+    const newReferenceLine: ReferenceLineConfig = {
+      id: Date.now().toString(),
+      type: "horizontal",
+      label: "",
+      xValue: "",
       yValue: defaultYValue,
       axisNo: 1,
       yRange: {
@@ -162,21 +169,6 @@ export function ReferenceLinesSettings({
       if (line.id !== id) return line
       
       const updatedLine = { ...line, [field]: value }
-      
-      // If type is being changed, set appropriate default values
-      if (field === 'type') {
-        const { defaultXValue, defaultYValue } = getDefaultValues()
-        
-        if (value === 'vertical') {
-          // Switching to vertical - set default X value, clear Y value
-          updatedLine.xValue = defaultXValue
-          updatedLine.yValue = ""
-        } else if (value === 'horizontal') {
-          // Switching to horizontal - set default Y value, clear X value
-          updatedLine.yValue = defaultYValue
-          updatedLine.xValue = ""
-        }
-      }
       
       return updatedLine
     }))
@@ -214,22 +206,34 @@ export function ReferenceLinesSettings({
             {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             <h4 className="font-medium text-sm">Reference Lines Settings</h4>
           </CollapsibleTrigger>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 text-xs ml-auto"
-            onClick={() => {
-              handleAddReferenceLine()
-            }}
-          >
-            Add Reference Line
-          </Button>
+          <div className="flex gap-2 ml-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => {
+                handleAddVerticalLine()
+              }}
+            >
+              Add Vertical Line
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => {
+                handleAddHorizontalLine()
+              }}
+            >
+              Add Horizontal Line
+            </Button>
+          </div>
         </div>
         <CollapsibleContent>
           <div className="px-3 pb-3">
             <div className="pt-3 border-t">
               <div className="flex gap-2 mb-1 px-1 text-xs font-medium text-muted-foreground border-b pb-1 mt-1">
-                <div className="w-20">Type</div>
+                <div className="w-16">Type</div>
                 <div className="flex-1">Label</div>
                 <div className="w-40">Value</div>
                 <div className="w-16">Axis No</div>
@@ -241,15 +245,10 @@ export function ReferenceLinesSettings({
                 <div className="space-y-2">
         {referenceLines.map((line) => (
           <div key={line.id} className="flex gap-2 p-1">
-            <div className="w-24">
-              <select
-                value={line.type}
-                onChange={(e) => handleUpdateReferenceLine(line.id, "type", e.target.value)}
-                className="w-full h-7 px-2 py-1 border rounded-md text-xs"
-              >
-                <option value="vertical">Vertical</option>
-                <option value="horizontal">Horizontal</option>
-              </select>
+            <div className="w-16">
+              <div className="h-7 px-2 py-1 text-xs flex items-center">
+                {line.type === "vertical" ? "V" : "H"}
+              </div>
             </div>
             <div className="flex-1">
               <Input
@@ -440,7 +439,7 @@ export function ReferenceLinesSettings({
                   {referenceLines.length === 0 && (
                     <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
                       <p className="text-sm">No reference lines added yet.</p>
-                      <p className="text-sm">Click "Add Reference Line" to create one.</p>
+                      <p className="text-sm">Click "Add Vertical Line" or "Add Horizontal Line" to create one.</p>
                     </div>
                   )}
                 </div>
