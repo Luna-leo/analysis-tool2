@@ -297,10 +297,12 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
                     .attr("y", newY)
                 })
                 .on("end", function(event) {
-                  // Calculate offset from line position
-                  const lineX = xScale(line.type === "vertical" && editingChartRef.current.xAxisType === "datetime" 
-                    ? new Date(line.value as string)
-                    : (line.value as number))
+                  // Get the current line position from DOM
+                  const parentGroup = d3.select(this.parentNode as SVGGElement)
+                  const mainLine = parentGroup.select(".main-line")
+                  const lineX = parseFloat(mainLine.attr("x1"))
+                  
+                  // Calculate offset from actual line position
                   const offsetX = event.x - lineX
                   const offsetY = event.y
                   
@@ -511,8 +513,12 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
                     .attr("y", newY)
                 })
                 .on("end", function(event) {
-                  // Calculate offset from line position
-                  const lineY = yScale(line.value as number)
+                  // Get the current line position from DOM
+                  const parentGroup = d3.select(this.parentNode as SVGGElement)
+                  const mainLine = parentGroup.select(".main-line")
+                  const lineY = parseFloat(mainLine.attr("y1"))
+                  
+                  // Calculate offset from actual line position
                   const offsetX = event.x
                   const offsetY = event.y - lineY
                   

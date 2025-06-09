@@ -68,28 +68,25 @@ export function ReferenceLinesSettings({
     if (xAxisType === "datetime") {
       // If data sources are available and have valid dates, use their midpoint
       if (selectedDataSourceItems.length > 0) {
-        let earliestStart: Date | null = null
-        let latestEnd: Date | null = null
+        const validDates: Date[] = []
 
         selectedDataSourceItems.forEach(dataSource => {
           const startTime = new Date(dataSource.start)
           const endTime = new Date(dataSource.end)
 
           if (!isNaN(startTime.getTime())) {
-            if (!earliestStart || startTime < earliestStart) {
-              earliestStart = startTime
-            }
+            validDates.push(startTime)
           }
-
           if (!isNaN(endTime.getTime())) {
-            if (!latestEnd || endTime > latestEnd) {
-              latestEnd = endTime
-            }
+            validDates.push(endTime)
           }
         })
         
-        if (earliestStart && latestEnd) {
-          const midTime = new Date((earliestStart!.getTime() + latestEnd!.getTime()) / 2)
+        if (validDates.length >= 2) {
+          const sortedDates = validDates.sort((a, b) => a.getTime() - b.getTime())
+          const earliestStart = sortedDates[0]
+          const latestEnd = sortedDates[sortedDates.length - 1]
+          const midTime = new Date((earliestStart.getTime() + latestEnd.getTime()) / 2)
           defaultXValue = formatDateTimeForInput(midTime)
         } else {
           // Default: midpoint between 1 month ago and now
