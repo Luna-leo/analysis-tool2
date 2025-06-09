@@ -121,6 +121,9 @@ export interface ChartComponent {
     interlockSource?: "master" | "custom"
     interlockDefinition?: InterlockDefinition
     selectedThresholds?: string[]
+    // For Formula type
+    formulaId?: string
+    formulaDefinition?: any // Using any temporarily to avoid circular dependency
   }>
 }
 

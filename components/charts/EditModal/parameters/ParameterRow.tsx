@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { X, Plus, ChevronDown, Copy, Edit2 } from "lucide-react"
 import { ChartComponent } from "@/types"
 import { mockInterlockMaster } from "@/data/interlockMaster"
+import { mockFormulaMaster, FormulaMaster } from "@/data/formulaMaster"
 
 interface ParameterRowProps {
   index: number
@@ -22,7 +23,9 @@ interface ParameterRowProps {
   searchQuery: string
   setSearchQuery: (query: string) => void
   handleParameterTypeChange: (index: number, newType: "Parameter" | "Formula" | "Interlock") => void
+  handleFormulaSelect: (index: number, value: string, mode?: "select" | "edit" | "duplicate") => void
   handleInterlockSelect: (index: number, value: string, mode?: "select" | "edit" | "duplicate") => void
+  filterFormulas: (formulas: FormulaMaster[]) => FormulaMaster[]
   filterInterlocks: (interlocks: typeof mockInterlockMaster) => typeof mockInterlockMaster
   handleThresholdRemove: (paramIndex: number, thresholdId: string) => void
   handleThresholdAdd: (paramIndex: number, thresholdId: string) => void
@@ -39,7 +42,9 @@ export function ParameterRow({
   searchQuery,
   setSearchQuery,
   handleParameterTypeChange,
+  handleFormulaSelect,
   handleInterlockSelect,
+  filterFormulas,
   filterInterlocks,
   handleThresholdRemove,
   handleThresholdAdd,
@@ -67,7 +72,103 @@ export function ParameterRow({
 
       <div className="flex-1">
         <div className="space-y-1">
-          {param.parameterType === "Interlock" ? (
+          {param.parameterType === "Formula" ? (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="w-full">
+                    <Popover
+                      open={openComboboxIndex === index}
+                      onOpenChange={(open) => {
+                        setOpenComboboxIndex(open ? index : null)
+                        setSearchQuery("")
+                      }}
+                    >
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" role="combobox" className="h-7 w-full justify-start text-sm font-normal min-w-0">
+                          <span className="truncate text-left mr-auto">
+                            {param.parameter || "Select Formula"}
+                          </span>
+                          <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0 ml-2" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[350px] p-0">
+                        <Command shouldFilter={false}>
+                          <CommandInput
+                            placeholder="Search formulas..."
+                            value={searchQuery}
+                            onValueChange={setSearchQuery}
+                          />
+                          <CommandEmpty>No formula found.</CommandEmpty>
+                          <div className="max-h-[300px] overflow-y-auto">
+                            <CommandGroup>
+                              {filterFormulas(mockFormulaMaster).map((formula) => (
+                                <CommandItem
+                                  key={formula.id}
+                                  value={formula.id}
+                                  onSelect={() => handleFormulaSelect(index, formula.id)}
+                                  className="flex items-center justify-between group"
+                                >
+                                  <div className="flex flex-col items-start flex-1">
+                                    <span className="font-medium text-left">{formula.name}</span>
+                                    <span className="text-xs text-muted-foreground text-left">
+                                      {formula.category} • {formula.expression}
+                                    </span>
+                                    {formula.description && (
+                                      <span className="text-xs text-muted-foreground text-left italic">
+                                        {formula.description}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleFormulaSelect(index, formula.id, "edit")
+                                      }}
+                                      title="Edit formula"
+                                    >
+                                      <Edit2 className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleFormulaSelect(index, formula.id, "duplicate")
+                                      }}
+                                      title="Duplicate formula"
+                                    >
+                                      <Copy className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </CommandItem>
+                              ))}
+                              <CommandItem
+                                value="add-new"
+                                onSelect={() => handleFormulaSelect(index, "add-new")}
+                                className="border-t mt-1 pt-2"
+                              >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add New Formula
+                              </CommandItem>
+                            </CommandGroup>
+                          </div>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Select a formula from the library</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : param.parameterType === "Interlock" ? (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -95,7 +196,8 @@ export function ParameterRow({
                             onValueChange={setSearchQuery}
                           />
                           <CommandEmpty>No interlock found.</CommandEmpty>
-                          <CommandGroup>
+                          <div className="max-h-[300px] overflow-y-auto">
+                            <CommandGroup>
                             {filterInterlocks(mockInterlockMaster).map((master) => (
                               <CommandItem
                                 key={master.id}
@@ -137,15 +239,16 @@ export function ParameterRow({
                                 </div>
                               </CommandItem>
                             ))}
-                            <CommandItem
-                              value="add-new"
-                              onSelect={() => handleInterlockSelect(index, "add-new")}
-                              className="border-t"
-                            >
-                              <Plus className="mr-2 h-4 w-4" />
-                              <span>Add new interlock...</span>
-                            </CommandItem>
-                          </CommandGroup>
+                              <CommandItem
+                                value="add-new"
+                                onSelect={() => handleInterlockSelect(index, "add-new")}
+                                className="border-t"
+                              >
+                                <Plus className="mr-2 h-4 w-4" />
+                                <span>Add new interlock...</span>
+                              </CommandItem>
+                            </CommandGroup>
+                          </div>
                         </Command>
                       </PopoverContent>
                     </Popover>

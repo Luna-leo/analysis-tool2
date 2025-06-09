@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, ChevronDown, ChevronRight, Trash2 } from "lucide-react"
 import { ChartComponent } from "@/types"
 import { mockInterlockMaster } from "@/data/interlockMaster"
+import { FormulaMaster } from "@/data/formulaMaster"
 import { ParameterRow } from "./ParameterRow"
 
 interface YAxisGroupProps {
@@ -35,7 +36,9 @@ interface YAxisGroupProps {
   searchQuery: string
   setSearchQuery: (query: string) => void
   handleParameterTypeChange: (index: number, newType: "Parameter" | "Formula" | "Interlock") => void
+  handleFormulaSelect: (index: number, value: string, mode?: "select" | "edit" | "duplicate") => void
   handleInterlockSelect: (index: number, value: string, mode?: "select" | "edit" | "duplicate") => void
+  filterFormulas: (formulas: FormulaMaster[]) => FormulaMaster[]
   filterInterlocks: (interlocks: typeof mockInterlockMaster) => typeof mockInterlockMaster
   handleThresholdRemove: (paramIndex: number, thresholdId: string) => void
   handleThresholdAdd: (paramIndex: number, thresholdId: string) => void
@@ -61,7 +64,9 @@ export function YAxisGroup({
   searchQuery,
   setSearchQuery,
   handleParameterTypeChange,
+  handleFormulaSelect,
   handleInterlockSelect,
+  filterFormulas,
   filterInterlocks,
   handleThresholdRemove,
   handleThresholdAdd,
@@ -210,7 +215,9 @@ export function YAxisGroup({
                     searchQuery={searchQuery}
                     setSearchQuery={setSearchQuery}
                     handleParameterTypeChange={handleParameterTypeChange}
+                    handleFormulaSelect={handleFormulaSelect}
                     handleInterlockSelect={handleInterlockSelect}
+                    filterFormulas={filterFormulas}
                     filterInterlocks={filterInterlocks}
                     handleThresholdRemove={handleThresholdRemove}
                     handleThresholdAdd={handleThresholdAdd}

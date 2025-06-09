@@ -15,7 +15,9 @@ import { X, Plus, ChevronDown, ChevronRight, Copy, Edit2 } from "lucide-react"
 import { YAxisGroup } from "./YAxisGroup"
 import { ChartComponent, InterlockDefinition } from "@/types"
 import { mockInterlockMaster } from "@/data/interlockMaster"
+import { mockFormulaMaster, FormulaMaster } from "@/data/formulaMaster"
 import { InterlockRegistrationDialog } from "./InterlockRegistrationDialog"
+import { FormulaRegistrationDialog } from "./FormulaRegistrationDialog"
 
 interface YParametersSettingsProps {
   editingChart: ChartComponent
@@ -32,6 +34,9 @@ export function YParametersSettings({ editingChart, setEditingChart, isReference
   const [openComboboxIndex, setOpenComboboxIndex] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [interlockMode, setInterlockMode] = useState<"create" | "edit" | "duplicate">("create")
+  const [showFormulaDialog, setShowFormulaDialog] = useState(false)
+  const [editingFormulaIndex, setEditingFormulaIndex] = useState<number | null>(null)
+  const [formulaMode, setFormulaMode] = useState<"create" | "edit" | "duplicate">("create")
   const parameterInputRefs = useRef<(HTMLInputElement | null)[]>([])
   const parameterTypeSelectRefs = useRef<(HTMLSelectElement | null)[]>([])
   const axisLabelInputRefs = useRef<Record<number, HTMLInputElement | null>>({})
@@ -85,6 +90,32 @@ export function YParametersSettings({ editingChart, setEditingChart, isReference
     }
   }, [lastAddedAxisNo, editingChart?.yAxisParams?.length])
 
+  const handleFormulaSave = (formula: FormulaMaster) => {
+    if (editingFormulaIndex !== null) {
+      const newParams = [...(editingChart.yAxisParams || [])]
+      newParams[editingFormulaIndex] = {
+        ...newParams[editingFormulaIndex],
+        parameter: formula.name,
+        formulaId: formula.id,
+        formulaDefinition: formula
+      }
+      setEditingChart({ ...editingChart, yAxisParams: newParams })
+      
+      // In a real app, you would also save the formula to the backend here
+      // For now, we'll just add it to the mockFormulaMaster if it's new
+      if (!mockFormulaMaster.find(f => f.id === formula.id)) {
+        mockFormulaMaster.push(formula)
+      } else {
+        // Update existing formula
+        const index = mockFormulaMaster.findIndex(f => f.id === formula.id)
+        if (index >= 0) {
+          mockFormulaMaster[index] = formula
+        }
+      }
+    }
+    setEditingFormulaIndex(null)
+  }
+
   const handleInterlockSave = (interlockDefinition: InterlockDefinition, selectedThresholds: string[], _plant: string, _machineNo: string) => {
     if (editingInterlockIndex !== null) {
       const newParams = [...(editingChart.yAxisParams || [])]
@@ -111,15 +142,55 @@ export function YParametersSettings({ editingChart, setEditingChart, isReference
       parameterType: newType,
       parameter: "", // Clear parameter
       axisNo: 1, // Reset axis number to default
-      // Reset interlock-specific fields when changing away from Interlock
+      // Reset type-specific fields
       ...(newType !== "Interlock" && {
         interlockId: undefined,
         interlockSource: undefined,
         interlockDefinition: undefined,
         selectedThresholds: undefined
+      }),
+      ...(newType !== "Formula" && {
+        formulaId: undefined,
+        formulaDefinition: undefined
       })
     }
     setEditingChart({ ...editingChart, yAxisParams: newParams })
+  }
+
+  const handleFormulaSelect = (index: number, value: string, mode: "select" | "edit" | "duplicate" = "select") => {
+    setOpenComboboxIndex(null)
+    setSearchQuery("")
+    
+    if (value === "add-new") {
+      setEditingFormulaIndex(index)
+      setFormulaMode("create")
+      setShowFormulaDialog(true)
+      return
+    }
+
+    const selectedFormula = mockFormulaMaster.find(f => f.id === value)
+    if (selectedFormula) {
+      if (mode === "edit" || mode === "duplicate") {
+        setEditingFormulaIndex(index)
+        setFormulaMode(mode)
+        const newParams = [...(editingChart.yAxisParams || [])]
+        newParams[index] = {
+          ...newParams[index],
+          formulaDefinition: selectedFormula
+        }
+        setEditingChart({ ...editingChart, yAxisParams: newParams })
+        setShowFormulaDialog(true)
+      } else {
+        const newParams = [...(editingChart.yAxisParams || [])]
+        newParams[index] = {
+          ...newParams[index],
+          parameter: selectedFormula.name,
+          formulaId: value,
+          formulaDefinition: selectedFormula
+        }
+        setEditingChart({ ...editingChart, yAxisParams: newParams })
+      }
+    }
   }
 
   const handleInterlockSelect = (index: number, value: string, mode: "select" | "edit" | "duplicate" = "select") => {
@@ -183,6 +254,25 @@ export function YParametersSettings({ editingChart, setEditingChart, isReference
         setEditingChart({ ...editingChart, yAxisParams: newParams })
       }
     }
+  }
+
+  const filterFormulas = (formulas: FormulaMaster[]) => {
+    const query = searchQuery.trim().toLowerCase()
+    if (!query) return formulas
+
+    return formulas.filter(formula => {
+      const searchableText = [
+        formula.name,
+        formula.description,
+        formula.category,
+        formula.expression
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+
+      return searchableText.includes(query)
+    })
   }
 
   const filterInterlocks = (interlocks: typeof mockInterlockMaster) => {
@@ -395,7 +485,9 @@ export function YParametersSettings({ editingChart, setEditingChart, isReference
                         searchQuery={searchQuery}
                         setSearchQuery={setSearchQuery}
                         handleParameterTypeChange={handleParameterTypeChange}
+                        handleFormulaSelect={handleFormulaSelect}
                         handleInterlockSelect={handleInterlockSelect}
+                        filterFormulas={filterFormulas}
                         filterInterlocks={filterInterlocks}
                         handleThresholdRemove={handleThresholdRemove}
                         handleThresholdAdd={handleThresholdAdd}
@@ -429,6 +521,23 @@ export function YParametersSettings({ editingChart, setEditingChart, isReference
         initialSelectedThresholds={
           editingInterlockIndex !== null && interlockMode !== "create"
             ? editingChart.yAxisParams?.[editingInterlockIndex]?.selectedThresholds 
+            : undefined
+        }
+      />
+
+      <FormulaRegistrationDialog
+        open={showFormulaDialog}
+        onOpenChange={(open) => {
+          setShowFormulaDialog(open)
+          if (!open) {
+            setFormulaMode("create")
+          }
+        }}
+        onSave={handleFormulaSave}
+        mode={formulaMode}
+        initialFormula={
+          editingFormulaIndex !== null && formulaMode !== "create"
+            ? editingChart.yAxisParams?.[editingFormulaIndex]?.formulaDefinition
             : undefined
         }
       />
