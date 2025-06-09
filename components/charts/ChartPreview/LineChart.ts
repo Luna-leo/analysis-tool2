@@ -193,27 +193,48 @@ export const renderLineChart = ({ g, data, width, height, editingChart, scalesRe
   // Group parameters by axis for separate Y scales
   const groupedByAxis: Record<number, typeof yParams> = {}
   yParams.forEach(param => {
-    const axisNo = param.axisNo || 1
-    if (!groupedByAxis[axisNo]) groupedByAxis[axisNo] = []
-    groupedByAxis[axisNo].push(param)
+    // Only include parameters that have a non-empty parameter name
+    if (param.parameter && param.parameter.trim() !== '') {
+      const axisNo = param.axisNo || 1
+      if (!groupedByAxis[axisNo]) groupedByAxis[axisNo] = []
+      groupedByAxis[axisNo].push(param)
+    }
   })
 
   // Use first axis for primary Y scale (for simplicity in preview)
   const firstAxisParams = Object.values(groupedByAxis)[0] || []
   let yDomain: [number, number]
   
-  if (firstAxisParams.length > 0 && firstAxisParams[0].range?.auto === false) {
+  if (firstAxisParams.length === 0) {
+    // No Y parameters set or all parameters are empty - use default range 0-100
+    yDomain = [0, 100]
+  } else if (firstAxisParams[0].range?.auto === false) {
     yDomain = [firstAxisParams[0].range.min || 0, firstAxisParams[0].range.max || 100]
   } else {
     const allValues = data.flatMap(d => firstAxisParams.map(p => d[p.parameter] || 0))
-    const extent = d3.extent(allValues)
-    yDomain = extent[0] !== undefined && extent[1] !== undefined ? [extent[0], extent[1]] : [0, 100]
+    if (allValues.length === 0) {
+      // No data values - use default range 0-100
+      yDomain = [0, 100]
+    } else {
+      const extent = d3.extent(allValues)
+      yDomain = extent[0] !== undefined && extent[1] !== undefined ? [extent[0], extent[1]] : [0, 100]
+    }
   }
   
   const yScale = d3.scaleLinear()
     .domain(yDomain)
-    .nice()
     .range([height, 0])
+  
+  // Only apply nice() if we have actual data values, not default range
+  if (firstAxisParams.length > 0 && firstAxisParams[0].range?.auto !== false) {
+    const validParams = firstAxisParams.filter(p => p.parameter && p.parameter.trim() !== '')
+    if (validParams.length > 0) {
+      const allValues = data.flatMap(d => validParams.map(p => d[p.parameter] || 0))
+      if (allValues.length > 0) {
+        yScale.nice()
+      }
+    }
+  }
 
   const timeFormat = getTimeFormat(xDomain[0], xDomain[1])
   g.append("g")
@@ -226,6 +247,11 @@ export const renderLineChart = ({ g, data, width, height, editingChart, scalesRe
     .call(d3.axisLeft(yScale))
 
   yParams.forEach((param, index) => {
+    // Skip parameters with empty names
+    if (!param.parameter || param.parameter.trim() === '') {
+      return
+    }
+    
     const lineColor = param.line?.color || d3.schemeCategory10[index % 10]
     const showLine = param.line?.width !== undefined && param.line.width > 0
     const showMarker = param.marker !== undefined

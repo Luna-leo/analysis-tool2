@@ -40,22 +40,19 @@ export function ParametersTab({ editingChart, setEditingChart, selectedDataSourc
   // Update referenceLineConfigs when editingChart.referenceLines changes
   React.useEffect(() => {
     const newConfigs = (editingChart.referenceLines || []).map(line => {
-      // Find existing config to preserve range settings
-      const existingConfig = referenceLineConfigs.find(config => config.id === line.id)
-      
       return {
         id: line.id,
         type: line.type === "vertical" ? "vertical" as const : "horizontal" as const,
         label: line.label,
         xValue: line.type === "vertical" ? (typeof line.value === 'string' ? line.value : line.value?.toString()) : undefined,
         yValue: line.type === "horizontal" ? line.value?.toString() : undefined,
-        axisNo: existingConfig?.axisNo || 1,
-        yRange: existingConfig?.yRange || {
+        axisNo: 1,
+        yRange: {
           auto: true,
           min: "0",
           max: "100"
         },
-        xRange: existingConfig?.xRange || {
+        xRange: {
           auto: true,
           min: "0",
           max: "100"
@@ -65,7 +62,7 @@ export function ParametersTab({ editingChart, setEditingChart, selectedDataSourc
       }
     })
     setReferenceLineConfigs(newConfigs)
-  }, [editingChart.referenceLines?.length])
+  }, [editingChart.referenceLines])
 
   const handleUpdateReferenceLines = (lines: ReferenceLineConfig[]) => {
     // Update local state first
@@ -78,13 +75,17 @@ export function ParametersTab({ editingChart, setEditingChart, selectedDataSourc
       if (line.type === "vertical") {
         // For vertical lines, check if it's datetime or numeric
         if ((editingChart.xAxisType || "datetime") === "datetime") {
-          value = line.xValue || ""  // Keep as string for datetime
+          // Only set value if xValue is not empty
+          value = line.xValue || ""
         } else {
-          value = parseFloat(line.xValue || "0")
+          // For numeric values, ensure we have a valid number
+          const numValue = parseFloat(line.xValue || "0")
+          value = isNaN(numValue) ? 0 : numValue
         }
       } else {
         // For horizontal lines, always numeric
-        value = parseFloat(line.yValue || "0")
+        const numValue = parseFloat(line.yValue || "0")
+        value = isNaN(numValue) ? 0 : numValue
       }
       
       return {

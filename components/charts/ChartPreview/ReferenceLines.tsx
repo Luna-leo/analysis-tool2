@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useRef, useCallback } from "react"
+import React, { useEffect, useRef } from "react"
 import * as d3 from "d3"
 import { ChartComponent } from "@/types"
 
@@ -17,20 +17,16 @@ interface ReferenceLinesProps {
 export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRef }: ReferenceLinesProps) {
   const [draggingLine, setDraggingLine] = React.useState<{ id: string; type: 'vertical' | 'horizontal' } | null>(null)
   const [hoveredLine, setHoveredLine] = React.useState<string | null>(null)
-  const isUpdatingRef = useRef(false)
   const dragPositionRef = useRef<{ [key: string]: number }>({})
+  const isDraggingRef = useRef<boolean>(false)
+  
+  // Keep a ref to the current editingChart to avoid closure issues
+  const editingChartRef = useRef<ChartComponent>(editingChart)
+  
+  useEffect(() => {
+    editingChartRef.current = editingChart
+  }, [editingChart])
 
-  const updateReferenceLine = useCallback((lineId: string, newValue: number | string) => {
-    if (!setEditingChart) return
-    
-    const updatedChart: ChartComponent = {
-      ...editingChart,
-      referenceLines: (editingChart.referenceLines || []).map((line) => 
-        line.id === lineId ? { ...line, value: newValue } : line
-      )
-    }
-    setEditingChart(updatedChart)
-  }, [setEditingChart, editingChart])
 
   useEffect(() => {
     if (!svgRef.current || !scalesRef.current.xScale || !scalesRef.current.yScale) return
@@ -52,19 +48,18 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
     // Always bring reference lines layer to front
     refLinesLayer.raise()
 
-    // Skip drawing if we're in the middle of updating
-    if (!isUpdatingRef.current) {
-      drawReferenceLines(
-        refLinesLayer,
-        scalesRef.current.xScale,
-        scalesRef.current.yScale,
-        width,
-        height
-      )
-    }
+    // Always draw reference lines
+    drawReferenceLines(
+      refLinesLayer,
+      scalesRef.current.xScale,
+      scalesRef.current.yScale,
+      width,
+      height
+    )
   }, [
-    // Use JSON.stringify to ensure stable dependency
-    JSON.stringify(editingChart.referenceLines || []),
+    // Use specific properties to avoid unnecessary re-renders
+    editingChart.referenceLines,
+    editingChart.xAxisType,
     hoveredLine,
     draggingLine,
     svgRef,
@@ -78,7 +73,7 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
     width: number, 
     height: number
   ) => {
-    const referenceLines = editingChart.referenceLines || []
+    const referenceLines = editingChartRef.current.referenceLines || []
     const isInteractive = !!setEditingChart
     
     // Data join with existing elements
@@ -109,11 +104,16 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
         // Vertical reference line
         let xPos: number
         
-        // Use drag position if we're dragging this line
-        if (isDragging && dragPositionRef.current[line.id] !== undefined) {
+        // Use drag position only if this specific line is currently being dragged
+        if (draggingLine?.id === line.id && dragPositionRef.current[line.id] !== undefined) {
           xPos = dragPositionRef.current[line.id]
         } else {
-          if ((editingChart.xAxisType || "datetime") === "datetime") {
+          if ((editingChartRef.current.xAxisType || "datetime") === "datetime") {
+            // Skip empty string values
+            if (!line.value || line.value === "") {
+              console.warn('Empty date value for vertical reference line')
+              return
+            }
             const date = new Date(line.value)
             if (!isNaN(date.getTime())) {
               xPos = xScale(date)
@@ -121,18 +121,26 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
               console.warn('Invalid date for vertical reference line:', line.value)
               return
             }
-          } else if ((editingChart.xAxisType || "datetime") === "time") {
+          } else if ((editingChartRef.current.xAxisType || "datetime") === "time") {
             // For time axis, value should be in minutes
             const minutes = typeof line.value === 'number' ? line.value : parseFloat(line.value)
+            if (isNaN(minutes)) {
+              console.warn('Invalid time value for vertical reference line:', line.value)
+              return
+            }
             xPos = (xScale as d3.ScaleLinear<number, number>)(minutes)
           } else {
             // For parameter axis, value should be 0-100
             const paramValue = typeof line.value === 'number' ? line.value : parseFloat(line.value)
+            if (isNaN(paramValue)) {
+              console.warn('Invalid parameter value for vertical reference line:', line.value)
+              return
+            }
             xPos = (xScale as d3.ScaleLinear<number, number>)(paramValue)
           }
         }
         
-        if (xPos >= 0 && xPos <= width) {
+        if (!isNaN(xPos) && xPos >= 0 && xPos <= width) {
           // Update or create main line
           let mainLine = group.select<SVGLineElement>(".main-line")
           if (mainLine.empty()) {
@@ -153,89 +161,86 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
           // Update or create interactive area
           if (isInteractive) {
             let interactiveLine = group.select<SVGLineElement>(".interactive-line")
-            if (interactiveLine.empty()) {
-              // Create drag behavior
-              const drag = d3.drag<SVGLineElement, unknown>()
-                .on("start", () => {
-                  setHoveredLine(line.id)
-                  setDraggingLine({ id: line.id, type: "vertical" })
-                })
-                .on("drag", (event) => {
-                  const clampedX = Math.max(0, Math.min(width, event.x))
+            
+            // Create drag behavior with proper context
+            const currentLineId = line.id
+            const drag = d3.drag<SVGLineElement, any>()
+              .on("start", function() {
+                setHoveredLine(currentLineId)
+                setDraggingLine({ id: currentLineId, type: "vertical" })
+                isDraggingRef.current = true
+              })
+              .on("drag", function(event) {
+                const clampedX = Math.max(0, Math.min(width, event.x))
+                
+                // Store drag position
+                dragPositionRef.current[currentLineId] = clampedX
+                
+                // Update visual elements directly without re-render
+                const currentGroup = d3.select(this.parentNode as SVGGElement)
+                currentGroup.select(".main-line")
+                  .attr("x1", clampedX)
+                  .attr("x2", clampedX)
+                currentGroup.select(".interactive-line")
+                  .attr("x1", clampedX)
+                  .attr("x2", clampedX)
+                currentGroup.select(".line-label")
+                  .attr("x", clampedX + 3)
+              })
+              .on("end", function(event) {
+                const clampedX = Math.max(0, Math.min(width, event.x))
+                
+                let newValue: string | number
+                if ((editingChartRef.current.xAxisType || "datetime") === "datetime") {
+                  const newDate = (xScale as d3.ScaleTime<number, number>).invert(clampedX)
+                  newValue = newDate.toISOString().slice(0, 19)
+                } else {
+                  // For time or parameter axis
+                  const numValue = (xScale as d3.ScaleLinear<number, number>).invert(clampedX)
+                  newValue = Math.round(numValue)
+                }
+                
+                // Clear dragging state
+                setDraggingLine(null)
+                setHoveredLine(null)
+                isDraggingRef.current = false
+                
+                // Update the data model with the current chart state
+                if (setEditingChart) {
+                  // Get the current reference lines from the ref to ensure we have the latest state
+                  const currentChart = editingChartRef.current
+                  const updatedReferenceLines = (currentChart.referenceLines || []).map((refLine) => 
+                    refLine.id === currentLineId ? { ...refLine, value: newValue } : refLine
+                  )
                   
-                  // Store drag position
-                  dragPositionRef.current[line.id] = clampedX
-                  
-                  // Update all elements in the group visually
-                  const parent = d3.select(event.sourceEvent.target.parentNode as SVGGElement)
-                  parent.select(".main-line")
-                    .attr("x1", clampedX)
-                    .attr("x2", clampedX)
-                  
-                  parent.select(".interactive-line")
-                    .attr("x1", clampedX)
-                    .attr("x2", clampedX)
-                  
-                  parent.select(".line-label")
-                    .attr("x", clampedX + 3)
-                  
-                  parent.select(".line-handle")
-                    .attr("cx", clampedX)
-                })
-                .on("end", (event) => {
-                  const clampedX = Math.max(0, Math.min(width, event.x))
-                  
-                  let newValue: string | number
-                  if ((editingChart.xAxisType || "datetime") === "datetime") {
-                    const newDate = (xScale as d3.ScaleTime<number, number>).invert(clampedX)
-                    newValue = newDate.toISOString().slice(0, 19)
-                  } else {
-                    // For time or parameter axis
-                    const numValue = (xScale as d3.ScaleLinear<number, number>).invert(clampedX)
-                    newValue = Math.round(numValue)
-                  }
-                  
-                  // Keep visual position at dragged location
-                  const parent = d3.select(event.sourceEvent.target.parentNode as SVGGElement)
-                  parent.select(".main-line")
-                    .attr("x1", clampedX)
-                    .attr("x2", clampedX)
-                  parent.select(".interactive-line")
-                    .attr("x1", clampedX)
-                    .attr("x2", clampedX)
-                  parent.select(".line-label")
-                    .attr("x", clampedX + 3)
-                  parent.select(".line-handle")
-                    .attr("cx", clampedX)
-                  
-                  // Clear dragging state
-                  setDraggingLine(null)
-                  setHoveredLine(null)
-                  
-                  // Clear drag position
-                  delete dragPositionRef.current[line.id]
-                  
-                  // Update the data model after a frame to allow visual update to settle
-                  requestAnimationFrame(() => {
-                    isUpdatingRef.current = true
-                    updateReferenceLine(line.id, newValue)
-                    
-                    // Reset flag after state update completes
-                    requestAnimationFrame(() => {
-                      isUpdatingRef.current = false
-                    })
+                  setEditingChart({
+                    ...currentChart,
+                    referenceLines: updatedReferenceLines
                   })
-                })
-
+                  
+                  // Clear drag position after a small delay to ensure the update has been processed
+                  setTimeout(() => {
+                    delete dragPositionRef.current[currentLineId]
+                  }, 100)
+                }
+              })
+            
+            if (interactiveLine.empty()) {
               interactiveLine = group.append("line")
                 .attr("class", "interactive-line")
                 .attr("stroke", "transparent")
                 .attr("stroke-width", 10)
                 .style("cursor", "ew-resize")
-                .on("mouseenter", () => setHoveredLine(line.id))
-                .on("mouseleave", () => setHoveredLine(null))
-                .call(drag)
+                .on("mouseenter", () => setHoveredLine(currentLineId))
+                .on("mouseleave", () => {
+                  if (!draggingLine || draggingLine.id !== currentLineId) {
+                    setHoveredLine(null)
+                  }
+                })
             }
+            
+            // Always re-apply drag behavior to ensure it's properly bound
+            interactiveLine.call(drag)
             
             interactiveLine
               .attr("x1", xPos)
@@ -264,39 +269,26 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
             group.select(".line-label").remove()
           }
           
-          // Update or create handle
-          if (isInteractive && (isHovered || isDragging)) {
-            let handle = group.select<SVGCircleElement>(".line-handle")
-            if (handle.empty()) {
-              handle = group.append("circle")
-                .attr("class", "line-handle")
-                .attr("r", 4)
-                .attr("stroke", "white")
-                .attr("stroke-width", 2)
-                .style("cursor", "ew-resize")
-            }
-            handle
-              .attr("cx", xPos)
-              .attr("cy", height / 2)
-              .attr("fill", color)
-              .raise() // Bring to front
-          } else {
-            group.select(".line-handle").remove()
-          }
+          // Remove any existing handle (no handle for vertical lines)
+          group.select(".line-handle").remove()
         }
       } else if (line.type === "horizontal") {
         // Horizontal reference line
         let yPos: number
         
-        // Use drag position if we're dragging this line
-        if (isDragging && dragPositionRef.current[line.id] !== undefined) {
+        // Use drag position only if this specific line is currently being dragged
+        if (draggingLine?.id === line.id && dragPositionRef.current[line.id] !== undefined) {
           yPos = dragPositionRef.current[line.id]
         } else {
           const yValue = typeof line.value === 'number' ? line.value : parseFloat(line.value)
+          if (isNaN(yValue)) {
+            console.warn('Invalid y value for horizontal reference line:', line.value)
+            return
+          }
           yPos = yScale(yValue)
         }
         
-        if (yPos >= 0 && yPos <= height) {
+        if (!isNaN(yPos)) {
           // Update or create main line
           let mainLine = group.select<SVGLineElement>(".main-line")
           if (mainLine.empty()) {
@@ -317,80 +309,82 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
           // Update or create interactive area
           if (isInteractive) {
             let interactiveLine = group.select<SVGLineElement>(".interactive-line")
-            if (interactiveLine.empty()) {
-              // Create drag behavior for horizontal lines
-              const drag = d3.drag<SVGLineElement, unknown>()
-                .on("start", () => {
-                  setHoveredLine(line.id)
-                  setDraggingLine({ id: line.id, type: "horizontal" })
-                })
-                .on("drag", (event) => {
-                  const clampedY = Math.max(0, Math.min(height, event.y))
+            
+            // Create drag behavior with proper context
+            const currentLineId = line.id
+            const drag = d3.drag<SVGLineElement, any>()
+              .on("start", function() {
+                setHoveredLine(currentLineId)
+                setDraggingLine({ id: currentLineId, type: "horizontal" })
+                isDraggingRef.current = true
+              })
+              .on("drag", function(event) {
+                const clampedY = Math.max(0, Math.min(height, event.y))
+                
+                // Store drag position
+                dragPositionRef.current[currentLineId] = clampedY
+                
+                // Update visual elements directly without re-render
+                const currentGroup = d3.select(this.parentNode as SVGGElement)
+                currentGroup.select(".main-line")
+                  .attr("y1", clampedY)
+                  .attr("y2", clampedY)
+                currentGroup.select(".interactive-line")
+                  .attr("y1", clampedY)
+                  .attr("y2", clampedY)
+                currentGroup.select(".line-label")
+                  .attr("y", clampedY - 3)
+              })
+              .on("end", function(event) {
+                const clampedY = Math.max(0, Math.min(height, event.y))
+                let newValue = yScale.invert(clampedY)
+                
+                // Ensure the value is within the scale domain
+                const [minDomain, maxDomain] = yScale.domain()
+                newValue = Math.max(minDomain, Math.min(maxDomain, newValue))
+                newValue = Math.round(newValue)
+                
+                // Clear dragging state
+                setDraggingLine(null)
+                setHoveredLine(null)
+                isDraggingRef.current = false
+                
+                // Update the data model with the current chart state
+                if (setEditingChart) {
+                  // Get the current reference lines from the ref to ensure we have the latest state
+                  const currentChart = editingChartRef.current
+                  const updatedReferenceLines = (currentChart.referenceLines || []).map((refLine) => 
+                    refLine.id === currentLineId ? { ...refLine, value: newValue } : refLine
+                  )
                   
-                  // Store drag position
-                  dragPositionRef.current[line.id] = clampedY
-                  
-                  // Update all elements in the group visually
-                  const parent = d3.select(event.sourceEvent.target.parentNode as SVGGElement)
-                  parent.select(".main-line")
-                    .attr("y1", clampedY)
-                    .attr("y2", clampedY)
-                  
-                  parent.select(".interactive-line")
-                    .attr("y1", clampedY)
-                    .attr("y2", clampedY)
-                  
-                  parent.select(".line-label")
-                    .attr("y", clampedY - 3)
-                  
-                  parent.select(".line-handle")
-                    .attr("cy", clampedY)
-                })
-                .on("end", (event) => {
-                  const clampedY = Math.max(0, Math.min(height, event.y))
-                  const newValue = Math.round(yScale.invert(clampedY))
-                  
-                  // Keep visual position at dragged location
-                  const parent = d3.select(event.sourceEvent.target.parentNode as SVGGElement)
-                  parent.select(".main-line")
-                    .attr("y1", clampedY)
-                    .attr("y2", clampedY)
-                  parent.select(".interactive-line")
-                    .attr("y1", clampedY)
-                    .attr("y2", clampedY)
-                  parent.select(".line-label")
-                    .attr("y", clampedY - 3)
-                  parent.select(".line-handle")
-                    .attr("cy", clampedY)
-                  
-                  // Clear dragging state
-                  setDraggingLine(null)
-                  setHoveredLine(null)
-                  
-                  // Clear drag position
-                  delete dragPositionRef.current[line.id]
-                  
-                  // Update the data model after a frame to allow visual update to settle
-                  requestAnimationFrame(() => {
-                    isUpdatingRef.current = true
-                    updateReferenceLine(line.id, newValue)
-                    
-                    // Reset flag after state update completes
-                    requestAnimationFrame(() => {
-                      isUpdatingRef.current = false
-                    })
+                  setEditingChart({
+                    ...currentChart,
+                    referenceLines: updatedReferenceLines
                   })
-                })
-
+                  
+                  // Clear drag position after a small delay to ensure the update has been processed
+                  setTimeout(() => {
+                    delete dragPositionRef.current[currentLineId]
+                  }, 100)
+                }
+              })
+            
+            if (interactiveLine.empty()) {
               interactiveLine = group.append("line")
                 .attr("class", "interactive-line")
                 .attr("stroke", "transparent")
                 .attr("stroke-width", 10)
                 .style("cursor", "ns-resize")
-                .on("mouseenter", () => setHoveredLine(line.id))
-                .on("mouseleave", () => setHoveredLine(null))
-                .call(drag)
+                .on("mouseenter", () => setHoveredLine(currentLineId))
+                .on("mouseleave", () => {
+                  if (!draggingLine || draggingLine.id !== currentLineId) {
+                    setHoveredLine(null)
+                  }
+                })
             }
+            
+            // Always re-apply drag behavior to ensure it's properly bound
+            interactiveLine.call(drag)
             
             interactiveLine
               .attr("x1", 0)
@@ -419,25 +413,8 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
             group.select(".line-label").remove()
           }
           
-          // Update or create handle
-          if (isInteractive && (isHovered || isDragging)) {
-            let handle = group.select<SVGCircleElement>(".line-handle")
-            if (handle.empty()) {
-              handle = group.append("circle")
-                .attr("class", "line-handle")
-                .attr("r", 4)
-                .attr("stroke", "white")
-                .attr("stroke-width", 2)
-                .style("cursor", "ns-resize")
-            }
-            handle
-              .attr("cx", width / 2)
-              .attr("cy", yPos)
-              .attr("fill", color)
-              .raise()
-          } else {
-            group.select(".line-handle").remove()
-          }
+          // Remove any existing handle (no handle for horizontal lines)
+          group.select(".line-handle").remove()
         }
       }
     })
