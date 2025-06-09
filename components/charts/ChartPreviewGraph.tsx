@@ -18,6 +18,8 @@ interface ChartPreviewGraphProps {
 
 export function ChartPreviewGraph({ editingChart, selectedDataSourceItems, setEditingChart }: ChartPreviewGraphProps) {
   const svgRef = useRef<SVGSVGElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [dimensions, setDimensions] = React.useState({ width: 400, height: 300 })
   
   // Store scales in refs to avoid recreation during drag
   const scalesRef = useRef<{
@@ -32,6 +34,27 @@ export function ChartPreviewGraph({ editingChart, selectedDataSourceItems, setEd
   }, [editingChart.title, editingChart.xAxisType, editingChart.xParameter, 
       editingChart.xLabel, editingChart.xAxisRange, editingChart.yAxisParams, editingChart.yAxisLabels])
 
+  // Handle resize
+  useEffect(() => {
+    if (!containerRef.current) return
+
+    const resizeObserver = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect
+        setDimensions({ 
+          width: Math.max(300, width), 
+          height: Math.max(250, height - 20) // Subtract some padding
+        })
+      }
+    })
+
+    resizeObserver.observe(containerRef.current)
+
+    return () => {
+      resizeObserver.disconnect()
+    }
+  }, [])
+
   useEffect(() => {
     if (!svgRef.current) return
 
@@ -43,9 +66,9 @@ export function ChartPreviewGraph({ editingChart, selectedDataSourceItems, setEd
       mainGroup.remove()
     }
 
-    const margin = { top: 20, right: 80, bottom: 40, left: 60 }
-    const width = 400 - margin.left - margin.right
-    const height = 300 - margin.top - margin.bottom
+    const margin = { top: 20, right: 40, bottom: 60, left: 60 }
+    const width = dimensions.width - margin.left - margin.right
+    const height = dimensions.height - margin.top - margin.bottom
 
     const g = svg.append("g")
       .attr("class", "main-chart-group")
@@ -61,17 +84,18 @@ export function ChartPreviewGraph({ editingChart, selectedDataSourceItems, setEd
       renderEmptyChart({ g, width, height, chartType: "line", editingChart, scalesRef })
     }
 
-  }, [chartConfigWithoutRefLines, selectedDataSourceItems])
+  }, [chartConfigWithoutRefLines, selectedDataSourceItems, dimensions])
 
   return (
-    <>
-      <svg ref={svgRef} width={400} height={300} />
+    <div ref={containerRef} className="w-full h-full relative">
+      <svg ref={svgRef} width={dimensions.width} height={dimensions.height} className="w-full h-full" />
       <ReferenceLines
         svgRef={svgRef}
         editingChart={editingChart}
         setEditingChart={setEditingChart}
         scalesRef={scalesRef}
+        dimensions={dimensions}
       />
-    </>
+    </div>
   )
 }

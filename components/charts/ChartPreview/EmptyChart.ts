@@ -58,22 +58,30 @@ export const renderEmptyChart = ({ g, width, height, chartType, editingChart, sc
         .call(d3.axisBottom(xScale as d3.ScaleTime<number, number>)
           .ticks(5)
           .tickFormat((d) => d3.timeFormat(timeFormat)(d as Date)))
+        .selectAll("text")
+        .style("font-size", "12px")
     } else if (xAxisType === "time") {
       g.append("g")
         .attr("transform", `translate(0,${height})`)
         .call(d3.axisBottom(xScale as d3.ScaleLinear<number, number>)
           .ticks(5)
           .tickFormat((d) => `${d}min`))
+        .selectAll("text")
+        .style("font-size", "12px")
     } else {
       g.append("g")
         .attr("transform", `translate(0,${height})`)
         .call(d3.axisBottom(xScale as d3.ScaleLinear<number, number>)
           .ticks(5))
+        .selectAll("text")
+        .style("font-size", "12px")
     }
     
     // Y axis
     g.append("g")
       .call(d3.axisLeft(yScale))
+      .selectAll("text")
+      .style("font-size", "12px")
     
     // X axis label
     g.append("text")

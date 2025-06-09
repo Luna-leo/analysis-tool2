@@ -242,9 +242,13 @@ export const renderLineChart = ({ g, data, width, height, editingChart, scalesRe
     .call(d3.axisBottom(xScale)
       .ticks(5)
       .tickFormat((d) => d3.timeFormat(timeFormat)(d as Date)))
+    .selectAll("text")
+    .style("font-size", "12px")
 
   g.append("g")
     .call(d3.axisLeft(yScale))
+    .selectAll("text")
+    .style("font-size", "12px")
 
   yParams.forEach((param, index) => {
     // Skip parameters with empty names
@@ -293,15 +297,62 @@ export const renderLineChart = ({ g, data, width, height, editingChart, scalesRe
       })
     }
 
-    // Add parameter label
-    g.append("text")
-      .attr("x", width + 5)
-      .attr("y", yScale(data[data.length - 1][param.parameter] || 0))
-      .attr("dy", "0.35em")
-      .attr("fill", lineColor)
-      .style("font-size", "12px")
-      .text(param.parameter)
+    // Parameter labels will be shown in legend instead
   })
+
+  // Add legend
+  const legendParams = yParams.filter(p => p.parameter && p.parameter.trim() !== '')
+  if (legendParams.length > 0) {
+    const legend = g.append("g")
+      .attr("class", "legend")
+      .attr("transform", `translate(0, ${height + 35})`)
+
+    let currentX = 0
+    legendParams.forEach((param, index) => {
+      const lineColor = param.line?.color || d3.schemeCategory10[index % 10]
+      const showLine = param.line?.width !== undefined && param.line.width > 0
+      const showMarker = param.marker !== undefined
+      
+      const legendItem = legend.append("g")
+        .attr("transform", `translate(${currentX}, 0)`)
+      
+      // Draw legend symbol
+      if (showLine) {
+        legendItem.append("line")
+          .attr("x1", 0)
+          .attr("x2", 20)
+          .attr("y1", 0)
+          .attr("y2", 0)
+          .attr("stroke", lineColor)
+          .attr("stroke-width", param.line?.width || 2)
+          .attr("stroke-dasharray", param.line?.style === "dashed" ? "5,5" : param.line?.style === "dotted" ? "2,2" : "none")
+      }
+      
+      if (showMarker && param.marker) {
+        drawMarker(
+          legendItem,
+          10,
+          0,
+          param.marker.type,
+          (param.marker.size || 6) * 0.8,
+          param.marker.fillColor || lineColor,
+          param.marker.borderColor || lineColor
+        )
+      }
+      
+      // Add text
+      const text = legendItem.append("text")
+        .attr("x", 25)
+        .attr("y", 0)
+        .attr("dy", "0.35em")
+        .style("font-size", "12px")
+        .text(param.parameter)
+      
+      // Calculate width for next item
+      const bbox = (text.node() as SVGTextElement).getBBox()
+      currentX += bbox.width + 40 // 25 for icon + 15 for spacing
+    })
+  }
 
   // Store scales for reference lines
   scalesRef.current = { xScale, yScale }

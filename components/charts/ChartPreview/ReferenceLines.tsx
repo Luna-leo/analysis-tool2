@@ -12,9 +12,10 @@ interface ReferenceLinesProps {
     xScale: d3.ScaleTime<number, number> | d3.ScaleLinear<number, number> | null
     yScale: d3.ScaleLinear<number, number> | null
   }>
+  dimensions?: { width: number; height: number }
 }
 
-export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRef }: ReferenceLinesProps) {
+export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRef, dimensions }: ReferenceLinesProps) {
   const [draggingLine, setDraggingLine] = React.useState<{ id: string; type: 'vertical' | 'horizontal' } | null>(null)
   const [draggingLabel, setDraggingLabel] = React.useState<{ id: string; type: 'vertical' | 'horizontal' } | null>(null)
   const dragPositionRef = useRef<{ [key: string]: number }>({})
@@ -32,9 +33,9 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
     if (!svgRef.current || !scalesRef.current.xScale || !scalesRef.current.yScale) return
 
     const svg = d3.select(svgRef.current)
-    const margin = { top: 20, right: 80, bottom: 40, left: 60 }
-    const width = 400 - margin.left - margin.right
-    const height = 300 - margin.top - margin.bottom
+    const margin = { top: 20, right: 40, bottom: 60, left: 60 }
+    const width = (dimensions?.width || 400) - margin.left - margin.right
+    const height = (dimensions?.height || 300) - margin.top - margin.bottom
 
     // Ensure reference lines layer exists at the SVG level, not inside main chart group
     let refLinesLayer = svg.select<SVGGElement>(".reference-lines-layer")
@@ -63,7 +64,8 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
     draggingLine,
     draggingLabel,
     svgRef,
-    scalesRef
+    scalesRef,
+    dimensions
   ])
 
   const drawReferenceLines = (
@@ -270,7 +272,7 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
             if (labelText.empty()) {
               labelText = group.append("text")
                 .attr("class", "line-label")
-                .style("font-size", "10px")
+                .style("font-size", "12px")
                 .style("cursor", "move")
             }
             
@@ -486,7 +488,7 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
             if (labelText.empty()) {
               labelText = group.append("text")
                 .attr("class", "line-label")
-                .style("font-size", "10px")
+                .style("font-size", "12px")
                 .style("cursor", "move")
             }
             
