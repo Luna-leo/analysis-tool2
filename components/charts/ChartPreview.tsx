@@ -130,7 +130,7 @@ export function ChartPreview({ editingChart, selectedDataSourceItems, setEditing
   }
 
   useEffect(() => {
-    if (!svgRef.current) return
+    if (!svgRef.current || draggingLine) return
 
     const svg = d3.select(svgRef.current)
     svg.selectAll("*").remove()
@@ -159,7 +159,7 @@ export function ChartPreview({ editingChart, selectedDataSourceItems, setEditing
       renderEmptyChart(g, width, height, chartType)
     }
 
-  }, [editingChart, selectedDataSourceItems])
+  }, [editingChart, selectedDataSourceItems, draggingLine])
 
   // Separate effect for drawing reference lines to prevent full re-render during drag
   useEffect(() => {
