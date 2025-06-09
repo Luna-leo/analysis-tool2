@@ -6,6 +6,8 @@ import { TriggerSignalDialog } from "../../../dialogs/TriggerSignalDialog"
 import { EventSelectionDialog } from "../../../dialogs/EventSelectionDialog"
 import { useManualEntry } from "@/hooks/useManualEntry"
 import { EventInfo, SearchCondition, SearchResult } from "@/types"
+import { Button } from "@/components/ui/button"
+import { Plus, Calendar, FileText } from "lucide-react"
 import {
   TimeOffsetSettings,
   SelectedDataSourceTable,
@@ -293,14 +295,45 @@ export function DataSourceTab({
   return (
     <>
       <div className="space-y-4">
+        {/* Manual Entry | From Events buttons */}
+        <div className="flex justify-between items-center">
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={manualEntry.openForNew}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Manual Entry
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setEventSelectionOpen(true)}
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              From Events
+            </Button>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              // TODO: Implement CSV import functionality
+              console.log("CSV import clicked")
+            }}
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Import CSV
+          </Button>
+        </div>
+
         {/* Period Pool */}
         <PeriodPool
           periodPool={periodPool}
           selectedPoolIds={selectedPoolIds}
           periodPoolOpen={periodPoolOpen}
           setPeriodPoolOpen={setPeriodPoolOpen}
-          onManualEntry={manualEntry.openForNew}
-          onEventSelection={() => setEventSelectionOpen(true)}
           onTogglePeriod={handleTogglePeriod}
           onSelectAll={handleSelectAll}
           onRemoveFromPool={handleRemoveFromPool}

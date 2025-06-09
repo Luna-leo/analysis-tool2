@@ -2,7 +2,7 @@
 
 import React from "react"
 import { Button } from "@/components/ui/button"
-import { Plus, Calendar, Check, Filter, Trash2, Pencil, ChevronDown, ChevronRight } from "lucide-react"
+import { Check, Filter, Trash2, Pencil, ChevronDown, ChevronRight } from "lucide-react"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -13,8 +13,6 @@ interface PeriodPoolProps {
   selectedPoolIds: Set<string>
   periodPoolOpen: boolean
   setPeriodPoolOpen: (open: boolean) => void
-  onManualEntry: () => void
-  onEventSelection: () => void
   onTogglePeriod: (periodId: string) => void
   onSelectAll: () => void
   onRemoveFromPool: (periodId: string) => void
@@ -28,8 +26,6 @@ export function PeriodPool({
   selectedPoolIds,
   periodPoolOpen,
   setPeriodPoolOpen,
-  onManualEntry,
-  onEventSelection,
   onTogglePeriod,
   onSelectAll,
   onRemoveFromPool,
@@ -52,25 +48,6 @@ export function PeriodPool({
         
         <CollapsibleContent>
           <div className="px-3 pb-3">
-            <div className="flex justify-end gap-2 mb-3">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onManualEntry}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Manual Entry
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onEventSelection}
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                From Events
-              </Button>
-            </div>
-
             {periodPool.length > 0 ? (
               <>
                 <div className="border rounded-lg overflow-hidden">
@@ -173,7 +150,7 @@ export function PeriodPool({
               </>
             ) : (
               <div className="text-center py-8 text-sm text-muted-foreground">
-                No periods in pool. Add periods using the buttons above.
+                No periods in pool. Use Manual Entry or From Events to add periods.
               </div>
             )}
           </div>
