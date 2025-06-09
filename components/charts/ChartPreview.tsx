@@ -47,18 +47,6 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
     const svg = d3.select(svgRef.current)
     svg.selectAll("*").remove()
 
-    const data = generateMockData()
-    if (!data.length) {
-      svg.append("text")
-        .attr("x", "50%")
-        .attr("y", "50%")
-        .attr("text-anchor", "middle")
-        .attr("dominant-baseline", "middle")
-        .attr("fill", "#6b7280")
-        .text("No data to preview. Select data sources and add Y parameters.")
-      return
-    }
-
     const margin = { top: 20, right: 80, bottom: 40, left: 60 }
     const width = 400 - margin.left - margin.right
     const height = 300 - margin.top - margin.bottom
@@ -66,17 +54,123 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
     const g = svg.append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`)
 
+    const data = generateMockData()
     const chartType = editingChart.chartType || "line"
     
-    if (chartType === "line") {
-      renderLineChart(g, data, width, height)
-    } else if (chartType === "bar") {
-      renderBarChart(g, data, width, height)
-    } else if (chartType === "pie") {
-      renderPieChart(g, data, width, height)
+    if (data.length > 0) {
+      // Render chart with data
+      if (chartType === "line") {
+        renderLineChart(g, data, width, height)
+      } else if (chartType === "bar") {
+        renderBarChart(g, data, width, height)
+      } else if (chartType === "pie") {
+        renderPieChart(g, data, width, height)
+      }
+    } else {
+      // Render empty chart with axes
+      renderEmptyChart(g, width, height, chartType)
     }
 
   }, [editingChart, selectedDataSourceItems])
+
+  const renderEmptyChart = (g: d3.Selection<SVGGElement, unknown, null, undefined>, width: number, height: number, chartType: string) => {
+    if (chartType === "pie") {
+      // For pie charts, show a circle placeholder
+      const radius = Math.min(width, height) / 2
+      const centerX = width / 2
+      const centerY = height / 2
+      
+      g.append("circle")
+        .attr("cx", centerX)
+        .attr("cy", centerY)
+        .attr("r", radius - 10)
+        .attr("fill", "none")
+        .attr("stroke", "#d1d5db")
+        .attr("stroke-width", 2)
+        .attr("stroke-dasharray", "5,5")
+      
+      g.append("text")
+        .attr("x", centerX)
+        .attr("y", centerY)
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "middle")
+        .attr("fill", "#6b7280")
+        .style("font-size", "14px")
+        .text("No data to preview")
+        
+      g.append("text")
+        .attr("x", centerX)
+        .attr("y", centerY + 20)
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "middle")
+        .attr("fill", "#9ca3af")
+        .style("font-size", "12px")
+        .text("Select data sources and add parameters")
+    } else {
+      // For line and bar charts, show axes with placeholder scales
+      const now = new Date()
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
+      
+      const xScale = d3.scaleTime()
+        .domain([oneHourAgo, now])
+        .range([0, width])
+      
+      const yScale = d3.scaleLinear()
+        .domain([0, 100])
+        .nice()
+        .range([height, 0])
+      
+      // X axis
+      g.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(xScale).tickFormat((d) => d3.timeFormat("%H:%M")(d as Date)))
+      
+      // Y axis
+      g.append("g")
+        .call(d3.axisLeft(yScale))
+      
+      // X axis label
+      g.append("text")
+        .attr("x", width / 2)
+        .attr("y", height + 35)
+        .attr("text-anchor", "middle")
+        .attr("fill", "#6b7280")
+        .style("font-size", "12px")
+        .text(editingChart.xAxis?.label || "Time")
+      
+      // Y axis label
+      const yAxisLabels = editingChart.yAxisLabels || {}
+      const firstYAxisLabel = Object.values(yAxisLabels)[0] || "Value"
+      
+      g.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -height / 2)
+        .attr("y", -35)
+        .attr("text-anchor", "middle")
+        .attr("fill", "#6b7280")
+        .style("font-size", "12px")
+        .text(firstYAxisLabel)
+      
+      // Placeholder message
+      g.append("text")
+        .attr("x", width / 2)
+        .attr("y", height / 2 - 10)
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "middle")
+        .attr("fill", "#6b7280")
+        .style("font-size", "14px")
+        .text("No data to preview")
+        
+      g.append("text")
+        .attr("x", width / 2)
+        .attr("y", height / 2 + 10)
+        .attr("text-anchor", "middle")
+        .attr("dominant-baseline", "middle")
+        .attr("fill", "#9ca3af")
+        .style("font-size", "12px")
+        .text("Select data sources and add Y parameters")
+    }
+  }
 
   const renderLineChart = (g: d3.Selection<SVGGElement, unknown, null, undefined>, data: any[], width: number, height: number) => {
     const xScale = d3.scaleTime()
@@ -207,16 +301,74 @@ export function ChartPreview({ editingChart, selectedDataSourceItems }: ChartPre
           className="border rounded"
         />
       </div>
-      {selectedDataSourceItems.length > 0 && (
-        <div className="mt-2 p-2 bg-muted/30 rounded text-xs">
-          <div className="font-medium mb-1">Data Sources:</div>
-          {selectedDataSourceItems.map((item, index) => (
-            <div key={item.id} className="text-muted-foreground">
-              {index + 1}. {item.plant} - {item.machineNo} ({item.label})
+      <div className="mt-2 space-y-2">
+        {selectedDataSourceItems.length > 0 && (
+          <div className="p-2 bg-muted/30 rounded text-xs">
+            <div className="font-medium mb-1">Data Sources:</div>
+            {selectedDataSourceItems.map((item, index) => (
+              <div key={item.id} className="text-muted-foreground">
+                {index + 1}. {item.plant} - {item.machineNo} ({item.label})
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* Range Settings Display */}
+        <div className="p-2 bg-muted/30 rounded text-xs">
+          <div className="font-medium mb-1">Range Settings:</div>
+          <div className="space-y-1 text-muted-foreground">
+            <div>
+              <span className="font-medium">X-Axis ({editingChart.xAxisType || "datetime"}):</span>
+              {editingChart.xAxisRange?.auto !== false ? (
+                <span className="ml-1">Auto</span>
+              ) : (
+                <span className="ml-1">
+                  {(editingChart.xAxisType || "datetime") === "datetime" ? (
+                    `${editingChart.xAxisRange.min || "Not set"} ~ ${editingChart.xAxisRange.max || "Not set"}`
+                  ) : (
+                    `${editingChart.xAxisRange.min || 0} - ${editingChart.xAxisRange.max || 100}`
+                  )}
+                </span>
+              )}
             </div>
-          ))}
+            
+            {editingChart.yAxisParams && editingChart.yAxisParams.length > 0 ? (
+              // Group parameters by axis and show their ranges
+              (() => {
+                const groupedByAxis: Record<number, typeof editingChart.yAxisParams> = {}
+                editingChart.yAxisParams.forEach(param => {
+                  const axisNo = param.axisNo || 1
+                  if (!groupedByAxis[axisNo]) groupedByAxis[axisNo] = []
+                  groupedByAxis[axisNo].push(param)
+                })
+                
+                return Object.entries(groupedByAxis).map(([axisNo, params]) => {
+                  const firstParam = params[0]
+                  const axisLabel = editingChart.yAxisLabels?.[parseInt(axisNo)] || `Axis ${axisNo}`
+                  
+                  return (
+                    <div key={axisNo}>
+                      <span className="font-medium">Y-Axis {axisNo} ({axisLabel}):</span>
+                      {firstParam.range?.auto !== false ? (
+                        <span className="ml-1">Auto</span>
+                      ) : (
+                        <span className="ml-1">
+                          {firstParam.range.min || 0} - {firstParam.range.max || 100}
+                        </span>
+                      )}
+                    </div>
+                  )
+                })
+              })()
+            ) : (
+              <div>
+                <span className="font-medium">Y-Axis:</span>
+                <span className="ml-1">Auto</span>
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   )
 }

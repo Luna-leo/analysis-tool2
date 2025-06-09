@@ -87,9 +87,13 @@ export function XParameterSettings({ editingChart, setEditingChart }: XParameter
                 <Label className="text-sm mb-1 block">Range</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" size="sm" className="h-8 text-xs w-full justify-start">
-                      {editingChart.xAxisRange?.auto !== false ? "Auto" : 
-                        `${editingChart.xAxisRange.min || 0} - ${editingChart.xAxisRange.max || 100}`}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-8 text-xs w-full justify-start"
+                      title={editingChart.xAxisRange?.auto !== false ? "Auto range based on data" : `Min: ${editingChart.xAxisRange.min || "Not set"}, Max: ${editingChart.xAxisRange.max || "Not set"}`}
+                    >
+                      {editingChart.xAxisRange?.auto !== false ? "Auto" : "Custom"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-80">
@@ -113,7 +117,7 @@ export function XParameterSettings({ editingChart, setEditingChart }: XParameter
                         <Label htmlFor="x-auto-range" className="text-sm">Auto Range</Label>
                       </div>
                       
-                      {editingChart.xAxisType === "time" && (
+                      {(editingChart.xAxisType || "datetime") === "time" && (
                         <div>
                           <Label className="text-xs">Time Unit</Label>
                           <select
@@ -142,7 +146,7 @@ export function XParameterSettings({ editingChart, setEditingChart }: XParameter
                       <div className="space-y-2">
                         <div>
                           <Label htmlFor="x-min" className="text-xs">Min Value</Label>
-                          {editingChart.xAxisType === "datetime" ? (
+                          {(editingChart.xAxisType || "datetime") === "datetime" ? (
                             <Input
                               id="x-min"
                               type="datetime-local"
@@ -159,7 +163,7 @@ export function XParameterSettings({ editingChart, setEditingChart }: XParameter
                                 })
                               }}
                               disabled={editingChart.xAxisRange?.auto !== false}
-                              className="h-8"
+                              className="h-8 [&::-webkit-calendar-picker-indicator]:ml-auto [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                             />
                           ) : (
                             <Input
@@ -178,14 +182,14 @@ export function XParameterSettings({ editingChart, setEditingChart }: XParameter
                                 })
                               }}
                               disabled={editingChart.xAxisRange?.auto !== false}
-                              placeholder={editingChart.xAxisType === "time" ? `Start (${editingChart.xAxisRange?.unit || "sec"})` : "Min"}
+                              placeholder={(editingChart.xAxisType || "datetime") === "time" ? `Start (${editingChart.xAxisRange?.unit || "sec"})` : "Min"}
                               className="h-8"
                             />
                           )}
                         </div>
                         <div>
                           <Label htmlFor="x-max" className="text-xs">Max Value</Label>
-                          {editingChart.xAxisType === "datetime" ? (
+                          {(editingChart.xAxisType || "datetime") === "datetime" ? (
                             <Input
                               id="x-max"
                               type="datetime-local"
@@ -202,7 +206,7 @@ export function XParameterSettings({ editingChart, setEditingChart }: XParameter
                                 })
                               }}
                               disabled={editingChart.xAxisRange?.auto !== false}
-                              className="h-8"
+                              className="h-8 [&::-webkit-calendar-picker-indicator]:ml-auto [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                             />
                           ) : (
                             <Input
@@ -221,7 +225,7 @@ export function XParameterSettings({ editingChart, setEditingChart }: XParameter
                                 })
                               }}
                               disabled={editingChart.xAxisRange?.auto !== false}
-                              placeholder={editingChart.xAxisType === "time" ? `End (${editingChart.xAxisRange?.unit || "sec"})` : "Max"}
+                              placeholder={(editingChart.xAxisType || "datetime") === "time" ? `End (${editingChart.xAxisRange?.unit || "sec"})` : "Max"}
                               className="h-8"
                             />
                           )}

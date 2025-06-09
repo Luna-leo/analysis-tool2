@@ -123,7 +123,7 @@ export function ReferenceLinesSettings({
               <div className="flex gap-2 mb-1 px-1 text-xs font-medium text-muted-foreground border-b pb-1 mt-1">
                 <div className="w-20">Type</div>
                 <div className="flex-1">Label</div>
-                <div className="w-24">Value</div>
+                <div className="w-40">Value</div>
                 <div className="w-16">Axis No</div>
                 <div className="w-24">Range</div>
                 <div className="w-7"></div>
@@ -151,21 +151,21 @@ export function ReferenceLinesSettings({
                 className="h-7 text-xs"
               />
             </div>
-            <div className="w-24">
+            <div className="w-40">
               {line.type === "vertical" ? (
-                editingChart.xAxisType === "datetime" ? (
+                (editingChart.xAxisType || "datetime") === "datetime" ? (
                   <Input
                     type="datetime-local"
                     value={line.xValue || ""}
                     onChange={(e) => handleUpdateReferenceLine(line.id, "xValue", e.target.value)}
-                    className="h-7 text-xs"
+                    className="h-7 text-xs w-full [&::-webkit-calendar-picker-indicator]:ml-auto [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                   />
                 ) : (
                   <Input
                     type="number"
                     value={line.xValue || ""}
                     onChange={(e) => handleUpdateReferenceLine(line.id, "xValue", e.target.value)}
-                    placeholder={editingChart.xAxisType === "time" ? "Time(s)" : "X value"}
+                    placeholder={(editingChart.xAxisType || "datetime") === "time" ? "Time(s)" : "X value"}
                     className="h-7 text-xs"
                   />
                 )
@@ -197,8 +197,12 @@ export function ReferenceLinesSettings({
               {line.type === "vertical" ? (
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="h-7 w-full justify-start text-xs">
-                      {line.yRange?.auto ? "Range: Auto" : `Range: ${line.yRange?.min || 0} - ${line.yRange?.max || 100}`}
+                    <Button 
+                      variant="outline" 
+                      className="h-7 w-full justify-start text-xs"
+                      title={line.yRange?.auto ? "Auto range based on data" : `Min: ${line.yRange?.min || 0}, Max: ${line.yRange?.max || 100}`}
+                    >
+                      {line.yRange?.auto ? "Range: Auto" : "Range: Custom"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-80">
@@ -241,8 +245,12 @@ export function ReferenceLinesSettings({
               ) : (
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="h-7 w-full justify-start text-xs">
-                      {line.xRange?.auto ? "Range: Auto" : `Range: ${line.xRange?.min || 0} - ${line.xRange?.max || 100}`}
+                    <Button 
+                      variant="outline" 
+                      className="h-7 w-full justify-start text-xs"
+                      title={line.xRange?.auto ? "Auto range based on data" : `Min: ${line.xRange?.min || "Not set"}, Max: ${line.xRange?.max || "Not set"}`}
+                    >
+                      {line.xRange?.auto ? "Range: Auto" : "Range: Custom"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-80">
@@ -258,14 +266,14 @@ export function ReferenceLinesSettings({
                       <div className="space-y-2">
                         <div>
                           <Label htmlFor={`x-min-${line.id}`} className="text-xs">Min Value</Label>
-                          {editingChart.xAxisType === "datetime" ? (
+                          {(editingChart.xAxisType || "datetime") === "datetime" ? (
                             <Input
                               id={`x-min-${line.id}`}
                               type="datetime-local"
                               value={line.xRange?.min || ""}
                               onChange={(e) => handleUpdateRange(line.id, 'xRange', 'min', e.target.value)}
                               disabled={line.xRange?.auto ?? true}
-                              className="h-8"
+                              className="h-8 [&::-webkit-calendar-picker-indicator]:ml-auto [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                             />
                           ) : (
                             <Input
@@ -274,21 +282,21 @@ export function ReferenceLinesSettings({
                               value={line.xRange?.min || "0"}
                               onChange={(e) => handleUpdateRange(line.id, 'xRange', 'min', e.target.value)}
                               disabled={line.xRange?.auto ?? true}
-                              placeholder={editingChart.xAxisType === "time" ? "Start(s)" : "Min"}
+                              placeholder={(editingChart.xAxisType || "datetime") === "time" ? "Start(s)" : "Min"}
                               className="h-8"
                             />
                           )}
                         </div>
                         <div>
                           <Label htmlFor={`x-max-${line.id}`} className="text-xs">Max Value</Label>
-                          {editingChart.xAxisType === "datetime" ? (
+                          {(editingChart.xAxisType || "datetime") === "datetime" ? (
                             <Input
                               id={`x-max-${line.id}`}
                               type="datetime-local"
                               value={line.xRange?.max || ""}
                               onChange={(e) => handleUpdateRange(line.id, 'xRange', 'max', e.target.value)}
                               disabled={line.xRange?.auto ?? true}
-                              className="h-8"
+                              className="h-8 [&::-webkit-calendar-picker-indicator]:ml-auto [&::-webkit-calendar-picker-indicator]:cursor-pointer"
                             />
                           ) : (
                             <Input
@@ -297,7 +305,7 @@ export function ReferenceLinesSettings({
                               value={line.xRange?.max || "100"}
                               onChange={(e) => handleUpdateRange(line.id, 'xRange', 'max', e.target.value)}
                               disabled={line.xRange?.auto ?? true}
-                              placeholder={editingChart.xAxisType === "time" ? "End(s)" : "Max"}
+                              placeholder={(editingChart.xAxisType || "datetime") === "time" ? "End(s)" : "Max"}
                               className="h-8"
                             />
                           )}
