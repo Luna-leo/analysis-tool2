@@ -170,106 +170,106 @@ export function EventMasterPage() {
       <div className="flex-1 overflow-hidden p-6">
         <div className="rounded-lg border border-gray-200 shadow-sm overflow-hidden h-full flex flex-col">
           <div className="overflow-auto flex-1 relative">
-            <table ref={tableRef} className="text-sm w-full border-collapse" style={{ minWidth: '1200px' }}>
+            <table ref={tableRef} className="text-base w-full border-collapse" style={{ minWidth: '1200px' }}>
               <thead className="sticky top-0 z-40">
                 <tr className="border-b border-gray-200">
-                  <th className="bg-gray-50 px-3 py-2 text-left font-semibold text-xs text-gray-700 border-r border-gray-200 sticky left-0 z-30 relative" style={{ width: `${columnWidths.plant}px`, minWidth: `${columnWidths.plant}px` }}>
+                  <th className="bg-gray-50 px-3 py-3 text-left font-bold text-sm text-gray-700 border-r border-gray-200 sticky left-0 z-30 relative" style={{ width: `${columnWidths.plant}px`, minWidth: `${columnWidths.plant}px` }}>
                     Plant
                     <div
                       className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400"
                       onMouseDown={(e) => handleMouseDown('plant', e)}
                     />
                   </th>
-                  <th className="bg-gray-50 px-3 py-2 text-left font-semibold text-xs text-gray-700 border-r-2 border-gray-300 sticky z-30 relative" style={{ left: `${columnWidths.plant}px`, width: `${columnWidths.machineNo}px`, minWidth: `${columnWidths.machineNo}px` }}>
+                  <th className="bg-gray-50 px-3 py-3 text-left font-bold text-sm text-gray-700 border-r-2 border-gray-300 sticky z-30 relative" style={{ left: `${columnWidths.plant}px`, width: `${columnWidths.machineNo}px`, minWidth: `${columnWidths.machineNo}px` }}>
                     Machine no
                     <div
                       className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400"
                       onMouseDown={(e) => handleMouseDown('machineNo', e)}
                     />
                   </th>
-                  <th className="bg-gray-50 px-3 py-2 text-left font-semibold text-xs text-gray-700 border-r border-gray-200 relative" style={{ width: `${columnWidths.start}px`, minWidth: `${columnWidths.start}px` }}>
+                  <th className="bg-gray-50 px-3 py-3 text-left font-bold text-sm text-gray-700 border-r border-gray-200 relative" style={{ width: `${columnWidths.start}px`, minWidth: `${columnWidths.start}px` }}>
                     Start
                     <div
                       className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400"
                       onMouseDown={(e) => handleMouseDown('start', e)}
                     />
                   </th>
-                  <th className="bg-gray-50 px-3 py-2 text-left font-semibold text-xs text-gray-700 border-r border-gray-200 relative" style={{ width: `${columnWidths.end}px`, minWidth: `${columnWidths.end}px` }}>
+                  <th className="bg-gray-50 px-3 py-3 text-left font-bold text-sm text-gray-700 border-r border-gray-200 relative" style={{ width: `${columnWidths.end}px`, minWidth: `${columnWidths.end}px` }}>
                     End
                     <div
                       className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400"
                       onMouseDown={(e) => handleMouseDown('end', e)}
                     />
                   </th>
-                  <th className="bg-gray-50 px-3 py-2 text-left font-semibold text-xs text-gray-700 border-r border-gray-200 relative" style={{ width: `${columnWidths.label}px`, minWidth: `${columnWidths.label}px` }}>
+                  <th className="bg-gray-50 px-3 py-3 text-left font-bold text-sm text-gray-700 border-r border-gray-200 relative" style={{ width: `${columnWidths.label}px`, minWidth: `${columnWidths.label}px` }}>
                     Label
                     <div
                       className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400"
                       onMouseDown={(e) => handleMouseDown('label', e)}
                     />
                   </th>
-                  <th className="bg-gray-50 px-3 py-2 text-left font-semibold text-xs text-gray-700 border-r border-gray-200 relative" style={{ width: `${columnWidths.labelDescription}px`, minWidth: `${columnWidths.labelDescription}px` }}>
+                  <th className="bg-gray-50 px-3 py-3 text-left font-bold text-sm text-gray-700 border-r border-gray-200 relative" style={{ width: `${columnWidths.labelDescription}px`, minWidth: `${columnWidths.labelDescription}px` }}>
                     Label description
                     <div
                       className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400"
                       onMouseDown={(e) => handleMouseDown('labelDescription', e)}
                     />
                   </th>
-                  <th className="bg-gray-50 px-3 py-2 text-left font-semibold text-xs text-gray-700 border-r border-gray-200 relative" style={{ width: `${columnWidths.event}px`, minWidth: `${columnWidths.event}px` }}>
+                  <th className="bg-gray-50 px-3 py-3 text-left font-bold text-sm text-gray-700 border-r border-gray-200 relative" style={{ width: `${columnWidths.event}px`, minWidth: `${columnWidths.event}px` }}>
                     Event
                     <div
                       className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400"
                       onMouseDown={(e) => handleMouseDown('event', e)}
                     />
                   </th>
-                  <th className="bg-gray-50 px-3 py-2 text-left font-semibold text-xs text-gray-700 border-r border-gray-200 relative" style={{ width: `${columnWidths.eventDetail}px`, minWidth: `${columnWidths.eventDetail}px` }}>
+                  <th className="bg-gray-50 px-3 py-3 text-left font-bold text-sm text-gray-700 border-r border-gray-200 relative" style={{ width: `${columnWidths.eventDetail}px`, minWidth: `${columnWidths.eventDetail}px` }}>
                     Event detail
                     <div
                       className="absolute right-0 top-0 w-1 h-full cursor-col-resize hover:bg-blue-400"
                       onMouseDown={(e) => handleMouseDown('eventDetail', e)}
                     />
                   </th>
-                  <th className="bg-gray-50 px-2 py-2 text-center font-semibold text-xs text-gray-700 sticky right-0 z-30 border-l-2 border-gray-300" style={{ width: `${columnWidths.actions}px`, minWidth: `${columnWidths.actions}px` }}>
+                  <th className="bg-gray-50 px-2 py-3 text-center font-bold text-sm text-gray-700 sticky right-0 z-30 border-l-2 border-gray-300" style={{ width: `${columnWidths.actions}px`, minWidth: `${columnWidths.actions}px` }}>
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {filteredEvents.map((event) => (
-                  <tr key={event.id} className="group hover:bg-blue-50 transition-colors border-b border-gray-100" style={{ height: '48px' }}>
-                    <td className="px-3 py-2 text-xs bg-white sticky left-0 z-20 border-r border-gray-200 align-top" style={{ width: `${columnWidths.plant}px`, minWidth: `${columnWidths.plant}px`, height: '48px' }}>
+                  <tr key={event.id} className="group hover:bg-blue-50 transition-colors border-b border-gray-100" style={{ height: '56px' }}>
+                    <td className="px-3 py-2 text-sm bg-white group-hover:bg-blue-50 sticky left-0 z-20 border-r border-gray-200 align-top transition-colors" style={{ width: `${columnWidths.plant}px`, minWidth: `${columnWidths.plant}px`, height: '56px' }}>
                       <div className="line-clamp-2">{event.plant}</div>
                     </td>
-                    <td className="px-3 py-2 text-xs bg-white sticky z-20 border-r-2 border-gray-300 align-top" style={{ left: `${columnWidths.plant}px`, width: `${columnWidths.machineNo}px`, minWidth: `${columnWidths.machineNo}px`, height: '48px' }}>
+                    <td className="px-3 py-2 text-sm bg-white group-hover:bg-blue-50 sticky z-20 border-r-2 border-gray-300 align-top transition-colors" style={{ left: `${columnWidths.plant}px`, width: `${columnWidths.machineNo}px`, minWidth: `${columnWidths.machineNo}px`, height: '56px' }}>
                       <div className="line-clamp-2">{event.machineNo}</div>
                     </td>
-                    <td className="px-3 py-2 text-xs align-top" style={{ width: `${columnWidths.start}px`, minWidth: `${columnWidths.start}px`, height: '48px' }}>
+                    <td className="px-3 py-2 text-sm align-top" style={{ width: `${columnWidths.start}px`, minWidth: `${columnWidths.start}px`, height: '56px' }}>
                       <div>
                         <div>{formatDateTime(event.start).dateStr}</div>
                         <div>{formatDateTime(event.start).timeStr}</div>
                       </div>
                     </td>
-                    <td className="px-3 py-2 text-xs align-top" style={{ width: `${columnWidths.end}px`, minWidth: `${columnWidths.end}px`, height: '48px' }}>
+                    <td className="px-3 py-2 text-sm align-top" style={{ width: `${columnWidths.end}px`, minWidth: `${columnWidths.end}px`, height: '56px' }}>
                       <div>
                         <div>{formatDateTime(event.end).dateStr}</div>
                         <div>{formatDateTime(event.end).timeStr}</div>
                       </div>
                     </td>
-                    <td className="px-3 py-2 text-xs align-top" style={{ width: `${columnWidths.label}px`, minWidth: `${columnWidths.label}px`, height: '48px' }}>
+                    <td className="px-3 py-2 text-sm align-top" style={{ width: `${columnWidths.label}px`, minWidth: `${columnWidths.label}px`, height: '56px' }}>
                       <div className="line-clamp-2">
                         <span className="font-medium">{event.label}</span>
                       </div>
                     </td>
-                    <td className="px-3 py-2 text-xs align-top" style={{ width: `${columnWidths.labelDescription}px`, minWidth: `${columnWidths.labelDescription}px`, height: '48px' }}>
+                    <td className="px-3 py-2 text-sm align-top" style={{ width: `${columnWidths.labelDescription}px`, minWidth: `${columnWidths.labelDescription}px`, height: '56px' }}>
                       <div className="line-clamp-2">{event.labelDescription}</div>
                     </td>
-                    <td className="px-3 py-2 text-xs align-top" style={{ width: `${columnWidths.event}px`, minWidth: `${columnWidths.event}px`, height: '48px' }}>
+                    <td className="px-3 py-2 text-sm align-top" style={{ width: `${columnWidths.event}px`, minWidth: `${columnWidths.event}px`, height: '56px' }}>
                       <div className="line-clamp-2">{event.event}</div>
                     </td>
-                    <td className="px-3 py-2 text-xs align-top" style={{ width: `${columnWidths.eventDetail}px`, minWidth: `${columnWidths.eventDetail}px`, height: '48px' }}>
+                    <td className="px-3 py-2 text-sm align-top" style={{ width: `${columnWidths.eventDetail}px`, minWidth: `${columnWidths.eventDetail}px`, height: '56px' }}>
                       <div className="line-clamp-2">{event.eventDetail}</div>
                     </td>
-                    <td className="px-2 py-1 text-center bg-white sticky right-0 z-20 border-l-2 border-gray-300 align-middle" style={{ width: `${columnWidths.actions}px`, minWidth: `${columnWidths.actions}px`, height: '48px' }}>
+                    <td className="px-2 py-1 text-center bg-white group-hover:bg-blue-50 sticky right-0 z-20 border-l-2 border-gray-300 align-middle transition-colors" style={{ width: `${columnWidths.actions}px`, minWidth: `${columnWidths.actions}px`, height: '56px' }}>
                       <div className="flex gap-1 justify-center opacity-30 group-hover:opacity-100 transition-opacity">
                         <Button
                           variant="ghost"
@@ -305,14 +305,14 @@ export function EventMasterPage() {
               </tbody>
             </table>
           </div>
-          <div className="border-t border-gray-200 bg-gray-50 px-2 py-1 text-center">
+          <div className="border-t border-gray-200 bg-gray-50 px-2 py-2 text-center">
             <Button
               variant="ghost"
               size="sm"
               onClick={handleAddEvent}
-              className="h-6 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              className="h-8 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100"
             >
-              <Plus className="h-3 w-3 mr-1" />
+              <Plus className="h-4 w-4 mr-1" />
               Add Row
             </Button>
           </div>
