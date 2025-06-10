@@ -17,7 +17,7 @@ export const PredefinedConditionSelector: React.FC<PredefinedConditionSelectorPr
   onLoadPredefinedCondition,
 }) => {
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
       {predefinedConditions.map((condition) => (
         <div
           key={condition.id}

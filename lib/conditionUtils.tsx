@@ -65,7 +65,11 @@ export const formatConditionExpressionToJSX = (conditions: SearchCondition[]): R
       condition.conditions.forEach((cond, index) => {
         if (index > 0) {
           const logicalOp = cond.logicalOperator || 'AND'
-          inner.push(<span key={`${key}-logical-${index}`} className="text-rose-600 font-semibold mx-1">{logicalOp}</span>)
+          inner.push(
+            <span key={`${key}-space-before-${index}`}> </span>,
+            <span key={`${key}-logical-${index}`} className="text-rose-600 font-semibold">{logicalOp}</span>,
+            <span key={`${key}-space-after-${index}`}> </span>
+          )
         }
         inner.push(...formatCondition(cond, `${key}-${index}`))
       })
@@ -83,7 +87,11 @@ export const formatConditionExpressionToJSX = (conditions: SearchCondition[]): R
   conditions.forEach((condition, index) => {
     if (index > 0) {
       const logicalOp = condition.logicalOperator || 'AND'
-      result.push(<span key={`logical-${index}`} className="text-rose-600 font-semibold mx-1">{logicalOp}</span>)
+      result.push(
+        <span key={`space-before-${index}`}> </span>,
+        <span key={`logical-${index}`} className="text-rose-600 font-semibold">{logicalOp}</span>,
+        <span key={`space-after-${index}`}> </span>
+      )
     }
     result.push(...formatCondition(condition, `cond-${index}`))
   })
@@ -93,12 +101,20 @@ export const formatConditionExpressionToJSX = (conditions: SearchCondition[]): R
 
 // Function to color code expression strings (for saved conditions)
 export const colorCodeExpressionString = (expression: string): React.ReactNode => {
-  return expression
+  // First, ensure proper spacing around operators
+  const spacedExpression = expression
+    .replace(/\s*(\bAND\b|\bOR\b)\s*/g, ' $1 ')
+    .replace(/\s*(>=|<=|>|<|!=|=)\s*/g, ' $1 ')
+    .replace(/\s*\(\s*/g, ' (')
+    .replace(/\s*\)\s*/g, ') ')
+    .trim()
+  
+  return spacedExpression
     .split(/(\bAND\b|\bOR\b|\(|\)|>=|<=|>|<|!=|=)/)
     .map((part, index) => {
       const trimmed = part.trim()
       if (trimmed === 'AND' || trimmed === 'OR') {
-        return <span key={index} className="text-rose-600 font-semibold mx-1">{part}</span>
+        return <span key={index} className="text-rose-600 font-semibold">{part}</span>
       } else if (trimmed === '(' || trimmed === ')') {
         return <span key={index} className="text-amber-600 font-semibold">{part}</span>
       } else if (['>=', '<=', '>', '<', '!=', '='].includes(trimmed)) {

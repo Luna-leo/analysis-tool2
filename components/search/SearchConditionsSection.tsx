@@ -92,15 +92,15 @@ export const SearchConditionsSection: React.FC<SearchConditionsSectionProps> = (
             </Button>
           </CardHeader>
         </CollapsibleTrigger>
-        <CollapsibleContent className={`${isOpen ? 'flex-1' : ''} overflow-hidden`}>
-          <CardContent className={`${isOpen ? 'h-full' : ''} overflow-y-auto space-y-4`}>
+        <CollapsibleContent className={`${isOpen ? 'flex-1 flex flex-col' : ''} overflow-hidden`}>
+          <CardContent className={`${isOpen ? 'flex-1 flex flex-col' : ''} space-y-4 overflow-hidden`}>
         {/* Condition Mode Selection */}
         <RadioGroup
           value={conditionMode}
           onValueChange={(value) => {
             onConditionModeChange(value as ConditionMode)
           }}
-          className="flex gap-6"
+          className="flex gap-6 flex-shrink-0"
         >
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="predefined" id="predefined" />
@@ -112,27 +112,29 @@ export const SearchConditionsSection: React.FC<SearchConditionsSectionProps> = (
           </div>
         </RadioGroup>
 
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 gap-6 flex-1 min-h-0">
           {/* Condition Setup */}
-          <div>
-            <h4 className="text-sm font-medium mb-3 text-muted-foreground">
+          <div className="flex flex-col min-h-0">
+            <h4 className="text-sm font-medium mb-3 text-muted-foreground flex-shrink-0">
               {conditionMode === 'predefined' ? 'Select Condition' : 'Condition Builder'}
             </h4>
             
-            {conditionMode === 'predefined' ? (
-              <PredefinedConditionSelector
-                selectedPredefinedCondition={selectedPredefinedCondition}
-                onSelectedPredefinedConditionChange={onSelectedPredefinedConditionChange}
-                onLoadPredefinedCondition={onLoadPredefinedCondition}
-              />
-            ) : (
-              <ManualConditionBuilder
-                searchConditions={searchConditions}
-                onSearchConditionsChange={onSearchConditionsChange}
-                loadedFromPredefined={loadedFromPredefined}
-                onResetToFresh={onResetToFresh}
-              />
-            )}
+            <div className="flex-1 min-h-0">
+              {conditionMode === 'predefined' ? (
+                <PredefinedConditionSelector
+                  selectedPredefinedCondition={selectedPredefinedCondition}
+                  onSelectedPredefinedConditionChange={onSelectedPredefinedConditionChange}
+                  onLoadPredefinedCondition={onLoadPredefinedCondition}
+                />
+              ) : (
+                <ManualConditionBuilder
+                  searchConditions={searchConditions}
+                  onSearchConditionsChange={onSearchConditionsChange}
+                  loadedFromPredefined={loadedFromPredefined}
+                  onResetToFresh={onResetToFresh}
+                />
+              )}
+            </div>
           </div>
           
           <div>
