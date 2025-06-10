@@ -74,6 +74,9 @@ export function EnhancedTriggerConditionSelector({
   };
   
   const getButtonLabel = () => {
+    if (disabled) {
+      return "Select items to filter";
+    }
     if (!activeFilterId) {
       return "Filter by Conditions";
     }

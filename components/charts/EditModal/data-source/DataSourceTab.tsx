@@ -263,6 +263,7 @@ export function DataSourceTab({
           onAddSearchResults={handleAddSearchResults}
           onClearResults={dataSource.handleClearResults}
           onBulkDurationChange={handleBulkDurationChange}
+          activeFilterName={dataSource.getActiveFilterName()}
         />
 
         {/* Selected Data Sources */}

@@ -25,6 +25,7 @@ interface SearchResultsProps {
   onAddSearchResults: () => void
   onClearResults: () => void
   onBulkDurationChange?: (resultIds: Set<string>, duration: number, unit: 's' | 'm' | 'h') => void
+  activeFilterName?: string | null
 }
 
 export function SearchResults({
@@ -40,6 +41,7 @@ export function SearchResults({
   onAddSearchResults,
   onClearResults,
   onBulkDurationChange,
+  activeFilterName,
 }: SearchResultsProps) {
   const [bulkLegend, setBulkLegend] = useState("")
   const [bulkDuration, setBulkDuration] = useState("")
@@ -70,9 +72,11 @@ export function SearchResults({
             <CollapsibleTrigger className="flex items-center gap-2 text-left hover:bg-muted/50 transition-colors p-1 rounded flex-1">
               {searchResultsOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               <div>
-                <h5 className="font-medium text-sm">Search Results</h5>
+                <h5 className="font-medium text-sm">
+                  Search Results{activeFilterName && ` - ${activeFilterName}`}
+                </h5>
                 <p className="text-xs text-muted-foreground">
-                  {searchResults.length} results found using filter conditions
+                  {searchResults.length} results found{activeFilterName ? ` using filter "${activeFilterName}"` : ''}
                 </p>
               </div>
             </CollapsibleTrigger>

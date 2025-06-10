@@ -189,6 +189,7 @@ export function PeriodPool({
                   onFilterChange={onFilterChange}
                   displayedItemsCount={displayedPeriodPool.length}
                   totalItemsCount={periodPool.length}
+                  disabled={selectedPoolIds.size === 0}
                 />
               </div>
             </div>

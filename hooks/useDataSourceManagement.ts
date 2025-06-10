@@ -160,36 +160,78 @@ export function useDataSourceManagement() {
     return conditions.length === 0 || Math.random() > 0.3
   }
 
-  // Apply filter to period pool
+  // Apply filter to selected period pool items and generate search results
   const handleApplyFilter = (filterId: string | null) => {
     setActiveFilterId(filterId)
     
     if (!filterId) {
-      setFilteredPoolIds(null)
+      // Clear search results when filter is removed
+      setSearchResults([])
+      setSelectedResultIds(new Set())
+      setResultLabels(new Map())
       return
     }
     
     // Get conditions from selected filter
     const filter = getConditionById(filterId)
     if (!filter?.conditions) {
-      setFilteredPoolIds(null)
       return
     }
     
-    // Filter period pool based on conditions
-    const filtered = new Set<string>()
-    periodPool.forEach(item => {
-      if (evaluateItemAgainstConditions(item, filter.conditions)) {
-        filtered.add(item.id)
+    // Get only selected items from period pool
+    const selectedItems = periodPool.filter(item => selectedPoolIds.has(item.id))
+    
+    if (selectedItems.length === 0) {
+      setSearchResults([])
+      return
+    }
+    
+    // Group selected items by Plant/Machine No
+    const groupedItems = new Map<string, EventInfo[]>()
+    selectedItems.forEach(item => {
+      const key = `${item.plant}_${item.machineNo}`
+      if (!groupedItems.has(key)) {
+        groupedItems.set(key, [])
       }
+      groupedItems.get(key)!.push(item)
     })
     
-    setFilteredPoolIds(filtered)
+    // Generate search results based on conditions
+    const results: SearchResult[] = []
+    let resultIndex = 0
+    
+    groupedItems.forEach((items, key) => {
+      const [plant, machineNo] = key.split('_')
+      
+      // For each group, evaluate conditions and create search results
+      items.forEach(item => {
+        if (evaluateItemAgainstConditions(item, filter.conditions)) {
+          // Create a search result for each matching period
+          const result: SearchResult = {
+            id: `result_${Date.now()}_${resultIndex++}`,
+            timestamp: item.start,
+            plant,
+            machineNo,
+            parameters: {}, // Empty parameters for now
+            matchedConditions: [filter.name]
+          }
+          results.push(result)
+        }
+      })
+    })
+    
+    setSearchResults(results)
+    setSelectedResultIds(new Set())
+    setResultLabels(new Map())
   }
 
   const handleClearFilter = () => {
     setActiveFilterId(null)
     setFilteredPoolIds(null)
+    // Clear search results when filter is cleared
+    setSearchResults([])
+    setSelectedResultIds(new Set())
+    setResultLabels(new Map())
   }
 
   // Get filtered or unfiltered pool
@@ -231,5 +273,6 @@ export function useDataSourceManagement() {
     displayedPeriodPool,
     handleApplyFilter,
     handleClearFilter,
+    getActiveFilterName: () => activeFilterId ? getConditionById(activeFilterId)?.name : null,
   }
 }
