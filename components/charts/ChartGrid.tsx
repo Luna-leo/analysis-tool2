@@ -36,7 +36,7 @@ export function ChartGrid({ file }: ChartGridProps) {
   }
 
   useEffect(() => {
-    if (contentRef.current && activeTab === file.id && file.type !== 'csv-import') {
+    if (contentRef.current && activeTab === file.id && file.id !== 'csv-import') {
       const updateChartSizes = () => {
         if (!contentRef.current) return
 
@@ -63,10 +63,10 @@ export function ChartGrid({ file }: ChartGridProps) {
         resizeObserver.disconnect()
       }
     }
-  }, [layoutSettingsMap, activeTab, file.id, currentSettings, file.type])
+  }, [layoutSettingsMap, activeTab, file.id, currentSettings])
 
   // Check if this is a CSV Import tab
-  if (file.type === 'csv-import') {
+  if (file.id === 'csv-import') {
     return <CSVImportPage fileId={file.id} />
   }
 
