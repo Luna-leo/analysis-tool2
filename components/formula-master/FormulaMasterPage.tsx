@@ -38,6 +38,14 @@ export function FormulaMasterPage() {
 
   const filteredFormulas = getFilteredFormulas()
   const categories = getCategories()
+  
+  // Debug: Check for duplicate IDs
+  const formulaIds = filteredFormulas.map(f => f.id)
+  const duplicateIds = formulaIds.filter((id, index) => formulaIds.indexOf(id) !== index)
+  if (duplicateIds.length > 0) {
+    console.warn('Duplicate formula IDs found:', duplicateIds)
+    console.log('All formulas:', filteredFormulas)
+  }
 
   const handleAddNew = () => {
     setSelectedFormula(null)
@@ -142,8 +150,8 @@ export function FormulaMasterPage() {
       {/* Formula Cards Grid */}
       <ScrollArea className="flex-1 p-4">
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          {filteredFormulas.map((formula) => (
-            <Card key={formula.id} className="hover:shadow-md transition-shadow relative group">
+          {filteredFormulas.map((formula, index) => (
+            <Card key={`${formula.id}_${index}`} className="hover:shadow-md transition-shadow relative group">
               <div className="p-4 space-y-3">
                 {/* Header with Actions */}
                 <div className="flex items-start justify-between gap-2">

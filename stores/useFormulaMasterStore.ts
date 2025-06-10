@@ -25,7 +25,7 @@ interface FormulaMasterStore {
 }
 
 export const useFormulaMasterStore = create<FormulaMasterStore>((set, get) => ({
-  formulas: [...mockFormulaMaster],
+  formulas: mockFormulaMaster,
   isLoading: false,
   searchQuery: '',
   selectedCategory: 'all',
