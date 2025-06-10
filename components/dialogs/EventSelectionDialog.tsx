@@ -9,7 +9,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { EventInfo } from "@/types"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Search } from "lucide-react"
 import { formatDateTimeForDisplay } from "@/lib/dateUtils"
@@ -87,63 +86,65 @@ export const EventSelectionDialog: React.FC<EventSelectionDialogProps> = ({
           </div>
 
           {/* Events Table */}
-          <div className="flex-1 overflow-auto border rounded-md">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[40px]">
-                    <Checkbox
-                      checked={selectedEventIds.size === filteredEvents.length && filteredEvents.length > 0}
-                      onCheckedChange={handleSelectAll}
-                    />
-                  </TableHead>
-                  <TableHead>Plant</TableHead>
-                  <TableHead>Machine No</TableHead>
-                  <TableHead>Label</TableHead>
-                  <TableHead>Event</TableHead>
-                  <TableHead>Start</TableHead>
-                  <TableHead>End</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredEvents.map((event) => (
-                  <TableRow key={event.id}>
-                    <TableCell>
+          <div className="rounded-lg border border-gray-200 shadow-sm overflow-hidden flex-1">
+            <div className="overflow-auto" style={{ maxHeight: 'calc(80vh - 250px)' }}>
+              <table className="text-sm w-full border-collapse">
+                <thead className="sticky top-0 z-30">
+                  <tr className="bg-white border-b-2 border-gray-200">
+                    <th className="bg-gray-50 px-2 py-2 text-sm font-semibold text-gray-700 text-center" style={{ width: '40px' }}>
                       <Checkbox
-                        checked={selectedEventIds.has(event.id)}
-                        onCheckedChange={() => handleToggleEvent(event.id)}
+                        checked={selectedEventIds.size === filteredEvents.length && filteredEvents.length > 0}
+                        onCheckedChange={handleSelectAll}
                       />
-                    </TableCell>
-                    <TableCell>{event.plant}</TableCell>
-                    <TableCell>{event.machineNo}</TableCell>
-                    <TableCell>
-                      <div className="leading-tight">
-                        <div>{event.label}</div>
-                        <div className="text-muted-foreground">{event.labelDescription || ""}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="leading-tight">
-                        <div>{event.event}</div>
-                        <div className="text-muted-foreground">{event.eventDetail || ""}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="leading-tight">
-                        <div className="text-sm">{formatDateTimeForDisplay(event.start).date}</div>
-                        <div className="text-sm text-muted-foreground">{formatDateTimeForDisplay(event.start).time}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="leading-tight">
-                        <div className="text-sm">{formatDateTimeForDisplay(event.end).date}</div>
-                        <div className="text-sm text-muted-foreground">{formatDateTimeForDisplay(event.end).time}</div>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </th>
+                    <th className="bg-gray-50 px-2 py-2 text-sm font-semibold text-gray-700 text-left" style={{ width: '100px' }}>Plant</th>
+                    <th className="bg-gray-50 px-2 py-2 text-sm font-semibold text-gray-700 text-left" style={{ width: '120px' }}>Machine No</th>
+                    <th className="bg-gray-50 px-2 py-2 text-sm font-semibold text-gray-700 text-left">Label</th>
+                    <th className="bg-gray-50 px-2 py-2 text-sm font-semibold text-gray-700 text-left">Event</th>
+                    <th className="bg-gray-50 px-2 py-2 text-sm font-semibold text-gray-700 text-left" style={{ width: '100px' }}>Start</th>
+                    <th className="bg-gray-50 px-2 py-2 text-sm font-semibold text-gray-700 text-left" style={{ width: '100px' }}>End</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredEvents.map((event) => (
+                    <tr key={event.id} className="group hover:bg-blue-50 transition-colors border-b border-gray-100">
+                      <td className="px-2 py-1 text-center bg-white group-hover:bg-blue-50">
+                        <Checkbox
+                          checked={selectedEventIds.has(event.id)}
+                          onCheckedChange={() => handleToggleEvent(event.id)}
+                        />
+                      </td>
+                      <td className="px-2 py-1 bg-white group-hover:bg-blue-50">{event.plant}</td>
+                      <td className="px-2 py-1 bg-white group-hover:bg-blue-50">{event.machineNo}</td>
+                      <td className="px-2 py-1 bg-white group-hover:bg-blue-50">
+                        <div className="leading-tight">
+                          <div className="text-sm">{event.label}</div>
+                          <div className="text-xs text-gray-500">{event.labelDescription || ""}</div>
+                        </div>
+                      </td>
+                      <td className="px-2 py-1 bg-white group-hover:bg-blue-50">
+                        <div className="leading-tight">
+                          <div className="text-sm">{event.event}</div>
+                          <div className="text-xs text-gray-500">{event.eventDetail || ""}</div>
+                        </div>
+                      </td>
+                      <td className="px-2 py-1 bg-white group-hover:bg-blue-50">
+                        <div className="leading-tight">
+                          <div className="text-sm">{formatDateTimeForDisplay(event.start).date}</div>
+                          <div className="text-xs text-gray-500">{formatDateTimeForDisplay(event.start).time}</div>
+                        </div>
+                      </td>
+                      <td className="px-2 py-1 bg-white group-hover:bg-blue-50">
+                        <div className="leading-tight">
+                          <div className="text-sm">{formatDateTimeForDisplay(event.end).date}</div>
+                          <div className="text-xs text-gray-500">{formatDateTimeForDisplay(event.end).time}</div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <div className="text-sm text-muted-foreground">
