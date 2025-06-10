@@ -22,10 +22,10 @@ export const ManualConditionBuilder: React.FC<ManualConditionBuilderProps> = ({
   const infoClasses = getStatusClasses("info")
   
   return (
-    <div className={SPACING.card}>
+    <div className="flex flex-col h-full">
       {/* Show source info if loaded from predefined */}
       {loadedFromPredefined && (
-        <div className={infoClasses.container}>
+        <div className={`${infoClasses.container} flex-shrink-0 mb-4`}>
           <div className="flex items-center gap-2">
             <Edit2 className={infoClasses.icon} />
             <div className="flex-1">
@@ -48,10 +48,14 @@ export const ManualConditionBuilder: React.FC<ManualConditionBuilderProps> = ({
         </div>
       )}
       
-      <ConditionBuilder
-        conditions={searchConditions}
-        onChange={onSearchConditionsChange}
-      />
+      <div className="flex-1 overflow-y-auto pr-2 min-h-0">
+        <div className="pb-4">
+          <ConditionBuilder
+            conditions={searchConditions}
+            onChange={onSearchConditionsChange}
+          />
+        </div>
+      </div>
     </div>
   )
 }

@@ -26,7 +26,7 @@ export const ExpressionPreview: React.FC<ExpressionPreviewProps> = ({
           )}
         </h4>
       </div>
-      <div className="border rounded-lg p-4 bg-muted/20 min-h-[100px]">
+      <div className="border rounded-lg p-4 bg-muted/20 min-h-[100px] max-h-[300px] overflow-y-auto">
         <div className="font-mono text-sm break-words">
           {getCurrentExpressionJSX()}
         </div>

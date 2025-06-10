@@ -92,7 +92,7 @@ export const SearchConditionsSection: React.FC<SearchConditionsSectionProps> = (
             </Button>
           </CardHeader>
         </CollapsibleTrigger>
-        <CollapsibleContent className={`${isOpen ? 'flex-1 flex flex-col' : ''} overflow-hidden`}>
+        <CollapsibleContent className={`${isOpen ? 'flex-1 flex flex-col' : ''}`}>
           <CardContent className={`${isOpen ? 'flex-1 flex flex-col' : ''} space-y-4 overflow-hidden`}>
         {/* Condition Mode Selection */}
         <RadioGroup
@@ -119,7 +119,7 @@ export const SearchConditionsSection: React.FC<SearchConditionsSectionProps> = (
               {conditionMode === 'predefined' ? 'Select Condition' : 'Condition Builder'}
             </h4>
             
-            <div className="flex-1 min-h-0">
+            <div className="flex-1 min-h-0 relative">
               {conditionMode === 'predefined' ? (
                 <PredefinedConditionSelector
                   selectedPredefinedCondition={selectedPredefinedCondition}
@@ -127,17 +127,19 @@ export const SearchConditionsSection: React.FC<SearchConditionsSectionProps> = (
                   onLoadPredefinedCondition={onLoadPredefinedCondition}
                 />
               ) : (
-                <ManualConditionBuilder
-                  searchConditions={searchConditions}
-                  onSearchConditionsChange={onSearchConditionsChange}
-                  loadedFromPredefined={loadedFromPredefined}
-                  onResetToFresh={onResetToFresh}
-                />
+                <div className="absolute inset-0">
+                  <ManualConditionBuilder
+                    searchConditions={searchConditions}
+                    onSearchConditionsChange={onSearchConditionsChange}
+                    loadedFromPredefined={loadedFromPredefined}
+                    onResetToFresh={onResetToFresh}
+                  />
+                </div>
               )}
             </div>
           </div>
           
-          <div>
+          <div className="flex flex-col min-h-0">
             <ExpressionPreview
               conditionMode={conditionMode}
               loadedFromPredefined={loadedFromPredefined}

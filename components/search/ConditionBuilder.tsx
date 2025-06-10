@@ -38,7 +38,6 @@ export const ConditionBuilder: React.FC<ConditionBuilderProps> = ({
     const newGroup: SearchCondition = {
       id: generateConditionId(),
       type: 'group',
-      logicalOperator: 'AND',
       conditions: [
         { id: generateConditionId(), type: 'condition', parameter: '', operator: 'gt', value: '' }
       ]
@@ -169,18 +168,8 @@ export const ConditionBuilder: React.FC<ConditionBuilderProps> = ({
             // Group condition
             <div className="border rounded-lg p-3 bg-muted/30">
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-sm font-medium">Group:</span>
-                <select
-                  value={condition.logicalOperator || 'AND'}
-                  onChange={(e) => updateCondition(condition.id, { 
-                    logicalOperator: e.target.value as 'AND' | 'OR' 
-                  })}
-                  className="w-20 h-7 px-2 border rounded text-sm"
-                >
-                  <option value="AND">AND</option>
-                  <option value="OR">OR</option>
-                </select>
-                <span className="text-xs text-muted-foreground">within group</span>
+                <span className="text-sm font-medium">Group</span>
+                <span className="text-xs text-muted-foreground">(Nested conditions)</span>
                 
                 <div className="flex gap-1 ml-auto">
                   <Button

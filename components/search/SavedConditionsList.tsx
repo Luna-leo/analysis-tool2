@@ -23,7 +23,7 @@ export const SavedConditionsList: React.FC<SavedConditionsListProps> = ({
   return (
     <div className="mt-4">
       <h5 className="text-xs font-medium text-muted-foreground mb-2">Saved Conditions</h5>
-      <div className="space-y-2 overflow-y-auto">
+      <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2">
         {savedConditions.map((saved) => (
           <div key={saved.id} className={`flex items-center gap-2 p-2 ${BORDERS.default} text-xs`}>
             <div className="flex-1">

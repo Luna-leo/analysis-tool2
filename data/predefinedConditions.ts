@@ -26,8 +26,7 @@ export const predefinedConditions: PredefinedCondition[] = [
     conditions: [
       { 
         id: 'cond_pressure_group', 
-        type: 'group' as const, 
-        logicalOperator: 'OR' as const,
+        type: 'group' as const,
         conditions: [
           { id: 'cond_pressure_high', type: 'condition' as const, parameter: 'pressure', operator: 'gt' as const, value: '15' },
           { id: 'cond_pressure_low', type: 'condition' as const, parameter: 'pressure', operator: 'lt' as const, value: '5', logicalOperator: 'OR' as const }
@@ -44,8 +43,7 @@ export const predefinedConditions: PredefinedCondition[] = [
       { id: 'cond_temp_critical', type: 'condition' as const, parameter: 'temperature', operator: 'gt' as const, value: '85' },
       { 
         id: 'cond_critical_group', 
-        type: 'group' as const, 
-        logicalOperator: 'OR' as const,
+        type: 'group' as const,
         conditions: [
           { id: 'cond_pressure_critical', type: 'condition' as const, parameter: 'pressure', operator: 'gt' as const, value: '12' },
           { id: 'cond_flow_critical', type: 'condition' as const, parameter: 'flow', operator: 'lt' as const, value: '30', logicalOperator: 'OR' as const }
