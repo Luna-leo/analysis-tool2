@@ -74,6 +74,19 @@ export function Sidebar() {
     openFile(eventMasterNode, 'database')
   }
 
+  const handleOpenInterlockMaster = () => {
+    // Create a special Interlock Master tab
+    const interlockMasterNode: FileNode = {
+      id: 'interlock-master',
+      name: 'Interlock Master',
+      type: 'interlock-master',
+      isSystemNode: true
+    }
+    
+    // Open the Interlock Master as a tab
+    openFile(interlockMasterNode, 'database')
+  }
+
   const renderSidebarContent = () => {
     switch (activeView) {
       case "explorer":
@@ -142,6 +155,17 @@ export function Sidebar() {
               <Button
                 variant="ghost"
                 className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
+                onClick={handleOpenInterlockMaster}
+              >
+                <Lock className="h-4 w-4 shrink-0" />
+                <div className="flex flex-col items-start flex-1">
+                  <span>Interlock Master</span>
+                  <span className="text-xs text-muted-foreground">登録済み管理値、プラント・号機毎</span>
+                </div>
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
                 onClick={() => console.log("Parameter Master")}
               >
                 <Hash className="h-4 w-4 shrink-0" />
@@ -178,17 +202,6 @@ export function Sidebar() {
                 <div className="flex flex-col items-start flex-1">
                   <span>Formula Master</span>
                   <span className="text-xs text-muted-foreground">登録済み数式</span>
-                </div>
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
-                onClick={() => console.log("Interlock Master")}
-              >
-                <Lock className="h-4 w-4 shrink-0" />
-                <div className="flex flex-col items-start flex-1">
-                  <span>Interlock Master</span>
-                  <span className="text-xs text-muted-foreground">登録済み管理値、プラント・号機毎</span>
                 </div>
               </Button>
             </div>
