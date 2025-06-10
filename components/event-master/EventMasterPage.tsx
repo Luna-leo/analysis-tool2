@@ -4,12 +4,12 @@ import { useState, useMemo, useRef, useEffect } from "react"
 import { Plus, Search, Edit, Trash2, Copy } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { mockEventMasterData } from "@/data/eventMaster"
 import { EventMaster } from "@/types"
 import { EventEditDialog } from "./EventEditDialog"
+import { useEventMasterStore } from "@/stores/useEventMasterStore"
 
 export function EventMasterPage() {
-  const [events, setEvents] = useState<EventMaster[]>(mockEventMasterData)
+  const { events, setEvents, addEvent, updateEvent, deleteEvent } = useEventMasterStore()
   const [searchTerm, setSearchTerm] = useState("")
   const [editingEvent, setEditingEvent] = useState<EventMaster | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -67,7 +67,7 @@ export function EventMasterPage() {
 
   const handleDeleteEvent = (eventId: string) => {
     if (confirm("Are you sure you want to delete this event?")) {
-      setEvents(events.filter((e) => e.id !== eventId))
+      deleteEvent(eventId)
     }
   }
 
@@ -78,23 +78,23 @@ export function EventMasterPage() {
       label: `${event.label} (Copy)`,
     }
     // Add to table
-    setEvents([...events, duplicatedEvent])
+    addEvent(duplicatedEvent)
     // Open edit dialog with duplicated data
     setEditingEvent(duplicatedEvent)
     setIsDialogOpen(true)
   }
 
   const handleSaveEvent = (event: EventMaster) => {
-    if (event.id) {
+    if (event.id && events.find(e => e.id === event.id)) {
       // Update existing event
-      setEvents(events.map((e) => (e.id === event.id ? event : e)))
+      updateEvent(event)
     } else {
       // Add new event
       const newEvent = {
         ...event,
-        id: Date.now().toString(),
+        id: event.id || Date.now().toString(),
       }
-      setEvents([...events, newEvent])
+      addEvent(newEvent)
     }
     setIsDialogOpen(false)
     setEditingEvent(null)

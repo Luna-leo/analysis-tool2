@@ -1,42 +1,27 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { EventInfo, SearchCondition, SearchResult } from "@/types"
+import { useEventMasterStore } from "@/stores/useEventMasterStore"
 
 export function useDataSourceManagement() {
-  const [events, setEvents] = useState<EventInfo[]>([
-    {
-      id: "1",
-      plant: "Plant A",
-      machineNo: "M001",
-      label: "Maintenance",
-      labelDescription: "Regular check",
-      event: "Scheduled Stop",
-      eventDetail: "Monthly maintenance",
-      start: "2024-01-15T10:00:00",
-      end: "2024-01-15T12:00:00",
-    },
-    {
-      id: "2",
-      plant: "Plant A",
-      machineNo: "M002",
-      label: "Production",
-      labelDescription: "Normal run",
-      event: "Normal Operation",
-      eventDetail: "Batch processing",
-      start: "2024-01-15T08:00:00",
-      end: "2024-01-15T16:00:00",
-    },
-    {
-      id: "3",
-      plant: "Plant B",
-      machineNo: "M003",
-      label: "Alert",
-      labelDescription: "Warning state",
-      event: "Temperature Warning",
-      eventDetail: "Above threshold",
-      start: "2024-01-15T14:30:00",
-      end: "2024-01-15T14:45:00",
-    },
-  ])
+  const eventMasterData = useEventMasterStore((state) => state.events)
+  
+  // Convert EventMaster data to EventInfo format and sync with Event Master
+  const [events, setEvents] = useState<EventInfo[]>([])
+  
+  useEffect(() => {
+    const eventInfoData = eventMasterData.map(event => ({
+      id: event.id,
+      plant: event.plant,
+      machineNo: event.machineNo,
+      label: event.label,
+      labelDescription: event.labelDescription,
+      event: event.event,
+      eventDetail: event.eventDetail,
+      start: event.start,
+      end: event.end,
+    }))
+    setEvents(eventInfoData)
+  }, [eventMasterData])
 
   const [periodPool, setPeriodPool] = useState<EventInfo[]>([])
   const [selectedPoolIds, setSelectedPoolIds] = useState<Set<string>>(new Set())
