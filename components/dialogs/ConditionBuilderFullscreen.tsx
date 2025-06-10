@@ -36,6 +36,7 @@ interface ConditionBuilderFullscreenProps {
   conditionDescription?: string;
   onConditionNameChange?: (name: string) => void;
   onConditionDescriptionChange?: (description: string) => void;
+  saveButtonText?: string;
 }
 
 export function ConditionBuilderFullscreen({
@@ -62,7 +63,8 @@ export function ConditionBuilderFullscreen({
   conditionName,
   conditionDescription,
   onConditionNameChange,
-  onConditionDescriptionChange
+  onConditionDescriptionChange,
+  saveButtonText = "Save Condition"
 }: ConditionBuilderFullscreenProps) {
   const [isExpressionOpen, setIsExpressionOpen] = useState(true);
   
@@ -192,7 +194,7 @@ export function ConditionBuilderFullscreen({
         </Button>
         <Button onClick={onSave} disabled={!canSave}>
           <Save className="h-4 w-4 mr-2" />
-          Save Condition
+          {saveButtonText}
         </Button>
       </div>
     </div>

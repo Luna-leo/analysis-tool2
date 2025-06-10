@@ -1,14 +1,12 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
 import { PredefinedCondition } from "@/data/predefinedConditions"
 import { SearchCondition } from "@/types"
-import { formatConditionExpression } from "@/lib/conditionUtils"
-import { BaseConditionDialog } from "@/components/dialogs/BaseConditionDialog"
-import { ConditionNameFields } from "@/components/condition-dialogs/ConditionNameFields"
-import { ConditionEditorCard } from "@/components/condition-editor/ConditionEditorCard"
+import { formatConditionExpression, formatConditionExpressionToJSX } from "@/lib/conditionUtils"
+import { ConditionBuilderFullscreen } from "@/components/dialogs/ConditionBuilderFullscreen"
 import { validateConditionForm, getDialogTitle } from "@/utils/conditionValidation"
+import { useSearchConditions } from "@/hooks/useSearchConditions"
 
 interface TriggerConditionDialogProps {
   open: boolean
@@ -27,90 +25,84 @@ export function TriggerConditionDialog({
 }: TriggerConditionDialogProps) {
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
-  const [conditions, setConditions] = useState<SearchCondition[]>([
-    {
-      id: "1",
-      type: "condition",
-      parameter: "",
-      operator: "gt",
-      value: ""
-    }
-  ])
+  const {
+    conditionMode,
+    setConditionMode,
+    selectedPredefinedCondition,
+    setSelectedPredefinedCondition,
+    searchConditions,
+    setSearchConditions,
+    savedConditions,
+    loadedFromPredefined,
+    loadPredefinedCondition,
+    resetToFresh,
+    showSaveDialog,
+    loadSavedCondition,
+    deleteSavedCondition,
+    getCurrentExpressionJSX
+  } = useSearchConditions()
 
   useEffect(() => {
     if (open) {
       if (initialCondition) {
         setName(mode === "duplicate" ? `${initialCondition.name} (Copy)` : initialCondition.name)
         setDescription(initialCondition.description || "")
-        setConditions(JSON.parse(JSON.stringify(initialCondition.conditions))) // Deep clone
+        setSearchConditions(JSON.parse(JSON.stringify(initialCondition.conditions))) // Deep clone
       } else {
         // Reset for new condition
         setName("")
         setDescription("")
-        setConditions([
-          {
-            id: "1",
-            type: "condition",
-            parameter: "",
-            operator: "gt",
-            value: ""
-          }
-        ])
+        resetToFresh()
       }
     }
   }, [open, initialCondition, mode])
 
   const handleSave = () => {
-    const expression = formatConditionExpression(conditions)
+    const expression = formatConditionExpression(searchConditions)
     
     const condition: PredefinedCondition = {
-      id: initialCondition?.id || `condition_${Date.now()}`,
+      id: mode === "duplicate" ? `condition_${Date.now()}` : (initialCondition?.id || `condition_${Date.now()}`),
       name,
       description,
       expression,
-      conditions
+      conditions: searchConditions
     }
 
     onSave(condition)
     onOpenChange(false)
   }
 
-  const isValid = validateConditionForm(name, conditions)
+  const isValid = validateConditionForm(name, searchConditions)
+
+  if (!open) return null
 
   return (
-    <BaseConditionDialog
-      open={open}
-      onOpenChange={onOpenChange}
+    <ConditionBuilderFullscreen
+      conditionMode={conditionMode}
+      onConditionModeChange={setConditionMode}
+      selectedPredefinedCondition={selectedPredefinedCondition}
+      onSelectedPredefinedConditionChange={setSelectedPredefinedCondition}
+      loadedFromPredefined={loadedFromPredefined}
+      searchConditions={searchConditions}
+      onSearchConditionsChange={setSearchConditions}
+      savedConditions={savedConditions}
+      getCurrentExpressionJSX={getCurrentExpressionJSX}
+      onLoadPredefinedCondition={loadPredefinedCondition}
+      onResetToFresh={resetToFresh}
+      onShowSaveDialog={showSaveDialog}
+      onLoadSavedCondition={loadSavedCondition}
+      onDeleteSavedCondition={deleteSavedCondition}
+      onSave={handleSave}
+      onClose={() => onOpenChange(false)}
+      canSave={isValid}
       title={getDialogTitle(mode)}
-      size="full"
-      footer={
-        <>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={!isValid}>
-            {mode === "edit" ? "Update Condition" : "Create Condition"}
-          </Button>
-        </>
-      }
-    >
-      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-        {/* Basic Information */}
-        <ConditionNameFields
-          name={name}
-          description={description}
-          onNameChange={setName}
-          onDescriptionChange={setDescription}
-        />
-
-        {/* Build Condition and Expression Preview side by side */}
-        <ConditionEditorCard
-          conditions={conditions}
-          onConditionsChange={setConditions}
-          showExpressionPreview={true}
-          twoColumnLayout={true}
-        />
-      </div>
-    </BaseConditionDialog>
+      isFullscreen={true}
+      onToggleFullscreen={() => {}}
+      conditionName={name}
+      conditionDescription={description}
+      onConditionNameChange={setName}
+      onConditionDescriptionChange={setDescription}
+      saveButtonText={mode === "edit" ? "Update Condition" : "Create Condition"}
+    />
   )
 }
