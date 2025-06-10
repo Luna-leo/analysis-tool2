@@ -8,7 +8,7 @@ declare module 'react' {
     webkitdirectory?: string
   }
 }
-import { Upload, FileText, Download, CheckCircle, AlertCircle } from "lucide-react"
+import { FolderOpen, FileText, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -16,23 +16,13 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CSVDataSourceType } from "@/types"
 import { getDataSourceTypes, getDataSourceConfig } from "@/data/dataSourceTypes"
-import { parseCSVFiles, validateCSVStructure, mapCSVDataToStandardFormat, ParsedCSVData } from "@/utils/csvUtils"
 import { useToast } from "@/hooks/use-toast"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface CSVImportContentProps {
   mode?: 'page' | 'dialog'
   onImportComplete?: () => void
-}
-
-interface ImportStatus {
-  fileName: string
-  status: 'pending' | 'processing' | 'success' | 'error'
-  message?: string
-  rowCount?: number
 }
 
 // Convert wildcard pattern to regex
@@ -48,14 +38,10 @@ export function CSVImportContent({ mode = 'page', onImportComplete }: CSVImportC
   const [dataSourceType, setDataSourceType] = useState<CSVDataSourceType>("SSAC")
   const [plant, setPlant] = useState("")
   const [machineNo, setMachineNo] = useState("")
-  const [files, setFiles] = useState<File[]>([])
-  const [allFiles, setAllFiles] = useState<File[]>([]) // All selected files before filtering
+  const [filePaths, setFilePaths] = useState<string[]>([])
+  const [allFilePaths, setAllFilePaths] = useState<string[]>([]) // All selected file paths before filtering
   const [fileNamePattern, setFileNamePattern] = useState("")
   const [patternType, setPatternType] = useState<"wildcard" | "regex">("wildcard")
-  const [isDragging, setIsDragging] = useState(false)
-  const [importStatuses, setImportStatuses] = useState<ImportStatus[]>([])
-  const [parsedData, setParsedData] = useState<ParsedCSVData[]>([])
-  const [activePreviewIndex, setActivePreviewIndex] = useState(0)
   const [isImporting, setIsImporting] = useState(false)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -63,63 +49,43 @@ export function CSVImportContent({ mode = 'page', onImportComplete }: CSVImportC
   const { toast } = useToast()
 
   // Filter files based on pattern
-  const filterFilesByPattern = useCallback((filesToFilter: File[]): File[] => {
-    if (!fileNamePattern) return filesToFilter
+  const filterFilesByPattern = useCallback((pathsToFilter: string[]): string[] => {
+    if (!fileNamePattern) return pathsToFilter
 
     try {
       const regex = patternType === 'regex' 
         ? new RegExp(fileNamePattern, 'i')
         : wildcardToRegex(fileNamePattern)
 
-      return filesToFilter.filter(file => regex.test(file.name))
+      return pathsToFilter.filter(path => {
+        const fileName = path.split('/').pop() || path.split('\\').pop() || ''
+        return regex.test(fileName)
+      })
     } catch (error) {
       // Invalid regex pattern
-      return filesToFilter
+      return pathsToFilter
     }
   }, [fileNamePattern, patternType])
 
   // Apply pattern filter whenever pattern or files change
   useEffect(() => {
-    const filtered = filterFilesByPattern(allFiles)
-    setFiles(filtered)
-  }, [allFiles, fileNamePattern, patternType, filterFilesByPattern])
+    const filtered = filterFilesByPattern(allFilePaths)
+    setFilePaths(filtered)
+  }, [allFilePaths, fileNamePattern, patternType, filterFilesByPattern])
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files
     if (selectedFiles) {
-      const csvFiles = Array.from(selectedFiles).filter(file => 
-        file.name.endsWith('.csv') || file.name.endsWith('.CSV')
-      )
-      setAllFiles(csvFiles)
-      setImportStatuses([])
-      setParsedData([])
+      const paths = Array.from(selectedFiles)
+        .filter(file => file.name.endsWith('.csv') || file.name.endsWith('.CSV'))
+        .map(file => file.name) // Note: Browser security prevents getting full paths
+      setAllFilePaths(paths)
     }
   }, [])
 
-  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    setIsDragging(true)
-  }, [])
 
-  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    setIsDragging(false)
-  }, [])
-
-  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    setIsDragging(false)
-
-    const droppedFiles = Array.from(e.dataTransfer.files).filter(file => 
-      file.name.endsWith('.csv') || file.name.endsWith('.CSV')
-    )
-    setAllFiles(droppedFiles)
-    setImportStatuses([])
-    setParsedData([])
-  }, [])
-
-  const handleValidate = async () => {
-    if (!plant || !machineNo || files.length === 0) {
+  const handleImport = async () => {
+    if (!plant || !machineNo || filePaths.length === 0) {
       toast({
         title: "入力エラー",
         description: "すべての必須項目を入力してください",
@@ -128,97 +94,33 @@ export function CSVImportContent({ mode = 'page', onImportComplete }: CSVImportC
       return
     }
 
-    const statuses: ImportStatus[] = files.map(file => ({
-      fileName: file.name,
-      status: 'pending'
-    }))
-    setImportStatuses(statuses)
-
-    try {
-      // Parse CSV files
-      const parseResult = await parseCSVFiles(files)
-      
-      if (!parseResult.success || !parseResult.data) {
-        throw new Error(parseResult.error || "CSV解析に失敗しました")
-      }
-
-      setParsedData(parseResult.data)
-      
-      // Validate each file
-      const updatedStatuses: ImportStatus[] = []
-      
-      for (let i = 0; i < parseResult.data.length; i++) {
-        const parsedFile = parseResult.data[i]
-        const validation = validateCSVStructure(parsedFile.headers, dataSourceType)
-        
-        if (validation.valid) {
-          updatedStatuses.push({
-            fileName: parsedFile.metadata.fileName,
-            status: 'success',
-            message: '検証成功',
-            rowCount: parsedFile.metadata.rowCount
-          })
-        } else {
-          updatedStatuses.push({
-            fileName: parsedFile.metadata.fileName,
-            status: 'error',
-            message: `必須カラムが不足: ${validation.missingColumns?.join(', ')}`
-          })
-        }
-      }
-      
-      setImportStatuses(updatedStatuses)
-    } catch (error) {
-      toast({
-        title: "検証エラー",
-        description: error instanceof Error ? error.message : "CSV検証中にエラーが発生しました",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleImport = async () => {
-    const validFiles = importStatuses.filter(s => s.status === 'success')
-    if (validFiles.length === 0) {
-      toast({
-        title: "インポートエラー",
-        description: "インポート可能なファイルがありません。まず検証を実行してください。",
-        variant: "destructive",
-      })
-      return
-    }
-
     setIsImporting(true)
     try {
-      let totalRowsImported = 0
-      
-      for (const parsedFile of parsedData) {
-        const status = importStatuses.find(s => s.fileName === parsedFile.metadata.fileName)
-        if (status?.status !== 'success') continue
-
-        // Map data to standard format
-        const standardData = mapCSVDataToStandardFormat(
-          parsedFile,
-          dataSourceType,
-          plant,
-          machineNo
-        )
-
-        // TODO: Save to database or data store
-        console.log('Imported data:', standardData)
-        totalRowsImported += standardData.length
+      // Prepare import conditions
+      const importConditions = {
+        dataSourceType,
+        plant,
+        machineNo,
+        filePaths,
+        fileNamePattern: fileNamePattern || undefined,
+        patternType: fileNamePattern ? patternType : undefined,
+        timestamp: new Date().toISOString()
       }
 
+      // Log to console (temporary implementation)
+      console.log('CSV Import Conditions:', importConditions)
+
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
       toast({
-        title: "インポート完了",
-        description: `${validFiles.length}個のファイルから${totalRowsImported}件のデータをインポートしました`,
+        title: "インポート条件送信",
+        description: `${filePaths.length}個のファイルの条件をAPIに送信しました（仮実装）`,
       })
 
       // Reset form
-      setFiles([])
-      setAllFiles([])
-      setImportStatuses([])
-      setParsedData([])
+      setFilePaths([])
+      setAllFilePaths([])
       setFileNamePattern("")
       
       // Call completion callback if provided
@@ -236,7 +138,7 @@ export function CSVImportContent({ mode = 'page', onImportComplete }: CSVImportC
     }
   }
 
-  const isValid = plant && machineNo && files.length > 0
+  const isValid = plant && machineNo && filePaths.length > 0
 
   if (mode === 'dialog') {
     return (
@@ -350,42 +252,39 @@ export function CSVImportContent({ mode = 'page', onImportComplete }: CSVImportC
                 日付を含む
               </Button>
             </div>
-            {fileNamePattern && allFiles.length > 0 && (
+            {fileNamePattern && allFilePaths.length > 0 && (
               <div className="text-xs mt-1">
                 <span className="text-muted-foreground">フィルタ結果: </span>
-                <span className={files.length > 0 ? "text-green-600" : "text-red-600"}>
-                  {files.length}個のファイルがマッチ
+                <span className={filePaths.length > 0 ? "text-green-600" : "text-red-600"}>
+                  {filePaths.length}個のファイルがマッチ
                 </span>
-                {files.length === 0 && allFiles.length > 0 && (
-                  <span className="text-muted-foreground"> (全{allFiles.length}個中)</span>
+                {filePaths.length === 0 && allFilePaths.length > 0 && (
+                  <span className="text-muted-foreground"> (全{allFilePaths.length}個中)</span>
                 )}
               </div>
             )}
-            {allFiles.length === 0 && (
+            {allFilePaths.length === 0 && (
               <div className="text-xs text-muted-foreground text-center py-2">
                 ファイルを選択するとフィルタリング機能が有効になります
               </div>
             )}
           </div>
 
-          {/* File Upload Area */}
+          {/* File Selection Area */}
           <div className="space-y-2">
             <Label className="text-sm">ファイル選択</Label>
             <div
               className={`
                 border-2 border-dashed rounded-lg p-4 text-center transition-colors
-                ${isDragging ? 'border-primary bg-primary/5' : 'border-gray-300'}
-                ${files.length > 0 ? 'bg-gray-50' : ''}
+                border-gray-300
+                ${filePaths.length > 0 ? 'bg-gray-50' : ''}
               `}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
             >
-              {files.length === 0 ? (
+              {filePaths.length === 0 ? (
                 <>
-                  <Upload className="mx-auto h-10 w-10 text-gray-400" />
+                  <FolderOpen className="mx-auto h-10 w-10 text-gray-400" />
                   <p className="mt-2 text-sm text-gray-600">
-                    CSVファイルをドラッグ＆ドロップ
+                    CSVファイルを選択してください
                   </p>
                   <div className="mt-2 flex gap-2 justify-center">
                     <Button
@@ -427,16 +326,13 @@ export function CSVImportContent({ mode = 'page', onImportComplete }: CSVImportC
                 <div className="space-y-2">
                   <FileText className="mx-auto h-10 w-10 text-primary" />
                   <p className="text-sm font-medium">
-                    {allFiles.length}個のファイルから{files.length}個が選択されました
+                    {allFilePaths.length}個のファイルから{filePaths.length}個が選択されました
                   </p>
                   <ScrollArea className="h-20 w-full rounded border p-2">
                     <div className="space-y-1">
-                      {files.map((file, index) => (
+                      {filePaths.map((path, index) => (
                         <div key={index} className="flex items-center justify-between text-xs">
-                          <span className="truncate">{file.name}</span>
-                          <span className="text-muted-foreground">
-                            {(file.size / 1024).toFixed(1)} KB
-                          </span>
+                          <span className="truncate">{path}</span>
                         </div>
                       ))}
                     </div>
@@ -446,8 +342,8 @@ export function CSVImportContent({ mode = 'page', onImportComplete }: CSVImportC
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      setAllFiles([])
-                      setFiles([])
+                      setAllFilePaths([])
+                      setFilePaths([])
                       setFileNamePattern("")
                     }}
                   >
@@ -458,19 +354,11 @@ export function CSVImportContent({ mode = 'page', onImportComplete }: CSVImportC
             </div>
           </div>
 
-          {files.length > 0 && (
+          {filePaths.length > 0 && (
             <div className="flex gap-2 justify-end">
               <Button
-                onClick={handleValidate}
-                disabled={!isValid}
-                size="sm"
-                variant="outline"
-              >
-                検証
-              </Button>
-              <Button
                 onClick={handleImport}
-                disabled={!isValid || importStatuses.filter(s => s.status === 'success').length === 0 || isImporting}
+                disabled={!isValid || isImporting}
                 size="sm"
               >
                 {isImporting ? "インポート中..." : "インポート"}
@@ -488,15 +376,15 @@ export function CSVImportContent({ mode = 'page', onImportComplete }: CSVImportC
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <h2 className="text-xl font-bold">CSV Import</h2>
-          {importStatuses.length > 0 && importStatuses.filter(s => s.status === 'success').length > 0 && (
+          {filePaths.length > 0 && (
             <span className="text-sm text-green-600">
-              {importStatuses.filter(s => s.status === 'success').length}個のファイルが検証済み
+              {filePaths.length}個のファイルが選択されています
             </span>
           )}
         </div>
         <Button
           onClick={handleImport}
-          disabled={!isValid || importStatuses.filter(s => s.status === 'success').length === 0 || isImporting}
+          disabled={!isValid || isImporting}
           size="default"
           className="min-w-[120px]"
         >
@@ -630,18 +518,18 @@ export function CSVImportContent({ mode = 'page', onImportComplete }: CSVImportC
                     日付を含む
                   </Button>
                 </div>
-                {fileNamePattern && allFiles.length > 0 && (
+                {fileNamePattern && allFilePaths.length > 0 && (
                   <div className="text-xs mt-1">
                     <span className="text-muted-foreground">フィルタ結果: </span>
-                    <span className={files.length > 0 ? "text-green-600" : "text-red-600"}>
-                      {files.length}個のファイルがマッチ
+                    <span className={filePaths.length > 0 ? "text-green-600" : "text-red-600"}>
+                      {filePaths.length}個のファイルがマッチ
                     </span>
-                    {files.length === 0 && allFiles.length > 0 && (
-                      <span className="text-muted-foreground"> (全{allFiles.length}個中)</span>
+                    {filePaths.length === 0 && allFilePaths.length > 0 && (
+                      <span className="text-muted-foreground"> (全{allFilePaths.length}個中)</span>
                     )}
                   </div>
                 )}
-                {allFiles.length === 0 && (
+                {allFilePaths.length === 0 && (
                   <div className="text-xs text-muted-foreground text-center py-2">
                     ファイルを選択するとフィルタリング機能が有効になります
                   </div>
@@ -654,18 +542,15 @@ export function CSVImportContent({ mode = 'page', onImportComplete }: CSVImportC
                 <div
                   className={`
                     border-2 border-dashed rounded-lg p-4 text-center transition-colors
-                    ${isDragging ? 'border-primary bg-primary/5' : 'border-gray-300'}
-                    ${files.length > 0 ? 'bg-gray-50' : ''}
+                    border-gray-300
+                    ${filePaths.length > 0 ? 'bg-gray-50' : ''}
                   `}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
                 >
-                  {files.length === 0 ? (
+                  {filePaths.length === 0 ? (
                     <>
-                      <Upload className="mx-auto h-10 w-10 text-gray-400" />
+                      <FolderOpen className="mx-auto h-10 w-10 text-gray-400" />
                       <p className="mt-2 text-sm text-gray-600">
-                        CSVファイルをドラッグ＆ドロップ
+                        CSVファイルを選択してください
                       </p>
                       <div className="mt-2 flex gap-2 justify-center">
                         <Button
@@ -707,16 +592,13 @@ export function CSVImportContent({ mode = 'page', onImportComplete }: CSVImportC
                     <div className="space-y-2">
                       <FileText className="mx-auto h-10 w-10 text-primary" />
                       <p className="text-sm font-medium">
-                        {allFiles.length}個のファイルから{files.length}個が選択されました
+                        {allFilePaths.length}個のファイルから{filePaths.length}個が選択されました
                       </p>
                       <ScrollArea className="h-20 w-full rounded border p-2">
                         <div className="space-y-1">
-                          {files.map((file, index) => (
+                          {filePaths.map((path, index) => (
                             <div key={index} className="flex items-center justify-between text-xs">
-                              <span className="truncate">{file.name}</span>
-                              <span className="text-muted-foreground">
-                                {(file.size / 1024).toFixed(1)} KB
-                              </span>
+                              <span className="truncate">{path}</span>
                             </div>
                           ))}
                         </div>
@@ -726,10 +608,8 @@ export function CSVImportContent({ mode = 'page', onImportComplete }: CSVImportC
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          setAllFiles([])
-                          setFiles([])
-                          setImportStatuses([])
-                          setParsedData([])
+                          setAllFilePaths([])
+                          setFilePaths([])
                           setFileNamePattern("")
                         }}
                       >
@@ -739,96 +619,32 @@ export function CSVImportContent({ mode = 'page', onImportComplete }: CSVImportC
                   )}
                 </div>
               </div>
-
-              {files.length > 0 && (
-                <div className="flex gap-2 justify-end">
-                  <Button
-                    onClick={handleValidate}
-                    disabled={!isValid}
-                    size="sm"
-                  >
-                    検証
-                  </Button>
-                </div>
-              )}
             </CardContent>
           </Card>
         </div>
 
-        {/* Right Column - Preview and Status */}
+        {/* Right Column - Selected Files */}
         <div className="space-y-3 overflow-y-auto">
-          {importStatuses.length > 0 && (
+          {filePaths.length > 0 && (
             <Card className="h-fit">
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">検証結果</CardTitle>
+                <CardTitle className="text-base">選択されたファイル</CardTitle>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-32">
+                <ScrollArea className="h-[400px]">
                   <div className="space-y-2">
-                    {importStatuses.map((status, index) => (
+                    {filePaths.map((path, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between p-2 rounded-lg border cursor-pointer hover:bg-muted/50"
-                        onClick={() => setActivePreviewIndex(index)}
+                        className="flex items-center gap-2 p-2 rounded-lg border hover:bg-muted/50"
                       >
-                        <div className="flex items-center gap-2">
-                          {status.status === 'success' ? (
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                          ) : status.status === 'error' ? (
-                            <AlertCircle className="h-4 w-4 text-red-500" />
-                          ) : (
-                            <FileText className="h-4 w-4 text-gray-400" />
-                          )}
-                          <div>
-                            <p className="text-sm font-medium">{status.fileName}</p>
-                            {status.message && (
-                              <p className="text-xs text-muted-foreground">{status.message}</p>
-                            )}
-                          </div>
+                        <FileText className="h-4 w-4 text-gray-400" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{path}</p>
                         </div>
-                        {status.rowCount !== undefined && (
-                          <Badge variant="secondary" className="text-xs">{status.rowCount}行</Badge>
-                        )}
                       </div>
                     ))}
                   </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          )}
-
-          {parsedData.length > 0 && (
-            <Card className="flex-1 min-h-0">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">データプレビュー</CardTitle>
-                <CardDescription className="text-xs">
-                  {parsedData[activePreviewIndex]?.metadata.fileName} - 最初の5行
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-3">
-                <ScrollArea className="h-[300px] w-full">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        {parsedData[activePreviewIndex]?.headers.map((header, index) => (
-                          <TableHead key={index} className="whitespace-nowrap text-xs p-2">
-                            {header}
-                          </TableHead>
-                        ))}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {parsedData[activePreviewIndex]?.rows.slice(0, 5).map((row, rowIndex) => (
-                        <TableRow key={rowIndex}>
-                          {row.map((cell, cellIndex) => (
-                            <TableCell key={cellIndex} className="whitespace-nowrap text-xs p-2">
-                              {cell}
-                            </TableCell>
-                          ))}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
                 </ScrollArea>
               </CardContent>
             </Card>
