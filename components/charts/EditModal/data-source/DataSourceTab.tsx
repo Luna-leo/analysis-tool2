@@ -230,7 +230,7 @@ export function DataSourceTab({
   return (
     <>
       <div className="space-y-4">
-        {/* Period Pool */}
+        {/* Collected Periods */}
         <PeriodPool
           periodPool={dataSource.periodPool}
           displayedPeriodPool={dataSource.displayedPeriodPool}

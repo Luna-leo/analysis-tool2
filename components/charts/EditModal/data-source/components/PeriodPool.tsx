@@ -52,7 +52,7 @@ export function PeriodPool({
           <div className="flex items-center justify-between">
             <CollapsibleTrigger className="flex items-center gap-2 text-left hover:bg-muted/50 transition-colors p-1 rounded">
               {periodPoolOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-              <h4 className="font-medium text-sm">Period Pool</h4>
+              <h4 className="font-medium text-sm">Collected Periods</h4>
               {displayedPeriodPool.length > 0 && (
                 <span className="text-xs text-muted-foreground">
                   ({displayedPeriodPool.length}{activeFilterId && ` of ${periodPool.length}`})
@@ -167,7 +167,7 @@ export function PeriodPool({
               </div>
             ) : (
               <div className="text-center py-8 text-sm text-muted-foreground">
-                No periods in pool. Use Manual Entry or From Events to add periods.
+                No collected periods. Use Manual Entry, From Events, or Import CSV to add periods.
               </div>
             )}
 
