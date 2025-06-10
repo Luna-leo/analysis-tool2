@@ -3,6 +3,7 @@
 import React from "react"
 import { InterlockRegistrationDialog } from "./InterlockRegistrationDialog"
 import { FormulaRegistrationDialog } from "./FormulaRegistrationDialog"
+import { formulaDefinitionToMaster } from "@/utils/formulaUtils"
 import { ChartComponent, InterlockDefinition } from "@/types"
 import { FormulaMaster } from "@/data/formulaMaster"
 
@@ -72,8 +73,8 @@ export function YParameterDialogs({
         onSave={handleFormulaSave}
         mode={formulaMode}
         initialFormula={
-          editingFormulaIndex !== null && formulaMode !== "create"
-            ? editingChart.yAxisParams?.[editingFormulaIndex]?.formulaDefinition
+          editingFormulaIndex !== null && formulaMode !== "create" && editingChart.yAxisParams?.[editingFormulaIndex]?.formulaDefinition
+            ? formulaDefinitionToMaster(editingChart.yAxisParams[editingFormulaIndex].formulaDefinition!)
             : undefined
         }
       />

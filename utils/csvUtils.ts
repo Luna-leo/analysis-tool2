@@ -1,4 +1,5 @@
 import { CSVDataSourceType } from "@/types"
+import { StandardizedCSVData } from "@/types/csv-data"
 import { getDataSourceConfig } from "@/data/dataSourceTypes"
 
 export interface ParsedCSVData {
@@ -105,7 +106,7 @@ export function mapCSVDataToStandardFormat(
   dataSourceType: CSVDataSourceType,
   plant: string,
   machineNo: string
-): any[] {
+): StandardizedCSVData[] {
   const config = getDataSourceConfig(dataSourceType)
   const headerIndexMap = new Map<string, number>()
   
@@ -115,7 +116,7 @@ export function mapCSVDataToStandardFormat(
   })
 
   return parsedData.rows.map((row, rowIndex) => {
-    const standardData: any = {
+    const standardData: StandardizedCSVData = {
       plant,
       machineNo,
       sourceType: dataSourceType,

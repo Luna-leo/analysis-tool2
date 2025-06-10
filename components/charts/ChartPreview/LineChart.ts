@@ -1,10 +1,16 @@
 import * as d3 from "d3"
 import { ChartComponent, MarkerType } from "@/types"
+import { ChartDataPoint } from "@/types/chart-data"
 import { getTimeFormat } from "./utils"
+
+interface ChartDataItem {
+  timestamp: Date | number
+  [key: string]: number | Date | undefined
+}
 
 interface LineChartProps {
   g: d3.Selection<SVGGElement, unknown, null, undefined>
-  data: any[]
+  data: ChartDataItem[]
   width: number
   height: number
   editingChart: ChartComponent
@@ -217,7 +223,7 @@ export const renderLineChart = ({ g, data, width, height, editingChart, scalesRe
       yDomain = [0, 100]
     } else {
       const extent = d3.extent(allValues)
-      yDomain = extent[0] !== undefined && extent[1] !== undefined ? [extent[0], extent[1]] : [0, 100]
+      yDomain = extent[0] !== undefined && extent[1] !== undefined ? [extent[0] as number, extent[1] as number] : [0, 100]
     }
   }
   
@@ -262,7 +268,7 @@ export const renderLineChart = ({ g, data, width, height, editingChart, scalesRe
     
     // Draw line if line width > 0
     if (showLine) {
-      const paramLine = d3.line<any>()
+      const paramLine = d3.line<ChartDataItem>()
         .x(d => xScale(d.timestamp))
         .y(d => yScale(d[param.parameter] || 0))
         .curve(d3.curveMonotoneX)

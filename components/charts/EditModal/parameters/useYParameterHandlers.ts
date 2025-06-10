@@ -1,7 +1,8 @@
-import { ChartComponent, InterlockDefinition } from "@/types"
+import { ChartComponent, InterlockDefinition, InterlockMaster } from "@/types"
 import { useInterlockMasterStore } from "@/stores/useInterlockMasterStore"
 import { useFormulaMasterStore } from "@/stores/useFormulaMasterStore"
 import { FormulaMaster } from "@/data/formulaMaster"
+import { formulaMasterToDefinition } from "@/utils/formulaUtils"
 
 interface UseYParameterHandlersProps {
   editingChart: ChartComponent
@@ -39,7 +40,7 @@ export function useYParameterHandlers({
       ...newParams[index],
       parameter: formula.name,
       formulaId: formula.id,
-      formulaDefinition: formula
+      formulaDefinition: formulaMasterToDefinition(formula)
     }
     setEditingChart({ ...editingChart, yAxisParams: newParams })
     
@@ -156,7 +157,7 @@ export function useYParameterHandlers({
         const newParams = [...(editingChart.yAxisParams || [])]
         newParams[index] = {
           ...newParams[index],
-          formulaDefinition: selectedFormula
+          formulaDefinition: formulaMasterToDefinition(selectedFormula)
         }
         setEditingChart({ ...editingChart, yAxisParams: newParams })
         setShowFormulaDialog(true)
@@ -166,7 +167,7 @@ export function useYParameterHandlers({
           ...newParams[index],
           parameter: selectedFormula.name,
           formulaId: value,
-          formulaDefinition: selectedFormula
+          formulaDefinition: formulaMasterToDefinition(selectedFormula)
         }
         setEditingChart({ ...editingChart, yAxisParams: newParams })
       }
@@ -254,7 +255,7 @@ export function useYParameterHandlers({
   }
 
   const filterFormulas = (formulas: FormulaMaster[]) => {
-    const query = "" // This will be passed from the component
+    const query: string = "" // This will be passed from the component
     if (!query) return formulas
 
     return formulas.filter(formula => {
@@ -272,11 +273,11 @@ export function useYParameterHandlers({
     })
   }
 
-  const filterInterlocks = (interlocks: typeof mockInterlockMaster) => {
-    const query = "" // This will be passed from the component
+  const filterInterlocks = (interlocks: InterlockMaster[]) => {
+    const query: string = "" // This will be passed from the component
     if (!query) return interlocks
 
-    return interlocks.filter(master => {
+    return interlocks.filter((master: InterlockMaster) => {
       const searchableText = [
         master.name,
         master.plant_name,

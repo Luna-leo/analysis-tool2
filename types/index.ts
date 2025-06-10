@@ -1,3 +1,7 @@
+import { FormulaDefinition } from './formula'
+import { StandardizedCSVData } from './csv-data'
+import { ChartDataPoint } from './chart-data'
+
 export type ActiveView = "explorer" | "search" | "database" | "calculator" | "settings"
 
 export type ConditionMode = "predefined" | "manual"
@@ -128,7 +132,7 @@ export interface ChartComponent {
     selectedThresholds?: string[]
     // For Formula type
     formulaId?: string
-    formulaDefinition?: any // Using any temporarily to avoid circular dependency
+    formulaDefinition?: FormulaDefinition
   }>
 }
 
@@ -237,4 +241,5 @@ export interface EventMaster {
   eventDetail: string
   start: Date | string
   end: Date | string
+  [key: string]: string | number | boolean | Date | null | undefined
 }

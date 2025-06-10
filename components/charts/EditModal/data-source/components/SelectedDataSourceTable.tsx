@@ -12,7 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { EventInfo } from "@/types"
-import { formatDateTimeForDisplay } from "@/lib/dateUtils"
+import { formatDateTimeForDisplay } from "@/utils/dateUtils"
 
 interface SelectedDataSourceTableProps {
   selectedDataSourceItems: EventInfo[]

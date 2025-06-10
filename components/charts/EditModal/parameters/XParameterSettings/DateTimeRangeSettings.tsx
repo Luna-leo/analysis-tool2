@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { ChartComponent, EventInfo } from "@/types"
-import { formatDateTimeForInput, formatDateTimeForDisplay, calculateOverallTimeRange } from "@/utils/dateTimeUtils"
+import { formatDateTimeForInput, formatDateTimeAsString, calculateOverallTimeRange } from "@/utils/dateUtils"
 
 interface DateTimeRangeSettingsProps {
   editingChart: ChartComponent
@@ -58,7 +58,7 @@ export function DateTimeRangeSettings({
               const timeRange = calculateOverallTimeRange(selectedDataSourceItems)
               if (timeRange && timeRange.earliestStart && timeRange.latestEnd) {
                 try {
-                  return `Set range from: ${formatDateTimeForDisplay((timeRange.earliestStart as Date).toISOString())} ~ ${formatDateTimeForDisplay((timeRange.latestEnd as Date).toISOString())}`
+                  return `Set range from: ${formatDateTimeAsString((timeRange.earliestStart as Date).toISOString())} ~ ${formatDateTimeAsString((timeRange.latestEnd as Date).toISOString())}`
                 } catch {
                   return "Set range from DataSource period"
                 }

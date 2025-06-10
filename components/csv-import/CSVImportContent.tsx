@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useRef, useEffect } from "react"
+import React, { useState, useCallback, useRef, useEffect } from "react"
 
 // Extend HTMLInputElement to include webkitdirectory
 declare module 'react' {
@@ -34,7 +34,7 @@ const wildcardToRegex = (pattern: string): RegExp => {
   return new RegExp(`^${escapedPattern}$`, 'i')
 }
 
-export function CSVImportContent({ mode = 'page', onImportComplete }: CSVImportContentProps) {
+export const CSVImportContent = React.memo(function CSVImportContent({ mode = 'page', onImportComplete }: CSVImportContentProps) {
   const [dataSourceType, setDataSourceType] = useState<CSVDataSourceType>("SSAC")
   const [plant, setPlant] = useState("")
   const [machineNo, setMachineNo] = useState("")
@@ -653,4 +653,4 @@ export function CSVImportContent({ mode = 'page', onImportComplete }: CSVImportC
       </div>
     </div>
   )
-}
+})

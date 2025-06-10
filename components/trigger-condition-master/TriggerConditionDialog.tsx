@@ -11,7 +11,7 @@ import { PredefinedCondition } from "@/data/predefinedConditions"
 import { SearchCondition } from "@/types"
 import { ConditionBuilder } from "@/components/search/ConditionBuilder"
 import { formatConditionExpressionToJSX } from "@/lib/conditionUtils"
-import { conditionToExpression } from "@/lib/conditionUtils"
+import { formatConditionExpression } from "@/lib/conditionUtils"
 import { ExpressionLegend } from "@/components/search/ExpressionLegend"
 
 interface TriggerConditionDialogProps {
@@ -65,7 +65,7 @@ export function TriggerConditionDialog({
   }, [open, initialCondition, mode])
 
   const handleSave = () => {
-    const expression = conditionToExpression(conditions[0])
+    const expression = formatConditionExpression(conditions)
     
     const condition: PredefinedCondition = {
       id: initialCondition?.id || `condition_${Date.now()}`,
@@ -133,7 +133,7 @@ export function TriggerConditionDialog({
               <CardContent className="space-y-4">
                 <ConditionBuilder
                   conditions={conditions}
-                  onConditionsChange={setConditions}
+                  onChange={setConditions}
                 />
               </CardContent>
             </Card>

@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast"
 import { FormulaDisplay } from "./FormulaDisplay"
 import { FormulaLatexDisplay } from "./FormulaLatexDisplay"
 
-export function FormulaMasterPage() {
+export const FormulaMasterPage = React.memo(function FormulaMasterPage() {
   const { toast } = useToast()
   const {
     searchQuery,
@@ -303,4 +303,4 @@ export function FormulaMasterPage() {
       />
     </div>
   )
-}
+})

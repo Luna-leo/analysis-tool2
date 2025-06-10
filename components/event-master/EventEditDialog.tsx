@@ -13,25 +13,28 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { EventMaster } from "@/types"
+import { formatDateTimeForInput } from "@/utils/dateUtils"
 
 interface EventEditDialogProps {
-  event: EventMaster
+  item: EventMaster
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSave: (event: EventMaster) => void
+  onSave: (item: EventMaster) => void
+  mode: 'add' | 'edit' | 'duplicate'
 }
 
 export function EventEditDialog({
-  event,
+  item,
   open,
   onOpenChange,
   onSave,
+  mode,
 }: EventEditDialogProps) {
-  const [formData, setFormData] = useState<EventMaster>(event)
+  const [formData, setFormData] = useState<EventMaster>(item)
 
   useEffect(() => {
-    setFormData(event)
-  }, [event])
+    setFormData(item)
+  }, [item])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -45,23 +48,13 @@ export function EventEditDialog({
     }))
   }
 
-  const formatDateTimeLocal = (dateTime: Date | string) => {
-    const date = new Date(dateTime)
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, "0")
-    const day = String(date.getDate()).padStart(2, "0")
-    const hours = String(date.getHours()).padStart(2, "0")
-    const minutes = String(date.getMinutes()).padStart(2, "0")
-    const seconds = String(date.getSeconds()).padStart(2, "0")
-    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
-  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {event.id ? "Edit Event" : "Add New Event"}
+            {mode === 'add' ? 'Add New Event' : mode === 'edit' ? 'Edit Event' : 'Duplicate Event'}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -137,7 +130,7 @@ export function EventEditDialog({
                 <Input
                   id="start"
                   type="datetime-local"
-                  value={formatDateTimeLocal(formData.start)}
+                  value={formatDateTimeForInput(formData.start)}
                   onChange={(e) => handleChange("start", e.target.value)}
                   step="1"
                   required
@@ -148,7 +141,7 @@ export function EventEditDialog({
                 <Input
                   id="end"
                   type="datetime-local"
-                  value={formatDateTimeLocal(formData.end)}
+                  value={formatDateTimeForInput(formData.end)}
                   onChange={(e) => handleChange("end", e.target.value)}
                   step="1"
                   required

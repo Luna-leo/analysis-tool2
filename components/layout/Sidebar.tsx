@@ -113,7 +113,7 @@ export function Sidebar() {
     }
     
     // Open the Formula Master as a tab
-    openFile(formulaMasterNode, 'calculator')
+    openFile(formulaMasterNode, 'database')
   }
 
   const handleOpenTriggerConditionMaster = () => {
@@ -126,7 +126,7 @@ export function Sidebar() {
     }
     
     // Open the Trigger Condition Master as a tab
-    openFile(triggerConditionMasterNode, 'calculator')
+    openFile(triggerConditionMasterNode, 'database')
   }
 
   const renderSidebarContent = () => {

@@ -9,11 +9,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Search, Plus, Edit2, Copy, Trash2, Zap } from "lucide-react"
 import { useTriggerConditionStore } from "@/stores/useTriggerConditionStore"
 import { PredefinedCondition } from "@/data/predefinedConditions"
+import { SearchCondition } from "@/types"
 import { TriggerConditionDialog } from "./TriggerConditionDialog"
 import { useToast } from "@/hooks/use-toast"
 import { formatConditionExpressionToJSX } from "@/lib/conditionUtils"
 
-export function TriggerConditionMasterPage() {
+export const TriggerConditionMasterPage = React.memo(function TriggerConditionMasterPage() {
   const { toast } = useToast()
   const {
     searchQuery,
@@ -214,11 +215,11 @@ export function TriggerConditionMasterPage() {
       />
     </div>
   )
-}
+})
 
 // Helper function to determine complexity level
-function getComplexityLevel(conditions: any[]): string {
-  const countConditions = (conds: any[]): number => {
+function getComplexityLevel(conditions: SearchCondition[]): string {
+  const countConditions = (conds: SearchCondition[]): number => {
     let count = 0
     for (const cond of conds) {
       if (cond.type === 'group' && cond.conditions) {

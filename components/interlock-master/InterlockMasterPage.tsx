@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useRef, useEffect } from "react"
+import React, { useState, useMemo, useRef, useEffect } from "react"
 import { Plus, Search, Edit, Trash2, Copy } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -8,7 +8,7 @@ import { InterlockMaster } from "@/types"
 import { InterlockEditDialog } from "./InterlockEditDialog"
 import { useInterlockMasterStore } from "@/stores/useInterlockMasterStore"
 
-export function InterlockMasterPage() {
+export const InterlockMasterPage = React.memo(function InterlockMasterPage() {
   const { interlocks, setInterlocks, addInterlock, updateInterlock, deleteInterlock } = useInterlockMasterStore()
   const [searchTerm, setSearchTerm] = useState("")
   const [editingInterlock, setEditingInterlock] = useState<InterlockMaster | null>(null)
@@ -312,4 +312,4 @@ export function InterlockMasterPage() {
       )}
     </div>
   )
-}
+})

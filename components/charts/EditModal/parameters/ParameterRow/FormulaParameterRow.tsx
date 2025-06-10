@@ -9,11 +9,12 @@ import { ChevronDown, Copy, Edit2, Plus } from "lucide-react"
 import { FormulaMaster } from "@/data/formulaMaster"
 import { useFormulaMasterStore } from "@/stores/useFormulaMasterStore"
 import { FormulaDisplay } from "@/components/formula-master/FormulaDisplay"
+import { FormulaDefinition } from "@/types/formula"
 
 interface FormulaParameterRowProps {
   index: number
   parameter: string
-  formulaDefinition?: any
+  formulaDefinition?: FormulaDefinition
   openComboboxIndex: number | null
   setOpenComboboxIndex: (index: number | null) => void
   searchQuery: string

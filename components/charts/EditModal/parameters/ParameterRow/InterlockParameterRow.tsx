@@ -8,12 +8,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { X, Plus, ChevronDown, Copy, Edit2 } from "lucide-react"
 import { useInterlockMasterStore } from "@/stores/useInterlockMasterStore"
-import { InterlockMaster } from "@/types"
+import { InterlockMaster, InterlockDefinition } from "@/types"
 
 interface InterlockParameterRowProps {
   index: number
   parameter: string
-  interlockDefinition?: any
+  interlockDefinition?: InterlockDefinition
   selectedThresholds?: string[]
   openComboboxIndex: number | null
   setOpenComboboxIndex: (index: number | null) => void
@@ -63,7 +63,7 @@ export function InterlockParameterRow({
                     {selectedThresholds && selectedThresholds.length > 0 && interlockDefinition && (
                       <div className="flex gap-1 flex-wrap items-center mt-1">
                         {selectedThresholds.map((thresholdId) => {
-                          const threshold = interlockDefinition?.thresholds.find((t: any) => t.id === thresholdId)
+                          const threshold = interlockDefinition?.thresholds.find((t) => t.id === thresholdId)
                           return threshold ? (
                             <Badge
                               key={thresholdId}
@@ -102,8 +102,8 @@ export function InterlockParameterRow({
                             <PopoverContent className="w-48 p-1">
                               <div className="space-y-1">
                                 {interlockDefinition.thresholds
-                                  .filter((threshold: any) => !selectedThresholds?.includes(threshold.id))
-                                  .map((threshold: any) => (
+                                  .filter((threshold) => !selectedThresholds?.includes(threshold.id))
+                                  .map((threshold) => (
                                     <button
                                       key={threshold.id}
                                       onClick={() => handleThresholdAdd(index, threshold.id)}
@@ -205,7 +205,7 @@ export function InterlockParameterRow({
                   {selectedThresholds
                     .map((thresholdId) => {
                       const threshold = interlockDefinition?.thresholds.find(
-                        (t: any) => t.id === thresholdId
+                        (t) => t.id === thresholdId
                       )
                       return threshold?.name
                     })

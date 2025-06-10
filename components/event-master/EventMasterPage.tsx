@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useRef, useEffect } from "react"
+import React, { useState, useMemo, useRef, useEffect } from "react"
 import { Plus, Search, Edit, Trash2, Copy } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -8,7 +8,7 @@ import { EventMaster } from "@/types"
 import { EventEditDialog } from "./EventEditDialog"
 import { useEventMasterStore } from "@/stores/useEventMasterStore"
 
-export function EventMasterPage() {
+export const EventMasterPage = React.memo(function EventMasterPage() {
   const { events, setEvents, addEvent, updateEvent, deleteEvent } = useEventMasterStore()
   const [searchTerm, setSearchTerm] = useState("")
   const [editingEvent, setEditingEvent] = useState<EventMaster | null>(null)
@@ -321,12 +321,13 @@ export function EventMasterPage() {
 
       {editingEvent && (
         <EventEditDialog
-          event={editingEvent}
+          item={editingEvent}
           open={isDialogOpen}
           onOpenChange={setIsDialogOpen}
           onSave={handleSaveEvent}
+          mode={editingEvent.id ? 'edit' : 'add'}
         />
       )}
     </div>
   )
-}
+})

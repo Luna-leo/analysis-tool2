@@ -7,7 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { EventInfo } from "@/types"
-import { formatDateTimeForDisplay } from "@/lib/dateUtils"
+import { formatDateTimeForDisplay } from "@/utils/dateUtils"
 
 interface PeriodPoolProps {
   periodPool: EventInfo[]

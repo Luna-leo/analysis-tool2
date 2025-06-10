@@ -17,8 +17,8 @@ export function useDataSourceManagement() {
       labelDescription: event.labelDescription,
       event: event.event,
       eventDetail: event.eventDetail,
-      start: event.start,
-      end: event.end,
+      start: typeof event.start === 'string' ? event.start : event.start.toISOString(),
+      end: typeof event.end === 'string' ? event.end : event.end.toISOString(),
     }))
     setEvents(eventInfoData)
   }, [eventMasterData])

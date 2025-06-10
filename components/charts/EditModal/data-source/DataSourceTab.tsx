@@ -55,19 +55,19 @@ export function DataSourceTab({
       if (isInPool) {
         dataSource.setPeriodPool(
           dataSource.periodPool.map((item) =>
-            item.id === editingItemId ? processedData : item
+            item.id === editingItemId ? (processedData as unknown as EventInfo) : item
           )
         )
       } else if (isInDataSource) {
         setSelectedDataSourceItems(
           selectedDataSourceItems.map((item) =>
-            item.id === editingItemId ? processedData : item
+            item.id === editingItemId ? (processedData as unknown as EventInfo) : item
           )
         )
       }
     } else {
       const newEntry: EventInfo = {
-        ...processedData,
+        ...(processedData as unknown as EventInfo),
         id: `manual_${Date.now()}`,
       }
       dataSource.setPeriodPool([...dataSource.periodPool, newEntry])
@@ -198,8 +198,8 @@ export function DataSourceTab({
             labelDescription: `Imported from ${parsedFile.metadata.fileName}`,
             event: `Row ${row.rowNumber}`,
             eventDetail: JSON.stringify(row),
-            start: row.timestamp || row.datetime || row.time || new Date().toISOString(),
-            end: row.timestamp || row.datetime || row.time || new Date().toISOString()
+            start: String(row.timestamp || row.datetime || row.time || new Date().toISOString()),
+            end: String(row.timestamp || row.datetime || row.time || new Date().toISOString())
           }
           importedEvents.push(eventInfo)
         })

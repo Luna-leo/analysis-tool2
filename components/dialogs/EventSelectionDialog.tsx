@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { EventInfo } from "@/types"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Search } from "lucide-react"
-import { formatDateTimeForDisplay } from "@/lib/dateUtils"
+import { formatDateTimeForDisplay } from "@/utils/dateUtils"
 
 interface EventSelectionDialogProps {
   isOpen: boolean

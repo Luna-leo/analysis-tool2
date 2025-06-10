@@ -4,7 +4,10 @@ import React, { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { ChevronDown, ChevronRight } from "lucide-react"
-import { ChartComponent } from "@/types"
+import { ChartComponent, InterlockMaster, InterlockDefinition } from "@/types"
+import { FormulaDefinition } from "@/types/formula"
+import { FormulaMaster } from "@/data/formulaMaster"
+import { formulaMasterToDefinition } from "@/utils/formulaUtils"
 import { YParameterList } from "./YParameterList"
 import { YParameterDialogs } from "./YParameterDialogs"
 import { useYParameterHandlers } from "./useYParameterHandlers"
@@ -98,13 +101,13 @@ export function YParametersSettings({ editingChart, setEditingChart, isReference
   })
 
   // Wrap save handlers to include index
-  const handleFormulaSave = (formula: any) => {
+  const handleFormulaSave = (formula: FormulaMaster) => {
     if (editingFormulaIndex !== null) {
       handlers.handleFormulaSave(formula, editingFormulaIndex)
     }
   }
 
-  const handleInterlockSave = (interlockDefinition: any, selectedThresholds: string[], plant: string, machineNo: string) => {
+  const handleInterlockSave = (interlockDefinition: InterlockDefinition, selectedThresholds: string[], plant: string, machineNo: string) => {
     if (editingInterlockIndex !== null) {
       handlers.handleInterlockSave(interlockDefinition, selectedThresholds, plant, machineNo, editingInterlockIndex)
     }
@@ -125,7 +128,7 @@ export function YParametersSettings({ editingChart, setEditingChart, isReference
   })
 
   // Override filter functions to use searchQuery from state
-  const filterFormulasWithQuery = (formulas: any[]) => {
+  const filterFormulasWithQuery = (formulas: FormulaMaster[]) => {
     const query = searchQuery.trim().toLowerCase()
     if (!query) return formulas
 
@@ -144,7 +147,7 @@ export function YParametersSettings({ editingChart, setEditingChart, isReference
     })
   }
 
-  const filterInterlocksWithQuery = (interlocks: any[]) => {
+  const filterInterlocksWithQuery = (interlocks: InterlockMaster[]) => {
     const query = searchQuery.trim().toLowerCase()
     if (!query) return interlocks
 

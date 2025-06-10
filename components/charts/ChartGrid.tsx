@@ -19,7 +19,7 @@ interface ChartGridProps {
   file: FileNode
 }
 
-export function ChartGrid({ file }: ChartGridProps) {
+export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps) {
   const contentRef = useRef<HTMLDivElement>(null)
   const [chartSizes, setChartSizes] = useState<ChartSizes>({
     cardMinHeight: 180,
@@ -199,4 +199,4 @@ export function ChartGrid({ file }: ChartGridProps) {
       )}
     </div>
   )
-}
+})

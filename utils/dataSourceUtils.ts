@@ -1,6 +1,7 @@
 import { EventInfo, SearchResult } from "@/types"
+import { ManualEntryInput, ManualEntryOutput } from "@/types/data-source"
 
-export function processManualEntryData(data: any): any {
+export function processManualEntryData(data: ManualEntryInput): ManualEntryOutput {
   const processedData = { ...data }
   if (data.legend) {
     const legendMatch = data.legend.match(/^(.+?)\s*\((.+)\)$/)
@@ -11,8 +12,12 @@ export function processManualEntryData(data: any): any {
       processedData.label = data.legend
       processedData.labelDescription = ""
     }
+  } else {
+    // Ensure label and labelDescription are always defined
+    processedData.label = processedData.label || ""
+    processedData.labelDescription = processedData.labelDescription || ""
   }
-  return processedData
+  return processedData as ManualEntryOutput
 }
 
 export function createEventFromSearchResult(
