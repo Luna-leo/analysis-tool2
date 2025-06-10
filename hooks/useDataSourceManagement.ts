@@ -109,6 +109,14 @@ export function useDataSourceManagement() {
     setResultLabels(newLabels)
   }
 
+  const handleBulkLabelChange = (resultIds: Set<string>, label: string) => {
+    const newLabels = new Map(resultLabels)
+    resultIds.forEach(id => {
+      newLabels.set(id, label)
+    })
+    setResultLabels(newLabels)
+  }
+
   const handleClearResults = () => {
     setSearchResults([])
     setSelectedResultIds(new Set())
@@ -179,6 +187,7 @@ export function useDataSourceManagement() {
     handleToggleResult,
     handleSelectAllResults,
     handleLabelChange,
+    handleBulkLabelChange,
     handleClearResults,
     handleApplyConditions,
   }

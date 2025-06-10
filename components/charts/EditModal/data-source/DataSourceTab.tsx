@@ -85,11 +85,13 @@ export function DataSourceTab({
   }
 
   
+  const [bulkDuration, setBulkDuration] = useState<{ value: number; unit: 's' | 'm' | 'h' } | null>(null)
+
   const handleAddSearchResults = () => {
     const selectedResults = dataSource.searchResults.filter(r => dataSource.selectedResultIds.has(r.id))
     const eventsToAdd: EventInfo[] = selectedResults.map(result => {
       const resultLabel = dataSource.resultLabels.get(result.id) || 'Signal Detection'
-      return createEventFromSearchResult(result, resultLabel)
+      return createEventFromSearchResult(result, resultLabel, bulkDuration || undefined)
     })
     
     setSelectedDataSourceItems([...selectedDataSourceItems, ...eventsToAdd])
@@ -99,6 +101,11 @@ export function DataSourceTab({
     dataSource.selectedResultIds.forEach(id => remainingLabels.delete(id))
     dataSource.setResultLabels(remainingLabels)
     dataSource.setSelectedResultIds(new Set())
+    setBulkDuration(null)
+  }
+
+  const handleBulkDurationChange = (resultIds: Set<string>, duration: number, unit: 's' | 'm' | 'h') => {
+    setBulkDuration({ value: duration, unit })
   }
 
 
@@ -173,8 +180,10 @@ export function DataSourceTab({
           onToggleResult={dataSource.handleToggleResult}
           onSelectAllResults={dataSource.handleSelectAllResults}
           onLabelChange={dataSource.handleLabelChange}
+          onBulkLabelChange={dataSource.handleBulkLabelChange}
           onAddSearchResults={handleAddSearchResults}
           onClearResults={dataSource.handleClearResults}
+          onBulkDurationChange={handleBulkDurationChange}
         />
 
         {/* Selected Data Sources */}

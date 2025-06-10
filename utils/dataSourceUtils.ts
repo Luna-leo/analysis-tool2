@@ -17,11 +17,22 @@ export function processManualEntryData(data: any): any {
 
 export function createEventFromSearchResult(
   result: SearchResult, 
-  label: string
+  label: string,
+  duration?: { value: number; unit: 's' | 'm' | 'h' }
 ): EventInfo {
-  const duration = 10 // Default 10 minutes
   const startTime = new Date(result.timestamp)
-  const endTime = new Date(startTime.getTime() + duration * 60 * 1000)
+  
+  // Calculate end time based on duration
+  let endTime: Date
+  if (duration) {
+    const milliseconds = duration.unit === 's' ? duration.value * 1000 :
+                        duration.unit === 'm' ? duration.value * 60 * 1000 :
+                        duration.value * 60 * 60 * 1000
+    endTime = new Date(startTime.getTime() + milliseconds)
+  } else {
+    // Default 10 minutes
+    endTime = new Date(startTime.getTime() + 10 * 60 * 1000)
+  }
   
   return {
     id: `trigger_${result.id}_${Date.now()}`,
