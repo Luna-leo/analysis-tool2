@@ -245,10 +245,8 @@ export function DataSourceTab({
           onManualEntry={manualEntry.openForNew}
           onFromEvents={() => setEventSelectionOpen(true)}
           onImportCSV={() => setImportCSVOpen(true)}
-          activeFilterIds={dataSource.activeFilterIds}
-          onFiltersChange={dataSource.handleApplyFilters}
-          onRemoveFilter={dataSource.handleRemoveFilter}
-          onClearAllFilters={dataSource.handleClearAllFilters}
+          activeFilterId={dataSource.activeFilterId}
+          onFilterChange={dataSource.handleApplyFilter}
         />
         
         {/* Search Results */}

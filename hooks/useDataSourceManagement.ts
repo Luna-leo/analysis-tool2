@@ -34,7 +34,7 @@ export function useDataSourceManagement() {
   const [appliedConditions, setAppliedConditions] = useState<SearchCondition[]>([])
   
   // Filter-related state
-  const [activeFilterIds, setActiveFilterIds] = useState<string[]>([])
+  const [activeFilterId, setActiveFilterId] = useState<string | null>(null)
   const [filteredPoolIds, setFilteredPoolIds] = useState<Set<string> | null>(null)
   const { getConditionById } = useTriggerConditionStore()
 
@@ -160,28 +160,26 @@ export function useDataSourceManagement() {
     return conditions.length === 0 || Math.random() > 0.3
   }
 
-  // Apply filters to period pool
-  const handleApplyFilters = (filterIds: string[]) => {
-    setActiveFilterIds(filterIds)
+  // Apply filter to period pool
+  const handleApplyFilter = (filterId: string | null) => {
+    setActiveFilterId(filterId)
     
-    if (filterIds.length === 0) {
+    if (!filterId) {
       setFilteredPoolIds(null)
       return
     }
     
-    // Get all conditions from selected filters
-    const allConditions: SearchCondition[] = []
-    filterIds.forEach(filterId => {
-      const filter = getConditionById(filterId)
-      if (filter?.conditions) {
-        allConditions.push(...filter.conditions)
-      }
-    })
+    // Get conditions from selected filter
+    const filter = getConditionById(filterId)
+    if (!filter?.conditions) {
+      setFilteredPoolIds(null)
+      return
+    }
     
     // Filter period pool based on conditions
     const filtered = new Set<string>()
     periodPool.forEach(item => {
-      if (evaluateItemAgainstConditions(item, allConditions)) {
+      if (evaluateItemAgainstConditions(item, filter.conditions)) {
         filtered.add(item.id)
       }
     })
@@ -189,13 +187,8 @@ export function useDataSourceManagement() {
     setFilteredPoolIds(filtered)
   }
 
-  const handleRemoveFilter = (filterId: string) => {
-    const newFilterIds = activeFilterIds.filter(id => id !== filterId)
-    handleApplyFilters(newFilterIds)
-  }
-
-  const handleClearAllFilters = () => {
-    setActiveFilterIds([])
+  const handleClearFilter = () => {
+    setActiveFilterId(null)
     setFilteredPoolIds(null)
   }
 
@@ -233,11 +226,10 @@ export function useDataSourceManagement() {
     handleClearResults,
     handleApplyConditions,
     // Filter-related exports
-    activeFilterIds,
+    activeFilterId,
     filteredPoolIds,
     displayedPeriodPool,
-    handleApplyFilters,
-    handleRemoveFilter,
-    handleClearAllFilters,
+    handleApplyFilter,
+    handleClearFilter,
   }
 }

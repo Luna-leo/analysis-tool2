@@ -9,7 +9,6 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { EventInfo } from "@/types"
 import { formatDateTimeForDisplay } from "@/utils/dateUtils"
 import { EnhancedTriggerConditionSelector } from "./EnhancedTriggerConditionSelector"
-import { ActiveFiltersDisplay } from "./ActiveFiltersDisplay"
 
 interface PeriodPoolProps {
   periodPool: EventInfo[]
@@ -25,10 +24,8 @@ interface PeriodPoolProps {
   onManualEntry: () => void
   onFromEvents: () => void
   onImportCSV: () => void
-  activeFilterIds: string[]
-  onFiltersChange: (filterIds: string[]) => void
-  onRemoveFilter: (filterId: string) => void
-  onClearAllFilters: () => void
+  activeFilterId: string | null
+  onFilterChange: (filterId: string | null) => void
 }
 
 export function PeriodPool({
@@ -45,10 +42,8 @@ export function PeriodPool({
   onManualEntry,
   onFromEvents,
   onImportCSV,
-  activeFilterIds,
-  onFiltersChange,
-  onRemoveFilter,
-  onClearAllFilters,
+  activeFilterId,
+  onFilterChange,
 }: PeriodPoolProps) {
   return (
     <div className="border rounded-lg bg-muted/30">
@@ -60,7 +55,7 @@ export function PeriodPool({
               <h4 className="font-medium text-sm">Period Pool</h4>
               {displayedPeriodPool.length > 0 && (
                 <span className="text-xs text-muted-foreground">
-                  ({displayedPeriodPool.length}{activeFilterIds.length > 0 && ` of ${periodPool.length}`})
+                  ({displayedPeriodPool.length}{activeFilterId && ` of ${periodPool.length}`})
                 </span>
               )}
             </CollapsibleTrigger>
@@ -95,12 +90,7 @@ export function PeriodPool({
         
         <CollapsibleContent>
           <div className="px-3 pb-3">
-            <ActiveFiltersDisplay
-            activeFilterIds={activeFilterIds}
-            onRemoveFilter={onRemoveFilter}
-            onClearAll={onClearAllFilters}
-          />
-          {displayedPeriodPool.length > 0 ? (
+            {displayedPeriodPool.length > 0 ? (
               <div className="border rounded-lg overflow-hidden">
                 <Table>
                   <TableHeader>
@@ -195,9 +185,8 @@ export function PeriodPool({
               </Button>
               <div className="flex-1">
                 <EnhancedTriggerConditionSelector
-                  activeFilterIds={activeFilterIds}
-                  onFiltersChange={onFiltersChange}
-                  disabled={periodPool.length === 0}
+                  activeFilterId={activeFilterId}
+                  onFilterChange={onFilterChange}
                   displayedItemsCount={displayedPeriodPool.length}
                   totalItemsCount={periodPool.length}
                 />

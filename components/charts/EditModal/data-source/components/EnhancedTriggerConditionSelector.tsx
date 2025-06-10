@@ -2,23 +2,22 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandSeparator } from '@/components/ui/command';
-import { Badge } from '@/components/ui/badge';
 import { ChevronDown, Edit2, Copy, Plus, Filter, Check, X } from 'lucide-react';
 import { useTriggerConditionStore } from '@/stores/useTriggerConditionStore';
 import { useUIStore } from '@/stores/useUIStore';
 import { cn } from '@/lib/utils';
 
 interface EnhancedTriggerConditionSelectorProps {
-  activeFilterIds: string[];
-  onFiltersChange: (filterIds: string[]) => void;
+  activeFilterId: string | null;
+  onFilterChange: (filterId: string | null) => void;
   disabled?: boolean;
   displayedItemsCount?: number;
   totalItemsCount?: number;
 }
 
 export function EnhancedTriggerConditionSelector({
-  activeFilterIds,
-  onFiltersChange,
+  activeFilterId,
+  onFilterChange,
   disabled = false,
   displayedItemsCount,
   totalItemsCount
@@ -40,12 +39,13 @@ export function EnhancedTriggerConditionSelector({
     );
   }, [conditions, searchQuery]);
   
-  const handleToggleFilter = (conditionId: string) => {
-    if (activeFilterIds.includes(conditionId)) {
-      onFiltersChange(activeFilterIds.filter(id => id !== conditionId));
+  const handleSelectFilter = (conditionId: string) => {
+    if (activeFilterId === conditionId) {
+      onFilterChange(null); // Deselect if clicking the same filter
     } else {
-      onFiltersChange([...activeFilterIds, conditionId]);
+      onFilterChange(conditionId);
     }
+    setOpen(false); // Close the popover after selection
   };
   
   const handleEdit = (e: React.MouseEvent, conditionId: string) => {
@@ -68,23 +68,21 @@ export function EnhancedTriggerConditionSelector({
     setOpen(false);
   };
   
-  const handleClearAll = () => {
-    onFiltersChange([]);
+  const handleClear = () => {
+    onFilterChange(null);
+    setOpen(false);
   };
   
   const getButtonLabel = () => {
-    if (activeFilterIds.length === 0) {
+    if (!activeFilterId) {
       return "Filter by Conditions";
     }
-    if (activeFilterIds.length === 1) {
-      const condition = conditions.find(c => c.id === activeFilterIds[0]);
-      return condition ? condition.name : "Filter by Conditions";
-    }
-    return `${activeFilterIds.length} filters active`;
+    const condition = conditions.find(c => c.id === activeFilterId);
+    return condition ? condition.name : "Filter by Conditions";
   };
   
   const showFilteredCount = displayedItemsCount !== undefined && totalItemsCount !== undefined && 
-                            activeFilterIds.length > 0 && displayedItemsCount !== totalItemsCount;
+                            activeFilterId && displayedItemsCount !== totalItemsCount;
   
   return (
     <div className="w-full">
@@ -97,18 +95,13 @@ export function EnhancedTriggerConditionSelector({
             aria-label="Select trigger conditions"
             className={cn(
               "w-full justify-between",
-              activeFilterIds.length > 0 && "border-primary"
+              activeFilterId && "border-primary"
             )}
             disabled={disabled}
           >
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4" />
               <span className="truncate">{getButtonLabel()}</span>
-              {activeFilterIds.length > 0 && (
-                <Badge variant="secondary" className="ml-1">
-                  {activeFilterIds.length}
-                </Badge>
-              )}
             </div>
             <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
@@ -121,15 +114,15 @@ export function EnhancedTriggerConditionSelector({
               onValueChange={setSearchQuery}
             />
             <CommandEmpty>No conditions found.</CommandEmpty>
-            {activeFilterIds.length > 0 && (
+            {activeFilterId && (
               <>
                 <CommandGroup>
                   <CommandItem
-                    onSelect={handleClearAll}
+                    onSelect={handleClear}
                     className="text-destructive cursor-pointer"
                   >
                     <X className="h-4 w-4 mr-2" />
-                    Clear all filters
+                    Clear filter
                   </CommandItem>
                 </CommandGroup>
                 <CommandSeparator />
@@ -140,20 +133,15 @@ export function EnhancedTriggerConditionSelector({
                 <CommandItem
                   key={condition.id}
                   value={condition.id}
-                  onSelect={() => handleToggleFilter(condition.id)}
+                  onSelect={() => handleSelectFilter(condition.id)}
                   onMouseEnter={() => setHoveredItemId(condition.id)}
                   onMouseLeave={() => setHoveredItemId(null)}
                   className="flex items-center justify-between gap-2"
                 >
                   <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <div className={cn(
-                      "h-4 w-4 border rounded flex items-center justify-center",
-                      activeFilterIds.includes(condition.id) && "bg-primary border-primary"
-                    )}>
-                      {activeFilterIds.includes(condition.id) && (
-                        <Check className="h-3 w-3 text-primary-foreground" />
-                      )}
-                    </div>
+                    {activeFilterId === condition.id && (
+                      <Check className="h-4 w-4 text-primary" />
+                    )}
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{condition.name}</div>
                       {condition.description && (
