@@ -6,14 +6,23 @@ interface TriggerConditionStore {
   isLoading: boolean
   searchQuery: string
   
+  // Dialog state
+  isDialogOpen: boolean
+  dialogMode: 'create' | 'edit' | 'duplicate'
+  selectedCondition: PredefinedCondition | null
+  
   // Actions
   setConditions: (conditions: PredefinedCondition[]) => void
   addCondition: (condition: PredefinedCondition) => void
   updateCondition: (id: string, condition: Partial<PredefinedCondition>) => void
   deleteCondition: (id: string) => void
-  duplicateCondition: (id: string) => string | undefined
+  duplicateCondition: (id: string) => PredefinedCondition | undefined
   setSearchQuery: (query: string) => void
   setIsLoading: (loading: boolean) => void
+  
+  // Dialog management
+  openDialog: (mode: 'create' | 'edit' | 'duplicate', condition?: PredefinedCondition) => void
+  closeDialog: () => void
   
   // Computed
   getFilteredConditions: () => PredefinedCondition[]
@@ -24,6 +33,11 @@ export const useTriggerConditionStore = create<TriggerConditionStore>((set, get)
   conditions: predefinedConditions,
   isLoading: false,
   searchQuery: '',
+  
+  // Dialog state
+  isDialogOpen: false,
+  dialogMode: 'create',
+  selectedCondition: null,
   
   setConditions: (conditions) => set({ conditions }),
   
@@ -58,12 +72,24 @@ export const useTriggerConditionStore = create<TriggerConditionStore>((set, get)
       conditions: [...state.conditions, newCondition]
     }))
     
-    return newCondition.id
+    return newCondition
   },
   
   setSearchQuery: (query) => set({ searchQuery: query }),
   
   setIsLoading: (loading) => set({ isLoading: loading }),
+  
+  // Dialog management
+  openDialog: (mode, condition) => set({
+    isDialogOpen: true,
+    dialogMode: mode,
+    selectedCondition: condition || null
+  }),
+  
+  closeDialog: () => set({
+    isDialogOpen: false,
+    selectedCondition: null
+  }),
   
   getFilteredConditions: () => {
     const state = get()

@@ -7,12 +7,10 @@ import { Badge } from '@/components/ui/badge'
 import { Edit2, Copy, Trash2, Zap } from 'lucide-react'
 import { PredefinedCondition } from '@/data/predefinedConditions'
 import { formatConditionExpressionToJSX } from '@/lib/conditionUtils'
+import { useTriggerConditionStore } from '@/stores/useTriggerConditionStore'
 
 interface TriggerConditionCardProps {
   condition: PredefinedCondition
-  onEdit: (condition: PredefinedCondition) => void
-  onDuplicate: (condition: PredefinedCondition) => void
-  onDelete: (condition: PredefinedCondition) => void
 }
 
 // Helper function to determine complexity level
@@ -42,27 +40,28 @@ const complexityColors = {
 }
 
 export const TriggerConditionCard = React.memo(({ 
-  condition, 
-  onEdit, 
-  onDuplicate, 
-  onDelete 
+  condition
 }: TriggerConditionCardProps) => {
+  const { openDialog, duplicateCondition, deleteCondition } = useTriggerConditionStore()
   const complexity = useMemo(() => getComplexityLevel(condition.conditions), [condition.conditions])
   
   const handleDuplicate = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
-    onDuplicate(condition)
-  }, [onDuplicate, condition])
+    const newCondition = duplicateCondition(condition.id)
+    if (newCondition) {
+      openDialog('edit', newCondition)
+    }
+  }, [duplicateCondition, openDialog, condition.id])
   
   const handleEdit = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
-    onEdit(condition)
-  }, [onEdit, condition])
+    openDialog('edit', condition)
+  }, [openDialog, condition])
   
   const handleDelete = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
-    onDelete(condition)
-  }, [onDelete, condition])
+    deleteCondition(condition.id)
+  }, [deleteCondition, condition.id])
 
   return (
     <Card className="group hover:shadow-md transition-shadow cursor-pointer">
