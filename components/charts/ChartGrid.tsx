@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { FileNode, ChartSizes } from "@/types"
 import { ChartCard } from "./ChartCard"
 import { CSVImportPage } from "@/components/csv-import"
+import { EventMasterPage } from "@/components/event-master"
 import { useFileStore } from "@/stores/useFileStore"
 import { useLayoutStore } from "@/stores/useLayoutStore"
 import { useUIStore } from "@/stores/useUIStore"
@@ -68,6 +69,11 @@ export function ChartGrid({ file }: ChartGridProps) {
   // Check if this is a CSV Import tab
   if (file.id === 'csv-import') {
     return <CSVImportPage fileId={file.id} />
+  }
+
+  // Check if this is an Event Master tab
+  if (file.id === 'event-master') {
+    return <EventMasterPage />
   }
 
   if (!file.charts || file.charts.length === 0) {

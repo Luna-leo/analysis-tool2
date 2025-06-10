@@ -61,6 +61,19 @@ export function Sidebar() {
     }, 0)
   }
 
+  const handleOpenEventMaster = () => {
+    // Create a special Event Master tab
+    const eventMasterNode: FileNode = {
+      id: 'event-master',
+      name: 'Event Master',
+      type: 'event-master',
+      isSystemNode: true
+    }
+    
+    // Open the Event Master as a tab
+    openFile(eventMasterNode, 'database')
+  }
+
   const renderSidebarContent = () => {
     switch (activeView) {
       case "explorer":
@@ -118,7 +131,7 @@ export function Sidebar() {
               <Button
                 variant="ghost"
                 className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
-                onClick={() => console.log("Event Master")}
+                onClick={handleOpenEventMaster}
               >
                 <Calendar className="h-4 w-4 shrink-0" />
                 <div className="flex flex-col items-start flex-1">

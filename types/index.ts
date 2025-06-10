@@ -135,7 +135,7 @@ export interface ChartComponent {
 export interface FileNode {
   id: string
   name: string
-  type: "file" | "folder" | "csv-import"
+  type: "file" | "folder" | "csv-import" | "event-master"
   children?: FileNode[]
   dataSources?: string[]
   charts?: ChartComponent[]
@@ -225,4 +225,16 @@ export interface CSVImportData {
   plant: string
   machineNo: string
   files: File[]
+}
+
+export interface EventMaster {
+  id: string
+  plant: string
+  machineNo: string
+  label: string
+  labelDescription: string
+  event: string
+  eventDetail: string
+  start: Date | string
+  end: Date | string
 }
