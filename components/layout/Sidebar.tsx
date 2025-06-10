@@ -53,7 +53,7 @@ export function Sidebar() {
     }
     
     // Open the CSV Import as a tab
-    openFile(csvImportNode)
+    openFile(csvImportNode, 'database')
     // Set current page and initialize settings
     setTimeout(() => {
       uiStore.setCurrentPage(1)

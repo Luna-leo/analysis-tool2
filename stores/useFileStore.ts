@@ -3,9 +3,13 @@ import { devtools } from 'zustand/middleware'
 import type { FileNode } from '@/types'
 import { mockFileTree } from '@/data/mockData'
 
+interface OpenTab extends FileNode {
+  source?: 'explorer' | 'database'
+}
+
 interface FileState {
   fileTree: FileNode[]
-  openTabs: FileNode[]
+  openTabs: OpenTab[]
   activeTab: string
   expandedFolders: Set<string>
   renamingNode: string | null
@@ -19,7 +23,7 @@ interface FileState {
 }
 
 interface FileActions {
-  openFile: (file: FileNode) => void
+  openFile: (file: FileNode, source?: 'explorer' | 'database') => void
   closeTab: (fileId: string) => void
   setActiveTab: (tabId: string) => void
   toggleFolder: (folderId: string) => void
@@ -57,14 +61,15 @@ export const useFileStore = create<FileStore>()(
       dragOverTab: null,
 
       // Actions
-      openFile: (file) => set((state) => {
+      openFile: (file, source = 'explorer') => set((state) => {
         const exists = state.openTabs.find((tab) => tab.id === file.id)
         if (exists) {
           return { activeTab: file.id }
         }
 
+        const openTab: OpenTab = { ...file, source }
         return {
-          openTabs: [...state.openTabs, file],
+          openTabs: [...state.openTabs, openTab],
           activeTab: file.id,
         }
       }),

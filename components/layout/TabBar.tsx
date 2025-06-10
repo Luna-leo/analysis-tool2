@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { X } from "lucide-react"
+import { X, BarChart3, Database } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { FileNode } from "@/types"
 import { useFileStore } from "@/stores/useFileStore"
@@ -77,6 +77,12 @@ export function TabBar({ openTabs }: TabBarProps) {
           )}
           onClick={() => setActiveTab(tab.id)}
         >
+          {((tab as any).source === 'explorer' || !(tab as any).source) && (
+            <BarChart3 className="h-3.5 w-3.5 flex-shrink-0" />
+          )}
+          {(tab as any).source === 'database' && (
+            <Database className="h-3.5 w-3.5 flex-shrink-0" />
+          )}
           <span className="text-sm truncate max-w-[150px]">{tab.name}</span>
           <button
             onClick={(e) => {
