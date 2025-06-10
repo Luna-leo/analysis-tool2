@@ -113,37 +113,40 @@ export function DataSourceTab({
   return (
     <>
       <div className="space-y-4">
-        {/* Manual Entry | From Events buttons */}
-        <div className="flex justify-between items-center">
-          <div className="flex gap-2">
+        {/* Data Source Actions */}
+        <div className="border rounded-lg p-3 bg-muted/30">
+          <h4 className="text-sm font-medium mb-3">Add Data Sources</h4>
+          <div className="flex justify-between items-center">
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={manualEntry.openForNew}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Manual Entry
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setEventSelectionOpen(true)}
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                From Events
+              </Button>
+            </div>
             <Button
               size="sm"
               variant="outline"
-              onClick={manualEntry.openForNew}
+              onClick={() => {
+                // TODO: Implement CSV import functionality
+                console.log("CSV import clicked")
+              }}
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Manual Entry
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setEventSelectionOpen(true)}
-            >
-              <Calendar className="h-4 w-4 mr-2" />
-              From Events
+              <FileText className="h-4 w-4 mr-2" />
+              Import CSV
             </Button>
           </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              // TODO: Implement CSV import functionality
-              console.log("CSV import clicked")
-            }}
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            Import CSV
-          </Button>
         </div>
 
         {/* Period Pool */}

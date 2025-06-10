@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { EventInfo } from '@/types'
+import { formatDateTimeForDisplay } from '@/lib/dateUtils'
 
 interface EventPeriodSelectionProps {
   selectedEventIds: Set<string>
@@ -121,16 +122,16 @@ export const EventPeriodSelection: React.FC<EventPeriodSelectionProps> = ({
                       <div className="text-muted-foreground">{event.eventDetail || ""}</div>
                     </div>
                   </TableCell>
-                  <TableCell className="px-2 py-1 text-xs">
-                    <div>
-                      <div>{event.start.split("T")[0]}</div>
-                      <div>{event.start.split("T")[1]}</div>
+                  <TableCell className="px-2 py-1">
+                    <div className="leading-tight">
+                      <div className="text-sm">{formatDateTimeForDisplay(event.start).date}</div>
+                      <div className="text-sm text-muted-foreground">{formatDateTimeForDisplay(event.start).time}</div>
                     </div>
                   </TableCell>
-                  <TableCell className="px-2 py-1 text-xs">
-                    <div>
-                      <div>{event.end.split("T")[0]}</div>
-                      <div>{event.end.split("T")[1]}</div>
+                  <TableCell className="px-2 py-1">
+                    <div className="leading-tight">
+                      <div className="text-sm">{formatDateTimeForDisplay(event.end).date}</div>
+                      <div className="text-sm text-muted-foreground">{formatDateTimeForDisplay(event.end).time}</div>
                     </div>
                   </TableCell>
                 </TableRow>

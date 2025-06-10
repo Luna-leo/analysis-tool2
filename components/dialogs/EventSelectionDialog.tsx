@@ -12,6 +12,7 @@ import { EventInfo } from "@/types"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Search } from "lucide-react"
+import { formatDateTimeForDisplay } from "@/lib/dateUtils"
 
 interface EventSelectionDialogProps {
   isOpen: boolean
@@ -115,10 +116,30 @@ export const EventSelectionDialog: React.FC<EventSelectionDialogProps> = ({
                     </TableCell>
                     <TableCell>{event.plant}</TableCell>
                     <TableCell>{event.machineNo}</TableCell>
-                    <TableCell>{event.label}</TableCell>
-                    <TableCell>{event.event}</TableCell>
-                    <TableCell className="text-xs">{new Date(event.start).toLocaleString()}</TableCell>
-                    <TableCell className="text-xs">{new Date(event.end).toLocaleString()}</TableCell>
+                    <TableCell>
+                      <div className="leading-tight">
+                        <div>{event.label}</div>
+                        <div className="text-muted-foreground">{event.labelDescription || ""}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="leading-tight">
+                        <div>{event.event}</div>
+                        <div className="text-muted-foreground">{event.eventDetail || ""}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="leading-tight">
+                        <div className="text-sm">{formatDateTimeForDisplay(event.start).date}</div>
+                        <div className="text-sm text-muted-foreground">{formatDateTimeForDisplay(event.start).time}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="leading-tight">
+                        <div className="text-sm">{formatDateTimeForDisplay(event.end).date}</div>
+                        <div className="text-sm text-muted-foreground">{formatDateTimeForDisplay(event.end).time}</div>
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

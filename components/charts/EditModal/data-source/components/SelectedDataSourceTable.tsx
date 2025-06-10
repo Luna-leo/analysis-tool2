@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { EventInfo } from "@/types"
+import { formatDateTimeForDisplay } from "@/lib/dateUtils"
 
 interface SelectedDataSourceTableProps {
   selectedDataSourceItems: EventInfo[]
@@ -29,32 +30,37 @@ export function SelectedDataSourceTable({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="h-8 text-xs px-2">Plant</TableHead>
-            <TableHead className="h-8 text-xs px-2">Machine No</TableHead>
-            <TableHead className="h-8 text-xs px-2">Legend</TableHead>
-            <TableHead className="h-8 text-xs px-2">Start</TableHead>
-            <TableHead className="h-8 text-xs px-2">End</TableHead>
-            <TableHead className="h-8 text-xs w-8"></TableHead>
+            <TableHead className="h-8 text-sm px-2">Plant</TableHead>
+            <TableHead className="h-8 text-sm px-2">Machine No</TableHead>
+            <TableHead className="h-8 text-sm px-2">Legend</TableHead>
+            <TableHead className="h-8 text-sm px-2">Start</TableHead>
+            <TableHead className="h-8 text-sm px-2">End</TableHead>
+            <TableHead className="h-8 text-sm w-8"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {selectedDataSourceItems.map((item) => (
             <TableRow key={item.id}>
-              <TableCell className="px-2 py-1 text-xs">{item.plant}</TableCell>
-              <TableCell className="px-2 py-1 text-xs">{item.machineNo}</TableCell>
-              <TableCell className="px-2 py-1 text-xs">
-                {item.labelDescription ? `${item.label} (${item.labelDescription})` : item.label}
-              </TableCell>
-              <TableCell className="px-2 py-1 text-xs">
-                <div>
-                  <div>{item.start.split("T")[0]}</div>
-                  <div>{item.start.split("T")[1]}</div>
+              <TableCell className="px-2 py-1 text-sm">{item.plant}</TableCell>
+              <TableCell className="px-2 py-1 text-sm">{item.machineNo}</TableCell>
+              <TableCell className="px-2 py-1 text-sm">
+                <div className="leading-tight">
+                  <div>{item.label}</div>
+                  {item.labelDescription && (
+                    <div className="text-muted-foreground">({item.labelDescription})</div>
+                  )}
                 </div>
               </TableCell>
-              <TableCell className="px-2 py-1 text-xs">
-                <div>
-                  <div>{item.end.split("T")[0]}</div>
-                  <div>{item.end.split("T")[1]}</div>
+              <TableCell className="px-2 py-1">
+                <div className="leading-tight">
+                  <div className="text-sm">{formatDateTimeForDisplay(item.start).date}</div>
+                  <div className="text-sm text-muted-foreground">{formatDateTimeForDisplay(item.start).time}</div>
+                </div>
+              </TableCell>
+              <TableCell className="px-2 py-1">
+                <div className="leading-tight">
+                  <div className="text-sm">{formatDateTimeForDisplay(item.end).date}</div>
+                  <div className="text-sm text-muted-foreground">{formatDateTimeForDisplay(item.end).time}</div>
                 </div>
               </TableCell>
               <TableCell className="px-1 py-1">

@@ -7,6 +7,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { EventInfo } from "@/types"
+import { formatDateTimeForDisplay } from "@/lib/dateUtils"
 
 interface PeriodPoolProps {
   periodPool: EventInfo[]
@@ -53,19 +54,18 @@ export function PeriodPool({
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="h-8 text-xs px-2 w-[40px]">
+                      <TableHead className="h-8 text-sm px-2 w-[40px]">
                         <Checkbox
                           checked={selectedPoolIds.size === periodPool.length && periodPool.length > 0}
                           onCheckedChange={onSelectAll}
                         />
                       </TableHead>
-                      <TableHead className="h-8 text-xs px-2">Source</TableHead>
-                      <TableHead className="h-8 text-xs px-2">Plant</TableHead>
-                      <TableHead className="h-8 text-xs px-2">Machine No</TableHead>
-                      <TableHead className="h-8 text-xs px-2">Label</TableHead>
-                      <TableHead className="h-8 text-xs px-2">Start</TableHead>
-                      <TableHead className="h-8 text-xs px-2">End</TableHead>
-                      <TableHead className="h-8 text-xs w-20"></TableHead>
+                      <TableHead className="h-8 text-sm px-2">Plant</TableHead>
+                      <TableHead className="h-8 text-sm px-2">Machine No</TableHead>
+                      <TableHead className="h-8 text-sm px-2">Legend</TableHead>
+                      <TableHead className="h-8 text-sm px-2">Start</TableHead>
+                      <TableHead className="h-8 text-sm px-2">End</TableHead>
+                      <TableHead className="h-8 text-sm w-20"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -77,24 +77,26 @@ export function PeriodPool({
                             onCheckedChange={() => onTogglePeriod(period.id)}
                           />
                         </TableCell>
-                        <TableCell className="px-2 py-1 text-xs">
-                          <span className="text-muted-foreground">
-                            {period.id.startsWith('manual_') ? 'Manual' : 'Event'}
-                          </span>
-                        </TableCell>
-                        <TableCell className="px-2 py-1 text-xs">{period.plant}</TableCell>
-                        <TableCell className="px-2 py-1 text-xs">{period.machineNo}</TableCell>
-                        <TableCell className="px-2 py-1 text-xs">{period.label}</TableCell>
-                        <TableCell className="px-2 py-1 text-xs">
-                          <div>
-                            <div>{period.start.split("T")[0]}</div>
-                            <div>{period.start.split("T")[1]}</div>
+                        <TableCell className="px-2 py-1 text-sm">{period.plant}</TableCell>
+                        <TableCell className="px-2 py-1 text-sm">{period.machineNo}</TableCell>
+                        <TableCell className="px-2 py-1 text-sm">
+                          <div className="leading-tight">
+                            <div>{period.label}</div>
+                            {period.labelDescription && (
+                              <div className="text-muted-foreground">({period.labelDescription})</div>
+                            )}
                           </div>
                         </TableCell>
-                        <TableCell className="px-2 py-1 text-xs">
-                          <div>
-                            <div>{period.end.split("T")[0]}</div>
-                            <div>{period.end.split("T")[1]}</div>
+                        <TableCell className="px-2 py-1">
+                          <div className="leading-tight">
+                            <div className="text-sm">{formatDateTimeForDisplay(period.start).date}</div>
+                            <div className="text-sm text-muted-foreground">{formatDateTimeForDisplay(period.start).time}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="px-2 py-1">
+                          <div className="leading-tight">
+                            <div className="text-sm">{formatDateTimeForDisplay(period.end).date}</div>
+                            <div className="text-sm text-muted-foreground">{formatDateTimeForDisplay(period.end).time}</div>
                           </div>
                         </TableCell>
                         <TableCell className="px-1 py-1">
