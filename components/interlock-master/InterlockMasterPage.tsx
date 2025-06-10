@@ -239,9 +239,12 @@ export function InterlockMasterPage() {
                     </td>
                     <td className="px-3 py-2 text-sm align-top" style={{ width: `${columnWidths.name}px`, minWidth: `${columnWidths.name}px`, height: '56px' }}>
                       <div className="leading-tight">
-                        <div className="font-medium line-clamp-1">{interlock.name}</div>
+                        <div className="font-medium line-clamp-1">
+                          {interlock.name}
+                          {interlock.definition.yUnit && ` (${interlock.definition.yUnit})`}
+                        </div>
                         <div className="text-xs text-gray-500">
-                          {interlock.definition.xParameter}
+                          X: {interlock.definition.xParameter}
                           {interlock.definition.xUnit && ` (${interlock.definition.xUnit})`}
                         </div>
                       </div>
