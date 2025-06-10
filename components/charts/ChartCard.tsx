@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useCallback } from "react"
 import { LineChart, Edit } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -14,8 +14,16 @@ interface ChartCardProps {
   chartMinHeight: number
 }
 
-export function ChartCard({ chart, isCompactLayout, cardMinHeight, chartMinHeight }: ChartCardProps) {
+export const ChartCard = React.memo(({ chart, isCompactLayout, cardMinHeight, chartMinHeight }: ChartCardProps) => {
   const { hoveredChart, setHoveredChart, setEditingChart, setEditModalOpen } = useUIStore()
+  
+  const handleMouseEnter = useCallback(() => setHoveredChart(chart.id), [setHoveredChart, chart.id])
+  const handleMouseLeave = useCallback(() => setHoveredChart(null), [setHoveredChart])
+  
+  const handleEdit = useCallback(() => {
+    setEditingChart(chart)
+    setEditModalOpen(true)
+  }, [setEditingChart, setEditModalOpen, chart])
 
   return (
     <div
@@ -26,8 +34,8 @@ export function ChartCard({ chart, isCompactLayout, cardMinHeight, chartMinHeigh
       style={{
         minHeight: `${cardMinHeight}px`,
       }}
-      onMouseEnter={() => setHoveredChart(chart.id)}
-      onMouseLeave={() => setHoveredChart(null)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Edit Button - appears on hover */}
       {hoveredChart === chart.id && (
@@ -35,10 +43,7 @@ export function ChartCard({ chart, isCompactLayout, cardMinHeight, chartMinHeigh
           variant="secondary"
           size="icon"
           className="absolute top-2 right-2 h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-md"
-          onClick={() => {
-            setEditingChart(chart)
-            setEditModalOpen(true)
-          }}
+          onClick={handleEdit}
         >
           <Edit className="h-4 w-4" />
         </Button>
@@ -71,4 +76,4 @@ export function ChartCard({ chart, isCompactLayout, cardMinHeight, chartMinHeigh
       </div>
     </div>
   )
-}
+})

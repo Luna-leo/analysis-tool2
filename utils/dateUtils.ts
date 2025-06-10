@@ -84,6 +84,51 @@ export function formatDateTimeAsString(dateTimeString: string): string {
 }
 
 /**
+ * Formats a date as ISO string (YYYY-MM-DDTHH:mm:ss.sssZ)
+ */
+export function formatDateToISO(dateInput: string | Date): string {
+  try {
+    const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput
+    if (isNaN(date.getTime())) {
+      return typeof dateInput === 'string' ? dateInput : ''
+    }
+    return date.toISOString()
+  } catch {
+    return typeof dateInput === 'string' ? dateInput : ''
+  }
+}
+
+/**
+ * Formats a date as local date string (MM/DD/YYYY or locale-specific)
+ */
+export function formatDateToLocalDateString(dateInput: string | Date, locale?: string): string {
+  try {
+    const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput
+    if (isNaN(date.getTime())) {
+      return typeof dateInput === 'string' ? dateInput : ''
+    }
+    return date.toLocaleDateString(locale)
+  } catch {
+    return typeof dateInput === 'string' ? dateInput : ''
+  }
+}
+
+/**
+ * Formats a date as ISO string without milliseconds (YYYY-MM-DDTHH:mm:ss)
+ */
+export function formatDateToISOWithoutMillis(dateInput: string | Date): string {
+  try {
+    const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput
+    if (isNaN(date.getTime())) {
+      return typeof dateInput === 'string' ? dateInput : ''
+    }
+    return date.toISOString().slice(0, 19)
+  } catch {
+    return typeof dateInput === 'string' ? dateInput : ''
+  }
+}
+
+/**
  * Adjusts a date by a given amount and unit
  */
 export function adjustDate(

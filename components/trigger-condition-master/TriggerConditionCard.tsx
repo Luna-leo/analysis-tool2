@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react'
+import React, { useCallback, useMemo } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -16,7 +16,7 @@ interface TriggerConditionCardProps {
 }
 
 // Helper function to determine complexity level
-function getComplexityLevel(conditions: any[]): string {
+const getComplexityLevel = (conditions: any[]): string => {
   const countConditions = (conds: any[]): number => {
     let count = 0
     for (const cond of conds) {
@@ -41,13 +41,28 @@ const complexityColors = {
   Complex: 'bg-red-100 text-red-800'
 }
 
-export function TriggerConditionCard({ 
+export const TriggerConditionCard = React.memo(({ 
   condition, 
   onEdit, 
   onDuplicate, 
   onDelete 
-}: TriggerConditionCardProps) {
-  const complexity = getComplexityLevel(condition.conditions)
+}: TriggerConditionCardProps) => {
+  const complexity = useMemo(() => getComplexityLevel(condition.conditions), [condition.conditions])
+  
+  const handleDuplicate = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    onDuplicate(condition)
+  }, [onDuplicate, condition])
+  
+  const handleEdit = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    onEdit(condition)
+  }, [onEdit, condition])
+  
+  const handleDelete = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    onDelete(condition)
+  }, [onDelete, condition])
 
   return (
     <Card className="group hover:shadow-md transition-shadow cursor-pointer">
@@ -68,10 +83,7 @@ export function TriggerConditionCard({
             <Button
               variant="ghost"
               size="sm"
-              onClick={(e) => {
-                e.stopPropagation()
-                onDuplicate(condition)
-              }}
+              onClick={handleDuplicate}
               className="h-8 w-8 p-0"
             >
               <Copy className="h-4 w-4" />
@@ -79,10 +91,7 @@ export function TriggerConditionCard({
             <Button
               variant="ghost"
               size="sm"
-              onClick={(e) => {
-                e.stopPropagation()
-                onEdit(condition)
-              }}
+              onClick={handleEdit}
               className="h-8 w-8 p-0"
             >
               <Edit2 className="h-4 w-4" />
@@ -90,10 +99,7 @@ export function TriggerConditionCard({
             <Button
               variant="ghost"
               size="sm"
-              onClick={(e) => {
-                e.stopPropagation()
-                onDelete(condition)
-              }}
+              onClick={handleDelete}
               className="h-8 w-8 p-0 hover:text-red-600"
             >
               <Trash2 className="h-4 w-4" />
@@ -127,4 +133,4 @@ export function TriggerConditionCard({
       </CardContent>
     </Card>
   )
-}
+})

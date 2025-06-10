@@ -5,12 +5,25 @@ import { FileText } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
+interface FileItemProps {
+  path: string
+}
+
+const FileItem = React.memo(({ path }: FileItemProps) => (
+  <div className="flex items-center gap-2 text-sm">
+    <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+    <span className="truncate">{path}</span>
+  </div>
+))
+
+FileItem.displayName = 'FileItem'
+
 interface FileListDisplayProps {
   filePaths: string[]
   title?: string
 }
 
-export function FileListDisplay({ filePaths, title = "Selected Files" }: FileListDisplayProps) {
+export const FileListDisplay = React.memo(({ filePaths, title = "Selected Files" }: FileListDisplayProps) => {
   if (filePaths.length === 0) {
     return (
       <Card>
@@ -38,14 +51,11 @@ export function FileListDisplay({ filePaths, title = "Selected Files" }: FileLis
         <ScrollArea className="h-[200px] w-full rounded-md border p-4">
           <div className="space-y-1">
             {filePaths.map((path, index) => (
-              <div key={index} className="flex items-center gap-2 text-sm">
-                <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                <span className="truncate">{path}</span>
-              </div>
+              <FileItem key={index} path={path} />
             ))}
           </div>
         </ScrollArea>
       </CardContent>
     </Card>
   )
-}
+})

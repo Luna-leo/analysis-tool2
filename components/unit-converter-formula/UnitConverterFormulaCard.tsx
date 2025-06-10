@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { MoreVertical, Edit, Copy, Trash, Star, StarOff, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,7 @@ interface UnitConverterFormulaCardProps {
   formula: UnitConverterFormula;
 }
 
-export const UnitConverterFormulaCard: React.FC<UnitConverterFormulaCardProps> = ({ formula }) => {
+export const UnitConverterFormulaCard = React.memo(({ formula }: UnitConverterFormulaCardProps) => {
   const [isAliasOpen, setIsAliasOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   
@@ -29,24 +29,24 @@ export const UnitConverterFormulaCard: React.FC<UnitConverterFormulaCardProps> =
     incrementUsageCount 
   } = useUnitConverterFormulaStore();
 
-  const handleEdit = () => {
+  const handleEdit = useCallback(() => {
     openDialog('edit', formula);
-  };
+  }, [openDialog, formula]);
 
-  const handleDuplicate = () => {
+  const handleDuplicate = useCallback(() => {
     duplicateFormula(formula.id);
-  };
+  }, [duplicateFormula, formula.id]);
 
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     deleteFormula(formula.id);
-  };
+  }, [deleteFormula, formula.id]);
 
-  const handleToggleFavorite = () => {
+  const handleToggleFavorite = useCallback(() => {
     toggleFavorite(formula.id);
-  };
+  }, [toggleFavorite, formula.id]);
 
   // サンプル変換の計算
-  const calculateSampleConversion = () => {
+  const sampleConversion = useMemo(() => {
     try {
       const sampleValue = 1;
       const func = new Function('x', `return ${formula.formula}`);
@@ -59,9 +59,7 @@ export const UnitConverterFormulaCard: React.FC<UnitConverterFormulaCardProps> =
     } catch {
       return null;
     }
-  };
-
-  const sampleConversion = calculateSampleConversion();
+  }, [formula.formula, formula.fromUnit.primarySymbol, formula.toUnit.primarySymbol]);
 
   return (
     <Card 
@@ -217,4 +215,4 @@ export const UnitConverterFormulaCard: React.FC<UnitConverterFormulaCardProps> =
       </CardContent>
     </Card>
   );
-};
+});

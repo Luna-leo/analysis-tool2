@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react'
+import React, { useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Copy, Edit, Trash2, Plus } from 'lucide-react'
 import { MasterItem, ColumnConfig } from './types'
@@ -16,6 +16,93 @@ interface MasterPageTableProps<T extends MasterItem> {
   enableResize?: boolean
   enableDuplicate?: boolean
 }
+
+interface TableRowProps<T extends MasterItem> {
+  item: T
+  columns: ColumnConfig<T>[]
+  onEdit: (item: T) => void
+  onDelete: (item: T) => void
+  onDuplicate?: (item: T) => void
+  enableDuplicate: boolean
+  getStickyStyle: (column: ColumnConfig<T>, index: number) => React.CSSProperties
+}
+
+const TableRow = React.memo(<T extends MasterItem>({
+  item,
+  columns,
+  onEdit,
+  onDelete,
+  onDuplicate,
+  enableDuplicate,
+  getStickyStyle
+}: TableRowProps<T>) => {
+  const handleDuplicate = useCallback(() => onDuplicate?.(item), [onDuplicate, item])
+  const handleEdit = useCallback(() => onEdit(item), [onEdit, item])
+  const handleDelete = useCallback(() => onDelete(item), [onDelete, item])
+
+  return (
+    <tr
+      className="hover:bg-gray-50 transition-colors duration-150 border-b border-gray-200"
+      style={{ height: 56 }}
+    >
+      {columns.map((column, index) => (
+        <td
+          key={column.key as string}
+          className={`
+            text-sm
+            ${column.sticky ? 'bg-white border-r border-gray-300' : ''}
+          `}
+          style={getStickyStyle(column, index)}
+        >
+          <div className="px-4 py-2 truncate">
+            {column.render 
+              ? column.render(item)
+              : item[column.key as keyof T] as React.ReactNode
+            }
+          </div>
+        </td>
+      ))}
+      {/* Actions column */}
+      <td
+        className="text-center bg-white border-l border-gray-300 sticky right-0 z-10"
+      >
+        <div className="flex items-center justify-center gap-1 px-2">
+          {enableDuplicate && onDuplicate && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDuplicate}
+              className="h-8 w-8 p-0 hover:bg-gray-100"
+              title="Duplicate"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleEdit}
+            className="h-8 w-8 p-0 hover:bg-blue-100 hover:text-blue-600"
+            title="Edit"
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDelete}
+            className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
+            title="Delete"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </td>
+    </tr>
+  )
+})
+
+TableRow.displayName = 'TableRow'
 
 export function MasterPageTable<T extends MasterItem>({
   items,
@@ -38,7 +125,7 @@ export function MasterPageTable<T extends MasterItem>({
   })
 
   // Calculate sticky positions
-  const getStickyStyle = (column: ColumnConfig<T>, index: number) => {
+  const getStickyStyle = useCallback((column: ColumnConfig<T>, index: number) => {
     if (!column.sticky) return {}
     
     // For left sticky columns
@@ -60,7 +147,7 @@ export function MasterPageTable<T extends MasterItem>({
     }
     
     return {}
-  }
+  }, [])
 
   return (
     <div className="h-full flex flex-col">
@@ -104,65 +191,16 @@ export function MasterPageTable<T extends MasterItem>({
           </thead>
           <tbody>
             {items.map((item) => (
-              <tr
+              <TableRow
                 key={item.id}
-                className="hover:bg-gray-50 transition-colors duration-150 border-b border-gray-200"
-                style={{ height: 56 }}
-              >
-                {columns.map((column, index) => (
-                  <td
-                    key={column.key as string}
-                    className={`
-                      text-sm
-                      ${column.sticky ? 'bg-white border-r border-gray-300' : ''}
-                    `}
-                    style={getStickyStyle(column, index)}
-                  >
-                    <div className="px-4 py-2 truncate">
-                      {column.render 
-                        ? column.render(item)
-                        : item[column.key as keyof T] as React.ReactNode
-                      }
-                    </div>
-                  </td>
-                ))}
-                {/* Actions column */}
-                <td
-                  className="text-center bg-white border-l border-gray-300 sticky right-0 z-10"
-                >
-                  <div className="flex items-center justify-center gap-1 px-2">
-                    {enableDuplicate && onDuplicate && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onDuplicate(item)}
-                        className="h-8 w-8 p-0 hover:bg-gray-100"
-                        title="Duplicate"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onEdit(item)}
-                      className="h-8 w-8 p-0 hover:bg-blue-100 hover:text-blue-600"
-                      title="Edit"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onDelete(item)}
-                      className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
-                      title="Delete"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </td>
-              </tr>
+                item={item}
+                columns={columns}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onDuplicate={onDuplicate}
+                enableDuplicate={enableDuplicate}
+                getStickyStyle={getStickyStyle}
+              />
             ))}
           </tbody>
         </table>

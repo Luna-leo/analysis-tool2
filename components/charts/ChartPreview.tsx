@@ -11,7 +11,7 @@ interface ChartPreviewProps {
   setEditingChart?: (chart: ChartComponent) => void
 }
 
-export function ChartPreview({ editingChart, selectedDataSourceItems, setEditingChart }: ChartPreviewProps) {
+export const ChartPreview = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart }: ChartPreviewProps) => {
   return (
     <div className="w-full h-full flex flex-col">
       <ChartPreviewGraph
@@ -25,4 +25,4 @@ export function ChartPreview({ editingChart, selectedDataSourceItems, setEditing
       />
     </div>
   )
-}
+})

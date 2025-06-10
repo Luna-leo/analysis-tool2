@@ -8,7 +8,7 @@ interface ChartPreviewInfoProps {
   selectedDataSourceItems: EventInfo[]
 }
 
-export function ChartPreviewInfo({ editingChart, selectedDataSourceItems }: ChartPreviewInfoProps) {
+export const ChartPreviewInfo = React.memo(({ editingChart, selectedDataSourceItems }: ChartPreviewInfoProps) => {
   return (
     <div className="mt-2 space-y-2">
       <div className="p-2 bg-muted/30 rounded text-xs">
@@ -121,4 +121,4 @@ export function ChartPreviewInfo({ editingChart, selectedDataSourceItems }: Char
       </div>
     </div>
   )
-}
+})

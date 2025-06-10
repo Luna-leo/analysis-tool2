@@ -15,6 +15,7 @@ import { ThresholdColorSection } from "@/components/charts/EditModal/parameters/
 import { ThresholdPointsTable } from "@/components/charts/EditModal/parameters/ThresholdPointsTable"
 import { InterlockChart } from "@/components/charts/EditModal/parameters/InterlockChart"
 import { defaultThresholdColors } from "@/data/interlockMaster"
+import { formatDateToISO } from "@/utils/dateUtils"
 
 interface InterlockEditDialogProps {
   interlock: InterlockMaster
@@ -95,7 +96,7 @@ export function InterlockEditDialog({
   const handleSave = () => {
     onSave({
       ...formData,
-      updatedAt: new Date().toISOString()
+      updatedAt: formatDateToISO(new Date())
     })
   }
 

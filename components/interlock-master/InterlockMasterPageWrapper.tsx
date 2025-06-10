@@ -1,6 +1,6 @@
 "use client"
 
-import { InterlockMasterPage } from "./InterlockMasterPage"
+import { InterlockMasterPage } from "."
 
 interface InterlockMasterPageWrapperProps {
   fileId: string

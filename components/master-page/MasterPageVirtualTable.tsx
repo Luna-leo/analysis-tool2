@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useRef, useEffect, useState, useCallback } from 'react'
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Copy, Edit, Trash2, Plus } from 'lucide-react'
 import { MasterItem, ColumnConfig } from './types'
@@ -18,6 +18,112 @@ interface MasterPageVirtualTableProps<T extends MasterItem> {
   rowHeight?: number
   overscan?: number
 }
+
+interface VirtualTableRowProps<T extends MasterItem> {
+  item: T
+  index: number
+  startIndex: number
+  columns: ColumnConfig<T>[]
+  rowHeight: number
+  onEdit: (item: T) => void
+  onDelete: (item: T) => void
+  onDuplicate?: (item: T) => void
+  enableDuplicate: boolean
+  getStickyStyle: (column: ColumnConfig<T>, index: number) => React.CSSProperties
+  getColumnWidth: (key: string) => number
+}
+
+const VirtualTableRow = React.memo(<T extends MasterItem>({
+  item,
+  index,
+  startIndex,
+  columns,
+  rowHeight,
+  onEdit,
+  onDelete,
+  onDuplicate,
+  enableDuplicate,
+  getStickyStyle,
+  getColumnWidth
+}: VirtualTableRowProps<T>) => {
+  const handleDuplicate = useCallback(() => onDuplicate?.(item), [onDuplicate, item])
+  const handleEdit = useCallback(() => onEdit(item), [onEdit, item])
+  const handleDelete = useCallback(() => onDelete(item), [onDelete, item])
+
+  return (
+    <tr
+      className="hover:bg-gray-50 transition-colors duration-150 border-b border-gray-200"
+      style={{ 
+        height: rowHeight,
+        position: 'absolute',
+        top: (startIndex + index) * rowHeight,
+        width: '100%',
+        display: 'table',
+        tableLayout: 'fixed'
+      }}
+    >
+      {columns.map((column, colIndex) => (
+        <td
+          key={column.key as string}
+          className={`
+            text-sm
+            ${column.sticky ? 'bg-white border-r border-gray-300' : ''}
+          `}
+          style={{
+            ...getStickyStyle(column, colIndex),
+            width: getColumnWidth(column.key as string)
+          }}
+        >
+          <div className="px-4 py-2 truncate">
+            {column.render 
+              ? column.render(item)
+              : item[column.key as keyof T] as React.ReactNode
+            }
+          </div>
+        </td>
+      ))}
+      {/* Actions column */}
+      <td
+        className="text-center bg-white border-l border-gray-300 sticky right-0 z-10"
+        style={{ width: 180 }}
+      >
+        <div className="flex items-center justify-center gap-1 px-2">
+          {enableDuplicate && onDuplicate && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDuplicate}
+              className="h-8 w-8 p-0 hover:bg-gray-100"
+              title="Duplicate"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleEdit}
+            className="h-8 w-8 p-0 hover:bg-blue-100 hover:text-blue-600"
+            title="Edit"
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDelete}
+            className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
+            title="Delete"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </td>
+    </tr>
+  )
+})
+
+VirtualTableRow.displayName = 'VirtualTableRow'
 
 export function MasterPageVirtualTable<T extends MasterItem>({
   items,
@@ -46,12 +152,18 @@ export function MasterPageVirtualTable<T extends MasterItem>({
   })
 
   // Calculate which rows are visible
-  const startIndex = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan)
-  const endIndex = Math.min(
-    items.length, 
-    Math.ceil((scrollTop + containerHeight) / rowHeight) + overscan
+  const startIndex = useMemo(
+    () => Math.max(0, Math.floor(scrollTop / rowHeight) - overscan),
+    [scrollTop, rowHeight, overscan]
   )
-  const visibleItems = items.slice(startIndex, endIndex)
+  const endIndex = useMemo(
+    () => Math.min(items.length, Math.ceil((scrollTop + containerHeight) / rowHeight) + overscan),
+    [items.length, scrollTop, containerHeight, rowHeight, overscan]
+  )
+  const visibleItems = useMemo(
+    () => items.slice(startIndex, endIndex),
+    [items, startIndex, endIndex]
+  )
 
   // Update container height on resize
   useEffect(() => {
@@ -71,7 +183,7 @@ export function MasterPageVirtualTable<T extends MasterItem>({
   }, [])
 
   // Calculate sticky positions
-  const getStickyStyle = (column: ColumnConfig<T>, index: number) => {
+  const getStickyStyle = useCallback((column: ColumnConfig<T>, index: number) => {
     if (!column.sticky) return {}
     
     // For left sticky columns
@@ -93,7 +205,7 @@ export function MasterPageVirtualTable<T extends MasterItem>({
     }
     
     return {}
-  }
+  }, [])
 
   const totalHeight = items.length * rowHeight
 
@@ -144,76 +256,20 @@ export function MasterPageVirtualTable<T extends MasterItem>({
             </thead>
             <tbody>
               {visibleItems.map((item, index) => (
-                <tr
+                <VirtualTableRow
                   key={item.id}
-                  className="hover:bg-gray-50 transition-colors duration-150 border-b border-gray-200"
-                  style={{ 
-                    height: rowHeight,
-                    position: 'absolute',
-                    top: (startIndex + index) * rowHeight,
-                    width: '100%',
-                    display: 'table',
-                    tableLayout: 'fixed'
-                  }}
-                >
-                  {columns.map((column, colIndex) => (
-                    <td
-                      key={column.key as string}
-                      className={`
-                        text-sm
-                        ${column.sticky ? 'bg-white border-r border-gray-300' : ''}
-                      `}
-                      style={{
-                        ...getStickyStyle(column, colIndex),
-                        width: getColumnWidth(column.key as string)
-                      }}
-                    >
-                      <div className="px-4 py-2 truncate">
-                        {column.render 
-                          ? column.render(item)
-                          : item[column.key as keyof T] as React.ReactNode
-                        }
-                      </div>
-                    </td>
-                  ))}
-                  {/* Actions column */}
-                  <td
-                    className="text-center bg-white border-l border-gray-300 sticky right-0 z-10"
-                    style={{ width: 180 }}
-                  >
-                    <div className="flex items-center justify-center gap-1 px-2">
-                      {enableDuplicate && onDuplicate && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => onDuplicate(item)}
-                          className="h-8 w-8 p-0 hover:bg-gray-100"
-                          title="Duplicate"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onEdit(item)}
-                        className="h-8 w-8 p-0 hover:bg-blue-100 hover:text-blue-600"
-                        title="Edit"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onDelete(item)}
-                        className="h-8 w-8 p-0 hover:bg-red-100 hover:text-red-600"
-                        title="Delete"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
+                  item={item}
+                  index={index}
+                  startIndex={startIndex}
+                  columns={columns}
+                  rowHeight={rowHeight}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  onDuplicate={onDuplicate}
+                  enableDuplicate={enableDuplicate}
+                  getStickyStyle={getStickyStyle}
+                  getColumnWidth={getColumnWidth}
+                />
               ))}
             </tbody>
           </table>

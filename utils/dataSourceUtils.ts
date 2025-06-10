@@ -1,5 +1,6 @@
 import { EventInfo, SearchResult } from "@/types"
 import { ManualEntryInput, ManualEntryOutput } from "@/types/data-source"
+import { formatDateToISO } from "@/utils/dateUtils"
 
 export function processManualEntryData(data: ManualEntryInput): ManualEntryOutput {
   const processedData = { ...data }
@@ -48,6 +49,6 @@ export function createEventFromSearchResult(
     event: 'Trigger Event',
     eventDetail: `Auto-detected at ${result.timestamp}`,
     start: result.timestamp,
-    end: endTime.toISOString()
+    end: formatDateToISO(endTime)
   }
 }

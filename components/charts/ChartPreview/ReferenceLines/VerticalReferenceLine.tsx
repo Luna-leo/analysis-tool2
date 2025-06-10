@@ -3,6 +3,7 @@
 import React from "react"
 import * as d3 from "d3"
 import { ChartComponent, ReferenceLine } from "@/types"
+import { formatDateToISOWithoutMillis } from "@/utils/dateUtils"
 
 interface VerticalReferenceLineProps {
   line: ReferenceLine
@@ -144,7 +145,7 @@ export function VerticalReferenceLine({
           let newValue: string | number
           if ((xAxisType || "datetime") === "datetime") {
             const newDate = (xScale as d3.ScaleTime<number, number>).invert(clampedX)
-            newValue = newDate.toISOString().slice(0, 19)
+            newValue = formatDateToISOWithoutMillis(newDate)
           } else {
             // For time or parameter axis
             const numValue = (xScale as d3.ScaleLinear<number, number>).invert(clampedX)

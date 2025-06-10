@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useCallback } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
@@ -39,13 +39,32 @@ interface ReferenceLineRowProps {
   onRemoveReferenceLine: (id: string) => void
 }
 
-export function ReferenceLineRow({
+export const ReferenceLineRow = React.memo(({
   line,
   editingChart,
   onUpdateReferenceLine,
   onUpdateRange,
   onRemoveReferenceLine
-}: ReferenceLineRowProps) {
+}: ReferenceLineRowProps) => {
+  const handleLabelChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onUpdateReferenceLine(line.id, "label", e.target.value)
+  }, [onUpdateReferenceLine, line.id])
+
+  const handleXValueChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onUpdateReferenceLine(line.id, "xValue", e.target.value)
+  }, [onUpdateReferenceLine, line.id])
+
+  const handleYValueChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onUpdateReferenceLine(line.id, "yValue", e.target.value)
+  }, [onUpdateReferenceLine, line.id])
+
+  const handleAxisNoChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    onUpdateReferenceLine(line.id, "axisNo", parseInt(e.target.value) || 1)
+  }, [onUpdateReferenceLine, line.id])
+
+  const handleRemove = useCallback(() => {
+    onRemoveReferenceLine(line.id)
+  }, [onRemoveReferenceLine, line.id])
   return (
     <div className="flex gap-2 p-1">
       <div className="w-16">
@@ -56,7 +75,7 @@ export function ReferenceLineRow({
       <div className="flex-1">
         <Input
           value={line.label}
-          onChange={(e) => onUpdateReferenceLine(line.id, "label", e.target.value)}
+          onChange={handleLabelChange}
           placeholder="Label"
           className="h-7 text-xs"
         />
@@ -67,14 +86,14 @@ export function ReferenceLineRow({
             <Input
               type="datetime-local"
               value={line.xValue || ""}
-              onChange={(e) => onUpdateReferenceLine(line.id, "xValue", e.target.value)}
+              onChange={handleXValueChange}
               className="h-7 text-xs w-full [&::-webkit-calendar-picker-indicator]:ml-auto [&::-webkit-calendar-picker-indicator]:cursor-pointer"
             />
           ) : (
             <Input
               type="number"
               value={line.xValue || ""}
-              onChange={(e) => onUpdateReferenceLine(line.id, "xValue", e.target.value)}
+              onChange={handleXValueChange}
               placeholder={(editingChart.xAxisType || "datetime") === "time" ? "Time(s)" : "X value"}
               className="h-7 text-xs"
             />
@@ -83,7 +102,7 @@ export function ReferenceLineRow({
           <Input
             type="number"
             value={line.yValue || ""}
-            onChange={(e) => onUpdateReferenceLine(line.id, "yValue", e.target.value)}
+            onChange={handleYValueChange}
             placeholder="Y value"
             className="h-7 text-xs"
           />
@@ -96,7 +115,7 @@ export function ReferenceLineRow({
             min="1"
             max="10"
             value={line.axisNo || 1}
-            onChange={(e) => onUpdateReferenceLine(line.id, "axisNo", parseInt(e.target.value) || 1)}
+            onChange={handleAxisNoChange}
             className="h-7 text-xs"
           />
         ) : (
@@ -114,7 +133,7 @@ export function ReferenceLineRow({
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => onRemoveReferenceLine(line.id)}
+          onClick={handleRemove}
           className="h-7 w-7 p-0"
         >
           <X className="h-3 w-3" />
@@ -122,4 +141,4 @@ export function ReferenceLineRow({
       </div>
     </div>
   )
-}
+})

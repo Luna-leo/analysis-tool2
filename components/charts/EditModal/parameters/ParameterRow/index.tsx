@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
 import { ChartComponent } from "@/types"
@@ -29,7 +29,7 @@ interface ParameterRowProps {
   handleThresholdAdd: (paramIndex: number, thresholdId: string) => void
 }
 
-export function ParameterRow({
+export const ParameterRow = React.memo(({
   index,
   editingChart,
   setEditingChart,
@@ -46,8 +46,17 @@ export function ParameterRow({
   filterInterlocks,
   handleThresholdRemove,
   handleThresholdAdd,
-}: ParameterRowProps) {
+}: ParameterRowProps) => {
   const param = editingChart.yAxisParams![index]
+  
+  const handleTypeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    handleParameterTypeChange(index, e.target.value as "Parameter" | "Formula" | "Interlock")
+  }, [handleParameterTypeChange, index])
+  
+  const handleRemove = useCallback(() => {
+    const newParams = editingChart.yAxisParams?.filter((_, i) => i !== index) || []
+    setEditingChart({ ...editingChart, yAxisParams: newParams })
+  }, [editingChart, setEditingChart, index])
 
   return (
     <div className="flex gap-2 items-center">
@@ -57,9 +66,7 @@ export function ParameterRow({
             parameterTypeSelectRefs.current[index] = el
           }}
           value={param.parameterType || "Parameter"}
-          onChange={(e) =>
-            handleParameterTypeChange(index, e.target.value as "Parameter" | "Formula" | "Interlock")
-          }
+          onChange={handleTypeChange}
           className="w-full h-7 px-2 py-1 border rounded-md text-xs"
         >
           <option value="Parameter">Parameter</option>
@@ -114,17 +121,16 @@ export function ParameterRow({
           variant="ghost"
           size="sm"
           className="h-7 w-7 p-0"
-          onClick={() => {
-            const newParams = editingChart.yAxisParams?.filter((_, i) => i !== index) || []
-            setEditingChart({ ...editingChart, yAxisParams: newParams })
-          }}
+          onClick={handleRemove}
         >
           <X className="h-3 w-3" />
         </Button>
       </div>
     </div>
   )
-}
+})
+
+ParameterRow.displayName = 'ParameterRow'
 
 export { FormulaParameterRow } from "./FormulaParameterRow"
 export { InterlockParameterRow } from "./InterlockParameterRow"

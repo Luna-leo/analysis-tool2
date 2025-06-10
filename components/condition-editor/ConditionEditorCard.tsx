@@ -16,13 +16,13 @@ interface ConditionEditorCardProps {
   className?: string
 }
 
-export function ConditionEditorCard({
+export const ConditionEditorCard = React.memo(({
   conditions,
   onConditionsChange,
   showExpressionPreview = true,
   twoColumnLayout = false,
   className
-}: ConditionEditorCardProps) {
+}: ConditionEditorCardProps) => {
   const content = (
     <>
       <div className={twoColumnLayout ? "" : "space-y-4"}>
@@ -68,4 +68,4 @@ export function ConditionEditorCard({
   }
 
   return <div className={className}>{content}</div>
-}
+})

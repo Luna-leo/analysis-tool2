@@ -16,7 +16,7 @@ interface ChartPreviewGraphProps {
   setEditingChart?: (chart: ChartComponent) => void
 }
 
-export function ChartPreviewGraph({ editingChart, selectedDataSourceItems, setEditingChart }: ChartPreviewGraphProps) {
+export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart }: ChartPreviewGraphProps) => {
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [dimensions, setDimensions] = React.useState({ width: 400, height: 300 })
@@ -98,4 +98,4 @@ export function ChartPreviewGraph({ editingChart, selectedDataSourceItems, setEd
       />
     </div>
   )
-}
+})

@@ -1,12 +1,13 @@
 "use client"
 
-import React from 'react'
+import React, { useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Edit2, Copy, Trash2 } from 'lucide-react'
 import { FormulaMaster } from '@/data/formulaMaster'
 import { FormulaDisplay } from './FormulaDisplay'
+import { formatDateToLocalDateString } from '@/utils/dateUtils'
 
 interface FormulaCardProps {
   formula: FormulaMaster
@@ -15,7 +16,10 @@ interface FormulaCardProps {
   onDelete: (formula: FormulaMaster) => void
 }
 
-export function FormulaCard({ formula, onEdit, onDuplicate, onDelete }: FormulaCardProps) {
+export const FormulaCard = React.memo(({ formula, onEdit, onDuplicate, onDelete }: FormulaCardProps) => {
+  const handleDuplicate = useCallback(() => onDuplicate(formula), [onDuplicate, formula])
+  const handleEdit = useCallback(() => onEdit(formula), [onEdit, formula])
+  const handleDelete = useCallback(() => onDelete(formula), [onDelete, formula])
   return (
     <Card className="group hover:shadow-md transition-shadow">
       <CardHeader className="pb-3">
@@ -39,7 +43,7 @@ export function FormulaCard({ formula, onEdit, onDuplicate, onDelete }: FormulaC
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onDuplicate(formula)}
+              onClick={handleDuplicate}
               className="h-8 w-8 p-0"
             >
               <Copy className="h-4 w-4" />
@@ -47,7 +51,7 @@ export function FormulaCard({ formula, onEdit, onDuplicate, onDelete }: FormulaC
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onEdit(formula)}
+              onClick={handleEdit}
               className="h-8 w-8 p-0"
             >
               <Edit2 className="h-4 w-4" />
@@ -55,7 +59,7 @@ export function FormulaCard({ formula, onEdit, onDuplicate, onDelete }: FormulaC
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onDelete(formula)}
+              onClick={handleDelete}
               className="h-8 w-8 p-0 hover:text-red-600"
             >
               <Trash2 className="h-4 w-4" />
@@ -88,11 +92,11 @@ export function FormulaCard({ formula, onEdit, onDuplicate, onDelete }: FormulaC
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <Badge variant="outline">{formula.category}</Badge>
             <span>
-              Updated: {new Date(formula.updatedAt).toLocaleDateString()}
+              Updated: {formatDateToLocalDateString(formula.updatedAt)}
             </span>
           </div>
         </div>
       </CardContent>
     </Card>
   )
-}
+})

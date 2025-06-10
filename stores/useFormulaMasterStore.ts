@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { FormulaMaster } from '@/data/formulaMaster'
 import { mockFormulaMaster } from '@/data/formulaMaster'
+import { formatDateToISO } from '@/utils/dateUtils'
 
 interface FormulaMasterStore {
   formulas: FormulaMaster[]
@@ -39,7 +40,7 @@ export const useFormulaMasterStore = create<FormulaMasterStore>((set, get) => ({
   updateFormula: (id, updatedData) => set((state) => ({
     formulas: state.formulas.map(formula => 
       formula.id === id 
-        ? { ...formula, ...updatedData, updatedAt: new Date().toISOString() }
+        ? { ...formula, ...updatedData, updatedAt: formatDateToISO(new Date()) }
         : formula
     )
   })),
@@ -57,8 +58,8 @@ export const useFormulaMasterStore = create<FormulaMasterStore>((set, get) => ({
       ...originalFormula,
       id: `formula_${Date.now()}`,
       name: newName,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      createdAt: formatDateToISO(new Date()),
+      updatedAt: formatDateToISO(new Date())
     }
     
     set((state) => ({
