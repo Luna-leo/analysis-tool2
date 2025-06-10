@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useEffect } from "react"
 import { 
   FolderOpen, 
   Search, 
@@ -33,6 +33,22 @@ export function Sidebar() {
   const { fileTree, setCreatingNode, openFile } = useFileStore()
   const layoutStore = useLayoutStore()
   const uiStore = useUIStore()
+
+  // Auto-collapse sidebar on narrow screens
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 1024 && sidebarOpen) { // 1024px = lg breakpoint
+        setSidebarOpen(false)
+      }
+    }
+
+    // Check initial size
+    handleResize()
+
+    // Add resize listener
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [sidebarOpen, setSidebarOpen])
 
   const handleViewClick = (view: ActiveView) => {
     if (activeView === view) {
@@ -85,6 +101,19 @@ export function Sidebar() {
     
     // Open the Interlock Master as a tab
     openFile(interlockMasterNode, 'database')
+  }
+
+  const handleOpenFormulaMaster = () => {
+    // Create a special Formula Master tab
+    const formulaMasterNode: FileNode = {
+      id: 'formula-master',
+      name: 'Formula Master',
+      type: 'formula-master',
+      isSystemNode: true
+    }
+    
+    // Open the Formula Master as a tab
+    openFile(formulaMasterNode, 'calculator')
   }
 
   const renderSidebarContent = () => {
@@ -166,25 +195,6 @@ export function Sidebar() {
               <Button
                 variant="ghost"
                 className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
-                onClick={() => console.log("Parameter Master")}
-              >
-                <Hash className="h-4 w-4 shrink-0" />
-                <div className="flex flex-col items-start flex-1">
-                  <span>Parameter Master</span>
-                  <span className="text-xs text-muted-foreground">パラメータID、パラメータ名、単位</span>
-                </div>
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
-                onClick={() => console.log("Tag Master")}
-              >
-                <Tag className="h-4 w-4 shrink-0" />
-                <span>Tag Master</span>
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
                 onClick={() => console.log("Sensor data Master")}
               >
                 <BarChart3 className="h-4 w-4 shrink-0" />
@@ -196,13 +206,23 @@ export function Sidebar() {
               <Button
                 variant="ghost"
                 className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
-                onClick={() => console.log("Formula Master")}
+                onClick={() => console.log("Parameter Master")}
+                disabled
               >
-                <FunctionSquare className="h-4 w-4 shrink-0" />
+                <Hash className="h-4 w-4 shrink-0" />
                 <div className="flex flex-col items-start flex-1">
-                  <span>Formula Master</span>
-                  <span className="text-xs text-muted-foreground">登録済み数式</span>
+                  <span>Parameter Master</span>
+                  <span className="text-xs text-muted-foreground">パラメータID、パラメータ名、単位</span>
                 </div>
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
+                onClick={() => console.log("Tag Master")}
+                disabled
+              >
+                <Tag className="h-4 w-4 shrink-0" />
+                <span>Tag Master</span>
               </Button>
             </div>
           </>
@@ -215,20 +235,12 @@ export function Sidebar() {
               <Button
                 variant="ghost"
                 className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
-                onClick={() => console.log("Formula")}
+                onClick={handleOpenFormulaMaster}
               >
                 <FunctionSquare className="h-4 w-4 shrink-0" />
-                <span>Formula</span>
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
-                onClick={() => console.log("Unit Convert Formula Master")}
-              >
-                <ArrowLeftRight className="h-4 w-4 shrink-0" />
                 <div className="flex flex-col items-start flex-1">
-                  <span>Unit Convert Formula Master</span>
-                  <span className="text-xs text-muted-foreground">単位換算式</span>
+                  <span>Formula Master</span>
+                  <span className="text-xs text-muted-foreground">登録済み数式</span>
                 </div>
               </Button>
               <Button
@@ -240,6 +252,17 @@ export function Sidebar() {
                 <div className="flex flex-col items-start flex-1">
                   <span>Trigger Condition Master</span>
                   <span className="text-xs text-muted-foreground">登録済みキック信号コンディション</span>
+                </div>
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
+                onClick={() => console.log("Unit Convert Formula Master")}
+              >
+                <ArrowLeftRight className="h-4 w-4 shrink-0" />
+                <div className="flex flex-col items-start flex-1">
+                  <span>Unit Convert Formula Master</span>
+                  <span className="text-xs text-muted-foreground">単位換算式</span>
                 </div>
               </Button>
             </div>

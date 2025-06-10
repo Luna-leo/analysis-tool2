@@ -1,6 +1,7 @@
 import { ChartComponent, InterlockDefinition } from "@/types"
 import { useInterlockMasterStore } from "@/stores/useInterlockMasterStore"
-import { mockFormulaMaster, FormulaMaster } from "@/data/formulaMaster"
+import { useFormulaMasterStore } from "@/stores/useFormulaMasterStore"
+import { FormulaMaster } from "@/data/formulaMaster"
 
 interface UseYParameterHandlersProps {
   editingChart: ChartComponent
@@ -29,6 +30,9 @@ export function useYParameterHandlers({
 }: UseYParameterHandlersProps) {
   // Get interlocks from the store
   const { interlocks, addInterlock, updateInterlock } = useInterlockMasterStore()
+  // Get formulas from the store
+  const { formulas, addFormula, updateFormula } = useFormulaMasterStore()
+  
   const handleFormulaSave = (formula: FormulaMaster, index: number) => {
     const newParams = [...(editingChart.yAxisParams || [])]
     newParams[index] = {
@@ -39,13 +43,12 @@ export function useYParameterHandlers({
     }
     setEditingChart({ ...editingChart, yAxisParams: newParams })
     
-    if (!mockFormulaMaster.find(f => f.id === formula.id)) {
-      mockFormulaMaster.push(formula)
+    // Use the Formula Store instead of mockFormulaMaster
+    const existingFormula = formulas.find(f => f.id === formula.id)
+    if (!existingFormula) {
+      addFormula(formula)
     } else {
-      const masterIndex = mockFormulaMaster.findIndex(f => f.id === formula.id)
-      if (masterIndex >= 0) {
-        mockFormulaMaster[masterIndex] = formula
-      }
+      updateFormula(formula.id, formula)
     }
     setEditingFormulaIndex(null)
   }
@@ -145,7 +148,7 @@ export function useYParameterHandlers({
       return
     }
 
-    const selectedFormula = mockFormulaMaster.find(f => f.id === value)
+    const selectedFormula = formulas.find(f => f.id === value)
     if (selectedFormula) {
       if (mode === "edit" || mode === "duplicate") {
         setEditingFormulaIndex(index)

@@ -6,7 +6,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { ChevronDown, Copy, Edit2, Plus } from "lucide-react"
-import { mockFormulaMaster, FormulaMaster } from "@/data/formulaMaster"
+import { FormulaMaster } from "@/data/formulaMaster"
+import { useFormulaMasterStore } from "@/stores/useFormulaMasterStore"
 
 interface FormulaParameterRowProps {
   index: number
@@ -31,6 +32,8 @@ export function FormulaParameterRow({
   handleFormulaSelect,
   filterFormulas,
 }: FormulaParameterRowProps) {
+  const { formulas } = useFormulaMasterStore()
+  
   return (
     <TooltipProvider>
       <Tooltip>
@@ -68,7 +71,7 @@ export function FormulaParameterRow({
                   <CommandEmpty>No formula found.</CommandEmpty>
                   <div className="max-h-[300px] overflow-y-auto">
                     <CommandGroup>
-                      {filterFormulas(mockFormulaMaster).map((formula) => (
+                      {filterFormulas(formulas).map((formula) => (
                         <CommandItem
                           key={formula.id}
                           value={formula.id}
