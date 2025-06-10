@@ -95,3 +95,21 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* KaTeX Formula Styles */
+.katex-formula {
+  font-size: 1.1em;
+}
+
+.katex-formula .katex {
+  font-size: inherit;
+}
+
+/* Adjust KaTeX display in tooltips */
+.katex-formula.text-base .katex {
+  font-size: 1.2em;
+}
+
+.katex-formula.text-xs .katex {
+  font-size: 0.9em;
+}

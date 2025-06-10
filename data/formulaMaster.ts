@@ -98,5 +98,60 @@ export const mockFormulaMaster: FormulaMaster[] = [
     unit: "%",
     createdAt: "2024-01-22T09:45:00Z",
     updatedAt: "2024-01-22T09:45:00Z"
+  },
+  {
+    id: "formula_009",
+    name: "Heat Transfer Rate",
+    description: "Calculate heat transfer rate using flow and temperature",
+    expression: "FLOW_RATE * HEAT_CAPACITY * (TEMP_IN - TEMP_OUT) / 1000",
+    parameters: ["FLOW_RATE", "HEAT_CAPACITY", "TEMP_IN", "TEMP_OUT"],
+    category: "Thermal",
+    unit: "kW",
+    createdAt: "2024-01-23T10:00:00Z",
+    updatedAt: "2024-01-23T10:00:00Z"
+  },
+  {
+    id: "formula_010",
+    name: "Reynolds Number",
+    description: "Dimensionless number for flow characterization",
+    expression: "(DENSITY * VELOCITY * DIAMETER) / VISCOSITY",
+    parameters: ["DENSITY", "VELOCITY", "DIAMETER", "VISCOSITY"],
+    category: "Flow",
+    unit: "-",
+    createdAt: "2024-01-23T11:00:00Z",
+    updatedAt: "2024-01-23T11:00:00Z"
+  },
+  {
+    id: "formula_011",
+    name: "RMS Vibration",
+    description: "Root mean square of vibration signal",
+    expression: "sqrt((VIB_X^2 + VIB_Y^2 + VIB_Z^2) / 3)",
+    parameters: ["VIB_X", "VIB_Y", "VIB_Z"],
+    category: "Vibration",
+    unit: "mm/s",
+    createdAt: "2024-01-23T12:00:00Z",
+    updatedAt: "2024-01-23T12:00:00Z"
+  },
+  {
+    id: "formula_012",
+    name: "Thermal Efficiency",
+    description: "Calculate thermal efficiency with heat losses",
+    expression: "(HEAT_OUTPUT / HEAT_INPUT) * 100",
+    parameters: ["HEAT_OUTPUT", "HEAT_INPUT"],
+    category: "Thermal",
+    unit: "%",
+    createdAt: "2024-01-23T13:00:00Z",
+    updatedAt: "2024-01-23T13:00:00Z"
+  },
+  {
+    id: "formula_013",
+    name: "Pressure Drop",
+    description: "Pressure drop calculation with correction factor",
+    expression: "DELTA_P * sqrt(TEMP_ACTUAL / TEMP_DESIGN) * (FLOW_ACTUAL / FLOW_DESIGN)^2",
+    parameters: ["DELTA_P", "TEMP_ACTUAL", "TEMP_DESIGN", "FLOW_ACTUAL", "FLOW_DESIGN"],
+    category: "Pressure",
+    unit: "kPa",
+    createdAt: "2024-01-23T14:00:00Z",
+    updatedAt: "2024-01-23T14:00:00Z"
   }
 ]

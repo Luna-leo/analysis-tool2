@@ -14,6 +14,7 @@ import { FormulaRegistrationDialog } from "@/components/charts/EditModal/paramet
 import { FormulaMaster } from "@/data/formulaMaster"
 import { useToast } from "@/hooks/use-toast"
 import { FormulaDisplay } from "./FormulaDisplay"
+import { FormulaLatexDisplay } from "./FormulaLatexDisplay"
 
 export function FormulaMasterPage() {
   const { toast } = useToast()
@@ -33,6 +34,7 @@ export function FormulaMasterPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedFormula, setSelectedFormula] = useState<FormulaMaster | null>(null)
   const [dialogMode, setDialogMode] = useState<'add' | 'edit' | 'duplicate'>('add')
+  const [displayMode, setDisplayMode] = useState<'syntax' | 'latex'>('latex')
 
   const filteredFormulas = getFilteredFormulas()
   const categories = getCategories()
@@ -72,17 +74,12 @@ export function FormulaMasterPage() {
         title: "Formula updated",
         description: `"${formula.name}" has been updated successfully.`,
       })
-    } else if (dialogMode === 'duplicate' && selectedFormula) {
-      duplicateFormula(selectedFormula.id, formula.name)
-      toast({
-        title: "Formula duplicated",
-        description: `"${formula.name}" has been created successfully.`,
-      })
     } else {
+      // For both 'add' and 'duplicate' modes, we add a new formula
       addFormula(formula)
       toast({
-        title: "Formula added",
-        description: `"${formula.name}" has been added successfully.`,
+        title: dialogMode === 'duplicate' ? "Formula duplicated" : "Formula added",
+        description: `"${formula.name}" has been ${dialogMode === 'duplicate' ? 'created' : 'added'} successfully.`,
       })
     }
     setIsDialogOpen(false)
@@ -98,10 +95,21 @@ export function FormulaMasterPage() {
             <h1 className="text-xl font-semibold">Formula Master</h1>
             <span className="text-sm text-muted-foreground">({filteredFormulas.length} formulas)</span>
           </div>
-          <Button onClick={handleAddNew} size="sm">
-            <Plus className="h-4 w-4 mr-1" />
-            Add Formula
-          </Button>
+          <div className="flex items-center gap-2">
+            <Select value={displayMode} onValueChange={(value: 'syntax' | 'latex') => setDisplayMode(value)}>
+              <SelectTrigger className="w-[140px] h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="latex">LaTeX表示</SelectItem>
+                <SelectItem value="syntax">構文表示</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={handleAddNew} size="sm">
+              <Plus className="h-4 w-4 mr-1" />
+              Add Formula
+            </Button>
+          </div>
         </div>
 
         {/* Search and Filter */}
@@ -196,13 +204,21 @@ export function FormulaMasterPage() {
                     <TooltipTrigger asChild>
                       <div className="bg-muted rounded overflow-hidden px-3 py-2">
                         <div className="truncate">
-                          <FormulaDisplay expression={formula.expression} />
+                          {displayMode === 'latex' ? (
+                            <FormulaLatexDisplay expression={formula.expression} />
+                          ) : (
+                            <FormulaDisplay expression={formula.expression} />
+                          )}
                         </div>
                       </div>
                     </TooltipTrigger>
                     {formula.expression.length > 50 && (
                       <TooltipContent side="bottom" className="max-w-[600px] p-3 bg-muted">
-                        <FormulaDisplay expression={formula.expression} className="text-base" />
+                        {displayMode === 'latex' ? (
+                          <FormulaLatexDisplay expression={formula.expression} className="text-base" />
+                        ) : (
+                          <FormulaDisplay expression={formula.expression} className="text-base" />
+                        )}
                       </TooltipContent>
                     )}
                   </Tooltip>
@@ -270,15 +286,13 @@ export function FormulaMasterPage() {
       </ScrollArea>
 
       {/* Formula Registration Dialog */}
-      {isDialogOpen && (
-        <FormulaRegistrationDialog
-          isOpen={isDialogOpen}
-          onClose={() => setIsDialogOpen(false)}
-          onSave={handleSaveFormula}
-          formula={selectedFormula || undefined}
-          mode={dialogMode}
-        />
-      )}
+      <FormulaRegistrationDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        onSave={handleSaveFormula}
+        initialFormula={selectedFormula || undefined}
+        mode={dialogMode === 'add' ? 'create' : dialogMode}
+      />
     </div>
   )
 }
