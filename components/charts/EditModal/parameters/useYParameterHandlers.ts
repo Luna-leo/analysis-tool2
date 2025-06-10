@@ -1,5 +1,5 @@
 import { ChartComponent, InterlockDefinition } from "@/types"
-import { mockInterlockMaster } from "@/data/interlockMaster"
+import { useInterlockMasterStore } from "@/stores/useInterlockMasterStore"
 import { mockFormulaMaster, FormulaMaster } from "@/data/formulaMaster"
 
 interface UseYParameterHandlersProps {
@@ -27,6 +27,8 @@ export function useYParameterHandlers({
   setOpenComboboxIndex,
   setSearchQuery
 }: UseYParameterHandlersProps) {
+  // Get interlocks from the store
+  const { interlocks, addInterlock, updateInterlock } = useInterlockMasterStore()
   const handleFormulaSave = (formula: FormulaMaster, index: number) => {
     const newParams = [...(editingChart.yAxisParams || [])]
     newParams[index] = {
@@ -48,16 +50,63 @@ export function useYParameterHandlers({
     setEditingFormulaIndex(null)
   }
 
-  const handleInterlockSave = (interlockDefinition: InterlockDefinition, selectedThresholds: string[], _plant: string, _machineNo: string, index: number) => {
+  const handleInterlockSave = (interlockDefinition: InterlockDefinition, selectedThresholds: string[], plant: string, machineNo: string, index: number) => {
     const newParams = [...(editingChart.yAxisParams || [])]
     const finalSelectedThresholds = selectedThresholds.length > 0 
       ? selectedThresholds 
       : interlockDefinition.thresholds.map(t => t.id)
+    
+    // Create or update interlock in the store
+    const currentParam = newParams[index]
+    const isEditingExisting = currentParam?.interlockSource === "master" && currentParam?.interlockId
+    
+    if (isEditingExisting) {
+      // Update existing interlock in store
+      const existingInterlock = interlocks.find(i => i.id === currentParam.interlockId)
+      if (existingInterlock) {
+        const updatedInterlock = {
+          ...existingInterlock,
+          name: interlockDefinition.name,
+          plant_name: plant,
+          machine_no: machineNo,
+          definition: interlockDefinition,
+          updatedAt: new Date().toISOString()
+        }
+        updateInterlock(updatedInterlock)
+      }
+    } else {
+      // Add new interlock to store for custom interlocks
+      const newInterlock = {
+        id: `custom-${Date.now()}`,
+        name: interlockDefinition.name,
+        category: "Custom",
+        plant_name: plant,
+        machine_no: machineNo,
+        definition: interlockDefinition,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+      addInterlock(newInterlock)
+      
+      // Update the parameter to reference the new interlock
+      newParams[index] = {
+        ...newParams[index],
+        interlockId: newInterlock.id,
+        interlockSource: "master",
+        interlockDefinition,
+        parameter: interlockDefinition.name,
+        selectedThresholds: finalSelectedThresholds
+      }
+      setEditingChart({ ...editingChart, yAxisParams: newParams })
+      setEditingInterlockIndex(null)
+      return
+    }
+    
     newParams[index] = {
       ...newParams[index],
       interlockDefinition,
       parameter: interlockDefinition.name,
-      interlockSource: "custom",
+      interlockSource: currentParam?.interlockSource || "custom",
       selectedThresholds: finalSelectedThresholds
     }
     setEditingChart({ ...editingChart, yAxisParams: newParams })
@@ -141,7 +190,7 @@ export function useYParameterHandlers({
       return
     }
 
-    const selectedMaster = mockInterlockMaster.find(m => m.id === value)
+    const selectedMaster = interlocks.find(m => m.id === value)
     if (selectedMaster) {
       if (mode === "edit" || mode === "duplicate") {
         setEditingInterlockIndex(index)

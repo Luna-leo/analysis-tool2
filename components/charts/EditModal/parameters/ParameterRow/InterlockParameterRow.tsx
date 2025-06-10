@@ -7,7 +7,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { X, Plus, ChevronDown, Copy, Edit2 } from "lucide-react"
-import { mockInterlockMaster } from "@/data/interlockMaster"
+import { useInterlockMasterStore } from "@/stores/useInterlockMasterStore"
+import { InterlockMaster } from "@/types"
 
 interface InterlockParameterRowProps {
   index: number
@@ -19,7 +20,7 @@ interface InterlockParameterRowProps {
   searchQuery: string
   setSearchQuery: (query: string) => void
   handleInterlockSelect: (index: number, value: string, mode?: "select" | "edit" | "duplicate") => void
-  filterInterlocks: (interlocks: typeof mockInterlockMaster) => typeof mockInterlockMaster
+  filterInterlocks: (interlocks: InterlockMaster[]) => InterlockMaster[]
   handleThresholdRemove: (paramIndex: number, thresholdId: string) => void
   handleThresholdAdd: (paramIndex: number, thresholdId: string) => void
 }
@@ -38,6 +39,9 @@ export function InterlockParameterRow({
   handleThresholdRemove,
   handleThresholdAdd,
 }: InterlockParameterRowProps) {
+  // Get interlocks from the store
+  const { interlocks } = useInterlockMasterStore()
+  
   return (
     <TooltipProvider>
       <Tooltip>
@@ -134,7 +138,7 @@ export function InterlockParameterRow({
                   <CommandEmpty>No interlock found.</CommandEmpty>
                   <div className="max-h-[300px] overflow-y-auto">
                     <CommandGroup>
-                    {filterInterlocks(mockInterlockMaster).map((master) => (
+                    {filterInterlocks(interlocks).map((master) => (
                       <CommandItem
                         key={master.id}
                         value={master.id}

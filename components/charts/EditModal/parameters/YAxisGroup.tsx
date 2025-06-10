@@ -8,8 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, ChevronDown, ChevronRight, Trash2 } from "lucide-react"
-import { ChartComponent } from "@/types"
-import { mockInterlockMaster } from "@/data/interlockMaster"
+import { ChartComponent, InterlockMaster } from "@/types"
 import { FormulaMaster } from "@/data/formulaMaster"
 import { ParameterRow } from "./ParameterRow"
 
@@ -39,7 +38,7 @@ interface YAxisGroupProps {
   handleFormulaSelect: (index: number, value: string, mode?: "select" | "edit" | "duplicate") => void
   handleInterlockSelect: (index: number, value: string, mode?: "select" | "edit" | "duplicate") => void
   filterFormulas: (formulas: FormulaMaster[]) => FormulaMaster[]
-  filterInterlocks: (interlocks: typeof mockInterlockMaster) => typeof mockInterlockMaster
+  filterInterlocks: (interlocks: InterlockMaster[]) => InterlockMaster[]
   handleThresholdRemove: (paramIndex: number, thresholdId: string) => void
   handleThresholdAdd: (paramIndex: number, thresholdId: string) => void
 }

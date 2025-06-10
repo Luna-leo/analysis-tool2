@@ -2,9 +2,8 @@
 
 import React from "react"
 import { YAxisGroup } from "./YAxisGroup"
-import { ChartComponent } from "@/types"
+import { ChartComponent, InterlockMaster } from "@/types"
 import { FormulaMaster } from "@/data/formulaMaster"
-import { mockInterlockMaster } from "@/data/interlockMaster"
 
 interface YParameterListProps {
   editingChart: ChartComponent
@@ -20,7 +19,7 @@ interface YParameterListProps {
   handleFormulaSelect: (index: number, value: string, mode?: "select" | "edit" | "duplicate") => void
   handleInterlockSelect: (index: number, value: string, mode?: "select" | "edit" | "duplicate") => void
   filterFormulas: (formulas: FormulaMaster[]) => FormulaMaster[]
-  filterInterlocks: (interlocks: typeof mockInterlockMaster) => typeof mockInterlockMaster
+  filterInterlocks: (interlocks: InterlockMaster[]) => InterlockMaster[]
   handleThresholdRemove: (paramIndex: number, thresholdId: string) => void
   handleThresholdAdd: (paramIndex: number, thresholdId: string) => void
   updateAxisLabel: (axisNo: number, label: string) => void
