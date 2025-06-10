@@ -11,6 +11,7 @@ import { EventMasterPage } from "@/components/event-master"
 import { InterlockMasterPageWrapper } from "@/components/interlock-master/InterlockMasterPageWrapper"
 import { FormulaMasterPage } from "@/components/formula-master"
 import { TriggerConditionMasterPage } from "@/components/trigger-condition-master"
+import { UnitConverterFormulaMasterPage } from "@/components/unit-converter-formula"
 import { useFileStore } from "@/stores/useFileStore"
 import { useLayoutStore } from "@/stores/useLayoutStore"
 import { useUIStore } from "@/stores/useUIStore"
@@ -92,6 +93,11 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
   // Check if this is a Trigger Condition Master tab
   if (file.id === 'trigger-condition-master') {
     return <TriggerConditionMasterPage />
+  }
+
+  // Check if this is a Unit Converter Formula Master tab
+  if (file.id === 'unit-converter-formula-master') {
+    return <UnitConverterFormulaMasterPage />
   }
 
   if (!file.charts || file.charts.length === 0) {

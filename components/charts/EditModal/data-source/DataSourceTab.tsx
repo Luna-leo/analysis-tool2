@@ -5,12 +5,11 @@ import { ManualEntryDialog } from "../../../dialogs/ManualEntryDialog"
 import { TriggerSignalDialog } from "../../../dialogs/TriggerSignalDialog"
 import { EventSelectionDialog } from "../../../dialogs/EventSelectionDialog"
 import { ImportCSVDialog } from "../../../dialogs/ImportCSVDialog"
+import { TriggerConditionEditDialog } from "../../../dialogs/TriggerConditionEditDialog"
 import { useManualEntry } from "@/hooks/useManualEntry"
 import { useDataSourceManagement } from "@/hooks/useDataSourceManagement"
 import { useTimeOffset } from "@/hooks/useTimeOffset"
 import { EventInfo, SearchResult, CSVImportData } from "@/types"
-import { Button } from "@/components/ui/button"
-import { Plus, Calendar, FileText } from "lucide-react"
 import { processManualEntryData, createEventFromSearchResult } from "@/utils/dataSourceUtils"
 import { parseCSVFiles, validateCSVStructure, mapCSVDataToStandardFormat } from "@/utils/csvUtils"
 import { useToast } from "@/hooks/use-toast"
@@ -231,42 +230,10 @@ export function DataSourceTab({
   return (
     <>
       <div className="space-y-4">
-        {/* Data Source Actions */}
-        <div className="border rounded-lg p-3 bg-muted/30">
-          <h4 className="text-sm font-medium mb-3">Add Data Sources</h4>
-          <div className="flex justify-between items-center">
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={manualEntry.openForNew}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Manual Entry
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setEventSelectionOpen(true)}
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                From Events
-              </Button>
-            </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setImportCSVOpen(true)}
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              Import CSV
-            </Button>
-          </div>
-        </div>
-
         {/* Period Pool */}
         <PeriodPool
           periodPool={dataSource.periodPool}
+          displayedPeriodPool={dataSource.displayedPeriodPool}
           selectedPoolIds={dataSource.selectedPoolIds}
           periodPoolOpen={periodPoolOpen}
           setPeriodPoolOpen={setPeriodPoolOpen}
@@ -275,7 +242,13 @@ export function DataSourceTab({
           onRemoveFromPool={dataSource.handleRemoveFromPool}
           onEditPeriod={handleEditPeriod}
           onAddToDataSource={handleAddToDataSource}
-          onFilterByConditions={handleFilterByConditions}
+          onManualEntry={manualEntry.openForNew}
+          onFromEvents={() => setEventSelectionOpen(true)}
+          onImportCSV={() => setImportCSVOpen(true)}
+          activeFilterIds={dataSource.activeFilterIds}
+          onFiltersChange={dataSource.handleApplyFilters}
+          onRemoveFilter={dataSource.handleRemoveFilter}
+          onClearAllFilters={dataSource.handleClearAllFilters}
         />
         
         {/* Search Results */}
@@ -362,6 +335,8 @@ export function DataSourceTab({
         onOpenChange={setImportCSVOpen}
         onImport={handleCSVImport}
       />
+
+      <TriggerConditionEditDialog />
     </>
   )
 }

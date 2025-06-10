@@ -11,7 +11,7 @@ interface TriggerConditionStore {
   addCondition: (condition: PredefinedCondition) => void
   updateCondition: (id: string, condition: Partial<PredefinedCondition>) => void
   deleteCondition: (id: string) => void
-  duplicateCondition: (id: string, newName: string) => void
+  duplicateCondition: (id: string) => string | undefined
   setSearchQuery: (query: string) => void
   setIsLoading: (loading: boolean) => void
   
@@ -43,20 +43,22 @@ export const useTriggerConditionStore = create<TriggerConditionStore>((set, get)
     conditions: state.conditions.filter(condition => condition.id !== id)
   })),
   
-  duplicateCondition: (id, newName) => {
+  duplicateCondition: (id) => {
     const state = get()
     const originalCondition = state.conditions.find(c => c.id === id)
-    if (!originalCondition) return
+    if (!originalCondition) return undefined
     
     const newCondition: PredefinedCondition = {
       ...originalCondition,
       id: `condition_${Date.now()}`,
-      name: newName
+      name: `${originalCondition.name} (Copy)`
     }
     
     set((state) => ({
       conditions: [...state.conditions, newCondition]
     }))
+    
+    return newCondition.id
   },
   
   setSearchQuery: (query) => set({ searchQuery: query }),

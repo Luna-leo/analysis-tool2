@@ -2,15 +2,18 @@
 
 import React from "react"
 import { Button } from "@/components/ui/button"
-import { Check, Filter, Trash2, Pencil, ChevronDown, ChevronRight } from "lucide-react"
+import { Check, Filter, Trash2, Pencil, ChevronDown, ChevronRight, Plus, Calendar, FileText } from "lucide-react"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
 import { EventInfo } from "@/types"
 import { formatDateTimeForDisplay } from "@/utils/dateUtils"
+import { EnhancedTriggerConditionSelector } from "./EnhancedTriggerConditionSelector"
+import { ActiveFiltersDisplay } from "./ActiveFiltersDisplay"
 
 interface PeriodPoolProps {
   periodPool: EventInfo[]
+  displayedPeriodPool: EventInfo[]
   selectedPoolIds: Set<string>
   periodPoolOpen: boolean
   setPeriodPoolOpen: (open: boolean) => void
@@ -19,11 +22,18 @@ interface PeriodPoolProps {
   onRemoveFromPool: (periodId: string) => void
   onEditPeriod: (period: EventInfo) => void
   onAddToDataSource: () => void
-  onFilterByConditions: () => void
+  onManualEntry: () => void
+  onFromEvents: () => void
+  onImportCSV: () => void
+  activeFilterIds: string[]
+  onFiltersChange: (filterIds: string[]) => void
+  onRemoveFilter: (filterId: string) => void
+  onClearAllFilters: () => void
 }
 
 export function PeriodPool({
   periodPool,
+  displayedPeriodPool,
   selectedPoolIds,
   periodPoolOpen,
   setPeriodPoolOpen,
@@ -32,31 +42,72 @@ export function PeriodPool({
   onRemoveFromPool,
   onEditPeriod,
   onAddToDataSource,
-  onFilterByConditions,
+  onManualEntry,
+  onFromEvents,
+  onImportCSV,
+  activeFilterIds,
+  onFiltersChange,
+  onRemoveFilter,
+  onClearAllFilters,
 }: PeriodPoolProps) {
   return (
     <div className="border rounded-lg bg-muted/30">
       <Collapsible open={periodPoolOpen} onOpenChange={setPeriodPoolOpen}>
         <div className="p-3">
-          <CollapsibleTrigger className="flex items-center gap-2 text-left hover:bg-muted/50 transition-colors p-1 rounded">
-            {periodPoolOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-            <h4 className="font-medium text-sm">Period Pool</h4>
-            {periodPool.length > 0 && (
-              <span className="text-xs text-muted-foreground">({periodPool.length})</span>
-            )}
-          </CollapsibleTrigger>
+          <div className="flex items-center justify-between">
+            <CollapsibleTrigger className="flex items-center gap-2 text-left hover:bg-muted/50 transition-colors p-1 rounded">
+              {periodPoolOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              <h4 className="font-medium text-sm">Period Pool</h4>
+              {displayedPeriodPool.length > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  ({displayedPeriodPool.length}{activeFilterIds.length > 0 && ` of ${periodPool.length}`})
+                </span>
+              )}
+            </CollapsibleTrigger>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onManualEntry}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Manual Entry
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onFromEvents}
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                From Events
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onImportCSV}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Import CSV
+              </Button>
+            </div>
+          </div>
         </div>
         
         <CollapsibleContent>
           <div className="px-3 pb-3">
-            {periodPool.length > 0 ? (
+            <ActiveFiltersDisplay
+            activeFilterIds={activeFilterIds}
+            onRemoveFilter={onRemoveFilter}
+            onClearAll={onClearAllFilters}
+          />
+          {displayedPeriodPool.length > 0 ? (
               <div className="border rounded-lg overflow-hidden">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead className="h-8 text-sm px-2 w-[40px]">
                         <Checkbox
-                          checked={selectedPoolIds.size === periodPool.length && periodPool.length > 0}
+                          checked={selectedPoolIds.size === displayedPeriodPool.length && displayedPeriodPool.length > 0}
                           onCheckedChange={onSelectAll}
                         />
                       </TableHead>
@@ -69,7 +120,7 @@ export function PeriodPool({
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {periodPool.map((period) => (
+                    {displayedPeriodPool.map((period) => (
                       <TableRow key={period.id}>
                         <TableCell className="px-2 py-1">
                           <Checkbox
@@ -142,16 +193,15 @@ export function PeriodPool({
                 <Check className="h-4 w-4 mr-2" />
                 Add to Data Source ({selectedPoolIds.size} selected)
               </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onFilterByConditions}
-                disabled={periodPool.length === 0}
-                className="flex-1"
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                Filter by Conditions
-              </Button>
+              <div className="flex-1">
+                <EnhancedTriggerConditionSelector
+                  activeFilterIds={activeFilterIds}
+                  onFiltersChange={onFiltersChange}
+                  disabled={periodPool.length === 0}
+                  displayedItemsCount={displayedPeriodPool.length}
+                  totalItemsCount={periodPool.length}
+                />
+              </div>
             </div>
           </div>
         </CollapsibleContent>

@@ -1,9 +1,8 @@
 import React, { useState } from "react"
 import { ChevronDown } from "lucide-react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import {
   Collapsible,
   CollapsibleContent,
@@ -11,8 +10,8 @@ import {
 } from "@/components/ui/collapsible"
 import { SearchCondition, SavedCondition, ConditionMode } from "@/types"
 import { predefinedConditions } from "@/data/predefinedConditions"
-import { PredefinedConditionSelector } from "./PredefinedConditionSelector"
 import { ManualConditionBuilder } from "./ManualConditionBuilder"
+import { ImprovedManualConditionBuilder } from "./ImprovedManualConditionBuilder"
 import { ExpressionPreview } from "./ExpressionPreview"
 import { SavedConditionsList } from "./SavedConditionsList"
 
@@ -32,6 +31,9 @@ interface SearchConditionsSectionProps {
   onLoadSavedCondition: (condition: SavedCondition) => void
   onDeleteSavedCondition: (id: string) => void
   defaultOpen?: boolean
+  useImprovedLayout?: boolean
+  hideExpressionPreview?: boolean
+  headerText?: string
 }
 
 export const SearchConditionsSection: React.FC<SearchConditionsSectionProps> = ({
@@ -49,7 +51,10 @@ export const SearchConditionsSection: React.FC<SearchConditionsSectionProps> = (
   onShowSaveDialog,
   onLoadSavedCondition,
   onDeleteSavedCondition,
-  defaultOpen = true
+  defaultOpen = true,
+  useImprovedLayout = false,
+  hideExpressionPreview = false,
+  headerText = "Search Conditions"
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen)
   
@@ -60,103 +65,74 @@ export const SearchConditionsSection: React.FC<SearchConditionsSectionProps> = (
   
   // Generate summary for collapsed state
   const getSummary = () => {
-    if (conditionMode === 'predefined') {
-      if (selectedPredefinedCondition) {
-        const condition = predefinedConditions.find(c => c.id === selectedPredefinedCondition)
-        return `Predefined: ${condition?.name || 'None selected'}`
-      }
-      return 'Predefined: None selected'
-    } else {
-      const conditionCount = searchConditions.length
-      if (loadedFromPredefined) {
-        const original = predefinedConditions.find(c => c.id === loadedFromPredefined)
-        return `Custom: Modified from "${original?.name}" (${conditionCount} conditions)`
-      }
-      return `Manual: ${conditionCount} condition(s) built`
+    const conditionCount = searchConditions.length
+    if (loadedFromPredefined) {
+      const original = predefinedConditions.find(c => c.id === loadedFromPredefined)
+      return `Modified from "${original?.name}" (${conditionCount} conditions)`
     }
+    return `${conditionCount} condition(s) defined`
   }
   
   return (
-    <Collapsible open={isOpen} onOpenChange={setIsOpen} className={`${isOpen ? 'h-full' : 'h-auto'} flex flex-col`}>
-      <Card className={`${isOpen ? 'h-full' : 'h-auto'} flex flex-col`}>
+    <div className="h-full flex flex-col">
+      <Collapsible open={isOpen} onOpenChange={setIsOpen} className="h-full flex flex-col">
         <CollapsibleTrigger asChild>
-          <CardHeader className={`flex-shrink-0 ${isOpen ? 'pb-6' : 'py-3'}`}>
-            <Button variant="ghost" className="w-full justify-between p-0 hover:bg-transparent">
+          <div className="flex-shrink-0 pb-2">
+            <Button variant="ghost" className="w-full justify-start p-0 hover:bg-transparent">
+              <ChevronDown className={`h-4 w-4 mr-2 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
               <div className="flex flex-col items-start">
-                <CardTitle className="text-lg">Search Conditions</CardTitle>
+                <h3 className="text-lg font-semibold">{headerText}</h3>
                 {!isOpen && (
                   <p className="text-xs text-muted-foreground mt-1">{getSummary()}</p>
                 )}
               </div>
-              <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </Button>
-          </CardHeader>
+          </div>
         </CollapsibleTrigger>
         <CollapsibleContent className={`${isOpen ? 'flex-1 flex flex-col' : ''}`}>
-          <CardContent className={`${isOpen ? 'flex-1 flex flex-col' : ''} space-y-4 overflow-hidden`}>
-        {/* Condition Mode Selection */}
-        <RadioGroup
-          value={conditionMode}
-          onValueChange={(value) => {
-            onConditionModeChange(value as ConditionMode)
-          }}
-          className="flex gap-6 flex-shrink-0"
-        >
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="predefined" id="predefined" />
-            <Label htmlFor="predefined">Use Predefined Conditions</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="manual" id="manual" />
-            <Label htmlFor="manual">Manual Setup</Label>
-          </div>
-        </RadioGroup>
-
-        <div className="grid grid-cols-2 gap-6 flex-1 min-h-0">
-          {/* Condition Setup */}
-          <div className="flex flex-col min-h-0">
-            <h4 className="text-sm font-medium mb-3 text-muted-foreground flex-shrink-0">
-              {conditionMode === 'predefined' ? 'Select Condition' : 'Condition Builder'}
-            </h4>
-            
+          <div className={`${isOpen ? 'flex-1 flex flex-col' : ''} overflow-hidden`}>
+            {/* Always use manual mode - no need for radio buttons */}
             <div className="flex-1 min-h-0 relative">
-              {conditionMode === 'predefined' ? (
-                <PredefinedConditionSelector
+                  {useImprovedLayout ? (
+                    <ScrollArea className="h-full">
+                      <div className="pt-0 px-4 pb-4">
+                        <ImprovedManualConditionBuilder
+                          conditions={searchConditions}
+                          onConditionsChange={onSearchConditionsChange}
+                        />
+                      </div>
+                    </ScrollArea>
+                  ) : (
+                    <ManualConditionBuilder
+                      searchConditions={searchConditions}
+                      onSearchConditionsChange={onSearchConditionsChange}
+                      loadedFromPredefined={loadedFromPredefined}
+                      onResetToFresh={onResetToFresh}
+                    />
+                  )}
+            </div>
+            
+            {!hideExpressionPreview && (
+              <div className="mt-4">
+                <ExpressionPreview
+                  conditionMode={conditionMode}
+                  loadedFromPredefined={loadedFromPredefined}
                   selectedPredefinedCondition={selectedPredefinedCondition}
-                  onSelectedPredefinedConditionChange={onSelectedPredefinedConditionChange}
-                  onLoadPredefinedCondition={onLoadPredefinedCondition}
+                  getCurrentExpressionJSX={getCurrentExpressionJSX}
                 />
-              ) : (
-                <div className="absolute inset-0">
-                  <ManualConditionBuilder
-                    searchConditions={searchConditions}
-                    onSearchConditionsChange={onSearchConditionsChange}
-                    loadedFromPredefined={loadedFromPredefined}
-                    onResetToFresh={onResetToFresh}
-                  />
-                </div>
-              )}
+              </div>
+            )}
+            
+            <div className="mt-4">
+              <SavedConditionsList
+                savedConditions={savedConditions}
+                onLoadSavedCondition={onLoadSavedCondition}
+                onDeleteSavedCondition={onDeleteSavedCondition}
+              />
             </div>
           </div>
-          
-          <div className="flex flex-col min-h-0">
-            <ExpressionPreview
-              conditionMode={conditionMode}
-              loadedFromPredefined={loadedFromPredefined}
-              selectedPredefinedCondition={selectedPredefinedCondition}
-              getCurrentExpressionJSX={getCurrentExpressionJSX}
-            />
-            
-            <SavedConditionsList
-              savedConditions={savedConditions}
-              onLoadSavedCondition={onLoadSavedCondition}
-              onDeleteSavedCondition={onDeleteSavedCondition}
-            />
-          </div>
-        </div>
-          </CardContent>
         </CollapsibleContent>
-      </Card>
-    </Collapsible>
+      </Collapsible>
+    </div>
   )
 }

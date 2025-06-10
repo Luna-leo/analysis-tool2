@@ -107,8 +107,15 @@ export const EventSelectionDialog: React.FC<EventSelectionDialogProps> = ({
                 </thead>
                 <tbody>
                   {filteredEvents.map((event) => (
-                    <tr key={event.id} className="group hover:bg-blue-50 transition-colors border-b border-gray-100">
-                      <td className="px-2 py-1 text-center bg-white group-hover:bg-blue-50">
+                    <tr 
+                      key={event.id} 
+                      className="group hover:bg-blue-50 transition-colors border-b border-gray-100 cursor-pointer"
+                      onClick={() => handleToggleEvent(event.id)}
+                    >
+                      <td 
+                        className="px-2 py-1 text-center bg-white group-hover:bg-blue-50"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <Checkbox
                           checked={selectedEventIds.has(event.id)}
                           onCheckedChange={() => handleToggleEvent(event.id)}

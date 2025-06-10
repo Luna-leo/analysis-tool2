@@ -129,6 +129,19 @@ export function Sidebar() {
     openFile(triggerConditionMasterNode, 'database')
   }
 
+  const handleOpenUnitConverterFormulaMaster = () => {
+    // Create a special Unit Converter Formula Master tab
+    const unitConverterFormulaMasterNode: FileNode = {
+      id: 'unit-converter-formula-master',
+      name: 'Unit Converter Formula Master',
+      type: 'unit-converter-formula-master',
+      isSystemNode: true
+    }
+    
+    // Open the Unit Converter Formula Master as a tab
+    openFile(unitConverterFormulaMasterNode, 'database')
+  }
+
   const renderSidebarContent = () => {
     switch (activeView) {
       case "explorer":
@@ -270,7 +283,7 @@ export function Sidebar() {
               <Button
                 variant="ghost"
                 className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
-                onClick={() => console.log("Unit Convert Formula Master")}
+                onClick={handleOpenUnitConverterFormulaMaster}
               >
                 <ArrowLeftRight className="h-4 w-4 shrink-0" />
                 <div className="flex flex-col items-start flex-1">

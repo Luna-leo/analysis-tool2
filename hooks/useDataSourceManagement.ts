@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react"
-import { EventInfo, SearchCondition, SearchResult } from "@/types"
+import { useState, useEffect, useMemo } from "react"
+import { EventInfo, SearchCondition, SearchResult, PredefinedCondition } from "@/types"
 import { useEventMasterStore } from "@/stores/useEventMasterStore"
+import { useTriggerConditionStore } from "@/stores/useTriggerConditionStore"
 
 export function useDataSourceManagement() {
   const eventMasterData = useEventMasterStore((state) => state.events)
@@ -31,6 +32,11 @@ export function useDataSourceManagement() {
   const [resultLabels, setResultLabels] = useState<Map<string, string>>(new Map())
   const [isSearching, setIsSearching] = useState(false)
   const [appliedConditions, setAppliedConditions] = useState<SearchCondition[]>([])
+  
+  // Filter-related state
+  const [activeFilterIds, setActiveFilterIds] = useState<string[]>([])
+  const [filteredPoolIds, setFilteredPoolIds] = useState<Set<string> | null>(null)
+  const { getConditionById } = useTriggerConditionStore()
 
   const handleAddEventsToPool = (eventsToAdd: EventInfo[]) => {
     const newPool = [...periodPool]
@@ -148,6 +154,57 @@ export function useDataSourceManagement() {
     setIsSearching(false)
   }
 
+  // Evaluate if an item matches the filter conditions
+  const evaluateItemAgainstConditions = (item: EventInfo, conditions: SearchCondition[]): boolean => {
+    // For now, simple mock evaluation - in real implementation, this would check actual data
+    return conditions.length === 0 || Math.random() > 0.3
+  }
+
+  // Apply filters to period pool
+  const handleApplyFilters = (filterIds: string[]) => {
+    setActiveFilterIds(filterIds)
+    
+    if (filterIds.length === 0) {
+      setFilteredPoolIds(null)
+      return
+    }
+    
+    // Get all conditions from selected filters
+    const allConditions: SearchCondition[] = []
+    filterIds.forEach(filterId => {
+      const filter = getConditionById(filterId)
+      if (filter?.conditions) {
+        allConditions.push(...filter.conditions)
+      }
+    })
+    
+    // Filter period pool based on conditions
+    const filtered = new Set<string>()
+    periodPool.forEach(item => {
+      if (evaluateItemAgainstConditions(item, allConditions)) {
+        filtered.add(item.id)
+      }
+    })
+    
+    setFilteredPoolIds(filtered)
+  }
+
+  const handleRemoveFilter = (filterId: string) => {
+    const newFilterIds = activeFilterIds.filter(id => id !== filterId)
+    handleApplyFilters(newFilterIds)
+  }
+
+  const handleClearAllFilters = () => {
+    setActiveFilterIds([])
+    setFilteredPoolIds(null)
+  }
+
+  // Get filtered or unfiltered pool
+  const displayedPeriodPool = useMemo(() => {
+    if (!filteredPoolIds) return periodPool
+    return periodPool.filter(item => filteredPoolIds.has(item.id))
+  }, [periodPool, filteredPoolIds])
+
   return {
     events,
     setEvents,
@@ -175,5 +232,12 @@ export function useDataSourceManagement() {
     handleBulkLabelChange,
     handleClearResults,
     handleApplyConditions,
+    // Filter-related exports
+    activeFilterIds,
+    filteredPoolIds,
+    displayedPeriodPool,
+    handleApplyFilters,
+    handleRemoveFilter,
+    handleClearAllFilters,
   }
 }
