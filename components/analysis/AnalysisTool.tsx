@@ -30,6 +30,15 @@ export default function AnalysisTool() {
         charts: []
       }
       openFile(csvImportFile, 'database')
+
+      // Create and open Event Master tab
+      const eventMasterFile: FileNode = {
+        id: "event-master",
+        name: "Event Master",
+        type: "event-master",
+        isSystemNode: true
+      }
+      openFile(eventMasterFile, 'database')
     }
   }, []) // Empty dependency array to run only once on mount
 
