@@ -7,7 +7,7 @@ import { EventSelectionDialog } from "../../../dialogs/EventSelectionDialog"
 import { useManualEntry } from "@/hooks/useManualEntry"
 import { useDataSourceManagement } from "@/hooks/useDataSourceManagement"
 import { useTimeOffset } from "@/hooks/useTimeOffset"
-import { EventInfo } from "@/types"
+import { EventInfo, SearchResult } from "@/types"
 import { Button } from "@/components/ui/button"
 import { Plus, Calendar, FileText } from "lucide-react"
 import { processManualEntryData, createEventFromSearchResult } from "@/utils/dataSourceUtils"
@@ -35,6 +35,9 @@ export function DataSourceTab({
   const [triggerSignalDialogOpen, setTriggerSignalDialogOpen] = useState(false)
   const [periodPoolOpen, setPeriodPoolOpen] = useState(true)
   const [searchResultsOpen, setSearchResultsOpen] = useState(true)
+  
+  // Keep track of original search results for items added to data source
+  const [originalSearchResults, setOriginalSearchResults] = useState<Map<string, SearchResult>>(new Map())
 
   const handleSaveManualEntry = (data: any, editingItemId: string | null) => {
     const processedData = processManualEntryData(data)
@@ -89,11 +92,19 @@ export function DataSourceTab({
 
   const handleAddSearchResults = () => {
     const selectedResults = dataSource.searchResults.filter(r => dataSource.selectedResultIds.has(r.id))
+    const newOriginalResults = new Map(originalSearchResults)
+    
     const eventsToAdd: EventInfo[] = selectedResults.map(result => {
       const resultLabel = dataSource.resultLabels.get(result.id) || 'Signal Detection'
-      return createEventFromSearchResult(result, resultLabel, bulkDuration || undefined)
+      const eventInfo = createEventFromSearchResult(result, resultLabel, bulkDuration || undefined)
+      
+      // Store the original search result for later restoration
+      newOriginalResults.set(eventInfo.id, result)
+      
+      return eventInfo
     })
     
+    setOriginalSearchResults(newOriginalResults)
     setSelectedDataSourceItems([...selectedDataSourceItems, ...eventsToAdd])
     const remainingResults = dataSource.searchResults.filter(r => !dataSource.selectedResultIds.has(r.id))
     dataSource.setSearchResults(remainingResults)
@@ -104,7 +115,7 @@ export function DataSourceTab({
     setBulkDuration(null)
   }
 
-  const handleBulkDurationChange = (resultIds: Set<string>, duration: number, unit: 's' | 'm' | 'h') => {
+  const handleBulkDurationChange = (_resultIds: Set<string>, duration: number, unit: 's' | 'm' | 'h') => {
     setBulkDuration({ value: duration, unit })
   }
 
@@ -115,6 +126,32 @@ export function DataSourceTab({
 
   const handleFilterByConditions = () => {
     setTriggerSignalDialogOpen(true)
+  }
+
+  const handleReturnItem = (item: EventInfo) => {
+    // Check if we have the original search result stored
+    const originalSearchResult = originalSearchResults.get(item.id)
+    
+    if (originalSearchResult) {
+      // This item was from search results - restore the original search result
+      dataSource.setSearchResults([...dataSource.searchResults, originalSearchResult])
+      
+      // Restore the label if it exists
+      if (item.label && item.label !== 'Signal Detection') {
+        dataSource.handleLabelChange(originalSearchResult.id, item.label)
+      }
+      
+      // Remove from our tracking map
+      const newOriginalResults = new Map(originalSearchResults)
+      newOriginalResults.delete(item.id)
+      setOriginalSearchResults(newOriginalResults)
+    } else {
+      // Return to period pool (for items originally from period pool)
+      dataSource.setPeriodPool([...dataSource.periodPool, item])
+    }
+    
+    // Remove from selected data sources
+    setSelectedDataSourceItems(selectedDataSourceItems.filter(i => i.id !== item.id))
   }
 
   return (
@@ -199,11 +236,7 @@ export function DataSourceTab({
                 onEditItem={(item) => {
                   manualEntry.openForEdit(item)
                 }}
-                onRemoveItem={(itemId) => {
-                  setSelectedDataSourceItems(
-                    selectedDataSourceItems.filter((i) => i.id !== itemId)
-                  )
-                }}
+                onReturnItem={handleReturnItem}
               />
 
               <TimeOffsetSettings

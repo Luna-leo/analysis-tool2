@@ -2,7 +2,7 @@
 
 import React from "react"
 import { Button } from "@/components/ui/button"
-import { Pencil, Trash2 } from "lucide-react"
+import { Pencil, Undo2 } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -17,13 +17,13 @@ import { formatDateTimeForDisplay } from "@/lib/dateUtils"
 interface SelectedDataSourceTableProps {
   selectedDataSourceItems: EventInfo[]
   onEditItem: (item: EventInfo) => void
-  onRemoveItem: (itemId: string) => void
+  onReturnItem: (item: EventInfo) => void
 }
 
 export function SelectedDataSourceTable({
   selectedDataSourceItems,
   onEditItem,
-  onRemoveItem
+  onReturnItem
 }: SelectedDataSourceTableProps) {
   return (
     <div className="border rounded-lg overflow-hidden">
@@ -77,9 +77,10 @@ export function SelectedDataSourceTable({
                     variant="ghost"
                     size="sm"
                     className="h-6 w-6 p-0"
-                    onClick={() => onRemoveItem(item.id)}
+                    onClick={() => onReturnItem(item)}
+                    title="Return to original source"
                   >
-                    <Trash2 className="h-3 w-3" />
+                    <Undo2 className="h-3 w-3" />
                   </Button>
                 </div>
               </TableCell>
