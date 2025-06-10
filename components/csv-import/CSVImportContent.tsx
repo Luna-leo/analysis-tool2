@@ -1,6 +1,13 @@
 "use client"
 
 import { useState, useCallback, useRef, useEffect } from "react"
+
+// Extend HTMLInputElement to include webkitdirectory
+declare module 'react' {
+  interface InputHTMLAttributes<T> extends React.HTMLAttributes<T> {
+    webkitdirectory?: string
+  }
+}
 import { Upload, FileText, Download, CheckCircle, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
@@ -28,7 +35,7 @@ interface ImportStatus {
   rowCount?: number
 }
 
-// Convert wildcard pattern to regex - moved outside component to avoid hook issues
+// Convert wildcard pattern to regex
 const wildcardToRegex = (pattern: string): RegExp => {
   const escapedPattern = pattern
     .replace(/[.+^${}()|[\]\\]/g, '\\$&') // Escape special regex chars except * and ?
@@ -411,7 +418,7 @@ export function CSVImportContent({ mode = 'page', onImportComplete }: CSVImportC
                     type="file"
                     accept=".csv,.CSV"
                     multiple
-                    {...{ webkitdirectory: "" } as any}
+                    webkitdirectory=""
                     onChange={handleFileSelect}
                     className="hidden"
                   />
@@ -691,7 +698,7 @@ export function CSVImportContent({ mode = 'page', onImportComplete }: CSVImportC
                         type="file"
                         accept=".csv,.CSV"
                         multiple
-                        {...{ webkitdirectory: "" } as any}
+                        webkitdirectory=""
                         onChange={handleFileSelect}
                         className="hidden"
                       />

@@ -6,6 +6,6 @@ interface CSVImportPageProps {
   fileId: string
 }
 
-export function CSVImportPage({ fileId }: CSVImportPageProps) {
+export function CSVImportPage(_props: CSVImportPageProps) {
   return <CSVImportContent mode="page" />
 }

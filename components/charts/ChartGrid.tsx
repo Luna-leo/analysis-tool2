@@ -16,11 +16,6 @@ interface ChartGridProps {
 }
 
 export function ChartGrid({ file }: ChartGridProps) {
-  // Check if this is a CSV Import tab
-  if (file.type === 'csv-import') {
-    return <CSVImportPage fileId={file.id} />
-  }
-
   const contentRef = useRef<HTMLDivElement>(null)
   const [chartSizes, setChartSizes] = useState<ChartSizes>({
     cardMinHeight: 180,
@@ -41,7 +36,7 @@ export function ChartGrid({ file }: ChartGridProps) {
   }
 
   useEffect(() => {
-    if (contentRef.current && activeTab === file.id) {
+    if (contentRef.current && activeTab === file.id && file.type !== 'csv-import') {
       const updateChartSizes = () => {
         if (!contentRef.current) return
 
@@ -68,7 +63,12 @@ export function ChartGrid({ file }: ChartGridProps) {
         resizeObserver.disconnect()
       }
     }
-  }, [layoutSettingsMap, activeTab, file.id, currentSettings])
+  }, [layoutSettingsMap, activeTab, file.id, currentSettings, file.type])
+
+  // Check if this is a CSV Import tab
+  if (file.type === 'csv-import') {
+    return <CSVImportPage fileId={file.id} />
+  }
 
   if (!file.charts || file.charts.length === 0) {
     return (

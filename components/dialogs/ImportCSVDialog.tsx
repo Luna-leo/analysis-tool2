@@ -19,15 +19,9 @@ interface ImportCSVDialogProps {
   onImport: (data: CSVImportData) => Promise<void>
 }
 
-export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialogProps) {
-  const [showContent, setShowContent] = useState(true)
-
+export function ImportCSVDialog({ open, onOpenChange }: ImportCSVDialogProps) {
   const handleClose = () => {
-    setShowContent(false)
-    setTimeout(() => {
-      onOpenChange(false)
-      setShowContent(true)
-    }, 150)
+    onOpenChange(false)
   }
 
   const handleImportComplete = () => {
@@ -44,12 +38,10 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
           </DialogDescription>
         </DialogHeader>
         
-        {showContent && (
-          <CSVImportContent 
-            mode="dialog" 
-            onImportComplete={handleImportComplete}
-          />
-        )}
+        <CSVImportContent 
+          mode="dialog" 
+          onImportComplete={handleImportComplete}
+        />
 
         <DialogFooter className="mt-4">
           <Button variant="outline" onClick={handleClose}>
