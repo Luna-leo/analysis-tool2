@@ -4,7 +4,7 @@ import React from "react"
 import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { FileNode } from "@/types"
-import { useAnalysisStore } from "@/stores/useAnalysisStore"
+import { useFileStore } from "@/stores/useFileStore"
 
 interface TabBarProps {
   openTabs: FileNode[]
@@ -20,7 +20,7 @@ export function TabBar({ openTabs }: TabBarProps) {
     setDraggedTab,
     setDragOverTab,
     reorderTabs,
-  } = useAnalysisStore()
+  } = useFileStore()
 
   const handleDragStart = (e: React.DragEvent, tabId: string) => {
     setDraggedTab(tabId)

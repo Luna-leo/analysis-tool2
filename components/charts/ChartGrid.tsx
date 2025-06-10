@@ -6,13 +6,21 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { FileNode, ChartSizes } from "@/types"
 import { ChartCard } from "./ChartCard"
-import { useAnalysisStore } from "@/stores/useAnalysisStore"
+import { CSVImportPage } from "@/components/csv-import"
+import { useFileStore } from "@/stores/useFileStore"
+import { useLayoutStore } from "@/stores/useLayoutStore"
+import { useUIStore } from "@/stores/useUIStore"
 
 interface ChartGridProps {
   file: FileNode
 }
 
 export function ChartGrid({ file }: ChartGridProps) {
+  // Check if this is a CSV Import tab
+  if (file.type === 'csv-import') {
+    return <CSVImportPage fileId={file.id} />
+  }
+
   const contentRef = useRef<HTMLDivElement>(null)
   const [chartSizes, setChartSizes] = useState<ChartSizes>({
     cardMinHeight: 180,
@@ -20,12 +28,9 @@ export function ChartGrid({ file }: ChartGridProps) {
     isCompactLayout: false,
   })
 
-  const {
-    activeTab,
-    layoutSettingsMap,
-    currentPage,
-    setCurrentPage,
-  } = useAnalysisStore()
+  const { activeTab } = useFileStore()
+  const { layoutSettingsMap } = useLayoutStore()
+  const { currentPage, setCurrentPage } = useUIStore()
 
   const currentSettings = layoutSettingsMap[file.id] || {
     showFileName: true,
@@ -41,19 +46,6 @@ export function ChartGrid({ file }: ChartGridProps) {
         if (!contentRef.current) return
 
         const isCompactLayout = currentSettings.rows >= 3 || currentSettings.columns >= 3
-        const containerHeight = contentRef.current?.clientHeight || 600
-
-        let headerHeight = 24
-        if (currentSettings.showFileName) headerHeight += 44
-        if (currentSettings.showDataSources) headerHeight += 36
-        headerHeight += 24
-
-        const paginationHeight = currentSettings.pagination ? 89 : 0
-        const gapSize = isCompactLayout ? 12 : 24
-        const gapHeight = (currentSettings.rows - 1) * gapSize
-
-        const availableHeight = containerHeight - headerHeight - paginationHeight - 24
-        const chartRowHeight = (availableHeight - gapHeight) / currentSettings.rows
 
         const cardMinHeight = isCompactLayout ? 140 : 180
         const chartMinHeight = isCompactLayout ? 60 : 80

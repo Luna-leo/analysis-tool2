@@ -4,10 +4,10 @@ import React from "react"
 import { ResizablePanelGroup, ResizablePanel } from "@/components/ui/resizable"
 import { Sidebar, TabHeader, BreadcrumbNavigation, WelcomeMessage } from "../layout"
 import { ChartGrid, ChartEditModal } from "../charts"
-import { useAnalysisStore } from "@/stores/useAnalysisStore"
+import { useFileStore } from "@/stores/useFileStore"
 
 export default function AnalysisTool() {
-  const { openTabs, activeTab } = useAnalysisStore()
+  const { openTabs, activeTab } = useFileStore()
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">

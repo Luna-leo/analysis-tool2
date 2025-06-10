@@ -3,7 +3,7 @@
 import React, { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { useAnalysisStore } from "@/stores/useAnalysisStore"
+import { useUIStore } from "@/stores/useUIStore"
 import { DataSourceTab } from "./EditModal/data-source"
 import { ParametersTab } from "./EditModal/parameters"
 import { AppearanceTab } from "./EditModal/appearance"
@@ -11,7 +11,7 @@ import { ChartPreview } from "./ChartPreview"
 import { EventInfo } from "@/types"
 
 export function ChartEditModal() {
-  const { editingChart, editModalOpen, setEditingChart, setEditModalOpen } = useAnalysisStore()
+  const { editingChart, editModalOpen, setEditingChart, setEditModalOpen } = useUIStore()
   const [activeTab, setActiveTab] = useState<"parameters" | "datasource" | "appearance">("datasource")
   const [selectedDataSourceItems, setSelectedDataSourceItems] = useState<EventInfo[]>([])
 

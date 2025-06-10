@@ -135,10 +135,11 @@ export interface ChartComponent {
 export interface FileNode {
   id: string
   name: string
-  type: "file" | "folder"
+  type: "file" | "folder" | "csv-import"
   children?: FileNode[]
   dataSources?: string[]
   charts?: ChartComponent[]
+  isSystemNode?: boolean // For non-removable nodes like CSV Import
 }
 
 export interface LayoutSettings {

@@ -10,14 +10,14 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
-import { useAnalysisStore } from "@/stores/useAnalysisStore"
+import { useLayoutStore } from "@/stores/useLayoutStore"
 
 interface LayoutSettingsProps {
   fileId: string
 }
 
 export function LayoutSettings({ fileId }: LayoutSettingsProps) {
-  const { layoutSettingsMap, updateLayoutSettings } = useAnalysisStore()
+  const { layoutSettingsMap, updateLayoutSettings } = useLayoutStore()
   
   const currentSettings = layoutSettingsMap[fileId] || {
     showFileName: true,

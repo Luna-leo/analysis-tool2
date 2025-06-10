@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react"
 import { File, Folder } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useAnalysisStore } from "@/stores/useAnalysisStore"
+import { useFileStore } from "@/stores/useFileStore"
 import { Input } from "@/components/ui/input"
 import { FileTreeNode } from "./FileTreeNode"
 
@@ -21,7 +21,7 @@ export function FileExplorer() {
     setDragOverNode,
     moveNode,
     setDraggedNode,
-  } = useAnalysisStore()
+  } = useFileStore()
 
   const [tempName, setTempName] = useState("")
   const inputRef = useRef<HTMLInputElement>(null)

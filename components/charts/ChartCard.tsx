@@ -5,7 +5,7 @@ import { LineChart, Edit } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ChartComponent } from "@/types"
-import { useAnalysisStore } from "@/stores/useAnalysisStore"
+import { useUIStore } from "@/stores/useUIStore"
 
 interface ChartCardProps {
   chart: ChartComponent
@@ -15,7 +15,7 @@ interface ChartCardProps {
 }
 
 export function ChartCard({ chart, isCompactLayout, cardMinHeight, chartMinHeight }: ChartCardProps) {
-  const { hoveredChart, setHoveredChart, setEditingChart, setEditModalOpen } = useAnalysisStore()
+  const { hoveredChart, setHoveredChart, setEditingChart, setEditModalOpen } = useUIStore()
 
   return (
     <div

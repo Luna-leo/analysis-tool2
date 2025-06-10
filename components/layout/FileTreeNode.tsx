@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react"
 import { File, Folder, ChevronRight, ChevronDown, MoreVertical, Edit2, FilePlus, FolderPlus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { FileNode } from "@/types"
-import { useAnalysisStore } from "@/stores/useAnalysisStore"
+import { useFileStore } from "@/stores/useFileStore"
 import { Input } from "@/components/ui/input"
 import {
   DropdownMenu,
@@ -37,7 +37,7 @@ export function FileTreeNode({ node, depth = 0 }: FileTreeNodeProps) {
     setDraggedNode,
     setDragOverNode,
     moveNode,
-  } = useAnalysisStore()
+  } = useFileStore()
 
   const [tempName, setTempName] = useState("")
   const inputRef = useRef<HTMLInputElement>(null)
