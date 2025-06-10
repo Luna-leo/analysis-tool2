@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { ChevronDown, Copy, Edit2, Plus } from "lucide-react"
 import { FormulaMaster } from "@/data/formulaMaster"
 import { useFormulaMasterStore } from "@/stores/useFormulaMasterStore"
+import { FormulaDisplay } from "@/components/formula-master/FormulaDisplay"
 
 interface FormulaParameterRowProps {
   index: number
@@ -53,9 +54,9 @@ export function FormulaParameterRow({
                       {parameter || "Select Formula"}
                     </span>
                     {formulaDefinition?.expression && (
-                      <span className="text-xs text-muted-foreground truncate font-mono mt-0.5">
-                        {formulaDefinition.expression}
-                      </span>
+                      <div className="text-xs mt-0.5 truncate">
+                        <FormulaDisplay expression={formulaDefinition.expression} className="text-xs" />
+                      </div>
                     )}
                   </div>
                   <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0 ml-2" />
@@ -78,11 +79,14 @@ export function FormulaParameterRow({
                           onSelect={() => handleFormulaSelect(index, formula.id)}
                           className="flex items-center justify-between group"
                         >
-                          <div className="flex flex-col items-start flex-1">
+                          <div className="flex flex-col items-start flex-1 min-w-0">
                             <span className="font-medium text-left">{formula.name}</span>
-                            <span className="text-xs text-muted-foreground text-left">
-                              {formula.category} • {formula.expression}
-                            </span>
+                            <div className="flex items-center gap-1 text-xs">
+                              <span className="text-muted-foreground">{formula.category} •</span>
+                              <div className="truncate flex-1">
+                                <FormulaDisplay expression={formula.expression} className="text-xs" />
+                              </div>
+                            </div>
                             {formula.description && (
                               <span className="text-xs text-muted-foreground text-left italic">
                                 {formula.description}

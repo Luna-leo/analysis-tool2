@@ -13,6 +13,7 @@ import { useFormulaMasterStore } from "@/stores/useFormulaMasterStore"
 import { FormulaRegistrationDialog } from "@/components/charts/EditModal/parameters/FormulaRegistrationDialog"
 import { FormulaMaster } from "@/data/formulaMaster"
 import { useToast } from "@/hooks/use-toast"
+import { FormulaDisplay } from "./FormulaDisplay"
 
 export function FormulaMasterPage() {
   const { toast } = useToast()
@@ -193,15 +194,15 @@ export function FormulaMasterPage() {
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="bg-muted rounded overflow-hidden">
-                        <code className="block px-3 py-2 text-sm font-mono truncate">
-                          {formula.expression}
-                        </code>
+                      <div className="bg-muted rounded overflow-hidden px-3 py-2">
+                        <div className="truncate">
+                          <FormulaDisplay expression={formula.expression} />
+                        </div>
                       </div>
                     </TooltipTrigger>
                     {formula.expression.length > 50 && (
-                      <TooltipContent side="bottom" className="max-w-[600px]">
-                        <code className="text-xs font-mono">{formula.expression}</code>
+                      <TooltipContent side="bottom" className="max-w-[600px] p-3 bg-muted">
+                        <FormulaDisplay expression={formula.expression} className="text-base" />
                       </TooltipContent>
                     )}
                   </Tooltip>
