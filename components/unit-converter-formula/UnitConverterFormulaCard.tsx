@@ -45,7 +45,7 @@ export const UnitConverterFormulaCard = React.memo(({ formula }: UnitConverterFo
     toggleFavorite(formula.id);
   }, [toggleFavorite, formula.id]);
 
-  // サンプル変換の計算
+  // Calculate sample conversion
   const sampleConversion = useMemo(() => {
     try {
       const sampleValue = 1;
@@ -68,14 +68,14 @@ export const UnitConverterFormulaCard = React.memo(({ formula }: UnitConverterFo
       onMouseLeave={() => setIsHovered(false)}
     >
       <CardContent className="p-4">
-        {/* ヘッダー部分 */}
+        {/* Header section */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
             <h3 className="font-semibold text-base mb-1">{formula.name}</h3>
             <p className="text-sm text-muted-foreground">{formula.description}</p>
           </div>
           
-          {/* アクションボタン */}
+          {/* Action buttons */}
           <div className={`flex items-center gap-1 transition-opacity ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
             <Button
               variant="ghost"
@@ -99,32 +99,32 @@ export const UnitConverterFormulaCard = React.memo(({ formula }: UnitConverterFo
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={handleEdit}>
                   <Edit className="mr-2 h-4 w-4" />
-                  編集
+                  Edit
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleDuplicate}>
                   <Copy className="mr-2 h-4 w-4" />
-                  複製
+                  Duplicate
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleDelete} className="text-destructive">
                   <Trash className="mr-2 h-4 w-4" />
-                  削除
+                  Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
 
-        {/* カテゴリーと使用回数 */}
+        {/* Category and usage count */}
         <div className="flex items-center gap-2 mb-3">
           <Badge variant="outline">{UNIT_CATEGORIES[formula.category]}</Badge>
           {formula.usageCount > 0 && (
             <span className="text-xs text-muted-foreground">
-              使用回数: {formula.usageCount}
+              Usage count: {formula.usageCount}
             </span>
           )}
         </div>
 
-        {/* 変換方向の表示 */}
+        {/* Conversion direction display */}
         <div className="bg-muted/30 rounded-md p-3 mb-3">
           <div className="flex items-center justify-center gap-3">
             <div className="text-center">
@@ -141,9 +141,9 @@ export const UnitConverterFormulaCard = React.memo(({ formula }: UnitConverterFo
           </div>
         </div>
 
-        {/* 変換式 */}
+        {/* Conversion formula */}
         <div className="mb-3">
-          <div className="text-sm font-medium mb-1">変換式:</div>
+          <div className="text-sm font-medium mb-1">Conversion formula:</div>
           <code className="text-xs bg-muted px-2 py-1 rounded">
             {formula.toUnit.primarySymbol} = {formula.formula.replace(/x/g, formula.fromUnit.primarySymbol)}
           </code>
@@ -156,19 +156,19 @@ export const UnitConverterFormulaCard = React.memo(({ formula }: UnitConverterFo
           )}
         </div>
 
-        {/* サンプル変換 */}
+        {/* Sample conversion */}
         {sampleConversion && (
           <div className="text-sm text-muted-foreground mb-3">
-            例: {sampleConversion.input} = {sampleConversion.output}
+            Example: {sampleConversion.input} = {sampleConversion.output}
           </div>
         )}
 
-        {/* エイリアス表示（展開可能） */}
+        {/* Alias display (expandable) */}
         {(formula.fromUnit.aliases.length > 0 || formula.toUnit.aliases.length > 0) && (
           <Collapsible open={isAliasOpen} onOpenChange={setIsAliasOpen}>
             <CollapsibleTrigger asChild>
               <Button variant="ghost" size="sm" className="w-full justify-between px-2">
-                <span className="text-xs">認識される表記</span>
+                <span className="text-xs">Recognized notations</span>
                 {isAliasOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
               </Button>
             </CollapsibleTrigger>

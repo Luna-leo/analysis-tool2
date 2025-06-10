@@ -1,8 +1,8 @@
 export interface UnitDefinition {
-  primarySymbol: string;      // 主要な単位記号（例：°C）
-  name: string;               // 正式名称（例：Celsius）
-  aliases: string[];          // エイリアス（例：['℃', 'degC', 'C', 'celsius', '摂氏']）
-  displayFormat?: string;     // 表示フォーマット（例：'{value}°C'）
+  primarySymbol: string;      // Primary unit symbol (e.g., °C)
+  name: string;               // Official name (e.g., Celsius)
+  aliases: string[];          // Aliases (e.g., ['℃', 'degC', 'C', 'celsius'])
+  displayFormat?: string;     // Display format (e.g., '{value}°C')
 }
 
 export interface UnitConverterFormula {
@@ -12,10 +12,10 @@ export interface UnitConverterFormula {
   category: UnitCategory;
   fromUnit: UnitDefinition;
   toUnit: UnitDefinition;
-  formula: string;              // 変換式（例：'x * 9/5 + 32'）
-  parameters: string[];         // 使用する変数名（例：['x']）
-  isBidirectional: boolean;     // 双方向変換可能か
-  reverseFormula?: string;      // 逆変換式（双方向の場合）
+  formula: string;              // Conversion formula (e.g., 'x * 9/5 + 32')
+  parameters: string[];         // Variable names used (e.g., ['x'])
+  isBidirectional: boolean;     // Whether bidirectional conversion is possible
+  reverseFormula?: string;      // Reverse conversion formula (for bidirectional)
   isFavorite?: boolean;
   usageCount?: number;
   createdAt: number;
@@ -23,35 +23,35 @@ export interface UnitConverterFormula {
 }
 
 export type UnitCategory = 
-  | 'temperature'    // 温度
-  | 'pressure'       // 圧力
-  | 'length'         // 長さ
-  | 'weight'         // 重量
-  | 'volume'         // 体積
-  | 'speed'          // 速度
-  | 'area'           // 面積
-  | 'energy'         // エネルギー
-  | 'power'          // 電力
-  | 'time'           // 時間
-  | 'frequency'      // 周波数
-  | 'other';         // その他
+  | 'temperature'    // Temperature
+  | 'pressure'       // Pressure
+  | 'length'         // Length
+  | 'weight'         // Weight
+  | 'volume'         // Volume
+  | 'speed'          // Speed
+  | 'area'           // Area
+  | 'energy'         // Energy
+  | 'power'          // Power
+  | 'time'           // Time
+  | 'frequency'      // Frequency
+  | 'other';         // Other
 
 export const UNIT_CATEGORIES: Record<UnitCategory, string> = {
-  temperature: '温度',
-  pressure: '圧力',
-  length: '長さ',
-  weight: '重量',
-  volume: '体積',
-  speed: '速度',
-  area: '面積',
-  energy: 'エネルギー',
-  power: '電力',
-  time: '時間',
-  frequency: '周波数',
-  other: 'その他'
+  temperature: 'Temperature',
+  pressure: 'Pressure',
+  length: 'Length',
+  weight: 'Weight',
+  volume: 'Volume',
+  speed: 'Speed',
+  area: 'Area',
+  energy: 'Energy',
+  power: 'Power',
+  time: 'Time',
+  frequency: 'Frequency',
+  other: 'Other'
 };
 
-// 単位変換式のデフォルト値
+// Default values for unit conversion formula
 export const DEFAULT_UNIT_CONVERTER_FORMULA: Partial<UnitConverterFormula> = {
   name: '',
   description: '',
@@ -75,7 +75,7 @@ export const DEFAULT_UNIT_CONVERTER_FORMULA: Partial<UnitConverterFormula> = {
   usageCount: 0
 };
 
-// エイリアスの競合チェック結果
+// Alias conflict check results
 export interface AliasConflict {
   alias: string;
   conflictingFormulaId: string;
@@ -83,7 +83,7 @@ export interface AliasConflict {
   unit: 'from' | 'to';
 }
 
-// 検証結果
+// Validation results
 export interface UnitConverterValidationResult {
   isValid: boolean;
   errors: string[];
@@ -91,7 +91,7 @@ export interface UnitConverterValidationResult {
   aliasConflicts: AliasConflict[];
 }
 
-// 変換テスト結果
+// Conversion test results
 export interface ConversionTestResult {
   input: number;
   output: number;

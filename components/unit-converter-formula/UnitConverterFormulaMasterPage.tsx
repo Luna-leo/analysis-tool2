@@ -30,7 +30,7 @@ export const UnitConverterFormulaMasterPage: React.FC = () => {
     <>
       <MasterPageTemplate<ExtendedUnitConverterFormula>
         config={{
-          title: '単位換算式マスター',
+          title: 'Unit Conversion Formula Master',
           icon: Calculator,
           itemName: 'formula',
           viewType: 'cards',
@@ -38,7 +38,7 @@ export const UnitConverterFormulaMasterPage: React.FC = () => {
           DialogComponent: UnitConverterFormulaDialog as any,
           enableDuplicate: true,
           enableCategories: true,
-          searchPlaceholder: '名前、説明、単位記号、エイリアスで検索...',
+          searchPlaceholder: 'Search by name, description, unit symbols, or aliases...',
           searchFields: ['name', 'description', 'fromUnit', 'toUnit', 'aliases']
         }}
         store={{

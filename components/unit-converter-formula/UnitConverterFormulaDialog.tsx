@@ -86,30 +86,30 @@ export const UnitConverterFormulaDialog: React.FC = () => {
 
     switch (step) {
       case 0: // 基本情報
-        if (!formula.name.trim()) stepErrors.push('変換式名を入力してください');
-        if (!formula.description.trim()) stepErrors.push('説明を入力してください');
-        if (!formula.fromUnit.primarySymbol.trim()) stepErrors.push('変換元の単位記号を入力してください');
-        if (!formula.fromUnit.name.trim()) stepErrors.push('変換元の単位名を入力してください');
-        if (!formula.toUnit.primarySymbol.trim()) stepErrors.push('変換先の単位記号を入力してください');
-        if (!formula.toUnit.name.trim()) stepErrors.push('変換先の単位名を入力してください');
+        if (!formula.name.trim()) stepErrors.push('Please enter conversion formula name');
+        if (!formula.description.trim()) stepErrors.push('Please enter description');
+        if (!formula.fromUnit.primarySymbol.trim()) stepErrors.push('Please enter from unit symbol');
+        if (!formula.fromUnit.name.trim()) stepErrors.push('Please enter from unit name');
+        if (!formula.toUnit.primarySymbol.trim()) stepErrors.push('Please enter to unit symbol');
+        if (!formula.toUnit.name.trim()) stepErrors.push('Please enter to unit name');
         break;
       
       case 1: // 変換式
         if (!formula.formula.trim()) {
-          stepErrors.push('変換式を入力してください');
+          stepErrors.push('Please enter conversion formula');
         } else {
           const validation = validateFormula(formula.formula, formula.parameters);
           if (!validation.isValid) {
-            stepErrors.push(validation.error || '無効な変換式です');
+            stepErrors.push(validation.error || 'Invalid conversion formula');
           }
         }
         
         if (formula.isBidirectional && !formula.reverseFormula?.trim()) {
-          stepErrors.push('逆変換式を入力してください');
+          stepErrors.push('Please enter reverse conversion formula');
         } else if (formula.isBidirectional && formula.reverseFormula) {
           const reverseValidation = validateFormula(formula.reverseFormula, formula.parameters);
           if (!reverseValidation.isValid) {
-            stepErrors.push(`逆変換式: ${reverseValidation.error}`);
+            stepErrors.push(`Reverse conversion formula: ${reverseValidation.error}`);
           }
         }
         break;
@@ -174,20 +174,20 @@ export const UnitConverterFormulaDialog: React.FC = () => {
     });
   };
 
-  const steps = ['基本情報', '変換式設定', '検証・プレビュー'];
+  const steps = ['Basic Information', 'Conversion Formula Settings', 'Validation & Preview'];
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={closeDialog}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>
-            {dialogMode === 'create' && '新規単位変換式'}
-            {dialogMode === 'edit' && '単位変換式の編集'}
-            {dialogMode === 'duplicate' && '単位変換式の複製'}
+            {dialogMode === 'create' && 'New Unit Conversion Formula'}
+            {dialogMode === 'edit' && 'Edit Unit Conversion Formula'}
+            {dialogMode === 'duplicate' && 'Duplicate Unit Conversion Formula'}
           </DialogTitle>
         </DialogHeader>
 
-        {/* ステップインジケーター */}
+        {/* Step indicator */}
         <div className="flex items-center justify-between mb-6">
           {steps.map((step, index) => (
             <div key={index} className="flex items-center flex-1">
@@ -208,7 +208,7 @@ export const UnitConverterFormulaDialog: React.FC = () => {
           ))}
         </div>
 
-        {/* エラー・警告表示 */}
+        {/* Error and warning display */}
         {errors.length > 0 && (
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
@@ -236,33 +236,33 @@ export const UnitConverterFormulaDialog: React.FC = () => {
         )}
 
         <div className="flex-1 overflow-y-auto">
-          {/* ステップ1: 基本情報 */}
+          {/* Step 1: Basic Information */}
           {currentStep === 0 && (
             <div className="space-y-6">
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="name">変換式名 *</Label>
+                  <Label htmlFor="name">Conversion Formula Name *</Label>
                   <Input
                     id="name"
                     value={formula.name}
                     onChange={(e) => setFormula({ ...formula, name: e.target.value })}
-                    placeholder="例: 摂氏→華氏変換"
+                    placeholder="Example: Celsius to Fahrenheit Conversion"
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="description">説明 *</Label>
+                  <Label htmlFor="description">Description *</Label>
                   <Textarea
                     id="description"
                     value={formula.description}
                     onChange={(e) => setFormula({ ...formula, description: e.target.value })}
-                    placeholder="この変換式の説明を入力してください"
+                    placeholder="Enter the description of this conversion formula"
                     rows={3}
                   />
                 </div>
 
                 <div>
-                  <Label htmlFor="category">カテゴリー *</Label>
+                  <Label htmlFor="category">Category *</Label>
                   <Select
                     value={formula.category}
                     onValueChange={(value) => setFormula({ ...formula, category: value as any })}
@@ -281,13 +281,13 @@ export const UnitConverterFormulaDialog: React.FC = () => {
                 </div>
               </div>
 
-              {/* 変換元単位 */}
+              {/* From unit */}
               <div className="border rounded-lg p-4">
-                <h3 className="font-medium mb-3">変換元単位</h3>
+                <h3 className="font-medium mb-3">From Unit</h3>
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="fromSymbol">単位記号 *</Label>
+                      <Label htmlFor="fromSymbol">Unit Symbol *</Label>
                       <Input
                         id="fromSymbol"
                         value={formula.fromUnit.primarySymbol}
@@ -295,11 +295,11 @@ export const UnitConverterFormulaDialog: React.FC = () => {
                           ...formula,
                           fromUnit: { ...formula.fromUnit, primarySymbol: e.target.value }
                         })}
-                        placeholder="例: °C"
+                        placeholder="Example: °C"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="fromName">単位名 *</Label>
+                      <Label htmlFor="fromName">Unit Name *</Label>
                       <Input
                         id="fromName"
                         value={formula.fromUnit.name}
@@ -307,13 +307,13 @@ export const UnitConverterFormulaDialog: React.FC = () => {
                           ...formula,
                           fromUnit: { ...formula.fromUnit, name: e.target.value }
                         })}
-                        placeholder="例: Celsius"
+                        placeholder="Example: Celsius"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <Label>エイリアス</Label>
+                    <Label>Aliases</Label>
                     <div className="flex flex-wrap gap-2 mb-2">
                       {formula.fromUnit.aliases.map((alias, index) => (
                         <Badge key={index} variant="secondary">
@@ -329,7 +329,7 @@ export const UnitConverterFormulaDialog: React.FC = () => {
                     </div>
                     <div className="flex gap-2">
                       <Input
-                        placeholder="エイリアスを追加"
+                        placeholder="Add alias"
                         onKeyPress={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
@@ -357,13 +357,13 @@ export const UnitConverterFormulaDialog: React.FC = () => {
                 </div>
               </div>
 
-              {/* 変換先単位 */}
+              {/* To unit */}
               <div className="border rounded-lg p-4">
-                <h3 className="font-medium mb-3">変換先単位</h3>
+                <h3 className="font-medium mb-3">To Unit</h3>
                 <div className="space-y-3">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="toSymbol">単位記号 *</Label>
+                      <Label htmlFor="toSymbol">Unit Symbol *</Label>
                       <Input
                         id="toSymbol"
                         value={formula.toUnit.primarySymbol}
@@ -371,11 +371,11 @@ export const UnitConverterFormulaDialog: React.FC = () => {
                           ...formula,
                           toUnit: { ...formula.toUnit, primarySymbol: e.target.value }
                         })}
-                        placeholder="例: °F"
+                        placeholder="Example: °F"
                       />
                     </div>
                     <div>
-                      <Label htmlFor="toName">単位名 *</Label>
+                      <Label htmlFor="toName">Unit Name *</Label>
                       <Input
                         id="toName"
                         value={formula.toUnit.name}
@@ -383,13 +383,13 @@ export const UnitConverterFormulaDialog: React.FC = () => {
                           ...formula,
                           toUnit: { ...formula.toUnit, name: e.target.value }
                         })}
-                        placeholder="例: Fahrenheit"
+                        placeholder="Example: Fahrenheit"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <Label>エイリアス</Label>
+                    <Label>Aliases</Label>
                     <div className="flex flex-wrap gap-2 mb-2">
                       {formula.toUnit.aliases.map((alias, index) => (
                         <Badge key={index} variant="secondary">
@@ -405,7 +405,7 @@ export const UnitConverterFormulaDialog: React.FC = () => {
                     </div>
                     <div className="flex gap-2">
                       <Input
-                        placeholder="エイリアスを追加"
+                        placeholder="Add alias"
                         onKeyPress={(e) => {
                           if (e.key === 'Enter') {
                             e.preventDefault();
@@ -435,7 +435,7 @@ export const UnitConverterFormulaDialog: React.FC = () => {
             </div>
           )}
 
-          {/* ステップ2: 変換式設定 */}
+          {/* Step 2: Conversion Formula Settings */}
           {currentStep === 1 && (
             <div className="space-y-6">
               <div className="flex items-center space-x-2 mb-4">
@@ -444,32 +444,32 @@ export const UnitConverterFormulaDialog: React.FC = () => {
                   checked={formula.isBidirectional}
                   onCheckedChange={(checked) => setFormula({ ...formula, isBidirectional: checked })}
                 />
-                <Label htmlFor="bidirectional">双方向変換を有効にする</Label>
+                <Label htmlFor="bidirectional">Enable bidirectional conversion</Label>
               </div>
 
               <div>
-                <Label>変換式 ({formula.fromUnit.primarySymbol} → {formula.toUnit.primarySymbol})</Label>
+                <Label>Conversion Formula ({formula.fromUnit.primarySymbol} → {formula.toUnit.primarySymbol})</Label>
                 <div className="mt-2">
                   <Input
                     value={formula.formula}
                     onChange={(e) => setFormula({ ...formula, formula: e.target.value })}
-                    placeholder="例: x * 9/5 + 32"
+                    placeholder="Example: x * 9/5 + 32"
                     className="font-mono"
                   />
                   <p className="text-sm text-muted-foreground mt-1">
-                    変数 'x' に変換元の値が入ります。基本的な数式（+, -, *, /, (), Math関数）が使用できます。
+                    Variable 'x' contains the source value. Basic mathematical expressions (+, -, *, /, (), Math functions) can be used.
                   </p>
                 </div>
               </div>
 
               {formula.isBidirectional && (
                 <div>
-                  <Label>逆変換式 ({formula.toUnit.primarySymbol} → {formula.fromUnit.primarySymbol})</Label>
+                  <Label>Reverse Conversion Formula ({formula.toUnit.primarySymbol} → {formula.fromUnit.primarySymbol})</Label>
                   <div className="mt-2">
                     <Input
                       value={formula.reverseFormula || ''}
                       onChange={(e) => setFormula({ ...formula, reverseFormula: e.target.value })}
-                      placeholder="例: (x - 32) * 5/9"
+                      placeholder="Example: (x - 32) * 5/9"
                       className="font-mono"
                     />
                   </div>
@@ -477,28 +477,28 @@ export const UnitConverterFormulaDialog: React.FC = () => {
               )}
 
               <div>
-                <Label>表示フォーマット（オプション）</Label>
+                <Label>Display Format (Optional)</Label>
                 <div className="grid grid-cols-2 gap-4 mt-2">
                   <div>
-                    <Label className="text-sm text-muted-foreground">変換元</Label>
+                    <Label className="text-sm text-muted-foreground">From</Label>
                     <Input
                       value={formula.fromUnit.displayFormat || ''}
                       onChange={(e) => setFormula({
                         ...formula,
                         fromUnit: { ...formula.fromUnit, displayFormat: e.target.value }
                       })}
-                      placeholder="例: {value}°C"
+                      placeholder="Example: {value}°C"
                     />
                   </div>
                   <div>
-                    <Label className="text-sm text-muted-foreground">変換先</Label>
+                    <Label className="text-sm text-muted-foreground">To</Label>
                     <Input
                       value={formula.toUnit.displayFormat || ''}
                       onChange={(e) => setFormula({
                         ...formula,
                         toUnit: { ...formula.toUnit, displayFormat: e.target.value }
                       })}
-                      placeholder="例: {value}°F"
+                      placeholder="Example: {value}°F"
                     />
                   </div>
                 </div>
@@ -506,14 +506,14 @@ export const UnitConverterFormulaDialog: React.FC = () => {
             </div>
           )}
 
-          {/* ステップ3: 検証・プレビュー */}
+          {/* Step 3: Validation & Preview */}
           {currentStep === 2 && (
             <div className="space-y-6">
               <div className="border rounded-lg p-4">
-                <h3 className="font-medium mb-3">変換式のテスト</h3>
+                <h3 className="font-medium mb-3">Test Conversion Formula</h3>
                 <div className="space-y-4">
                   <div>
-                    <Label>テスト値</Label>
+                    <Label>Test Value</Label>
                     <Input
                       type="number"
                       value={testValue}
@@ -533,7 +533,7 @@ export const UnitConverterFormulaDialog: React.FC = () => {
                         </div>
                         {testResult.error && (
                           <div className="text-sm text-destructive mt-2">
-                            エラー: {testResult.error}
+                            Error: {testResult.error}
                           </div>
                         )}
                       </div>
@@ -543,35 +543,35 @@ export const UnitConverterFormulaDialog: React.FC = () => {
               </div>
 
               <div className="border rounded-lg p-4">
-                <h3 className="font-medium mb-3">設定内容の確認</h3>
+                <h3 className="font-medium mb-3">Confirm Settings</h3>
                 <dl className="space-y-2 text-sm">
                   <div>
-                    <dt className="font-medium inline">名前: </dt>
+                    <dt className="font-medium inline">Name: </dt>
                     <dd className="inline">{formula.name}</dd>
                   </div>
                   <div>
-                    <dt className="font-medium inline">説明: </dt>
+                    <dt className="font-medium inline">Description: </dt>
                     <dd className="inline">{formula.description}</dd>
                   </div>
                   <div>
-                    <dt className="font-medium inline">カテゴリー: </dt>
+                    <dt className="font-medium inline">Category: </dt>
                     <dd className="inline">{UNIT_CATEGORIES[formula.category]}</dd>
                   </div>
                   <div>
-                    <dt className="font-medium inline">変換方向: </dt>
+                    <dt className="font-medium inline">Conversion Direction: </dt>
                     <dd className="inline">
                       {formula.fromUnit.primarySymbol} {formula.isBidirectional ? '⇄' : '→'} {formula.toUnit.primarySymbol}
                     </dd>
                   </div>
                   <div>
-                    <dt className="font-medium">変換式: </dt>
+                    <dt className="font-medium">Conversion Formula: </dt>
                     <dd className="font-mono bg-muted px-2 py-1 rounded mt-1">
                       {formula.toUnit.primarySymbol} = {formula.formula.replace(/x/g, formula.fromUnit.primarySymbol)}
                     </dd>
                   </div>
                   {formula.isBidirectional && formula.reverseFormula && (
                     <div>
-                      <dt className="font-medium">逆変換式: </dt>
+                      <dt className="font-medium">Reverse Conversion Formula: </dt>
                       <dd className="font-mono bg-muted px-2 py-1 rounded mt-1">
                         {formula.fromUnit.primarySymbol} = {formula.reverseFormula.replace(/x/g, formula.toUnit.primarySymbol)}
                       </dd>
@@ -588,22 +588,22 @@ export const UnitConverterFormulaDialog: React.FC = () => {
             variant="outline"
             onClick={currentStep === 0 ? closeDialog : handlePrevious}
           >
-            {currentStep === 0 ? 'キャンセル' : (
+            {currentStep === 0 ? 'Cancel' : (
               <>
                 <ChevronLeft className="mr-2 h-4 w-4" />
-                前へ
+                Previous
               </>
             )}
           </Button>
 
           {currentStep < steps.length - 1 ? (
             <Button onClick={handleNext}>
-              次へ
+              Next
               <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
           ) : (
             <Button onClick={handleSave}>
-              {dialogMode === 'edit' ? '更新' : '登録'}
+              {dialogMode === 'edit' ? 'Update' : 'Register'}
             </Button>
           )}
         </div>

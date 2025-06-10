@@ -3,19 +3,19 @@ import { UnitConverterFormula } from '@/types/unit-converter';
 export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'createdAt' | 'updatedAt'>[] = [
   // Temperature conversions
   {
-    name: '摂氏から華氏',
-    description: '摂氏温度を華氏温度に変換します',
+    name: 'Celsius to Fahrenheit',
+    description: 'Convert Celsius temperature to Fahrenheit temperature',
     category: 'temperature',
     fromUnit: {
       primarySymbol: '°C',
-      name: '摂氏',
-      aliases: ['℃', 'C', 'celsius', 'セルシウス'],
+      name: 'Celsius',
+      aliases: ['℃', 'C', 'celsius'],
       displayFormat: '{value}°C'
     },
     toUnit: {
       primarySymbol: '°F',
-      name: '華氏',
-      aliases: ['℉', 'F', 'fahrenheit', 'ファーレンハイト'],
+      name: 'Fahrenheit',
+      aliases: ['℉', 'F', 'fahrenheit'],
       displayFormat: '{value}°F'
     },
     formula: 'x * 9/5 + 32',
@@ -26,19 +26,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
     isFavorite: true
   },
   {
-    name: '摂氏からケルビン',
-    description: '摂氏温度をケルビン温度に変換します',
+    name: 'Celsius to Kelvin',
+    description: 'Convert Celsius temperature to Kelvin temperature',
     category: 'temperature',
     fromUnit: {
       primarySymbol: '°C',
-      name: '摂氏',
-      aliases: ['℃', 'C', 'celsius', 'セルシウス'],
+      name: 'Celsius',
+      aliases: ['℃', 'C', 'celsius'],
       displayFormat: '{value}°C'
     },
     toUnit: {
       primarySymbol: 'K',
-      name: 'ケルビン',
-      aliases: ['kelvin', 'ケルビン'],
+      name: 'Kelvin',
+      aliases: ['kelvin'],
       displayFormat: '{value}K'
     },
     formula: 'x + 273.15',
@@ -49,19 +49,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
     isFavorite: true
   },
   {
-    name: '華氏からケルビン',
-    description: '華氏温度をケルビン温度に変換します',
+    name: 'Fahrenheit to Kelvin',
+    description: 'Convert Fahrenheit temperature to Kelvin temperature',
     category: 'temperature',
     fromUnit: {
       primarySymbol: '°F',
-      name: '華氏',
-      aliases: ['℉', 'F', 'fahrenheit', 'ファーレンハイト'],
+      name: 'Fahrenheit',
+      aliases: ['℉', 'F', 'fahrenheit'],
       displayFormat: '{value}°F'
     },
     toUnit: {
       primarySymbol: 'K',
-      name: 'ケルビン',
-      aliases: ['kelvin', 'ケルビン'],
+      name: 'Kelvin',
+      aliases: ['kelvin'],
       displayFormat: '{value}K'
     },
     formula: '(x - 32) * 5/9 + 273.15',
@@ -74,19 +74,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
 
   // Length conversions
   {
-    name: 'メートルからフィート',
-    description: 'メートルをフィートに変換します',
+    name: 'Meters to Feet',
+    description: 'Convert meters to feet',
     category: 'length',
     fromUnit: {
       primarySymbol: 'm',
-      name: 'メートル',
-      aliases: ['meter', 'metre', 'メートル'],
+      name: 'Meter',
+      aliases: ['meter', 'metre'],
       displayFormat: '{value}m'
     },
     toUnit: {
       primarySymbol: 'ft',
-      name: 'フィート',
-      aliases: ['feet', 'foot', 'フィート'],
+      name: 'Feet',
+      aliases: ['feet', 'foot'],
       displayFormat: '{value}ft'
     },
     formula: 'x * 3.28084',
@@ -97,19 +97,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
     isFavorite: true
   },
   {
-    name: 'インチからセンチメートル',
-    description: 'インチをセンチメートルに変換します',
+    name: 'Inches to Centimeters',
+    description: 'Convert inches to centimeters',
     category: 'length',
     fromUnit: {
       primarySymbol: 'in',
-      name: 'インチ',
-      aliases: ['inch', 'inches', '"', 'インチ'],
+      name: 'Inch',
+      aliases: ['inch', 'inches', '"'],
       displayFormat: '{value}in'
     },
     toUnit: {
       primarySymbol: 'cm',
-      name: 'センチメートル',
-      aliases: ['centimeter', 'センチ'],
+      name: 'Centimeter',
+      aliases: ['centimeter'],
       displayFormat: '{value}cm'
     },
     formula: 'x * 2.54',
@@ -120,19 +120,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
     isFavorite: true
   },
   {
-    name: 'キロメートルからマイル',
-    description: 'キロメートルをマイルに変換します',
+    name: 'Kilometers to Miles',
+    description: 'Convert kilometers to miles',
     category: 'length',
     fromUnit: {
       primarySymbol: 'km',
-      name: 'キロメートル',
-      aliases: ['kilometer', 'キロ'],
+      name: 'Kilometer',
+      aliases: ['kilometer'],
       displayFormat: '{value}km'
     },
     toUnit: {
       primarySymbol: 'mi',
-      name: 'マイル',
-      aliases: ['mile', 'miles', 'マイル'],
+      name: 'Mile',
+      aliases: ['mile', 'miles'],
       displayFormat: '{value}mi'
     },
     formula: 'x * 0.621371',
@@ -143,19 +143,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
     isFavorite: false
   },
   {
-    name: 'ミリメートルからインチ',
-    description: 'ミリメートルをインチに変換します',
+    name: 'Millimeters to Inches',
+    description: 'Convert millimeters to inches',
     category: 'length',
     fromUnit: {
       primarySymbol: 'mm',
-      name: 'ミリメートル',
-      aliases: ['millimeter', 'ミリ'],
+      name: 'Millimeter',
+      aliases: ['millimeter'],
       displayFormat: '{value}mm'
     },
     toUnit: {
       primarySymbol: 'in',
-      name: 'インチ',
-      aliases: ['inch', 'inches', '"', 'インチ'],
+      name: 'Inch',
+      aliases: ['inch', 'inches', '"'],
       displayFormat: '{value}in'
     },
     formula: 'x / 25.4',
@@ -168,19 +168,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
 
   // Weight conversions
   {
-    name: 'キログラムからポンド',
-    description: 'キログラムをポンドに変換します',
+    name: 'Kilograms to Pounds',
+    description: 'Convert kilograms to pounds',
     category: 'weight',
     fromUnit: {
       primarySymbol: 'kg',
-      name: 'キログラム',
-      aliases: ['kilogram', 'キロ'],
+      name: 'Kilogram',
+      aliases: ['kilogram'],
       displayFormat: '{value}kg'
     },
     toUnit: {
       primarySymbol: 'lb',
-      name: 'ポンド',
-      aliases: ['lbs', 'pound', 'pounds', 'ポンド'],
+      name: 'Pound',
+      aliases: ['lbs', 'pound', 'pounds'],
       displayFormat: '{value}lb'
     },
     formula: 'x * 2.20462',
@@ -191,19 +191,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
     isFavorite: true
   },
   {
-    name: 'グラムからオンス',
-    description: 'グラムをオンスに変換します',
+    name: 'Grams to Ounces',
+    description: 'Convert grams to ounces',
     category: 'weight',
     fromUnit: {
       primarySymbol: 'g',
-      name: 'グラム',
-      aliases: ['gram', 'グラム'],
+      name: 'Gram',
+      aliases: ['gram'],
       displayFormat: '{value}g'
     },
     toUnit: {
       primarySymbol: 'oz',
-      name: 'オンス',
-      aliases: ['ounce', 'ounces', 'オンス'],
+      name: 'Ounce',
+      aliases: ['ounce', 'ounces'],
       displayFormat: '{value}oz'
     },
     formula: 'x * 0.035274',
@@ -214,19 +214,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
     isFavorite: false
   },
   {
-    name: 'トンからキログラム',
-    description: 'トンをキログラムに変換します',
+    name: 'Tons to Kilograms',
+    description: 'Convert tons to kilograms',
     category: 'weight',
     fromUnit: {
       primarySymbol: 't',
-      name: 'トン',
-      aliases: ['ton', 'tonne', 'トン'],
+      name: 'Ton',
+      aliases: ['ton', 'tonne'],
       displayFormat: '{value}t'
     },
     toUnit: {
       primarySymbol: 'kg',
-      name: 'キログラム',
-      aliases: ['kilogram', 'キロ'],
+      name: 'Kilogram',
+      aliases: ['kilogram'],
       displayFormat: '{value}kg'
     },
     formula: 'x * 1000',
@@ -239,19 +239,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
 
   // Pressure conversions
   {
-    name: 'パスカルからバール',
-    description: 'パスカルをバールに変換します',
+    name: 'Pascals to Bar',
+    description: 'Convert pascals to bar',
     category: 'pressure',
     fromUnit: {
       primarySymbol: 'Pa',
-      name: 'パスカル',
-      aliases: ['pascal', 'パスカル'],
+      name: 'Pascal',
+      aliases: ['pascal'],
       displayFormat: '{value}Pa'
     },
     toUnit: {
       primarySymbol: 'bar',
-      name: 'バール',
-      aliases: ['バール'],
+      name: 'Bar',
+      aliases: [],
       displayFormat: '{value}bar'
     },
     formula: 'x / 100000',
@@ -262,8 +262,8 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
     isFavorite: true
   },
   {
-    name: 'PSIからバール',
-    description: 'PSI（ポンド毎平方インチ）をバールに変換します',
+    name: 'PSI to Bar',
+    description: 'Convert PSI (pounds per square inch) to bar',
     category: 'pressure',
     fromUnit: {
       primarySymbol: 'psi',
@@ -273,8 +273,8 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
     },
     toUnit: {
       primarySymbol: 'bar',
-      name: 'バール',
-      aliases: ['バール'],
+      name: 'Bar',
+      aliases: [],
       displayFormat: '{value}bar'
     },
     formula: 'x * 0.0689476',
@@ -285,13 +285,13 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
     isFavorite: false
   },
   {
-    name: 'キロパスカルからPSI',
-    description: 'キロパスカルをPSIに変換します',
+    name: 'Kilopascals to PSI',
+    description: 'Convert kilopascals to PSI',
     category: 'pressure',
     fromUnit: {
       primarySymbol: 'kPa',
-      name: 'キロパスカル',
-      aliases: ['kilopascal', 'キロパスカル'],
+      name: 'Kilopascal',
+      aliases: ['kilopascal'],
       displayFormat: '{value}kPa'
     },
     toUnit: {
@@ -308,19 +308,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
     isFavorite: false
   },
   {
-    name: '気圧からパスカル',
-    description: '気圧（atm）をパスカルに変換します',
+    name: 'Atmospheres to Pascals',
+    description: 'Convert atmospheres (atm) to pascals',
     category: 'pressure',
     fromUnit: {
       primarySymbol: 'atm',
-      name: '気圧',
-      aliases: ['atmosphere', '気圧'],
+      name: 'Atmosphere',
+      aliases: ['atmosphere'],
       displayFormat: '{value}atm'
     },
     toUnit: {
       primarySymbol: 'Pa',
-      name: 'パスカル',
-      aliases: ['pascal', 'パスカル'],
+      name: 'Pascal',
+      aliases: ['pascal'],
       displayFormat: '{value}Pa'
     },
     formula: 'x * 101325',
@@ -333,19 +333,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
 
   // Volume conversions
   {
-    name: 'リットルからガロン（米国）',
-    description: 'リットルを米国ガロンに変換します',
+    name: 'Liters to Gallons (US)',
+    description: 'Convert liters to US gallons',
     category: 'volume',
     fromUnit: {
       primarySymbol: 'L',
-      name: 'リットル',
-      aliases: ['l', 'liter', 'litre', 'リットル'],
+      name: 'Liter',
+      aliases: ['l', 'liter', 'litre'],
       displayFormat: '{value}L'
     },
     toUnit: {
       primarySymbol: 'gal',
-      name: 'ガロン（米国）',
-      aliases: ['gallon', 'US gallon', 'ガロン'],
+      name: 'Gallon (US)',
+      aliases: ['gallon', 'US gallon'],
       displayFormat: '{value}gal'
     },
     formula: 'x * 0.264172',
@@ -356,19 +356,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
     isFavorite: true
   },
   {
-    name: 'ミリリットルからオンス（液量）',
-    description: 'ミリリットルを液量オンスに変換します',
+    name: 'Milliliters to Fluid Ounces',
+    description: 'Convert milliliters to fluid ounces',
     category: 'volume',
     fromUnit: {
       primarySymbol: 'mL',
-      name: 'ミリリットル',
-      aliases: ['ml', 'milliliter', 'millilitre', 'ミリリットル'],
+      name: 'Milliliter',
+      aliases: ['ml', 'milliliter', 'millilitre'],
       displayFormat: '{value}mL'
     },
     toUnit: {
       primarySymbol: 'fl oz',
-      name: 'オンス（液量）',
-      aliases: ['fluid ounce', 'fl. oz.', '液量オンス'],
+      name: 'Fluid Ounce',
+      aliases: ['fluid ounce', 'fl. oz.'],
       displayFormat: '{value}fl oz'
     },
     formula: 'x * 0.033814',
@@ -379,19 +379,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
     isFavorite: false
   },
   {
-    name: '立方メートルから立方フィート',
-    description: '立方メートルを立方フィートに変換します',
+    name: 'Cubic Meters to Cubic Feet',
+    description: 'Convert cubic meters to cubic feet',
     category: 'volume',
     fromUnit: {
       primarySymbol: 'm³',
-      name: '立方メートル',
-      aliases: ['m3', 'cubic meter', '立方メートル'],
+      name: 'Cubic Meter',
+      aliases: ['m3', 'cubic meter'],
       displayFormat: '{value}m³'
     },
     toUnit: {
       primarySymbol: 'ft³',
-      name: '立方フィート',
-      aliases: ['ft3', 'cubic feet', '立方フィート'],
+      name: 'Cubic Feet',
+      aliases: ['ft3', 'cubic feet'],
       displayFormat: '{value}ft³'
     },
     formula: 'x * 35.3147',
@@ -404,19 +404,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
 
   // Speed conversions
   {
-    name: '時速キロからマイル毎時',
-    description: '時速キロメートルをマイル毎時に変換します',
+    name: 'Kilometers per Hour to Miles per Hour',
+    description: 'Convert kilometers per hour to miles per hour',
     category: 'speed',
     fromUnit: {
       primarySymbol: 'km/h',
-      name: '時速キロメートル',
-      aliases: ['kph', 'キロメートル毎時'],
+      name: 'Kilometers per Hour',
+      aliases: ['kph'],
       displayFormat: '{value}km/h'
     },
     toUnit: {
       primarySymbol: 'mph',
-      name: 'マイル毎時',
-      aliases: ['miles per hour', 'マイル毎時'],
+      name: 'Miles per Hour',
+      aliases: ['miles per hour'],
       displayFormat: '{value}mph'
     },
     formula: 'x * 0.621371',
@@ -427,19 +427,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
     isFavorite: true
   },
   {
-    name: 'メートル毎秒から時速キロ',
-    description: 'メートル毎秒を時速キロメートルに変換します',
+    name: 'Meters per Second to Kilometers per Hour',
+    description: 'Convert meters per second to kilometers per hour',
     category: 'speed',
     fromUnit: {
       primarySymbol: 'm/s',
-      name: 'メートル毎秒',
-      aliases: ['meters per second', 'メートル毎秒'],
+      name: 'Meters per Second',
+      aliases: ['meters per second'],
       displayFormat: '{value}m/s'
     },
     toUnit: {
       primarySymbol: 'km/h',
-      name: '時速キロメートル',
-      aliases: ['kph', 'キロメートル毎時'],
+      name: 'Kilometers per Hour',
+      aliases: ['kph'],
       displayFormat: '{value}km/h'
     },
     formula: 'x * 3.6',
@@ -450,19 +450,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
     isFavorite: false
   },
   {
-    name: 'ノットから時速キロ',
-    description: 'ノット（海里毎時）を時速キロメートルに変換します',
+    name: 'Knots to Kilometers per Hour',
+    description: 'Convert knots (nautical miles per hour) to kilometers per hour',
     category: 'speed',
     fromUnit: {
       primarySymbol: 'kn',
-      name: 'ノット',
-      aliases: ['knot', 'knots', 'ノット'],
+      name: 'Knot',
+      aliases: ['knot', 'knots'],
       displayFormat: '{value}kn'
     },
     toUnit: {
       primarySymbol: 'km/h',
-      name: '時速キロメートル',
-      aliases: ['kph', 'キロメートル毎時'],
+      name: 'Kilometers per Hour',
+      aliases: ['kph'],
       displayFormat: '{value}km/h'
     },
     formula: 'x * 1.852',
@@ -475,19 +475,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
 
   // Area conversions
   {
-    name: '平方メートルから平方フィート',
-    description: '平方メートルを平方フィートに変換します',
+    name: 'Square Meters to Square Feet',
+    description: 'Convert square meters to square feet',
     category: 'area',
     fromUnit: {
       primarySymbol: 'm²',
-      name: '平方メートル',
-      aliases: ['m2', 'square meter', '平方メートル'],
+      name: 'Square Meter',
+      aliases: ['m2', 'square meter'],
       displayFormat: '{value}m²'
     },
     toUnit: {
       primarySymbol: 'ft²',
-      name: '平方フィート',
-      aliases: ['ft2', 'square feet', '平方フィート'],
+      name: 'Square Feet',
+      aliases: ['ft2', 'square feet'],
       displayFormat: '{value}ft²'
     },
     formula: 'x * 10.7639',
@@ -498,19 +498,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
     isFavorite: true
   },
   {
-    name: 'ヘクタールからエーカー',
-    description: 'ヘクタールをエーカーに変換します',
+    name: 'Hectares to Acres',
+    description: 'Convert hectares to acres',
     category: 'area',
     fromUnit: {
       primarySymbol: 'ha',
-      name: 'ヘクタール',
-      aliases: ['hectare', 'ヘクタール'],
+      name: 'Hectare',
+      aliases: ['hectare'],
       displayFormat: '{value}ha'
     },
     toUnit: {
       primarySymbol: 'ac',
-      name: 'エーカー',
-      aliases: ['acre', 'acres', 'エーカー'],
+      name: 'Acre',
+      aliases: ['acre', 'acres'],
       displayFormat: '{value}ac'
     },
     formula: 'x * 2.47105',
@@ -521,19 +521,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
     isFavorite: false
   },
   {
-    name: '平方キロから平方マイル',
-    description: '平方キロメートルを平方マイルに変換します',
+    name: 'Square Kilometers to Square Miles',
+    description: 'Convert square kilometers to square miles',
     category: 'area',
     fromUnit: {
       primarySymbol: 'km²',
-      name: '平方キロメートル',
-      aliases: ['km2', 'square kilometer', '平方キロ'],
+      name: 'Square Kilometer',
+      aliases: ['km2', 'square kilometer'],
       displayFormat: '{value}km²'
     },
     toUnit: {
       primarySymbol: 'mi²',
-      name: '平方マイル',
-      aliases: ['mi2', 'square mile', '平方マイル'],
+      name: 'Square Mile',
+      aliases: ['mi2', 'square mile'],
       displayFormat: '{value}mi²'
     },
     formula: 'x * 0.386102',
@@ -546,19 +546,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
 
   // Energy conversions
   {
-    name: 'ジュールからカロリー',
-    description: 'ジュールをカロリーに変換します',
+    name: 'Joules to Calories',
+    description: 'Convert joules to calories',
     category: 'energy',
     fromUnit: {
       primarySymbol: 'J',
-      name: 'ジュール',
-      aliases: ['joule', 'ジュール'],
+      name: 'Joule',
+      aliases: ['joule'],
       displayFormat: '{value}J'
     },
     toUnit: {
       primarySymbol: 'cal',
-      name: 'カロリー',
-      aliases: ['calorie', 'カロリー'],
+      name: 'Calorie',
+      aliases: ['calorie'],
       displayFormat: '{value}cal'
     },
     formula: 'x * 0.239006',
@@ -569,19 +569,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
     isFavorite: true
   },
   {
-    name: 'キロワット時からキロジュール',
-    description: 'キロワット時をキロジュールに変換します',
+    name: 'Kilowatt Hours to Kilojoules',
+    description: 'Convert kilowatt hours to kilojoules',
     category: 'energy',
     fromUnit: {
       primarySymbol: 'kWh',
-      name: 'キロワット時',
-      aliases: ['kilowatt hour', 'キロワット時'],
+      name: 'Kilowatt Hour',
+      aliases: ['kilowatt hour'],
       displayFormat: '{value}kWh'
     },
     toUnit: {
       primarySymbol: 'kJ',
-      name: 'キロジュール',
-      aliases: ['kilojoule', 'キロジュール'],
+      name: 'Kilojoule',
+      aliases: ['kilojoule'],
       displayFormat: '{value}kJ'
     },
     formula: 'x * 3600',
@@ -592,19 +592,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
     isFavorite: false
   },
   {
-    name: 'BTUからジュール',
-    description: 'BTU（英国熱量単位）をジュールに変換します',
+    name: 'BTU to Joules',
+    description: 'Convert BTU (British thermal unit) to joules',
     category: 'energy',
     fromUnit: {
       primarySymbol: 'BTU',
       name: 'BTU',
-      aliases: ['British thermal unit', '英国熱量単位'],
+      aliases: ['British thermal unit'],
       displayFormat: '{value}BTU'
     },
     toUnit: {
       primarySymbol: 'J',
-      name: 'ジュール',
-      aliases: ['joule', 'ジュール'],
+      name: 'Joule',
+      aliases: ['joule'],
       displayFormat: '{value}J'
     },
     formula: 'x * 1055.06',
@@ -617,19 +617,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
 
   // Power conversions
   {
-    name: 'ワットから馬力',
-    description: 'ワットを馬力に変換します',
+    name: 'Watts to Horsepower',
+    description: 'Convert watts to horsepower',
     category: 'power',
     fromUnit: {
       primarySymbol: 'W',
-      name: 'ワット',
-      aliases: ['watt', 'ワット'],
+      name: 'Watt',
+      aliases: ['watt'],
       displayFormat: '{value}W'
     },
     toUnit: {
       primarySymbol: 'hp',
-      name: '馬力',
-      aliases: ['horsepower', '馬力'],
+      name: 'Horsepower',
+      aliases: ['horsepower'],
       displayFormat: '{value}hp'
     },
     formula: 'x * 0.00134102',
@@ -640,19 +640,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
     isFavorite: true
   },
   {
-    name: 'キロワットから馬力',
-    description: 'キロワットを馬力に変換します',
+    name: 'Kilowatts to Horsepower',
+    description: 'Convert kilowatts to horsepower',
     category: 'power',
     fromUnit: {
       primarySymbol: 'kW',
-      name: 'キロワット',
-      aliases: ['kilowatt', 'キロワット'],
+      name: 'Kilowatt',
+      aliases: ['kilowatt'],
       displayFormat: '{value}kW'
     },
     toUnit: {
       primarySymbol: 'hp',
-      name: '馬力',
-      aliases: ['horsepower', '馬力'],
+      name: 'Horsepower',
+      aliases: ['horsepower'],
       displayFormat: '{value}hp'
     },
     formula: 'x * 1.34102',
@@ -665,19 +665,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
 
   // Time conversions
   {
-    name: '時間から分',
-    description: '時間を分に変換します',
+    name: 'Hours to Minutes',
+    description: 'Convert hours to minutes',
     category: 'time',
     fromUnit: {
       primarySymbol: 'h',
-      name: '時間',
-      aliases: ['hour', 'hours', '時間'],
+      name: 'Hour',
+      aliases: ['hour', 'hours'],
       displayFormat: '{value}h'
     },
     toUnit: {
       primarySymbol: 'min',
-      name: '分',
-      aliases: ['minute', 'minutes', '分'],
+      name: 'Minute',
+      aliases: ['minute', 'minutes'],
       displayFormat: '{value}min'
     },
     formula: 'x * 60',
@@ -688,19 +688,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
     isFavorite: false
   },
   {
-    name: '日から時間',
-    description: '日を時間に変換します',
+    name: 'Days to Hours',
+    description: 'Convert days to hours',
     category: 'time',
     fromUnit: {
       primarySymbol: 'd',
-      name: '日',
-      aliases: ['day', 'days', '日'],
+      name: 'Day',
+      aliases: ['day', 'days'],
       displayFormat: '{value}d'
     },
     toUnit: {
       primarySymbol: 'h',
-      name: '時間',
-      aliases: ['hour', 'hours', '時間'],
+      name: 'Hour',
+      aliases: ['hour', 'hours'],
       displayFormat: '{value}h'
     },
     formula: 'x * 24',
@@ -711,19 +711,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
     isFavorite: false
   },
   {
-    name: '週から日',
-    description: '週を日に変換します',
+    name: 'Weeks to Days',
+    description: 'Convert weeks to days',
     category: 'time',
     fromUnit: {
       primarySymbol: 'week',
-      name: '週',
-      aliases: ['w', 'weeks', '週'],
-      displayFormat: '{value}週'
+      name: 'Week',
+      aliases: ['w', 'weeks'],
+      displayFormat: '{value}weeks'
     },
     toUnit: {
       primarySymbol: 'd',
-      name: '日',
-      aliases: ['day', 'days', '日'],
+      name: 'Day',
+      aliases: ['day', 'days'],
       displayFormat: '{value}d'
     },
     formula: 'x * 7',
@@ -736,19 +736,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
 
   // Frequency conversions
   {
-    name: 'ヘルツからキロヘルツ',
-    description: 'ヘルツをキロヘルツに変換します',
+    name: 'Hertz to Kilohertz',
+    description: 'Convert hertz to kilohertz',
     category: 'frequency',
     fromUnit: {
       primarySymbol: 'Hz',
-      name: 'ヘルツ',
-      aliases: ['hertz', 'ヘルツ'],
+      name: 'Hertz',
+      aliases: ['hertz'],
       displayFormat: '{value}Hz'
     },
     toUnit: {
       primarySymbol: 'kHz',
-      name: 'キロヘルツ',
-      aliases: ['kilohertz', 'キロヘルツ'],
+      name: 'Kilohertz',
+      aliases: ['kilohertz'],
       displayFormat: '{value}kHz'
     },
     formula: 'x / 1000',
@@ -759,19 +759,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
     isFavorite: true
   },
   {
-    name: 'メガヘルツからギガヘルツ',
-    description: 'メガヘルツをギガヘルツに変換します',
+    name: 'Megahertz to Gigahertz',
+    description: 'Convert megahertz to gigahertz',
     category: 'frequency',
     fromUnit: {
       primarySymbol: 'MHz',
-      name: 'メガヘルツ',
-      aliases: ['megahertz', 'メガヘルツ'],
+      name: 'Megahertz',
+      aliases: ['megahertz'],
       displayFormat: '{value}MHz'
     },
     toUnit: {
       primarySymbol: 'GHz',
-      name: 'ギガヘルツ',
-      aliases: ['gigahertz', 'ギガヘルツ'],
+      name: 'Gigahertz',
+      aliases: ['gigahertz'],
       displayFormat: '{value}GHz'
     },
     formula: 'x / 1000',
@@ -782,19 +782,19 @@ export const PREDEFINED_UNIT_CONVERSIONS: Omit<UnitConverterFormula, 'id' | 'cre
     isFavorite: false
   },
   {
-    name: 'RPMからヘルツ',
-    description: '毎分回転数をヘルツに変換します',
+    name: 'RPM to Hertz',
+    description: 'Convert revolutions per minute to hertz',
     category: 'frequency',
     fromUnit: {
       primarySymbol: 'rpm',
-      name: '毎分回転数',
-      aliases: ['RPM', 'revolutions per minute', '回転毎分'],
+      name: 'Revolutions per Minute',
+      aliases: ['RPM', 'revolutions per minute'],
       displayFormat: '{value}rpm'
     },
     toUnit: {
       primarySymbol: 'Hz',
-      name: 'ヘルツ',
-      aliases: ['hertz', 'ヘルツ'],
+      name: 'Hertz',
+      aliases: ['hertz'],
       displayFormat: '{value}Hz'
     },
     formula: 'x / 60',
