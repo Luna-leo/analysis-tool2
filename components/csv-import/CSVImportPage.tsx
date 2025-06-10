@@ -35,6 +35,7 @@ export function CSVImportPage({ fileId }: CSVImportPageProps) {
   const [importStatuses, setImportStatuses] = useState<ImportStatus[]>([])
   const [parsedData, setParsedData] = useState<ParsedCSVData[]>([])
   const [activePreviewIndex, setActivePreviewIndex] = useState(0)
+  const [isImporting, setIsImporting] = useState(false)
   
   const fileInputRef = useRef<HTMLInputElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
@@ -138,12 +139,13 @@ export function CSVImportPage({ fileId }: CSVImportPageProps) {
     if (validFiles.length === 0) {
       toast({
         title: "インポートエラー",
-        description: "インポート可能なファイルがありません",
+        description: "インポート可能なファイルがありません。まず検証を実行してください。",
         variant: "destructive",
       })
       return
     }
 
+    setIsImporting(true)
     try {
       let totalRowsImported = 0
       
@@ -179,174 +181,191 @@ export function CSVImportPage({ fileId }: CSVImportPageProps) {
         description: error instanceof Error ? error.message : "インポート中にエラーが発生しました",
         variant: "destructive",
       })
+    } finally {
+      setIsImporting(false)
     }
   }
 
   const isValid = plant && machineNo && files.length > 0
 
   return (
-    <div className="h-full flex flex-col p-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">CSV Import</h2>
-        <p className="text-muted-foreground">CSVファイルをインポートしてデータを取り込みます</p>
+    <div className="h-full flex flex-col p-4 overflow-hidden">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <h2 className="text-xl font-bold">CSV Import</h2>
+          {importStatuses.length > 0 && importStatuses.filter(s => s.status === 'success').length > 0 && (
+            <span className="text-sm text-green-600">
+              {importStatuses.filter(s => s.status === 'success').length}個のファイルが検証済み
+            </span>
+          )}
+        </div>
+        <Button
+          onClick={handleImport}
+          disabled={!isValid || importStatuses.filter(s => s.status === 'success').length === 0 || isImporting}
+          size="default"
+          className="min-w-[120px]"
+        >
+          {isImporting ? (
+            <>
+              <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              インポート中...
+            </>
+          ) : (
+            <>
+              <Download className="h-4 w-4 mr-2" />
+              インポート
+            </>
+          )}
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 flex-1">
-        {/* Left Column - Import Settings */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>インポート設定</CardTitle>
-              <CardDescription>データソースの種類と基本情報を設定してください</CardDescription>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 overflow-hidden">
+        {/* Left Column - Import Settings and File Selection */}
+        <div className="overflow-y-auto">
+          <Card className="h-fit">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">インポート設定</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Data Source Type Selection */}
-              <div className="space-y-2">
-                <Label>データソースの種類</Label>
-                <RadioGroup value={dataSourceType} onValueChange={(value) => setDataSourceType(value as CSVDataSourceType)}>
-                  <div className="flex items-center space-x-2">
+              <div className="space-y-1">
+                <Label className="text-sm">データソースの種類</Label>
+                <RadioGroup value={dataSourceType} onValueChange={(value) => setDataSourceType(value as CSVDataSourceType)} className="flex gap-4">
+                  <div className="flex items-center space-x-1">
                     <RadioGroupItem value="SSAC" id="ssac" />
-                    <Label htmlFor="ssac">SSAC</Label>
+                    <Label htmlFor="ssac" className="text-sm">SSAC</Label>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1">
                     <RadioGroupItem value="SCA" id="sca" />
-                    <Label htmlFor="sca">SCA</Label>
+                    <Label htmlFor="sca" className="text-sm">SCA</Label>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1">
                     <RadioGroupItem value="INOMOT" id="inomot" />
-                    <Label htmlFor="inomot">INOMOT</Label>
+                    <Label htmlFor="inomot" className="text-sm">INOMOT</Label>
                   </div>
                 </RadioGroup>
               </div>
 
               {/* Plant and Machine No */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="plant">Plant</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="plant" className="text-sm">Plant</Label>
                   <Input
                     id="plant"
                     value={plant}
                     onChange={(e) => setPlant(e.target.value)}
                     placeholder="例: Plant A"
+                    className="h-8"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="machineNo">Machine No</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="machineNo" className="text-sm">Machine No</Label>
                   <Input
                     id="machineNo"
                     value={machineNo}
                     onChange={(e) => setMachineNo(e.target.value)}
                     placeholder="例: M-001"
+                    className="h-8"
                   />
                 </div>
               </div>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>ファイル選択</CardTitle>
-              <CardDescription>CSVファイルを選択またはドラッグ＆ドロップしてください</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div
-                className={`
-                  border-2 border-dashed rounded-lg p-8 text-center transition-colors
-                  ${isDragging ? 'border-primary bg-primary/5' : 'border-gray-300'}
-                  ${files.length > 0 ? 'bg-gray-50' : ''}
-                `}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-              >
-                {files.length === 0 ? (
-                  <>
-                    <Upload className="mx-auto h-16 w-16 text-gray-400" />
-                    <p className="mt-4 text-sm text-gray-600">
-                      CSVファイルをドラッグ＆ドロップ
-                    </p>
-                    <p className="mt-1 text-sm text-gray-600">または</p>
-                    <div className="mt-4 flex gap-2 justify-center">
+              {/* File Selection */}
+              <div className="space-y-2">
+                <Label className="text-sm">ファイル選択</Label>
+                <div
+                  className={`
+                    border-2 border-dashed rounded-lg p-4 text-center transition-colors
+                    ${isDragging ? 'border-primary bg-primary/5' : 'border-gray-300'}
+                    ${files.length > 0 ? 'bg-gray-50' : ''}
+                  `}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                >
+                  {files.length === 0 ? (
+                    <>
+                      <Upload className="mx-auto h-10 w-10 text-gray-400" />
+                      <p className="mt-2 text-sm text-gray-600">
+                        CSVファイルをドラッグ＆ドロップ
+                      </p>
+                      <div className="mt-2 flex gap-2 justify-center">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          ファイルを選択
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => folderInputRef.current?.click()}
+                        >
+                          フォルダを選択
+                        </Button>
+                      </div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".csv,.CSV"
+                        multiple
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
+                      <input
+                        ref={folderInputRef}
+                        type="file"
+                        accept=".csv,.CSV"
+                        multiple
+                        {...{ webkitdirectory: "" } as any}
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
+                    </>
+                  ) : (
+                    <div className="space-y-2">
+                      <FileText className="mx-auto h-10 w-10 text-primary" />
+                      <p className="text-sm font-medium">{files.length}個のファイルが選択されました</p>
+                      <ScrollArea className="h-20 w-full rounded border p-2">
+                        <div className="space-y-1">
+                          {files.map((file, index) => (
+                            <div key={index} className="flex items-center justify-between text-xs">
+                              <span className="truncate">{file.name}</span>
+                              <span className="text-muted-foreground">
+                                {(file.size / 1024).toFixed(1)} KB
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => fileInputRef.current?.click()}
+                        size="sm"
+                        onClick={() => {
+                          setFiles([])
+                          setImportStatuses([])
+                          setParsedData([])
+                        }}
                       >
-                        ファイルを選択
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => folderInputRef.current?.click()}
-                      >
-                        フォルダを選択
+                        クリア
                       </Button>
                     </div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".csv,.CSV"
-                      multiple
-                      onChange={handleFileSelect}
-                      className="hidden"
-                    />
-                    <input
-                      ref={folderInputRef}
-                      type="file"
-                      accept=".csv,.CSV"
-                      multiple
-                      {...{ webkitdirectory: "" } as any}
-                      onChange={handleFileSelect}
-                      className="hidden"
-                    />
-                  </>
-                ) : (
-                  <div className="space-y-4">
-                    <FileText className="mx-auto h-16 w-16 text-primary" />
-                    <p className="text-sm font-medium">{files.length}個のファイルが選択されました</p>
-                    <ScrollArea className="h-32 w-full rounded border p-2">
-                      <div className="space-y-1">
-                        {files.map((file, index) => (
-                          <div key={index} className="flex items-center justify-between text-sm">
-                            <span className="truncate">{file.name}</span>
-                            <span className="text-muted-foreground">
-                              {(file.size / 1024).toFixed(1)} KB
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setFiles([])
-                        setImportStatuses([])
-                        setParsedData([])
-                      }}
-                    >
-                      クリア
-                    </Button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               {files.length > 0 && (
-                <div className="mt-4 flex gap-2 justify-end">
+                <div className="flex gap-2 justify-end">
                   <Button
                     onClick={handleValidate}
                     disabled={!isValid}
+                    size="sm"
                   >
                     検証
-                  </Button>
-                  <Button
-                    onClick={handleImport}
-                    disabled={importStatuses.filter(s => s.status === 'success').length === 0}
-                    variant="default"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    インポート
                   </Button>
                 </div>
               )}
@@ -355,71 +374,72 @@ export function CSVImportPage({ fileId }: CSVImportPageProps) {
         </div>
 
         {/* Right Column - Preview and Status */}
-        <div className="space-y-6">
+        <div className="space-y-3 overflow-y-auto">
           {importStatuses.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>検証結果</CardTitle>
-                <CardDescription>各ファイルの検証状態</CardDescription>
+            <Card className="h-fit">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">検証結果</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  {importStatuses.map((status, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 rounded-lg border cursor-pointer hover:bg-muted/50"
-                      onClick={() => setActivePreviewIndex(index)}
-                    >
-                      <div className="flex items-center gap-3">
-                        {status.status === 'success' ? (
-                          <CheckCircle className="h-5 w-5 text-green-500" />
-                        ) : status.status === 'error' ? (
-                          <AlertCircle className="h-5 w-5 text-red-500" />
-                        ) : (
-                          <FileText className="h-5 w-5 text-gray-400" />
-                        )}
-                        <div>
-                          <p className="text-sm font-medium">{status.fileName}</p>
-                          {status.message && (
-                            <p className="text-xs text-muted-foreground">{status.message}</p>
+                <ScrollArea className="h-32">
+                  <div className="space-y-2">
+                    {importStatuses.map((status, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-2 rounded-lg border cursor-pointer hover:bg-muted/50"
+                        onClick={() => setActivePreviewIndex(index)}
+                      >
+                        <div className="flex items-center gap-2">
+                          {status.status === 'success' ? (
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                          ) : status.status === 'error' ? (
+                            <AlertCircle className="h-4 w-4 text-red-500" />
+                          ) : (
+                            <FileText className="h-4 w-4 text-gray-400" />
                           )}
+                          <div>
+                            <p className="text-sm font-medium">{status.fileName}</p>
+                            {status.message && (
+                              <p className="text-xs text-muted-foreground">{status.message}</p>
+                            )}
+                          </div>
                         </div>
+                        {status.rowCount !== undefined && (
+                          <Badge variant="secondary" className="text-xs">{status.rowCount}行</Badge>
+                        )}
                       </div>
-                      {status.rowCount !== undefined && (
-                        <Badge variant="secondary">{status.rowCount}行</Badge>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                </ScrollArea>
               </CardContent>
             </Card>
           )}
 
           {parsedData.length > 0 && (
-            <Card className="flex-1">
-              <CardHeader>
-                <CardTitle>データプレビュー</CardTitle>
-                <CardDescription>
-                  {parsedData[activePreviewIndex]?.metadata.fileName} - 最初の10行
+            <Card className="flex-1 min-h-0">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">データプレビュー</CardTitle>
+                <CardDescription className="text-xs">
+                  {parsedData[activePreviewIndex]?.metadata.fileName} - 最初の5行
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[400px] w-full">
+              <CardContent className="p-3">
+                <ScrollArea className="h-[calc(100vh-400px)] w-full">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         {parsedData[activePreviewIndex]?.headers.map((header, index) => (
-                          <TableHead key={index} className="whitespace-nowrap">
+                          <TableHead key={index} className="whitespace-nowrap text-xs p-2">
                             {header}
                           </TableHead>
                         ))}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {parsedData[activePreviewIndex]?.rows.slice(0, 10).map((row, rowIndex) => (
+                      {parsedData[activePreviewIndex]?.rows.slice(0, 5).map((row, rowIndex) => (
                         <TableRow key={rowIndex}>
                           {row.map((cell, cellIndex) => (
-                            <TableCell key={cellIndex} className="whitespace-nowrap">
+                            <TableCell key={cellIndex} className="whitespace-nowrap text-xs p-2">
                               {cell}
                             </TableCell>
                           ))}
