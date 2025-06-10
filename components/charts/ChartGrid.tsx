@@ -10,6 +10,7 @@ import { CSVImportPage } from "@/components/csv-import"
 import { EventMasterPage } from "@/components/event-master"
 import { InterlockMasterPageWrapper } from "@/components/interlock-master/InterlockMasterPageWrapper"
 import { FormulaMasterPage } from "@/components/formula-master"
+import { TriggerConditionMasterPage } from "@/components/trigger-condition-master"
 import { useFileStore } from "@/stores/useFileStore"
 import { useLayoutStore } from "@/stores/useLayoutStore"
 import { useUIStore } from "@/stores/useUIStore"
@@ -86,6 +87,11 @@ export function ChartGrid({ file }: ChartGridProps) {
   // Check if this is a Formula Master tab
   if (file.id === 'formula-master') {
     return <FormulaMasterPage />
+  }
+
+  // Check if this is a Trigger Condition Master tab
+  if (file.id === 'trigger-condition-master') {
+    return <TriggerConditionMasterPage />
   }
 
   if (!file.charts || file.charts.length === 0) {

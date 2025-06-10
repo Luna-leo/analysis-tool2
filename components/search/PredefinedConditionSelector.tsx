@@ -2,7 +2,7 @@ import React from "react"
 import { Edit2 } from "lucide-react"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Button } from "@/components/ui/button"
-import { predefinedConditions } from "@/data/predefinedConditions"
+import { useTriggerConditionStore } from "@/stores/useTriggerConditionStore"
 import { colorCodeExpressionString } from "@/lib/conditionUtils"
 
 interface PredefinedConditionSelectorProps {
@@ -16,9 +16,11 @@ export const PredefinedConditionSelector: React.FC<PredefinedConditionSelectorPr
   onSelectedPredefinedConditionChange,
   onLoadPredefinedCondition,
 }) => {
+  const { conditions } = useTriggerConditionStore()
+  
   return (
     <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-      {predefinedConditions.map((condition) => (
+      {conditions.map((condition) => (
         <div
           key={condition.id}
           className={`border rounded-lg p-3 transition-colors ${

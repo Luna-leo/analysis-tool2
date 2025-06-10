@@ -116,6 +116,19 @@ export function Sidebar() {
     openFile(formulaMasterNode, 'calculator')
   }
 
+  const handleOpenTriggerConditionMaster = () => {
+    // Create a special Trigger Condition Master tab
+    const triggerConditionMasterNode: FileNode = {
+      id: 'trigger-condition-master',
+      name: 'Trigger Condition Master',
+      type: 'trigger-condition-master',
+      isSystemNode: true
+    }
+    
+    // Open the Trigger Condition Master as a tab
+    openFile(triggerConditionMasterNode, 'calculator')
+  }
+
   const renderSidebarContent = () => {
     switch (activeView) {
       case "explorer":
@@ -246,7 +259,7 @@ export function Sidebar() {
               <Button
                 variant="ghost"
                 className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
-                onClick={() => console.log("Trigger Condition Master")}
+                onClick={handleOpenTriggerConditionMaster}
               >
                 <Zap className="h-4 w-4 shrink-0" />
                 <div className="flex flex-col items-start flex-1">

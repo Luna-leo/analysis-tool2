@@ -7,9 +7,10 @@ import {
   validateConditions,
   generateConditionId 
 } from "@/lib/conditionUtils"
-import { predefinedConditions } from "@/data/predefinedConditions"
+import { useTriggerConditionStore } from "@/stores/useTriggerConditionStore"
 
 export const useSearchConditions = () => {
+  const { conditions: predefinedConditions } = useTriggerConditionStore()
   const [conditionMode, setConditionMode] = useState<ConditionMode>('predefined')
   const [selectedPredefinedCondition, setSelectedPredefinedCondition] = useState<string>('')
   const [loadedFromPredefined, setLoadedFromPredefined] = useState<string | null>(null)
