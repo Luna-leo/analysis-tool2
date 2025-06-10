@@ -1,4 +1,5 @@
 import { CSVDataSourceType } from "@/types"
+import { getDataSourceConfig } from "@/data/dataSourceTypes"
 
 export interface ParsedCSVData {
   headers: string[]
@@ -82,33 +83,14 @@ function parseCSVLine(line: string): string[] {
   return result
 }
 
-// データソースタイプに応じたカラムマッピング
-export const DATA_SOURCE_COLUMN_MAPPING: Record<CSVDataSourceType, {
-  required: string[]
-  optional?: string[]
-}> = {
-  SSAC: {
-    required: ['timestamp', 'tag_name', 'value', 'quality'],
-    optional: ['unit', 'description']
-  },
-  SCA: {
-    required: ['datetime', 'parameter', 'measurement', 'status'],
-    optional: ['plant_id', 'machine_id']
-  },
-  INOMOT: {
-    required: ['time', 'signal_id', 'data', 'valid'],
-    optional: ['sensor_type', 'location']
-  }
-}
-
 export function validateCSVStructure(
   headers: string[], 
   dataSourceType: CSVDataSourceType
 ): { valid: boolean; missingColumns?: string[] } {
-  const mapping = DATA_SOURCE_COLUMN_MAPPING[dataSourceType]
+  const config = getDataSourceConfig(dataSourceType)
   const headerLower = headers.map(h => h.toLowerCase())
   
-  const missingColumns = mapping.required.filter(
+  const missingColumns = config.columns.required.filter(
     col => !headerLower.includes(col.toLowerCase())
   )
 
@@ -124,7 +106,7 @@ export function mapCSVDataToStandardFormat(
   plant: string,
   machineNo: string
 ): any[] {
-  const mapping = DATA_SOURCE_COLUMN_MAPPING[dataSourceType]
+  const config = getDataSourceConfig(dataSourceType)
   const headerIndexMap = new Map<string, number>()
   
   // Create a map of column names to indices (case-insensitive)
@@ -140,16 +122,16 @@ export function mapCSVDataToStandardFormat(
       rowNumber: rowIndex + 1
     }
 
-    // Map required columns
-    mapping.required.forEach(colName => {
-      const index = headerIndexMap.get(colName.toLowerCase())
+    // Map columns using the configured column mappings
+    Object.entries(config.columnMappings).forEach(([standardField, sourceField]) => {
+      const index = headerIndexMap.get(sourceField.toLowerCase())
       if (index !== undefined) {
-        standardData[colName] = row[index]
+        standardData[standardField] = row[index]
       }
     })
 
-    // Map optional columns if they exist
-    mapping.optional?.forEach(colName => {
+    // Also include any optional columns if they exist
+    config.columns.optional?.forEach(colName => {
       const index = headerIndexMap.get(colName.toLowerCase())
       if (index !== undefined) {
         standardData[colName] = row[index]
