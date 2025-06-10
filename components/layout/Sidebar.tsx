@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useState } from "react"
 import { 
   FolderOpen, 
   Search, 
@@ -22,11 +22,16 @@ import {
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { FileExplorer } from "./FileExplorer"
-import { ActiveView } from "@/types"
+import { ImportCSVDialog } from "@/components/dialogs"
+import { ActiveView, CSVImportData } from "@/types"
 import { useAnalysisStore } from "@/stores/useAnalysisStore"
+import { parseCSVFiles, validateCSVStructure, mapCSVDataToStandardFormat } from "@/utils/csvUtils"
+import { useToast } from "@/hooks/use-toast"
 
 export function Sidebar() {
   const { activeView, sidebarOpen, setActiveView, setSidebarOpen, fileTree, setCreatingNode } = useAnalysisStore()
+  const [importCSVOpen, setImportCSVOpen] = useState(false)
+  const { toast } = useToast()
 
   const handleViewClick = (view: ActiveView) => {
     if (activeView === view) {
@@ -34,6 +39,50 @@ export function Sidebar() {
     } else {
       setActiveView(view)
       setSidebarOpen(true)
+    }
+  }
+
+  const handleCSVImport = async (data: CSVImportData) => {
+    try {
+      // Parse CSV files
+      const parseResult = await parseCSVFiles(data.files)
+      
+      if (!parseResult.success || !parseResult.data) {
+        throw new Error(parseResult.error || "CSV解析に失敗しました")
+      }
+
+      // Validate and process each file
+      let totalRowsImported = 0
+      for (const parsedFile of parseResult.data) {
+        // Validate CSV structure
+        const validation = validateCSVStructure(parsedFile.headers, data.dataSourceType)
+        if (!validation.valid) {
+          throw new Error(`ファイル ${parsedFile.metadata.fileName} の必須カラムが不足しています: ${validation.missingColumns?.join(', ')}`)
+        }
+
+        // Map data to standard format
+        const standardData = mapCSVDataToStandardFormat(
+          parsedFile,
+          data.dataSourceType,
+          data.plant,
+          data.machineNo
+        )
+
+        // TODO: Save data to store or send to API
+        console.log('Imported data:', standardData)
+        totalRowsImported += standardData.length
+      }
+
+      toast({
+        title: "インポート完了",
+        description: `${data.files.length}個のファイルから${totalRowsImported}件のデータをインポートしました`,
+      })
+    } catch (error) {
+      toast({
+        title: "インポートエラー",
+        description: error instanceof Error ? error.message : "CSVインポート中にエラーが発生しました",
+        variant: "destructive",
+      })
     }
   }
 
@@ -83,7 +132,7 @@ export function Sidebar() {
               <Button
                 variant="ghost"
                 className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
-                onClick={() => console.log("CSV Import")}
+                onClick={() => setImportCSVOpen(true)}
               >
                 <FileUp className="h-4 w-4 shrink-0" />
                 <div className="flex flex-col items-start flex-1">
@@ -261,6 +310,13 @@ export function Sidebar() {
           </ScrollArea>
         </div>
       )}
+
+      {/* Import CSV Dialog */}
+      <ImportCSVDialog
+        open={importCSVOpen}
+        onOpenChange={setImportCSVOpen}
+        onImport={handleCSVImport}
+      />
     </>
   )
 }

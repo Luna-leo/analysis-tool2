@@ -4,13 +4,16 @@ import React, { useState } from "react"
 import { ManualEntryDialog } from "../../../dialogs/ManualEntryDialog"
 import { TriggerSignalDialog } from "../../../dialogs/TriggerSignalDialog"
 import { EventSelectionDialog } from "../../../dialogs/EventSelectionDialog"
+import { ImportCSVDialog } from "../../../dialogs/ImportCSVDialog"
 import { useManualEntry } from "@/hooks/useManualEntry"
 import { useDataSourceManagement } from "@/hooks/useDataSourceManagement"
 import { useTimeOffset } from "@/hooks/useTimeOffset"
-import { EventInfo, SearchResult } from "@/types"
+import { EventInfo, SearchResult, CSVImportData } from "@/types"
 import { Button } from "@/components/ui/button"
 import { Plus, Calendar, FileText } from "lucide-react"
 import { processManualEntryData, createEventFromSearchResult } from "@/utils/dataSourceUtils"
+import { parseCSVFiles, validateCSVStructure, mapCSVDataToStandardFormat } from "@/utils/csvUtils"
+import { useToast } from "@/hooks/use-toast"
 import {
   TimeOffsetSettings,
   SelectedDataSourceTable,
@@ -33,11 +36,14 @@ export function DataSourceTab({
   
   const [eventSelectionOpen, setEventSelectionOpen] = useState(false)
   const [triggerSignalDialogOpen, setTriggerSignalDialogOpen] = useState(false)
+  const [importCSVOpen, setImportCSVOpen] = useState(false)
   const [periodPoolOpen, setPeriodPoolOpen] = useState(true)
   const [searchResultsOpen, setSearchResultsOpen] = useState(true)
   
   // Keep track of original search results for items added to data source
   const [originalSearchResults, setOriginalSearchResults] = useState<Map<string, SearchResult>>(new Map())
+  
+  const { toast } = useToast()
 
   const handleSaveManualEntry = (data: any, editingItemId: string | null) => {
     const processedData = processManualEntryData(data)
@@ -154,6 +160,74 @@ export function DataSourceTab({
     setSelectedDataSourceItems(selectedDataSourceItems.filter(i => i.id !== item.id))
   }
 
+  const handleCSVImport = async (data: CSVImportData) => {
+    try {
+      // Parse CSV files
+      const parseResult = await parseCSVFiles(data.files)
+      
+      if (!parseResult.success || !parseResult.data) {
+        throw new Error(parseResult.error || "CSV解析に失敗しました")
+      }
+
+      // Validate and process each file
+      let totalRowsImported = 0
+      const importedEvents: EventInfo[] = []
+      
+      for (const parsedFile of parseResult.data) {
+        // Validate CSV structure
+        const validation = validateCSVStructure(parsedFile.headers, data.dataSourceType)
+        if (!validation.valid) {
+          throw new Error(`ファイル ${parsedFile.metadata.fileName} の必須カラムが不足しています: ${validation.missingColumns?.join(', ')}`)
+        }
+
+        // Map data to standard format
+        const standardData = mapCSVDataToStandardFormat(
+          parsedFile,
+          data.dataSourceType,
+          data.plant,
+          data.machineNo
+        )
+
+        // Convert to EventInfo format for each row
+        standardData.forEach((row, index) => {
+          const eventInfo: EventInfo = {
+            id: `csv_${data.dataSourceType}_${Date.now()}_${index}`,
+            plant: data.plant,
+            machineNo: data.machineNo,
+            label: `${data.dataSourceType} Import`,
+            labelDescription: `Imported from ${parsedFile.metadata.fileName}`,
+            event: `Row ${row.rowNumber}`,
+            eventDetail: JSON.stringify(row),
+            start: row.timestamp || row.datetime || row.time || new Date().toISOString(),
+            end: row.timestamp || row.datetime || row.time || new Date().toISOString()
+          }
+          importedEvents.push(eventInfo)
+        })
+        
+        totalRowsImported += standardData.length
+      }
+
+      // Add imported events to period pool
+      dataSource.setPeriodPool([...dataSource.periodPool, ...importedEvents])
+      
+      // Automatically select the newly imported events
+      const newSelectedIds = new Set([...dataSource.selectedPoolIds])
+      importedEvents.forEach(event => newSelectedIds.add(event.id))
+      dataSource.setSelectedPoolIds(newSelectedIds)
+
+      toast({
+        title: "インポート完了",
+        description: `${data.files.length}個のファイルから${totalRowsImported}件のデータをインポートしました`,
+      })
+    } catch (error) {
+      toast({
+        title: "インポートエラー",
+        description: error instanceof Error ? error.message : "CSVインポート中にエラーが発生しました",
+        variant: "destructive",
+      })
+    }
+  }
+
   return (
     <>
       <div className="space-y-4">
@@ -182,10 +256,7 @@ export function DataSourceTab({
             <Button
               size="sm"
               variant="outline"
-              onClick={() => {
-                // TODO: Implement CSV import functionality
-                console.log("CSV import clicked")
-              }}
+              onClick={() => setImportCSVOpen(true)}
             >
               <FileText className="h-4 w-4 mr-2" />
               Import CSV
@@ -284,6 +355,12 @@ export function DataSourceTab({
         selectedDataSourceItems={dataSource.selectedPoolIds.size > 0 
           ? dataSource.periodPool.filter(p => dataSource.selectedPoolIds.has(p.id))
           : dataSource.periodPool}
+      />
+
+      <ImportCSVDialog
+        open={importCSVOpen}
+        onOpenChange={setImportCSVOpen}
+        onImport={handleCSVImport}
       />
     </>
   )

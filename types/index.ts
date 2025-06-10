@@ -2,6 +2,8 @@ export type ActiveView = "explorer" | "search" | "database" | "calculator" | "se
 
 export type ConditionMode = "predefined" | "manual"
 
+export type CSVDataSourceType = "SSAC" | "SCA" | "INOMOT"
+
 
 export type AxisType = "datetime" | "time" | "numeric" | "category" | "parameter"
 
@@ -215,4 +217,11 @@ export interface PredefinedCondition {
   description: string
   expression: string
   conditions: SearchCondition[]
+}
+
+export interface CSVImportData {
+  dataSourceType: CSVDataSourceType
+  plant: string
+  machineNo: string
+  files: File[]
 }
