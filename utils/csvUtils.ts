@@ -1,6 +1,7 @@
 import { CSVDataSourceType } from "@/types"
 import { StandardizedCSVData, ParsedCSVData } from "@/types/csv-data"
 import { getDataSourceConfig } from "@/data/dataSourceTypes"
+import { parseSSACFormat, parseStandardFormat, isSSACFormat, removeBOM } from "./csvParsers"
 
 export interface CSVParseResult {
   success: boolean
@@ -32,123 +33,15 @@ export async function parseCSVFiles(files: File[]): Promise<CSVParseResult> {
 
 function parseCSV(text: string, fileName: string): ParsedCSVData {
   // Remove BOM if present
-  const cleanText = text.charAt(0) === '\uFEFF' ? text.slice(1) : text
+  const cleanText = removeBOM(text)
   const lines = cleanText.trim().split('\n')
   
-  // Check if this is SSAC format (by looking for typical SSAC structure)
-  const firstLine = parseCSVLine(lines[0])
-  const secondLine = lines.length > 1 ? parseCSVLine(lines[1]) : []
-  const thirdLine = lines.length > 2 ? parseCSVLine(lines[2]) : []
-  
-  // SSAC format detection:
-  // - First row starts with Datetime or empty, followed by P#### pattern
-  // - Second row has parameter names
-  // - Third row has units
-  const isSSACFormat = lines.length >= 3 && 
-    firstLine.length > 1 && 
-    (firstLine[0].toLowerCase().includes('datetime') || firstLine[0] === '' || firstLine[0] === '﻿Datetime') &&
-    (firstLine[1] && firstLine[1].match(/^P\d+$/)) &&
-    secondLine.length > 1 &&
-    thirdLine.length > 1
-  
-  if (isSSACFormat) {
-    // SSAC format: 3 header rows, data starts from row 4
-    // Extract parameter information from the header rows
-    const idRow = parseCSVLine(lines[0])
-    const paramRow = parseCSVLine(lines[1])
-    const unitRow = parseCSVLine(lines[2])
-    
-    // Create headers from parameter names
-    const headers = ['Datetime']
-    for (let i = 1; i < paramRow.length; i++) {
-      if (paramRow[i]) {
-        headers.push(paramRow[i])
-      }
-    }
-    
-    // Parse data rows starting from row 4 (index 3)
-    const rows = []
-    for (let i = 3; i < lines.length; i++) {
-      const rowArray = parseCSVLine(lines[i])
-      if (rowArray.length === 0 || !rowArray[0]) continue // Skip empty rows
-      
-      const rowObj: Record<string, string | number | null> = {}
-      rowObj['Datetime'] = rowArray[0] // First column is datetime
-      
-      for (let j = 1; j < rowArray.length && j < headers.length; j++) {
-        const value = rowArray[j] || null
-        const numValue = Number(value)
-        rowObj[headers[j]] = !isNaN(numValue) && value !== '' ? numValue : value
-      }
-      rows.push(rowObj)
-    }
-    
-    return {
-      headers,
-      rows,
-      metadata: {
-        fileName,
-        format: 'SSAC',
-        parameterInfo: {
-          ids: idRow.slice(1),
-          parameters: paramRow.slice(1),
-          units: unitRow.slice(1)
-        }
-      }
-    }
+  // Check format and parse accordingly
+  if (isSSACFormat(lines)) {
+    return parseSSACFormat(lines, fileName)
   } else {
-    // Standard CSV format
-    const headers = parseCSVLine(lines[0])
-    const rowArrays = lines.slice(1).map(line => parseCSVLine(line))
-    
-    // Convert array rows to object rows
-    const rows = rowArrays.map(rowArray => {
-      const rowObj: Record<string, string | number | null> = {}
-      headers.forEach((header, index) => {
-        const value = rowArray[index] || null
-        // Try to parse as number
-        const numValue = Number(value)
-        rowObj[header] = !isNaN(numValue) && value !== '' ? numValue : value
-      })
-      return rowObj
-    })
-
-    return {
-      headers,
-      rows,
-      metadata: {
-        fileName
-      }
-    }
+    return parseStandardFormat(lines, fileName)
   }
-}
-
-function parseCSVLine(line: string): string[] {
-  const result: string[] = []
-  let current = ''
-  let inQuotes = false
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i]
-    const nextChar = line[i + 1]
-
-    if (char === '"') {
-      if (inQuotes && nextChar === '"') {
-        current += '"'
-        i++
-      } else {
-        inQuotes = !inQuotes
-      }
-    } else if (char === ',' && !inQuotes) {
-      result.push(current.trim())
-      current = ''
-    } else {
-      current += char
-    }
-  }
-
-  result.push(current.trim())
-  return result
 }
 
 export function validateCSVStructure(

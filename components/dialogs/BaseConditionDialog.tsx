@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
@@ -14,6 +15,7 @@ interface BaseConditionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
+  description?: string
   size?: "default" | "large" | "full"
   children: React.ReactNode
   footer?: React.ReactNode
@@ -24,6 +26,7 @@ export function BaseConditionDialog({
   open,
   onOpenChange,
   title,
+  description,
   size = "large",
   children,
   footer,
@@ -44,6 +47,9 @@ export function BaseConditionDialog({
       )}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
+          <DialogDescription className={description ? "" : "sr-only"}>
+            {description || `${title} dialog`}
+          </DialogDescription>
         </DialogHeader>
         
         <div className="flex-1 overflow-hidden flex flex-col">

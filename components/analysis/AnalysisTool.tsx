@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect } from "react"
-import { ResizablePanelGroup, ResizablePanel } from "@/components/ui/resizable"
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable"
 import { Sidebar, TabHeader, BreadcrumbNavigation, WelcomeMessage } from "../layout"
 import { ChartGrid, ChartEditModal } from "../charts"
 import { useFileStore } from "@/stores/useFileStore"
@@ -87,12 +87,16 @@ export default function AnalysisTool() {
   return (
     <div className="h-screen flex flex-col overflow-hidden">
       <ResizablePanelGroup direction="horizontal" className="flex-1">
-        {/* Sidebar with Activity Bar */}
-        <div className="flex">
-          <Sidebar />
-        </div>
+        {/* Sidebar Panel */}
+        <ResizablePanel defaultSize={25} minSize={15} maxSize={40}>
+          <div className="flex h-full">
+            <Sidebar />
+          </div>
+        </ResizablePanel>
 
-        {/* Main Content Area */}
+        <ResizableHandle />
+
+        {/* Main Content Panel */}
         <ResizablePanel defaultSize={75} minSize={50}>
           <div className="h-full flex flex-col">
             <TabHeader openTabs={openTabs} activeTab={activeTab} />

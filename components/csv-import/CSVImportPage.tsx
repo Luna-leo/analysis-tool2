@@ -1,6 +1,6 @@
 "use client"
 
-import { CSVImportContent } from "./CSVImportContent"
+import { CSVImportContentRefactored } from "./CSVImportContentRefactored"
 
 interface CSVImportPageProps {
   fileId: string
@@ -9,7 +9,7 @@ interface CSVImportPageProps {
 export function CSVImportPage(_props: CSVImportPageProps) {
   return (
     <div className="p-4 h-full">
-      <CSVImportContent mode="page" />
+      <CSVImportContentRefactored mode="page" />
     </div>
   )
 }

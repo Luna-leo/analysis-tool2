@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription } from "@/components/ui/dialog"
 import { useUIStore } from "@/stores/useUIStore"
 import { ChartPreview } from "./ChartPreview"
 import { EventInfo } from "@/types"
@@ -28,6 +28,9 @@ export function ChartEditModal() {
   return (
     <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
       <DialogContent className="max-w-7xl w-[90vw] h-[90vh] flex flex-col overflow-hidden" hideCloseButton>
+        <DialogDescription className="sr-only">
+          Edit chart settings including data source, parameters, and appearance
+        </DialogDescription>
         <ModalHeader
           title={editingChart.title}
           onCancel={handleCancel}

@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -71,6 +72,9 @@ export const EventSelectionDialog: React.FC<EventSelectionDialogProps> = ({
       <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Select Events</DialogTitle>
+          <DialogDescription>
+            Select events to add to the period pool
+          </DialogDescription>
         </DialogHeader>
         
         <div className="flex-1 overflow-hidden flex flex-col gap-4">
