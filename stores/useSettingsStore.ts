@@ -33,8 +33,6 @@ export const useSettingsStore = create<SettingsStore>()(
 
       saveSettings: () => {
         // Settings are automatically saved by zustand persist
-        const currentSettings = get().settings
-        console.log('Settings saved:', currentSettings)
       }
     }),
     {

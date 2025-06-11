@@ -200,18 +200,18 @@ export function Sidebar() {
               <SidebarButton
                 icon={Database}
                 label="Sensor data Master"
-                onClick={() => console.log("Sensor data Master")}
+                onClick={() => {}}
               />
               <SidebarButton
                 icon={Hash}
                 label="Parameter Master"
-                onClick={() => console.log("Parameter Master")}
+                onClick={() => {}}
                 disabled
               />
               <SidebarButton
                 icon={Tag}
                 label="Tag Master"
-                onClick={() => console.log("Tag Master")}
+                onClick={() => {}}
                 disabled
               />
             </div>

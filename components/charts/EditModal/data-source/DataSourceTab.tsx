@@ -11,9 +11,13 @@ import { useDataSourceManagement } from "@/hooks/useDataSourceManagement"
 import { useTimeOffset } from "@/hooks/useTimeOffset"
 import { EventInfo, SearchResult, CSVImportData } from "@/types"
 import { processManualEntryData, createEventFromSearchResult } from "@/utils/dataSourceUtils"
+import { ManualEntryInput, ManualEntryOutput } from "@/types/data-source"
+import { CSVMetadata } from "@/stores/useCSVDataStore"
 import { parseCSVFiles, validateCSVStructure, mapCSVDataToStandardFormat } from "@/utils/csvUtils"
+import { StandardizedCSVData } from "@/types/csv-data"
 import { useToast } from "@/hooks/use-toast"
 import { useCollectedPeriodStore } from "@/stores/useCollectedPeriodStore"
+import { useCSVDataStore } from "@/stores/useCSVDataStore"
 import { extractDateRangeFromCSV } from "@/utils/csvDateRangeUtils"
 import {
   TimeOffsetSettings,
@@ -46,8 +50,9 @@ export function DataSourceTab({
   
   const { toast } = useToast()
   const { addPeriod } = useCollectedPeriodStore()
+  const { saveCSVData } = useCSVDataStore()
 
-  const handleSaveManualEntry = (data: any, editingItemId: string | null) => {
+  const handleSaveManualEntry = (data: ManualEntryInput, editingItemId: string | null) => {
     const processedData = processManualEntryData(data)
 
     if (editingItemId) {
@@ -57,20 +62,33 @@ export function DataSourceTab({
       if (isInPool) {
         dataSource.setPeriodPool(
           dataSource.periodPool.map((item) =>
-            item.id === editingItemId ? (processedData as unknown as EventInfo) : item
+            item.id === editingItemId ? {
+              ...item,
+              ...processedData,
+              id: editingItemId
+            } : item
           )
         )
       } else if (isInDataSource) {
         setSelectedDataSourceItems(
           selectedDataSourceItems.map((item) =>
-            item.id === editingItemId ? (processedData as unknown as EventInfo) : item
+            item.id === editingItemId ? {
+              ...item,
+              ...processedData,
+              id: editingItemId
+            } : item
           )
         )
       }
     } else {
       const newEntry: EventInfo = {
-        ...(processedData as unknown as EventInfo),
         id: `manual_${Date.now()}`,
+        plant: '',
+        machineNo: '',
+        event: '',
+        start: '',
+        end: '',
+        ...processedData
       }
       dataSource.setPeriodPool([...dataSource.periodPool, newEntry])
       // Automatically select the newly added period
@@ -171,10 +189,12 @@ export function DataSourceTab({
         throw new Error(parseResult.error || "CSV解析に失敗しました")
       }
 
-      // Extract date range from the CSV data
+      // Process and standardize CSV data
+      let allStandardizedData: StandardizedCSVData[] = []
       let overallMinDate: Date | null = null
       let overallMaxDate: Date | null = null
       let dateColumnName: string | null = null
+      let combinedMetadata: CSVMetadata | null = null
       
       for (const parsedFile of parseResult.data) {
         // Validate CSV structure
@@ -182,6 +202,15 @@ export function DataSourceTab({
         if (!validation.valid) {
           throw new Error(`ファイル ${parsedFile.metadata?.fileName || 'unknown'} の必須カラムが不足しています: ${validation.missingColumns?.join(', ')}`)
         }
+
+        // Convert to standardized format
+        const standardizedData = mapCSVDataToStandardFormat(
+          parsedFile,
+          data.dataSourceType,
+          data.plant,
+          data.machineNo
+        )
+        allStandardizedData.push(...standardizedData)
 
         // Extract date range from this file
         const dateRange = extractDateRangeFromCSV(parsedFile, data.dataSourceType)
@@ -196,6 +225,11 @@ export function DataSourceTab({
           if (!dateColumnName && dateRange.dateColumnName) {
             dateColumnName = dateRange.dateColumnName
           }
+        }
+
+        // Store metadata from first file
+        if (!combinedMetadata && parsedFile.metadata) {
+          combinedMetadata = parsedFile.metadata
         }
       }
 
@@ -221,6 +255,9 @@ export function DataSourceTab({
       // Add to CollectedPeriod store
       addPeriod(collectedPeriod)
 
+      // Save the actual CSV data
+      saveCSVData(collectedPeriod.id, allStandardizedData, combinedMetadata)
+
       // Create an EventInfo entry for the period pool
       const periodEvent: EventInfo = {
         id: collectedPeriod.id,
@@ -245,6 +282,7 @@ export function DataSourceTab({
         description: `${data.files.length}個のファイルから期間データをインポートしました`,
       })
     } catch (error) {
+      console.error('CSV Import Error:', error)
       toast({
         title: "インポートエラー",
         description: error instanceof Error ? error.message : "CSVインポート中にエラーが発生しました",

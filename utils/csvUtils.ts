@@ -86,6 +86,12 @@ export function mapCSVDataToStandardFormat(
   plant: string,
   machineNo: string
 ): StandardizedCSVData[] {
+  // Special handling for CASS format
+  if (dataSourceType === 'CASS' && parsedData.metadata?.format === 'CASS') {
+    return mapCASSFormatToStandardized(parsedData, plant, machineNo)
+  }
+
+  // Regular handling for other formats
   const config = getDataSourceConfig(dataSourceType)
   const headerIndexMap = new Map<string, number>()
   
@@ -120,4 +126,61 @@ export function mapCSVDataToStandardFormat(
 
     return standardData
   })
+}
+
+function mapCASSFormatToStandardized(
+  parsedData: ParsedCSVData,
+  plant: string,
+  machineNo: string
+): StandardizedCSVData[] {
+  const result: StandardizedCSVData[] = []
+  
+  // Get parameter information from metadata
+  const parameterInfo = parsedData.metadata?.parameterInfo
+  if (!parameterInfo) {
+    console.error('No parameter info found in CASS metadata')
+    return result
+  }
+
+  // Find datetime column index
+  const datetimeIndex = parsedData.headers.findIndex(h => h.toLowerCase() === 'datetime')
+  if (datetimeIndex === -1) {
+    console.error('No Datetime column found in CASS data')
+    return result
+  }
+
+  // Process each data row
+  parsedData.rows.forEach((row, rowIndex) => {
+    // CASS format rows are objects with index as keys
+    const rowData = Object.values(row)
+    const timestamp = rowData[datetimeIndex]
+    
+    if (!timestamp) return
+
+    const standardData: StandardizedCSVData = {
+      plant,
+      machineNo,
+      sourceType: 'CASS',
+      rowNumber: rowIndex + 1,
+      timestamp: typeof timestamp === 'string' ? timestamp : String(timestamp)
+    }
+
+    // Add all parameter values to the standardized data
+    parameterInfo.parameters.forEach((paramName: string, paramIndex: number) => {
+      const columnIndex = paramIndex + 1 // Skip datetime column (index 0)
+      if (columnIndex < rowData.length && rowData[columnIndex] !== null && rowData[columnIndex] !== undefined) {
+        // Convert to number if possible
+        const value = rowData[columnIndex]
+        if (typeof value === 'string' && !isNaN(Number(value))) {
+          standardData[paramName] = Number(value)
+        } else {
+          standardData[paramName] = value
+        }
+      }
+    })
+
+    result.push(standardData)
+  })
+
+  return result
 }
