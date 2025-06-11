@@ -9,6 +9,7 @@ import { LucideIcon } from 'lucide-react'
 
 interface MasterPageHeaderProps {
   title: string
+  description?: string
   icon: LucideIcon
   searchQuery: string
   onSearchChange: (value: string) => void
@@ -26,6 +27,7 @@ interface MasterPageHeaderProps {
 
 export function MasterPageHeader({
   title,
+  description,
   icon: Icon,
   searchQuery,
   onSearchChange,
@@ -40,10 +42,15 @@ export function MasterPageHeader({
     <div className="p-4 md:p-6 border-b space-y-4">
       {/* Title and Add Button */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Icon className="h-7 w-7" />
-          {title}
-        </h1>
+        <div>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            <Icon className="h-7 w-7" />
+            {title}
+          </h1>
+          {description && (
+            <p className="text-sm text-muted-foreground mt-1">{description}</p>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           {additionalActions}
           <Button onClick={onAdd} size="sm">

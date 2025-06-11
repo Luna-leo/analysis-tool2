@@ -93,6 +93,7 @@ export function EventMasterPageRefactored() {
     <MasterPageTemplate<EventMaster>
       config={{
         title: 'Event Master',
+        description: 'イベント情報',
         icon: Calendar,
         itemName: 'event',
         viewType: 'table',

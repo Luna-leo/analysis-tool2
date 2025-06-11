@@ -31,6 +31,7 @@ export const UnitConverterFormulaMasterPage: React.FC = () => {
       <MasterPageTemplate<ExtendedUnitConverterFormula>
         config={{
           title: 'Unit Conversion Formula Master',
+          description: '単位換算式',
           icon: Calculator,
           itemName: 'formula',
           viewType: 'cards',

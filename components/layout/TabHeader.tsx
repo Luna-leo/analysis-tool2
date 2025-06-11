@@ -16,7 +16,7 @@ export const TabHeader: React.FC<TabHeaderProps> = ({
 
   return (
     <div className="border-b bg-muted/50">
-      <ScrollArea className="h-9">
+      <ScrollArea className="h-11">
         <TabBar openTabs={openTabs} />
       </ScrollArea>
     </div>

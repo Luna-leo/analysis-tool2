@@ -44,6 +44,7 @@ export function MasterPageTemplate<T extends MasterItem>({
       {/* Header */}
       <MasterPageHeader
         title={config.title}
+        description={config.description}
         icon={config.icon}
         searchQuery={store.searchQuery}
         onSearchChange={setSearchQuery}

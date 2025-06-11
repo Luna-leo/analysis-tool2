@@ -28,6 +28,7 @@ export function TriggerConditionMasterPageRefactored() {
       <MasterPageTemplate<ExtendedPredefinedCondition>
         config={{
           title: 'Trigger Condition Master',
+          description: '登録済みキック信号コンディション',
           icon: Zap,
           itemName: 'trigger condition',
           viewType: 'cards',

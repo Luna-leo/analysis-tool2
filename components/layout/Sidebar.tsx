@@ -186,63 +186,48 @@ export function Sidebar() {
             <div className="px-2 space-y-1">
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-3 h-auto min-h-[48px] px-3 py-3 text-base font-normal"
+                className="w-full justify-start gap-3 h-12 px-3 text-base font-normal"
                 onClick={handleOpenCSVImport}
               >
                 <FileUp className="h-5 w-5 shrink-0" />
-                <div className="flex flex-col items-start flex-1">
-                  <span className="text-base">CSV Import</span>
-                  <span className="text-sm text-muted-foreground">CSVデータのインポート機能</span>
-                </div>
+                <span className="text-base">CSV Import</span>
               </Button>
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-3 h-auto min-h-[48px] px-3 py-3 text-base font-normal"
+                className="w-full justify-start gap-3 h-12 px-3 text-base font-normal"
                 onClick={handleOpenEventMaster}
               >
                 <Calendar className="h-5 w-5 shrink-0" />
-                <div className="flex flex-col items-start flex-1">
-                  <span className="text-base">Event Master</span>
-                  <span className="text-sm text-muted-foreground">イベント情報</span>
-                </div>
+                <span className="text-base">Event Master</span>
               </Button>
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-3 h-auto min-h-[48px] px-3 py-3 text-base font-normal"
+                className="w-full justify-start gap-3 h-12 px-3 text-base font-normal"
                 onClick={handleOpenInterlockMaster}
               >
                 <Gauge className="h-5 w-5 shrink-0" />
-                <div className="flex flex-col items-start flex-1">
-                  <span className="text-base">Interlock Master</span>
-                  <span className="text-sm text-muted-foreground">登録済み管理値、プラント・号機毎</span>
-                </div>
+                <span className="text-base">Interlock Master</span>
               </Button>
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-3 h-auto min-h-[48px] px-3 py-3 text-base font-normal"
+                className="w-full justify-start gap-3 h-12 px-3 text-base font-normal"
                 onClick={() => console.log("Sensor data Master")}
               >
                 <Database className="h-5 w-5 shrink-0" />
-                <div className="flex flex-col items-start flex-1">
-                  <span className="text-base">Sensor data Master</span>
-                  <span className="text-sm text-muted-foreground">プラントとか号機毎のデータ存在期間とか</span>
-                </div>
+                <span className="text-base">Sensor data Master</span>
               </Button>
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-3 h-auto min-h-[48px] px-3 py-3 text-base font-normal"
+                className="w-full justify-start gap-3 h-12 px-3 text-base font-normal"
                 onClick={() => console.log("Parameter Master")}
                 disabled
               >
                 <Hash className="h-5 w-5 shrink-0" />
-                <div className="flex flex-col items-start flex-1">
-                  <span className="text-base">Parameter Master</span>
-                  <span className="text-sm text-muted-foreground">パラメータID、パラメータ名、単位</span>
-                </div>
+                <span className="text-base">Parameter Master</span>
               </Button>
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-3 h-auto min-h-[48px] px-3 py-3 text-base font-normal"
+                className="w-full justify-start gap-3 h-12 px-3 text-base font-normal"
                 onClick={() => console.log("Tag Master")}
                 disabled
               >
@@ -259,36 +244,27 @@ export function Sidebar() {
             <div className="px-2 space-y-1">
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-3 h-auto min-h-[48px] px-3 py-3 text-base font-normal"
+                className="w-full justify-start gap-3 h-12 px-3 text-base font-normal"
                 onClick={handleOpenFormulaMaster}
               >
                 <FunctionSquare className="h-5 w-5 shrink-0" />
-                <div className="flex flex-col items-start flex-1">
-                  <span className="text-base">Formula Master</span>
-                  <span className="text-sm text-muted-foreground">登録済み数式</span>
-                </div>
+                <span className="text-base">Formula Master</span>
               </Button>
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-3 h-auto min-h-[48px] px-3 py-3 text-base font-normal"
+                className="w-full justify-start gap-3 h-12 px-3 text-base font-normal"
                 onClick={handleOpenTriggerConditionMaster}
               >
                 <Zap className="h-5 w-5 shrink-0" />
-                <div className="flex flex-col items-start flex-1">
-                  <span className="text-base">Trigger Condition Master</span>
-                  <span className="text-sm text-muted-foreground">登録済みキック信号コンディション</span>
-                </div>
+                <span className="text-base">Trigger Condition Master</span>
               </Button>
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-3 h-auto min-h-[48px] px-3 py-3 text-base font-normal"
+                className="w-full justify-start gap-3 h-12 px-3 text-base font-normal"
                 onClick={handleOpenUnitConverterFormulaMaster}
               >
                 <ArrowLeftRight className="h-5 w-5 shrink-0" />
-                <div className="flex flex-col items-start flex-1">
-                  <span className="text-base">Unit Convert Formula Master</span>
-                  <span className="text-sm text-muted-foreground">単位換算式</span>
-                </div>
+                <span className="text-base">Unit Convert Formula Master</span>
               </Button>
             </div>
           </>
@@ -308,7 +284,7 @@ export function Sidebar() {
   return (
     <>
       {/* Activity Bar */}
-      <div className="w-16 bg-muted/50 border-r flex flex-col items-center py-2 gap-1">
+      <div className="w-14 bg-muted/50 border-r flex flex-col items-center py-2 gap-1">
         <div className="relative">
           <Button
             variant={activeView === "explorer" ? "secondary" : "ghost"}

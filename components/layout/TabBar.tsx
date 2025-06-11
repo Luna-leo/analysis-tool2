@@ -68,7 +68,7 @@ export function TabBar({ openTabs }: TabBarProps) {
           onDrop={(e) => handleDrop(e, tab.id)}
           onDragEnd={handleDragEnd}
           className={cn(
-            "flex items-center gap-2 px-3 py-1 rounded-t-md cursor-pointer select-none transition-all",
+            "flex items-center gap-2 px-4 py-2 rounded-t-md cursor-pointer select-none transition-all",
             activeTab === tab.id
               ? "bg-background border-t border-l border-r"
               : "bg-muted hover:bg-muted/70",
@@ -79,55 +79,55 @@ export function TabBar({ openTabs }: TabBarProps) {
         >
           {/* Specific tab type icons */}
           {tab.type === 'formula-master' && (
-            <FunctionSquare className="h-3.5 w-3.5 flex-shrink-0" />
+            <FunctionSquare className="h-4 w-4 flex-shrink-0" />
           )}
           {tab.type === 'trigger-condition-master' && (
-            <Zap className="h-3.5 w-3.5 flex-shrink-0" />
+            <Zap className="h-4 w-4 flex-shrink-0" />
           )}
           {tab.type === 'unit-converter-formula-master' && (
-            <ArrowLeftRight className="h-3.5 w-3.5 flex-shrink-0" />
+            <ArrowLeftRight className="h-4 w-4 flex-shrink-0" />
           )}
           {tab.type === 'event-master' && (
-            <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
+            <Calendar className="h-4 w-4 flex-shrink-0" />
           )}
           {tab.type === 'interlock-master' && (
-            <Gauge className="h-3.5 w-3.5 flex-shrink-0" />
+            <Gauge className="h-4 w-4 flex-shrink-0" />
           )}
           {tab.type === 'csv-import' && (
-            <FileUp className="h-3.5 w-3.5 flex-shrink-0" />
+            <FileUp className="h-4 w-4 flex-shrink-0" />
           )}
           {tab.type === 'sensor-data-master' && (
-            <Database className="h-3.5 w-3.5 flex-shrink-0" />
+            <Database className="h-4 w-4 flex-shrink-0" />
           )}
           {tab.type === 'parameter-master' && (
-            <Hash className="h-3.5 w-3.5 flex-shrink-0" />
+            <Hash className="h-4 w-4 flex-shrink-0" />
           )}
           {tab.type === 'tag-master' && (
-            <Tag className="h-3.5 w-3.5 flex-shrink-0" />
+            <Tag className="h-4 w-4 flex-shrink-0" />
           )}
           {/* Default icons for other types */}
           {!['formula-master', 'trigger-condition-master', 'unit-converter-formula-master', 'event-master', 'interlock-master', 'csv-import', 'sensor-data-master', 'parameter-master', 'tag-master'].includes(tab.type) && (
             <>
               {((tab as any).source === 'explorer' || !(tab as any).source) && (
-                <ChartLine className="h-3.5 w-3.5 flex-shrink-0" />
+                <ChartLine className="h-4 w-4 flex-shrink-0" />
               )}
               {(tab as any).source === 'database' && (
-                <Database className="h-3.5 w-3.5 flex-shrink-0" />
+                <Database className="h-4 w-4 flex-shrink-0" />
               )}
               {(tab as any).source === 'calculator' && (
-                <Calculator className="h-3.5 w-3.5 flex-shrink-0" />
+                <Calculator className="h-4 w-4 flex-shrink-0" />
               )}
             </>
           )}
-          <span className="text-sm truncate max-w-[150px]">{tab.name}</span>
+          <span className="text-base truncate max-w-[150px]">{tab.name}</span>
           <button
             onClick={(e) => {
               e.stopPropagation()
               closeTab(tab.id)
             }}
-            className="hover:bg-accent rounded p-0.5"
+            className="hover:bg-accent rounded p-1"
           >
-            <X className="h-3 w-3" />
+            <X className="h-3.5 w-3.5" />
           </button>
         </div>
       ))}

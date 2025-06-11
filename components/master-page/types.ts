@@ -26,6 +26,7 @@ export interface DialogProps<T> {
 export interface MasterPageConfig<T extends MasterItem> {
   // Basic config
   title: string
+  description?: string
   icon: LucideIcon
   itemName: string
   

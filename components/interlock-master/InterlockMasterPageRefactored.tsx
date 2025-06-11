@@ -73,6 +73,7 @@ export function InterlockMasterPageRefactored() {
     <MasterPageTemplate<ExtendedInterlockMaster>
       config={{
         title: 'Interlock Master',
+        description: '登録済み管理値、プラント・号機毎',
         icon: Gauge,
         itemName: 'interlock',
         viewType: 'table',

@@ -28,6 +28,7 @@ export function FormulaMasterPageRefactored() {
       <MasterPageTemplate<ExtendedFormulaMaster>
       config={{
         title: 'Formula Master',
+        description: '登録済み数式',
         icon: FunctionSquare,
         itemName: 'formula',
         viewType: 'cards',

@@ -8,7 +8,7 @@ declare module 'react' {
     webkitdirectory?: string
   }
 }
-import { FolderOpen, FileText, Download } from "lucide-react"
+import { FolderOpen, FileText, Download, FileUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -372,37 +372,40 @@ export const CSVImportContent = React.memo(function CSVImportContent({ mode = 'p
 
   // Page mode
   return (
-    <div className="h-full flex flex-col p-4 overflow-hidden">
-      <div className="mb-3 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <h2 className="text-xl font-bold">CSV Import</h2>
-          {filePaths.length > 0 && (
-            <span className="text-sm text-green-600">
-              {filePaths.length}個のファイルが選択されています
-            </span>
-          )}
+    <div className="h-full flex flex-col">
+      {/* Header */}
+      <div className="p-4 md:p-6 border-b space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <FileUp className="h-7 w-7" />
+              CSV Import
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">CSVデータのインポート機能</p>
+          </div>
+          <Button
+            onClick={handleImport}
+            disabled={!isValid || isImporting}
+            size="sm"
+          >
+            {isImporting ? (
+              <>
+                <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                インポート中...
+              </>
+            ) : (
+              <>
+                <Download className="h-4 w-4 mr-2" />
+                インポート
+              </>
+            )}
+          </Button>
         </div>
-        <Button
-          onClick={handleImport}
-          disabled={!isValid || isImporting}
-          size="default"
-          className="min-w-[120px]"
-        >
-          {isImporting ? (
-            <>
-              <div className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
-              インポート中...
-            </>
-          ) : (
-            <>
-              <Download className="h-4 w-4 mr-2" />
-              インポート
-            </>
-          )}
-        </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 overflow-hidden">
+      {/* Content */}
+      <div className="flex-1 overflow-hidden p-4 md:p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
         {/* Left Column - Import Settings and File Selection */}
         <div className="overflow-y-auto">
           <Card className="h-fit">
@@ -649,6 +652,7 @@ export const CSVImportContent = React.memo(function CSVImportContent({ mode = 'p
               </CardContent>
             </Card>
           )}
+        </div>
         </div>
       </div>
     </div>
