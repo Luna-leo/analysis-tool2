@@ -167,7 +167,7 @@ export function FileTreeNode({ node, depth = 0 }: FileTreeNodeProps) {
           }
         }}
         className={cn(
-          "group flex items-center gap-2 px-2 py-1 hover:bg-accent cursor-pointer text-sm relative transition-all",
+          "group flex items-center gap-2 px-3 py-2 hover:bg-accent cursor-pointer text-base relative transition-all",
           `ml-${depth * 4}`,
           draggedNode === node.id && "opacity-50",
           getDropIndicatorClass("inside")
@@ -272,7 +272,7 @@ export function FileTreeNode({ node, depth = 0 }: FileTreeNodeProps) {
           {creatingNodeParentId === node.id && creatingNodeType && (
             <div
               className={cn(
-                "flex items-center gap-2 px-2 py-1 text-sm",
+                "flex items-center gap-2 px-3 py-2 text-base",
                 `ml-${(depth + 1) * 4}`
               )}
             >

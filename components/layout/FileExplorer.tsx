@@ -96,7 +96,7 @@ export function FileExplorer() {
       )}
 
       {creatingNodeParentId === null && creatingNodeType && (
-        <div className="flex items-center gap-2 px-2 py-1 text-sm">
+        <div className="flex items-center gap-2 px-3 py-2 text-base">
           {creatingNodeType === "folder" ? (
             <Folder className="h-4 w-4" />
           ) : (

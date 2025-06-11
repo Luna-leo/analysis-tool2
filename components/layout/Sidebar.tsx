@@ -146,26 +146,26 @@ export function Sidebar() {
       case "explorer":
         return (
           <>
-            <div className="flex items-center justify-between px-4 py-2">
-              <h2 className="text-sm font-semibold">Explorer</h2>
+            <div className="flex items-center justify-between px-4 py-3">
+              <h2 className="text-base font-semibold">Explorer</h2>
               <div className="flex gap-1">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6"
+                  className="h-8 w-8"
                   onClick={() => setCreatingNode("folder", null)}
                   title="New Folder"
                 >
-                  <FolderPlus className="h-3 w-3" />
+                  <FolderPlus className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6"
+                  className="h-8 w-8"
                   onClick={() => setCreatingNode("file", null)}
                   title="New File"
                 >
-                  <FilePlus className="h-3 w-3" />
+                  <FilePlus className="h-4 w-4" />
                 </Button>
               </div>
             </div>
@@ -175,79 +175,79 @@ export function Sidebar() {
       case "search":
         return (
           <>
-            <h2 className="text-sm font-semibold px-4 py-2">Search</h2>
-            <div className="px-4 py-2 text-sm text-muted-foreground">Search functionality coming soon...</div>
+            <h2 className="text-base font-semibold px-4 py-3">Search</h2>
+            <div className="px-4 py-2 text-base text-muted-foreground">Search functionality coming soon...</div>
           </>
         )
       case "database":
         return (
           <>
-            <h2 className="text-sm font-semibold px-4 py-2">Database</h2>
+            <h2 className="text-base font-semibold px-4 py-3">Database</h2>
             <div className="px-2 space-y-1">
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
+                className="w-full justify-start gap-3 h-auto min-h-[48px] px-3 py-3 text-base font-normal"
                 onClick={handleOpenCSVImport}
               >
-                <FileUp className="h-4 w-4 shrink-0" />
+                <FileUp className="h-5 w-5 shrink-0" />
                 <div className="flex flex-col items-start flex-1">
-                  <span>CSV Import</span>
-                  <span className="text-xs text-muted-foreground">CSVデータのインポート機能</span>
+                  <span className="text-base">CSV Import</span>
+                  <span className="text-sm text-muted-foreground">CSVデータのインポート機能</span>
                 </div>
               </Button>
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
+                className="w-full justify-start gap-3 h-auto min-h-[48px] px-3 py-3 text-base font-normal"
                 onClick={handleOpenEventMaster}
               >
-                <Calendar className="h-4 w-4 shrink-0" />
+                <Calendar className="h-5 w-5 shrink-0" />
                 <div className="flex flex-col items-start flex-1">
-                  <span>Event Master</span>
-                  <span className="text-xs text-muted-foreground">イベント情報</span>
+                  <span className="text-base">Event Master</span>
+                  <span className="text-sm text-muted-foreground">イベント情報</span>
                 </div>
               </Button>
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
+                className="w-full justify-start gap-3 h-auto min-h-[48px] px-3 py-3 text-base font-normal"
                 onClick={handleOpenInterlockMaster}
               >
-                <Gauge className="h-4 w-4 shrink-0" />
+                <Gauge className="h-5 w-5 shrink-0" />
                 <div className="flex flex-col items-start flex-1">
-                  <span>Interlock Master</span>
-                  <span className="text-xs text-muted-foreground">登録済み管理値、プラント・号機毎</span>
+                  <span className="text-base">Interlock Master</span>
+                  <span className="text-sm text-muted-foreground">登録済み管理値、プラント・号機毎</span>
                 </div>
               </Button>
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
+                className="w-full justify-start gap-3 h-auto min-h-[48px] px-3 py-3 text-base font-normal"
                 onClick={() => console.log("Sensor data Master")}
               >
-                <Database className="h-4 w-4 shrink-0" />
+                <Database className="h-5 w-5 shrink-0" />
                 <div className="flex flex-col items-start flex-1">
-                  <span>Sensor data Master</span>
-                  <span className="text-xs text-muted-foreground">プラントとか号機毎のデータ存在期間とか</span>
+                  <span className="text-base">Sensor data Master</span>
+                  <span className="text-sm text-muted-foreground">プラントとか号機毎のデータ存在期間とか</span>
                 </div>
               </Button>
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
+                className="w-full justify-start gap-3 h-auto min-h-[48px] px-3 py-3 text-base font-normal"
                 onClick={() => console.log("Parameter Master")}
                 disabled
               >
-                <Hash className="h-4 w-4 shrink-0" />
+                <Hash className="h-5 w-5 shrink-0" />
                 <div className="flex flex-col items-start flex-1">
-                  <span>Parameter Master</span>
-                  <span className="text-xs text-muted-foreground">パラメータID、パラメータ名、単位</span>
+                  <span className="text-base">Parameter Master</span>
+                  <span className="text-sm text-muted-foreground">パラメータID、パラメータ名、単位</span>
                 </div>
               </Button>
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
+                className="w-full justify-start gap-3 h-auto min-h-[48px] px-3 py-3 text-base font-normal"
                 onClick={() => console.log("Tag Master")}
                 disabled
               >
-                <Tag className="h-4 w-4 shrink-0" />
-                <span>Tag Master</span>
+                <Tag className="h-5 w-5 shrink-0" />
+                <span className="text-base">Tag Master</span>
               </Button>
             </div>
           </>
@@ -255,39 +255,39 @@ export function Sidebar() {
       case "calculator":
         return (
           <>
-            <h2 className="text-sm font-semibold px-4 py-2">Calculator</h2>
+            <h2 className="text-base font-semibold px-4 py-3">Calculator</h2>
             <div className="px-2 space-y-1">
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
+                className="w-full justify-start gap-3 h-auto min-h-[48px] px-3 py-3 text-base font-normal"
                 onClick={handleOpenFormulaMaster}
               >
-                <FunctionSquare className="h-4 w-4 shrink-0" />
+                <FunctionSquare className="h-5 w-5 shrink-0" />
                 <div className="flex flex-col items-start flex-1">
-                  <span>Formula Master</span>
-                  <span className="text-xs text-muted-foreground">登録済み数式</span>
+                  <span className="text-base">Formula Master</span>
+                  <span className="text-sm text-muted-foreground">登録済み数式</span>
                 </div>
               </Button>
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
+                className="w-full justify-start gap-3 h-auto min-h-[48px] px-3 py-3 text-base font-normal"
                 onClick={handleOpenTriggerConditionMaster}
               >
-                <Zap className="h-4 w-4 shrink-0" />
+                <Zap className="h-5 w-5 shrink-0" />
                 <div className="flex flex-col items-start flex-1">
-                  <span>Trigger Condition Master</span>
-                  <span className="text-xs text-muted-foreground">登録済みキック信号コンディション</span>
+                  <span className="text-base">Trigger Condition Master</span>
+                  <span className="text-sm text-muted-foreground">登録済みキック信号コンディション</span>
                 </div>
               </Button>
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
+                className="w-full justify-start gap-3 h-auto min-h-[48px] px-3 py-3 text-base font-normal"
                 onClick={handleOpenUnitConverterFormulaMaster}
               >
-                <ArrowLeftRight className="h-4 w-4 shrink-0" />
+                <ArrowLeftRight className="h-5 w-5 shrink-0" />
                 <div className="flex flex-col items-start flex-1">
-                  <span>Unit Convert Formula Master</span>
-                  <span className="text-xs text-muted-foreground">単位換算式</span>
+                  <span className="text-base">Unit Convert Formula Master</span>
+                  <span className="text-sm text-muted-foreground">単位換算式</span>
                 </div>
               </Button>
             </div>
@@ -296,8 +296,8 @@ export function Sidebar() {
       case "settings":
         return (
           <>
-            <h2 className="text-sm font-semibold px-4 py-2">Settings</h2>
-            <div className="px-4 py-2 text-sm text-muted-foreground">Settings panel coming soon...</div>
+            <h2 className="text-base font-semibold px-4 py-3">Settings</h2>
+            <div className="px-4 py-2 text-base text-muted-foreground">Settings panel coming soon...</div>
           </>
         )
       default:
