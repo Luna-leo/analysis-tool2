@@ -42,11 +42,13 @@ export function useYParameterGrouping({
     const newParams = [...(editingChart.yAxisParams || [])]
     newParams.forEach((param, index) => {
       if (param.axisNo === axisNo) {
+        // Determine the auto value - if explicitly provided use it, otherwise keep current
+        const autoValue = rangeUpdate.auto !== undefined ? rangeUpdate.auto : (param.range?.auto ?? true)
+        
         newParams[index] = {
           ...param,
           range: {
-            ...param.range,
-            ...rangeUpdate,
+            auto: autoValue,
             min: rangeUpdate.min ?? param.range?.min ?? 0,
             max: rangeUpdate.max ?? param.range?.max ?? 100,
           }

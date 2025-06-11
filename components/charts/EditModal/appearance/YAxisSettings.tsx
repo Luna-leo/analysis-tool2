@@ -72,19 +72,20 @@ export function YAxisSettings({ editingChart, setEditingChart }: YAxisSettingsPr
                               checked={axisParam?.range?.auto ?? true}
                               onChange={(e) => {
                                 const newParams = [...(editingChart.yAxisParams || [])]
-                                const paramIndex = newParams.findIndex(param => param.axisNo === axisNo)
-                                if (paramIndex >= 0) {
-                                  newParams[paramIndex] = {
-                                    ...newParams[paramIndex],
-                                    range: {
-                                      ...newParams[paramIndex].range,
-                                      auto: e.target.checked,
-                                      min: newParams[paramIndex].range?.min || 0,
-                                      max: newParams[paramIndex].range?.max || 100
+                                // Update all parameters on the same axis
+                                newParams.forEach((param, index) => {
+                                  if (param.axisNo === axisNo) {
+                                    newParams[index] = {
+                                      ...param,
+                                      range: {
+                                        auto: e.target.checked,
+                                        min: param.range?.min || 0,
+                                        max: param.range?.max || 100
+                                      }
                                     }
                                   }
-                                  setEditingChart({ ...editingChart, yAxisParams: newParams })
-                                }
+                                })
+                                setEditingChart({ ...editingChart, yAxisParams: newParams })
                               }}
                               className="rounded"
                             />
@@ -100,19 +101,20 @@ export function YAxisSettings({ editingChart, setEditingChart }: YAxisSettingsPr
                                 value={axisParam?.range?.min || 0}
                                 onChange={(e) => {
                                   const newParams = [...(editingChart.yAxisParams || [])]
-                                  const paramIndex = newParams.findIndex(param => param.axisNo === axisNo)
-                                  if (paramIndex >= 0) {
-                                    newParams[paramIndex] = {
-                                      ...newParams[paramIndex],
-                                      range: {
-                                        ...newParams[paramIndex].range,
-                                        auto: false,
-                                        min: parseFloat(e.target.value) || 0,
-                                        max: newParams[paramIndex].range?.max || 100
+                                  // Update all parameters on the same axis
+                                  newParams.forEach((param, index) => {
+                                    if (param.axisNo === axisNo) {
+                                      newParams[index] = {
+                                        ...param,
+                                        range: {
+                                          auto: false,
+                                          min: parseFloat(e.target.value) || 0,
+                                          max: param.range?.max || 100
+                                        }
                                       }
                                     }
-                                    setEditingChart({ ...editingChart, yAxisParams: newParams })
-                                  }
+                                  })
+                                  setEditingChart({ ...editingChart, yAxisParams: newParams })
                                 }}
                                 placeholder="Enter min value"
                                 disabled={axisParam?.range?.auto ?? true}
@@ -127,19 +129,20 @@ export function YAxisSettings({ editingChart, setEditingChart }: YAxisSettingsPr
                                 value={axisParam?.range?.max || 100}
                                 onChange={(e) => {
                                   const newParams = [...(editingChart.yAxisParams || [])]
-                                  const paramIndex = newParams.findIndex(param => param.axisNo === axisNo)
-                                  if (paramIndex >= 0) {
-                                    newParams[paramIndex] = {
-                                      ...newParams[paramIndex],
-                                      range: {
-                                        ...newParams[paramIndex].range,
-                                        auto: false,
-                                        min: newParams[paramIndex].range?.min || 0,
-                                        max: parseFloat(e.target.value) || 100
+                                  // Update all parameters on the same axis
+                                  newParams.forEach((param, index) => {
+                                    if (param.axisNo === axisNo) {
+                                      newParams[index] = {
+                                        ...param,
+                                        range: {
+                                          auto: false,
+                                          min: param.range?.min || 0,
+                                          max: parseFloat(e.target.value) || 100
+                                        }
                                       }
                                     }
-                                    setEditingChart({ ...editingChart, yAxisParams: newParams })
-                                  }
+                                  })
+                                  setEditingChart({ ...editingChart, yAxisParams: newParams })
                                 }}
                                 placeholder="Enter max value"
                                 disabled={axisParam?.range?.auto ?? true}

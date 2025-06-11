@@ -6,10 +6,25 @@ import { ChartDataPoint } from "@/components/charts/ChartPreview/utils"
  * This ensures reference lines appear at the same position in all contexts
  */
 export function calculateConsistentYDomain(
-  data: ChartDataPoint[],
+  data: ChartDataPoint[] | Array<{ y: number }>,
   chart: ChartComponent,
   padding: number = 0.1
 ): [number, number] {
+  // Check if any Y parameter has manual range set (auto = false)
+  // Since all parameters on the same axis should have the same range,
+  // we just need to check the first one with a valid range setting
+  const yParamsWithRange = chart.yAxisParams?.filter(param => 
+    param.range && param.range.auto === false && 
+    param.range.min !== undefined && 
+    param.range.max !== undefined
+  )
+  
+  if (yParamsWithRange && yParamsWithRange.length > 0) {
+    // Use the manual range from the first parameter with manual range
+    const manualRange = yParamsWithRange[0].range!
+    return [manualRange.min, manualRange.max]
+  }
+  
   const values: number[] = []
   
   // Add data values

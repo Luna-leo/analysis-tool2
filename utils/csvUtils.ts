@@ -14,7 +14,22 @@ export async function parseCSVFiles(files: File[]): Promise<CSVParseResult> {
     const parsedFiles: ParsedCSVData[] = []
 
     for (const file of files) {
-      const text = await file.text()
+      // First try to read as UTF-8
+      let text = await file.text()
+      
+      // Check if the text appears to be garbled (common with Shift-JIS files)
+      // If so, try reading as Shift-JIS
+      if (containsGarbledText(text)) {
+        try {
+          const buffer = await file.arrayBuffer()
+          const decoder = new TextDecoder('shift-jis')
+          text = decoder.decode(buffer)
+        } catch (encodingError) {
+          // If Shift-JIS decoding fails, fall back to UTF-8
+          console.warn('Failed to decode as Shift-JIS, using UTF-8:', encodingError)
+        }
+      }
+      
       const parsed = parseCSV(text, file.name)
       parsedFiles.push(parsed)
     }
@@ -29,6 +44,15 @@ export async function parseCSVFiles(files: File[]): Promise<CSVParseResult> {
       error: error instanceof Error ? error.message : "CSV解析中にエラーが発生しました"
     }
   }
+}
+
+// Helper function to detect if text might be garbled
+function containsGarbledText(text: string): boolean {
+  // Check for common garbled patterns that occur when Shift-JIS is read as UTF-8
+  // These are Unicode replacement characters and other signs of encoding issues
+  return text.includes('�') || text.includes('ï¿½') || 
+         // Check for BOM at the start that might indicate encoding issues
+         (text.charCodeAt(0) === 0xFEFF && text.includes('�'))
 }
 
 function parseCSV(text: string, fileName: string): ParsedCSVData {
@@ -51,8 +75,8 @@ export function validateCSVStructure(
 ): { valid: boolean; missingColumns?: string[] } {
   // For CASS format, validation is different
   if (dataSourceType === 'CASS' && metadata?.format === 'CASS') {
-    // CASS format should have Datetime column and at least one parameter
-    const hasDatetime = headers.includes('Datetime')
+    // CASS format should have Datetime column (case insensitive) and at least one parameter
+    const hasDatetime = headers.some(h => h.toLowerCase() === 'datetime')
     const hasParameters = headers.length > 1
     
     if (!hasDatetime) {
@@ -64,6 +88,19 @@ export function validateCSVStructure(
     }
     
     return { valid: true }
+  }
+  
+  // Special handling for CASS format when user selected CASS but file is not detected as CASS
+  if (dataSourceType === 'CASS') {
+    // Allow any file with datetime column for CASS data source type
+    const hasDatetime = headers.some(h => h.toLowerCase().includes('datetime') || h.toLowerCase().includes('time'))
+    if (hasDatetime && headers.length > 1) {
+      return { valid: true }
+    }
+    return { 
+      valid: false, 
+      missingColumns: ['Datetime or time column'] 
+    }
   }
   
   // Standard validation for other formats
@@ -111,7 +148,7 @@ export function mapCSVDataToStandardFormat(
     // Map columns using the configured column mappings
     Object.entries(config.columnMappings).forEach(([standardField, sourceField]) => {
       const index = headerIndexMap.get(sourceField.toLowerCase())
-      if (index !== undefined) {
+      if (index !== undefined && row[index] !== null) {
         standardData[standardField] = row[index]
       }
     })
@@ -119,7 +156,7 @@ export function mapCSVDataToStandardFormat(
     // Also include any optional columns if they exist
     config.columns.optional?.forEach(colName => {
       const index = headerIndexMap.get(colName.toLowerCase())
-      if (index !== undefined) {
+      if (index !== undefined && row[index] !== null) {
         standardData[colName] = row[index]
       }
     })

@@ -186,6 +186,10 @@ export function DataSourceTab({
       const parseResult = await parseCSVFiles(data.files)
       
       if (!parseResult.success || !parseResult.data) {
+        console.error('CSV Parse Error:', {
+          files: data.files.map(f => ({ name: f.name, size: f.size })),
+          error: parseResult.error
+        })
         throw new Error(parseResult.error || "CSV解析に失敗しました")
       }
 
@@ -200,7 +204,16 @@ export function DataSourceTab({
         // Validate CSV structure
         const validation = validateCSVStructure(parsedFile.headers, data.dataSourceType, parsedFile.metadata)
         if (!validation.valid) {
-          throw new Error(`ファイル ${parsedFile.metadata?.fileName || 'unknown'} の必須カラムが不足しています: ${validation.missingColumns?.join(', ')}`)
+          console.error('CSV Validation Error:', {
+            fileName: parsedFile.metadata?.fileName,
+            headers: parsedFile.headers,
+            dataSourceType: data.dataSourceType,
+            metadata: parsedFile.metadata,
+            missingColumns: validation.missingColumns
+          })
+          const fileName = parsedFile.metadata?.fileName || 'unknown'
+          const headerInfo = `(検出されたヘッダー: ${parsedFile.headers.slice(0, 5).join(', ')}${parsedFile.headers.length > 5 ? '...' : ''})`
+          throw new Error(`ファイル ${fileName} の必須カラムが不足しています: ${validation.missingColumns?.join(', ')} ${headerInfo}`)
         }
 
         // Convert to standardized format

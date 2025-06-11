@@ -50,8 +50,13 @@ export const renderEmptyChart = ({ g, width, height, chartType, editingChart, sc
     
     const yScale = d3.scaleLinear()
       .domain(yDomain)
-      .nice()
       .range([height, 0])
+    
+    // Only apply nice() if using auto range
+    const firstYParam = editingChart.yAxisParams?.[0]
+    if (!firstYParam || firstYParam.range?.auto !== false) {
+      yScale.nice()
+    }
     
     // Calculate X-axis position
     const xAxisY = calculateXAxisPosition(yDomain, yScale, height)

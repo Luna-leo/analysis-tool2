@@ -139,7 +139,7 @@ export function YAxisGroup({
                       <Input
                         type="number"
                         value={axisRange.min}
-                        onChange={(e) => updateAxisRange(axisNo, { min: parseFloat(e.target.value) || 0 })}
+                        onChange={(e) => updateAxisRange(axisNo, { auto: false, min: parseFloat(e.target.value) || 0 })}
                         disabled={axisRange.auto}
                         className="h-8"
                       />
@@ -149,7 +149,7 @@ export function YAxisGroup({
                       <Input
                         type="number"
                         value={axisRange.max}
-                        onChange={(e) => updateAxisRange(axisNo, { max: parseFloat(e.target.value) || 100 })}
+                        onChange={(e) => updateAxisRange(axisNo, { auto: false, max: parseFloat(e.target.value) || 100 })}
                         disabled={axisRange.auto}
                         className="h-8"
                       />
