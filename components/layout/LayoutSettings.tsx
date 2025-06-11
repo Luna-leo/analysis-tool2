@@ -19,12 +19,17 @@ interface LayoutSettingsProps {
 export function LayoutSettings({ fileId }: LayoutSettingsProps) {
   const { layoutSettingsMap, updateLayoutSettings } = useLayoutStore()
   
-  const currentSettings = layoutSettingsMap[fileId] || {
+  const defaultSettings = {
     showFileName: true,
     showDataSources: true,
     columns: 2,
     rows: 2,
     pagination: true,
+  }
+  
+  const currentSettings = {
+    ...defaultSettings,
+    ...(layoutSettingsMap[fileId] || {})
   }
 
   return (
@@ -49,7 +54,7 @@ export function LayoutSettings({ fileId }: LayoutSettingsProps) {
               <select
                 id="columns"
                 className="w-full h-8 px-2 text-sm border rounded"
-                value={currentSettings.columns}
+                value={currentSettings.columns || 2}
                 onChange={(e) => {
                   updateLayoutSettings(fileId, {
                     columns: parseInt(e.target.value),
@@ -70,7 +75,7 @@ export function LayoutSettings({ fileId }: LayoutSettingsProps) {
               <select
                 id="rows"
                 className="w-full h-8 px-2 text-sm border rounded"
-                value={currentSettings.rows}
+                value={currentSettings.rows || 2}
                 onChange={(e) => {
                   updateLayoutSettings(fileId, {
                     rows: parseInt(e.target.value),
@@ -96,7 +101,7 @@ export function LayoutSettings({ fileId }: LayoutSettingsProps) {
             <input
               type="checkbox"
               id="pagination"
-              checked={currentSettings.pagination}
+              checked={currentSettings.pagination ?? true}
               onChange={(e) => {
                 updateLayoutSettings(fileId, {
                   pagination: e.target.checked,
@@ -120,7 +125,7 @@ export function LayoutSettings({ fileId }: LayoutSettingsProps) {
               <input
                 type="checkbox"
                 id="showFileName"
-                checked={currentSettings.showFileName}
+                checked={currentSettings.showFileName ?? true}
                 onChange={(e) => {
                   updateLayoutSettings(fileId, {
                     showFileName: e.target.checked,
@@ -136,7 +141,7 @@ export function LayoutSettings({ fileId }: LayoutSettingsProps) {
               <input
                 type="checkbox"
                 id="showDataSources"
-                checked={currentSettings.showDataSources}
+                checked={currentSettings.showDataSources ?? true}
                 onChange={(e) => {
                   updateLayoutSettings(fileId, {
                     showDataSources: e.target.checked,

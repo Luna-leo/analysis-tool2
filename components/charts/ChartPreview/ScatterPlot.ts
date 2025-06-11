@@ -2,6 +2,7 @@ import * as d3 from "d3"
 import { ChartComponent } from "@/types"
 import { formatXValue, getXValueForScale } from "@/utils/chartAxisUtils"
 import { calculateXAxisPosition } from "@/utils/chart/axisPositioning"
+import { calculateConsistentYDomain } from "@/utils/chart/scaleUtils"
 
 interface RenderScatterPlotProps {
   g: d3.Selection<SVGGElement, unknown, null, undefined>
@@ -26,7 +27,6 @@ interface RenderScatterPlotProps {
 export function renderScatterPlot({ g, data, width, height, editingChart, scalesRef }: RenderScatterPlotProps) {
   // Clear previous content
   g.selectAll("*").remove()
-
 
   if (data.length === 0) {
     return
@@ -90,11 +90,12 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
       .tickFormat(d3.format(".2f"))
   }
 
-  const yExtent = d3.extent(data, d => d.y) as [number, number]
-  const yPadding = (yExtent[1] - yExtent[0]) * 0.05
+  // Calculate consistent Y domain that includes reference lines
+  const yDomain = calculateConsistentYDomain(data, editingChart, 0.1)
+
 
   const yScale = d3.scaleLinear()
-    .domain([yExtent[0] - yPadding, yExtent[1] + yPadding])
+    .domain(yDomain)
     .range([height, 0])
 
   // Store scales in ref
@@ -110,8 +111,8 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
     .tickFormat(d3.format(".2f"))
 
   // Add axes
-  const yDomain = yScale.domain()
-  const xAxisY = calculateXAxisPosition(yDomain as [number, number], yScale, height)
+  const yScaleDomain = yScale.domain()
+  const xAxisY = calculateXAxisPosition(yScaleDomain as [number, number], yScale, height)
   
   g.append("g")
     .attr("class", "x-axis")

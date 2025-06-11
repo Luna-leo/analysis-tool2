@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
-import type { FileNode } from '@/types'
+import type { FileNode, ChartComponent } from '@/types'
 import { mockFileTree } from '@/data/mockData'
 
 interface OpenTab extends FileNode {
@@ -39,6 +39,7 @@ interface FileActions {
   setDragOverNode: (nodeId: string | null, position: "before" | "after" | "inside" | null) => void
   setDraggedTab: (tabId: string | null) => void
   setDragOverTab: (tabId: string | null) => void
+  updateFileCharts: (fileId: string, charts: ChartComponent[]) => void
 }
 
 export type FileStore = FileState & FileActions
@@ -320,6 +321,31 @@ export const useFileStore = create<FileStore>()(
 
       setDraggedTab: (tabId) => set({ draggedTab: tabId }),
       setDragOverTab: (tabId) => set({ dragOverTab: tabId }),
+
+      updateFileCharts: (fileId, charts) => set((state) => {
+        // Update charts in fileTree
+        const updateChartsInTree = (nodes: FileNode[]): FileNode[] => {
+          return nodes.map(node => {
+            if (node.id === fileId) {
+              return { ...node, charts }
+            }
+            if (node.children) {
+              return { ...node, children: updateChartsInTree(node.children) }
+            }
+            return node
+          })
+        }
+
+        // Update charts in openTabs
+        const newOpenTabs = state.openTabs.map(tab => 
+          tab.id === fileId ? { ...tab, charts } : tab
+        )
+
+        return {
+          fileTree: updateChartsInTree(state.fileTree),
+          openTabs: newOpenTabs
+        }
+      }),
     }),
     {
       name: 'file-store',

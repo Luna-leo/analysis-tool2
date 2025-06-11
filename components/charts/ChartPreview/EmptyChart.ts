@@ -2,6 +2,7 @@ import * as d3 from "d3"
 import { ChartComponent } from "@/types"
 import { getTimeFormat } from "./utils"
 import { calculateXAxisPosition } from "@/utils/chart/axisPositioning"
+import { calculateConsistentYDomain } from "@/utils/chart/scaleUtils"
 
 interface EmptyChartProps {
   g: d3.Selection<SVGGElement, unknown, null, undefined>
@@ -44,8 +45,9 @@ export const renderEmptyChart = ({ g, width, height, chartType, editingChart, sc
         .range([0, width])
     }
     
-    // Y-axis scale fixed to 0-100
-    const yDomain: [number, number] = [0, 100]
+    // Calculate consistent Y domain that includes reference lines
+    const yDomain = calculateConsistentYDomain([], editingChart, 0.1)
+    
     const yScale = d3.scaleLinear()
       .domain(yDomain)
       .nice()

@@ -42,7 +42,7 @@ export const useLayoutStore = create<LayoutStore>()(
         layoutSettingsMap: {
           ...state.layoutSettingsMap,
           [fileId]: {
-            ...state.layoutSettingsMap[fileId],
+            ...(state.layoutSettingsMap[fileId] || defaultLayoutSettings),
             ...settings,
           },
         },
@@ -52,7 +52,7 @@ export const useLayoutStore = create<LayoutStore>()(
         chartSettingsMap: {
           ...state.chartSettingsMap,
           [fileId]: {
-            ...state.chartSettingsMap[fileId],
+            ...(state.chartSettingsMap[fileId] || defaultChartSettings),
             ...settings,
           },
         },

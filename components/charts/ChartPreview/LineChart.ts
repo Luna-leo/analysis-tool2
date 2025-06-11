@@ -3,6 +3,7 @@ import { ChartComponent, MarkerType } from "@/types"
 import { ChartDataPoint } from "@/types/chart-data"
 import { getTimeFormat } from "./utils"
 import { calculateXAxisPosition } from "@/utils/chart/axisPositioning"
+import { calculateConsistentYDomain } from "@/utils/chart/scaleUtils"
 
 interface ChartDataItem {
   timestamp: Date | number

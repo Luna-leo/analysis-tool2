@@ -97,6 +97,7 @@ export interface ChartComponent {
     columns: string[]
     lastUpdated: string
   }
+  selectedDataSources?: EventInfo[]
   xAxisType?: AxisType
   xAxisRange?: {
     auto?: boolean

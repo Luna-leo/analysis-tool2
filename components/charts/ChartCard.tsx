@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { ChartComponent } from "@/types"
 import { useUIStore } from "@/stores/useUIStore"
+import { ChartPreviewGraph } from "./ChartPreviewGraph"
 
 interface ChartCardProps {
   chart: ChartComponent
@@ -59,20 +60,15 @@ export const ChartCard = React.memo(({ chart, isCompactLayout, cardMinHeight, ch
         <span className="truncate">{chart.title}</span>
       </h3>
       <div
-        className="bg-muted rounded flex items-center justify-center flex-1"
+        className="bg-muted rounded flex items-center justify-center flex-1 overflow-hidden"
         style={{
           minHeight: `${chartMinHeight}px`,
         }}
       >
-        <div className="text-center">
-          <div className={cn(isCompactLayout ? "text-2xl mb-1" : "text-4xl mb-2")}>📊</div>
-          <p className={cn("text-muted-foreground", isCompactLayout ? "text-xs" : "text-sm")}>
-            Chart Preview
-          </p>
-          <p className={cn("text-muted-foreground mt-1", isCompactLayout ? "text-xs" : "text-sm")}>
-            {chart.data.length} data points
-          </p>
-        </div>
+        <ChartPreviewGraph 
+          editingChart={chart} 
+          selectedDataSourceItems={chart.selectedDataSources || []} 
+        />
       </div>
     </div>
   )
