@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Plus, Minus, ChevronDown } from 'lucide-react';
 import { SearchCondition } from '@/types';
 import { cn } from '@/lib/utils';
-import { generateConditionId, operatorLabels } from '@/lib/conditionUtils';
+import { generateConditionId, operatorLabels, isBooleanOperator } from '@/lib/conditionUtils';
 
 interface ImprovedManualConditionBuilderProps {
   conditions: SearchCondition[];
@@ -158,19 +158,21 @@ export function ImprovedManualConditionBuilder({
             onChange={(e) => updateCondition(index, { 
               operator: e.target.value as SearchCondition['operator'] 
             })}
-            className="w-16 h-8 px-2 border rounded text-sm"
+            className="w-32 h-8 px-2 border rounded text-sm"
           >
             {Object.entries(operatorLabels).map(([key, label]) => (
               <option key={key} value={key}>{label}</option>
             ))}
           </select>
           
-          <Input
-            placeholder="Value"
-            value={condition.value || ''}
-            onChange={(e) => updateCondition(index, { value: e.target.value })}
-            className="w-24 h-8 text-sm"
-          />
+          {!isBooleanOperator(condition.operator) && (
+            <Input
+              placeholder="Value"
+              value={condition.value || ''}
+              onChange={(e) => updateCondition(index, { value: e.target.value })}
+              className="w-24 h-8 text-sm"
+            />
+          )}
 
           <div className="flex gap-1">
             <Button

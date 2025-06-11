@@ -15,7 +15,7 @@ export type TimeUnit = "sec" | "min" | "hr"
 
 export type DurationUnit = "seconds" | "minutes" | "hours"
 
-export type OperatorType = "gt" | "lt" | "eq" | "gte" | "lte" | "ne"
+export type OperatorType = "gt" | "lt" | "eq" | "gte" | "lte" | "ne" | "crossAbove" | "crossBelow" | "isOn" | "isOff" | "switchedOn" | "switchedOff"
 
 export type LogicalOperator = "AND" | "OR"
 

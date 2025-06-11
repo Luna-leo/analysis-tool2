@@ -1,4 +1,5 @@
 import { SearchCondition } from '@/types'
+import { isBooleanOperator } from '@/lib/conditionUtils'
 
 /**
  * Validates if all conditions in the array have required fields filled
@@ -7,7 +8,11 @@ export function validateConditions(conditions: SearchCondition[]): boolean {
   for (const condition of conditions) {
     if (condition.type === 'condition') {
       // Check if all required fields are filled
-      if (!condition.parameter || !condition.operator || !condition.value) {
+      if (!condition.parameter || !condition.operator) {
+        return false
+      }
+      // For boolean operators, value is not required
+      if (!isBooleanOperator(condition.operator) && !condition.value) {
         return false
       }
     } else if (condition.type === 'group') {

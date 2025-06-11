@@ -47,6 +47,33 @@ export const predefinedConditions: PredefinedCondition[] = [
         conditions: [
           { id: 'cond_pressure_critical', type: 'condition' as const, parameter: 'pressure', operator: 'gt' as const, value: '12' },
           { id: 'cond_flow_critical', type: 'condition' as const, parameter: 'flow', operator: 'lt' as const, value: '30', logicalOperator: 'OR' as const }
+        ],
+        logicalOperator: 'AND' as const
+      }
+    ]
+  },
+  {
+    id: 'pump_operation',
+    name: 'Pump Operation Status',
+    description: 'Monitor pump switch and valve status',
+    expression: 'pump_switch is ON AND valve_01_status is ON',
+    conditions: [
+      { id: 'cond_pump_on', type: 'condition' as const, parameter: 'pump_switch', operator: 'isOn' as const, value: null },
+      { id: 'cond_valve_on', type: 'condition' as const, parameter: 'valve_01_status', operator: 'isOn' as const, value: null, logicalOperator: 'AND' as const }
+    ]
+  },
+  {
+    id: 'equipment_startup',
+    name: 'Equipment Startup Detection',
+    description: 'Detect when motor starts and valve opens',
+    expression: 'motor_01 switched ON OR valve_02_status switched ON',
+    conditions: [
+      { 
+        id: 'cond_startup_group', 
+        type: 'group' as const,
+        conditions: [
+          { id: 'cond_motor_start', type: 'condition' as const, parameter: 'motor_01', operator: 'switchedOn' as const, value: null },
+          { id: 'cond_valve_open', type: 'condition' as const, parameter: 'valve_02_status', operator: 'switchedOn' as const, value: null, logicalOperator: 'OR' as const }
         ]
       }
     ]
