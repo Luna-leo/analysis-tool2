@@ -308,46 +308,46 @@ export function Sidebar() {
   return (
     <>
       {/* Activity Bar */}
-      <div className="w-12 bg-muted/50 border-r flex flex-col items-center py-2 gap-1">
+      <div className="w-16 bg-muted/50 border-r flex flex-col items-center py-2 gap-1">
         <Button
           variant={activeView === "explorer" ? "secondary" : "ghost"}
           size="icon"
-          className="h-10 w-10"
+          className="h-14 w-14 p-2 [&_svg]:size-auto"
           onClick={() => handleViewClick("explorer")}
         >
-          <ChartLine className="h-5 w-5" />
+          <ChartLine className="h-full w-full" />
         </Button>
         <Button
           variant={activeView === "search" ? "secondary" : "ghost"}
           size="icon"
-          className="h-10 w-10"
+          className="h-14 w-14 p-2 [&_svg]:size-auto"
           onClick={() => handleViewClick("search")}
         >
-          <Search className="h-5 w-5" />
+          <Search className="h-full w-full" />
         </Button>
         <Button
           variant={activeView === "database" ? "secondary" : "ghost"}
           size="icon"
-          className="h-10 w-10"
+          className="h-14 w-14 p-2 [&_svg]:size-auto"
           onClick={() => handleViewClick("database")}
         >
-          <Database className="h-5 w-5" />
+          <Database className="h-full w-full" />
         </Button>
         <Button
           variant={activeView === "calculator" ? "secondary" : "ghost"}
           size="icon"
-          className="h-10 w-10"
+          className="h-14 w-14 p-2 [&_svg]:size-auto"
           onClick={() => handleViewClick("calculator")}
         >
-          <Calculator className="h-5 w-5" />
+          <Calculator className="h-full w-full" />
         </Button>
         <Button
           variant={activeView === "settings" ? "secondary" : "ghost"}
           size="icon"
-          className="h-10 w-10"
+          className="h-14 w-14 p-2 [&_svg]:size-auto"
           onClick={() => handleViewClick("settings")}
         >
-          <Settings className="h-5 w-5" />
+          <Settings className="h-full w-full" />
         </Button>
       </div>
 
