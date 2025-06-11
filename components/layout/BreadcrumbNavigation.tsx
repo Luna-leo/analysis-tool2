@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import { FileNode } from "@/types"
 import { mockFileTree } from "@/data/mockData"
+import { LayoutSettings } from "./LayoutSettings"
 
 interface BreadcrumbNavigationProps {
   activeTab: string
@@ -44,30 +45,42 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
   const filePath = getFilePath(currentFile.id, mockFileTree)
   if (!filePath) return null
 
+  // Check if this is a graph page (has charts/dataSources)
+  const isGraphPage = (currentFile as any).charts || (currentFile as any).dataSources
+
   return (
     <div className="border-b bg-background px-4 py-2">
-      <Breadcrumb>
-        <BreadcrumbList>
-          {filePath.map((pathItem, index) => (
-            <React.Fragment key={index}>
-              {index === filePath.length - 1 ? (
-                <BreadcrumbItem>
-                  <BreadcrumbPage>{pathItem}</BreadcrumbPage>
-                </BreadcrumbItem>
-              ) : (
-                <>
+      <div className="flex items-center justify-between">
+        <Breadcrumb>
+          <BreadcrumbList>
+            {filePath.map((pathItem, index) => (
+              <React.Fragment key={index}>
+                {index === filePath.length - 1 ? (
                   <BreadcrumbItem>
-                    <BreadcrumbLink href="#" className="text-muted-foreground">
-                      {pathItem}
-                    </BreadcrumbLink>
+                    <BreadcrumbPage>{pathItem}</BreadcrumbPage>
                   </BreadcrumbItem>
-                  <BreadcrumbSeparator />
-                </>
-              )}
-            </React.Fragment>
-          ))}
-        </BreadcrumbList>
-      </Breadcrumb>
+                ) : (
+                  <>
+                    <BreadcrumbItem>
+                      <BreadcrumbLink href="#" className="text-muted-foreground">
+                        {pathItem}
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator />
+                  </>
+                )}
+              </React.Fragment>
+            ))}
+          </BreadcrumbList>
+        </Breadcrumb>
+        
+        {/* Layout Settings - show only for graph pages */}
+        {isGraphPage && (
+          <div className="flex items-center">
+            <LayoutSettings fileId={activeTab} />
+          </div>
+        )}
+      </div>
     </div>
   )
 }
