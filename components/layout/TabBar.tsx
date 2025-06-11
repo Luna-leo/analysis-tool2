@@ -5,7 +5,6 @@ import { X, ChartLine, Database, Calculator, FunctionSquare, Zap, ArrowLeftRight
 import { cn } from "@/lib/utils"
 import { FileNode } from "@/types"
 import { useFileStore } from "@/stores/useFileStore"
-import { Button } from "@/components/ui/button"
 
 interface TabBarProps {
   openTabs: FileNode[]
@@ -121,7 +120,7 @@ export function TabBar({ openTabs }: TabBarProps) {
       {/* Tabs container */}
       <div 
         ref={scrollContainerRef}
-        className="flex gap-1 overflow-x-auto scrollbar-hide px-12 scroll-smooth h-full items-center flex-1"
+        className="flex gap-1 overflow-x-auto scrollbar-hide pl-2 pr-12 scroll-smooth h-full items-center flex-1"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {openTabs.map((tab) => (
