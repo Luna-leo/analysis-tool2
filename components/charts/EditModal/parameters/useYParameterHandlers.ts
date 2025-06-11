@@ -40,7 +40,9 @@ export function useYParameterHandlers({
       ...newParams[index],
       parameter: formula.name,
       formulaId: formula.id,
-      formulaDefinition: formulaMasterToDefinition(formula)
+      formulaDefinition: formulaMasterToDefinition(formula),
+      unit: undefined,  // Reset to formula's default unit
+      unitConversionId: undefined  // Clear conversion
     }
     setEditingChart({ ...editingChart, yAxisParams: newParams })
     
@@ -99,7 +101,9 @@ export function useYParameterHandlers({
         interlockSource: "master",
         interlockDefinition,
         parameter: interlockDefinition.name,
-        selectedThresholds: finalSelectedThresholds
+        selectedThresholds: finalSelectedThresholds,
+        unit: undefined,  // Reset to interlock's default unit
+        unitConversionId: undefined  // Clear conversion
       }
       setEditingChart({ ...editingChart, yAxisParams: newParams })
       setEditingInterlockIndex(null)
@@ -111,7 +115,9 @@ export function useYParameterHandlers({
       interlockDefinition,
       parameter: interlockDefinition.name,
       interlockSource: currentParam?.interlockSource || "custom",
-      selectedThresholds: finalSelectedThresholds
+      selectedThresholds: finalSelectedThresholds,
+      unit: undefined,  // Reset to interlock's default unit
+      unitConversionId: undefined  // Clear conversion
     }
     setEditingChart({ ...editingChart, yAxisParams: newParams })
     setEditingInterlockIndex(null)
@@ -124,6 +130,8 @@ export function useYParameterHandlers({
       parameterType: newType,
       parameter: "",
       axisNo: 1,
+      unit: undefined,  // Reset unit when type changes
+      unitConversionId: undefined,  // Clear conversion
       ...(newType !== "Interlock" && {
         interlockId: undefined,
         interlockSource: undefined,
@@ -167,7 +175,9 @@ export function useYParameterHandlers({
           ...newParams[index],
           parameter: selectedFormula.name,
           formulaId: value,
-          formulaDefinition: formulaMasterToDefinition(selectedFormula)
+          formulaDefinition: formulaMasterToDefinition(selectedFormula),
+          unit: undefined,  // Reset to formula's default unit
+          unitConversionId: undefined  // Clear conversion
         }
         setEditingChart({ ...editingChart, yAxisParams: newParams })
       }
@@ -225,7 +235,9 @@ export function useYParameterHandlers({
           interlockSource: "master",
           interlockDefinition: selectedMaster.definition,
           parameter: selectedMaster.name,
-          selectedThresholds: allThresholdIds
+          selectedThresholds: allThresholdIds,
+          unit: undefined,  // Reset to interlock's default unit
+          unitConversionId: undefined  // Clear conversion
         }
         setEditingChart({ ...editingChart, yAxisParams: newParams })
       }

@@ -1,16 +1,18 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useMemo } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Plus, ChevronDown, ChevronRight, Trash2 } from "lucide-react"
+import { ChevronDown, ChevronRight, Trash2, Plus } from "lucide-react"
 import { ChartComponent, InterlockMaster, EventInfo } from "@/types"
 import { FormulaMaster } from "@/data/formulaMaster"
 import { ParameterRow } from "./ParameterRow"
+import { useUnitValidation } from "@/hooks/useUnitValidation"
+import { UnitMismatchAlert } from "./UnitMismatchAlert"
 
 interface YAxisGroupProps {
   axisNo: number
@@ -73,6 +75,13 @@ export function YAxisGroup({
   selectedDataSourceItems,
 }: YAxisGroupProps) {
   const [isOpen, setIsOpen] = useState(true)
+  
+  // Validate units for this axis
+  const unitValidation = useUnitValidation({
+    axisNo,
+    paramIndexes,
+    chartParams: editingChart.yAxisParams,
+  })
 
   return (
     <div className="border rounded-lg bg-muted/10">
@@ -190,6 +199,7 @@ export function YAxisGroup({
               <div className="flex gap-2 mb-1 px-1 text-xs font-medium text-muted-foreground border-b pb-1 mt-1">
                 <div className="w-24">Type</div>
                 <div className="flex-1">Parameter</div>
+                <div className="w-20">Display Unit</div>
                 <div className="w-7 flex justify-center">
                   <Button
                     variant="outline"
@@ -227,6 +237,14 @@ export function YAxisGroup({
                 ))}
 
               </div>
+
+              {/* Unit mismatch warning */}
+              <UnitMismatchAlert
+                unitValidation={unitValidation}
+                paramIndexes={paramIndexes}
+                editingChart={editingChart}
+                setEditingChart={setEditingChart}
+              />
             </div>
           </div>
         </CollapsibleContent>

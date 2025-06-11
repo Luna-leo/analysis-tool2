@@ -9,6 +9,7 @@ import { mockInterlockMaster } from "@/data/interlockMaster"
 import { FormulaParameterRow } from "./FormulaParameterRow"
 import { InterlockParameterRow } from "./InterlockParameterRow"
 import { RegularParameterRow } from "./RegularParameterRow"
+import { UnitSelector } from "../UnitSelector"
 
 interface ParameterRowProps {
   index: number
@@ -117,6 +118,13 @@ export const ParameterRow = React.memo(({
           )}
         </div>
       </div>
+
+      <UnitSelector
+        index={index}
+        param={param}
+        editingChart={editingChart}
+        setEditingChart={setEditingChart}
+      />
 
       <div className="w-7">
         <Button

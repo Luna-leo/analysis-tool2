@@ -133,6 +133,9 @@ export interface ChartComponent {
     // For Formula type
     formulaId?: string
     formulaDefinition?: FormulaDefinition
+    // Unit conversion
+    unit?: string
+    unitConversionId?: string
   }>
 }
 
@@ -189,6 +192,14 @@ export interface SearchCondition {
   // For groups
   logicalOperator?: LogicalOperator
   conditions?: SearchCondition[]
+}
+
+export interface UnitValidationResult {
+  hasUnitMismatch: boolean
+  units: string[]
+  canBeConverted: boolean
+  suggestedUnit?: string
+  parameterIndices: number[]
 }
 
 export interface ManualPeriod {

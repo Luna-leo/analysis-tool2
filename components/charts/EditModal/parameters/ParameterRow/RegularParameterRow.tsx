@@ -104,7 +104,13 @@ export function RegularParameterRow({
 
   const handleParameterSelect = (paramKey: string) => {
     const newParams = [...(editingChart.yAxisParams || [])]
-    newParams[index] = { ...newParams[index], parameter: paramKey }
+    // Reset unit when parameter changes
+    newParams[index] = { 
+      ...newParams[index], 
+      parameter: paramKey,
+      unit: undefined,  // Reset to default unit
+      unitConversionId: undefined  // Clear any conversion
+    }
     setEditingChart({ ...editingChart, yAxisParams: newParams })
     setOpen(false)
   }
