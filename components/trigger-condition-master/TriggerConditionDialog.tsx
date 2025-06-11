@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from "react"
 import { PredefinedCondition } from "@/data/predefinedConditions"
-import { SearchCondition } from "@/types"
-import { formatConditionExpression, formatConditionExpressionToJSX } from "@/lib/conditionUtils"
+import { formatConditionExpression } from "@/lib/conditionUtils"
 import { ConditionBuilderFullscreen } from "@/components/dialogs/ConditionBuilderFullscreen"
 import { validateConditionForm, getDialogTitle } from "@/utils/conditionValidation"
 import { useSearchConditions } from "@/hooks/useSearchConditions"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface TriggerConditionDialogProps {
   open: boolean
@@ -36,7 +36,6 @@ export function TriggerConditionDialog({
     loadedFromPredefined,
     loadPredefinedCondition,
     resetToFresh,
-    showSaveDialog,
     loadSavedCondition,
     deleteSavedCondition,
     getCurrentExpressionJSX
@@ -76,35 +75,42 @@ export function TriggerConditionDialog({
 
   const isValid = validateConditionForm(name, searchConditions)
 
-  if (!open) return null
-
   return (
-    <ConditionBuilderFullscreen
-      conditionMode={conditionMode}
-      onConditionModeChange={setConditionMode}
-      selectedPredefinedCondition={selectedPredefinedCondition}
-      onSelectedPredefinedConditionChange={setSelectedPredefinedCondition}
-      loadedFromPredefined={loadedFromPredefined}
-      searchConditions={searchConditions}
-      onSearchConditionsChange={setSearchConditions}
-      savedConditions={savedConditions}
-      getCurrentExpressionJSX={getCurrentExpressionJSX}
-      onLoadPredefinedCondition={loadPredefinedCondition}
-      onResetToFresh={resetToFresh}
-      onShowSaveDialog={showSaveDialog}
-      onLoadSavedCondition={loadSavedCondition}
-      onDeleteSavedCondition={deleteSavedCondition}
-      onSave={handleSave}
-      onClose={() => onOpenChange(false)}
-      canSave={isValid}
-      title={getDialogTitle(mode)}
-      isFullscreen={true}
-      onToggleFullscreen={() => {}}
-      conditionName={name}
-      conditionDescription={description}
-      onConditionNameChange={setName}
-      onConditionDescriptionChange={setDescription}
-      saveButtonText={mode === "edit" ? "Update Condition" : "Create Condition"}
-    />
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-7xl h-[90vh] p-0 gap-0 overflow-hidden">
+        <DialogHeader className="sr-only">
+          <DialogTitle>{getDialogTitle(mode)}</DialogTitle>
+        </DialogHeader>
+        <div className="h-full flex flex-col">
+          <ConditionBuilderFullscreen
+            conditionMode={conditionMode}
+            onConditionModeChange={setConditionMode}
+            selectedPredefinedCondition={selectedPredefinedCondition}
+            onSelectedPredefinedConditionChange={setSelectedPredefinedCondition}
+            loadedFromPredefined={loadedFromPredefined}
+            searchConditions={searchConditions}
+            onSearchConditionsChange={setSearchConditions}
+            savedConditions={savedConditions}
+            getCurrentExpressionJSX={getCurrentExpressionJSX}
+            onLoadPredefinedCondition={loadPredefinedCondition}
+            onResetToFresh={resetToFresh}
+            onShowSaveDialog={() => {}}
+            onLoadSavedCondition={loadSavedCondition}
+            onDeleteSavedCondition={deleteSavedCondition}
+            onSave={handleSave}
+            onClose={() => onOpenChange(false)}
+            canSave={isValid}
+            title={getDialogTitle(mode)}
+            isFullscreen={false}
+            onToggleFullscreen={() => {}}
+            conditionName={name}
+            conditionDescription={description}
+            onConditionNameChange={setName}
+            onConditionDescriptionChange={setDescription}
+            saveButtonText={mode === "edit" ? "Update Condition" : "Create Condition"}
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
