@@ -119,16 +119,68 @@ export function ConditionBuilderFullscreen({
                 </CardContent>
               </Card>
 
-              {/* Tips */}
+              {/* Condition Structure */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-sm">Tips</CardTitle>
+                  <CardTitle className="text-sm">Condition Structure</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2 text-sm text-muted-foreground">
-                  <p>• Use AND to require all conditions to be met</p>
-                  <p>• Use OR when any condition can be met</p>
-                  <p>• Group conditions with parentheses for complex logic</p>
-                  <p>• Save frequently used conditions for reuse</p>
+                <CardContent className="space-y-3">
+                  {/* Basic Structure */}
+                  <div>
+                    <p className="text-xs font-medium mb-1.5">Basic Structure</p>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-xs">
+                        <div className="w-20 px-2 py-1 bg-slate-100 rounded text-center">parameter</div>
+                        <div className="w-16 px-2 py-1 bg-teal-100 rounded text-center">operator</div>
+                        <div className="w-16 px-2 py-1 bg-indigo-100 rounded text-center">value</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Logical Operators */}
+                  <div>
+                    <p className="text-xs font-medium mb-1.5">Logical Operators</p>
+                    <div className="flex items-center gap-2">
+                      <div className="px-3 py-1 bg-rose-100 rounded text-xs font-medium">AND</div>
+                      <div className="px-3 py-1 bg-rose-100 rounded text-xs font-medium">OR</div>
+                    </div>
+                  </div>
+                  
+                  {/* Operators */}
+                  <div>
+                    <p className="text-xs font-medium mb-1.5">Numeric Operators</p>
+                    <div className="grid grid-cols-4 gap-1 text-xs">
+                      <div className="px-2 py-1 bg-teal-50 rounded text-center">></div>
+                      <div className="px-2 py-1 bg-teal-50 rounded text-center">>=</div>
+                      <div className="px-2 py-1 bg-teal-50 rounded text-center">&lt;</div>
+                      <div className="px-2 py-1 bg-teal-50 rounded text-center">&lt;=</div>
+                      <div className="px-2 py-1 bg-teal-50 rounded text-center">=</div>
+                      <div className="px-2 py-1 bg-teal-50 rounded text-center">!=</div>
+                      <div className="px-2 py-1 bg-teal-50 rounded text-center col-span-2">crosses above</div>
+                      <div className="px-2 py-1 bg-teal-50 rounded text-center col-span-2">crosses below</div>
+                    </div>
+                  </div>
+                  
+                  {/* Switch Operators */}
+                  <div>
+                    <p className="text-xs font-medium mb-1.5">Switch Operators</p>
+                    <div className="grid grid-cols-2 gap-1 text-xs">
+                      <div className="px-2 py-1 bg-emerald-50 rounded text-center">is ON</div>
+                      <div className="px-2 py-1 bg-emerald-50 rounded text-center">is OFF</div>
+                      <div className="px-2 py-1 bg-emerald-50 rounded text-center">switched ON</div>
+                      <div className="px-2 py-1 bg-emerald-50 rounded text-center">switched OFF</div>
+                    </div>
+                  </div>
+                  
+                  {/* Grouping */}
+                  <div>
+                    <p className="text-xs font-medium mb-1.5">Grouping</p>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="text-amber-600 font-bold text-base">(</span>
+                      <span className="text-muted-foreground">conditions</span>
+                      <span className="text-amber-600 font-bold text-base">)</span>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>
