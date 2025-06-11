@@ -35,7 +35,7 @@ export const UnitConverterFormulaMasterPage: React.FC = () => {
           itemName: 'formula',
           viewType: 'cards',
           cardRenderer: renderFormulaCard,
-          cardColumns: 2,
+          cardColumns: 3,
           DialogComponent: UnitConverterFormulaDialog as any,
           enableDuplicate: true,
           enableCategories: true,
