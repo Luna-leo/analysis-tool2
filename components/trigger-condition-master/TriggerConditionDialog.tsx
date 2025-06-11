@@ -48,11 +48,13 @@ export function TriggerConditionDialog({
         setName(mode === "duplicate" ? `${initialCondition.name} (Copy)` : initialCondition.name)
         setDescription(initialCondition.description || "")
         setSearchConditions(JSON.parse(JSON.stringify(initialCondition.conditions))) // Deep clone
+        setConditionMode('manual') // Set to manual mode when editing existing conditions
       } else {
         // Reset for new condition
         setName("")
         setDescription("")
         resetToFresh()
+        setConditionMode('manual') // Set to manual mode for new conditions
       }
     }
   }, [open, initialCondition, mode])
