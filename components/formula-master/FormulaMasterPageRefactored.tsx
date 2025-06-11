@@ -20,14 +20,12 @@ export function FormulaMasterPageRefactored() {
   const renderFormulaCard = (formula: ExtendedFormulaMaster) => (
     <FormulaCard
       formula={formula as FormulaMaster}
-      onEdit={() => {}} // Will be handled by MasterPageTemplate
-      onDuplicate={() => {}} // Will be handled by MasterPageTemplate
-      onDelete={() => {}} // Will be handled by MasterPageTemplate
     />
   )
 
   return (
-    <MasterPageTemplate<ExtendedFormulaMaster>
+    <>
+      <MasterPageTemplate<ExtendedFormulaMaster>
       config={{
         title: 'Formula Master',
         icon: FunctionSquare,
@@ -52,5 +50,20 @@ export function FormulaMasterPageRefactored() {
         getCategories: store.getCategories
       }}
     />
+    <FormulaRegistrationDialog
+      open={store.isDialogOpen}
+      onOpenChange={store.closeDialog}
+      onSave={(formula) => {
+        if (store.dialogMode === 'edit' && store.selectedFormula) {
+          store.updateFormula(store.selectedFormula.id, formula)
+        } else {
+          store.addFormula(formula)
+        }
+        store.closeDialog()
+      }}
+      initialFormula={store.selectedFormula || undefined}
+      mode={store.dialogMode}
+    />
+    </>
   )
 }

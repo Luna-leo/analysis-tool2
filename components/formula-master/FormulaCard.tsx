@@ -8,18 +8,18 @@ import { Edit2, Copy, Trash2 } from 'lucide-react'
 import { FormulaMaster } from '@/data/formulaMaster'
 import { FormulaDisplay } from './FormulaDisplay'
 import { formatDateToLocalDateString } from '@/utils/dateUtils'
+import { useFormulaMasterStore } from '@/stores/useFormulaMasterStore'
 
 interface FormulaCardProps {
   formula: FormulaMaster
-  onEdit: (formula: FormulaMaster) => void
-  onDuplicate: (formula: FormulaMaster) => void
-  onDelete: (formula: FormulaMaster) => void
 }
 
-export const FormulaCard = React.memo(({ formula, onEdit, onDuplicate, onDelete }: FormulaCardProps) => {
-  const handleDuplicate = useCallback(() => onDuplicate(formula), [onDuplicate, formula])
-  const handleEdit = useCallback(() => onEdit(formula), [onEdit, formula])
-  const handleDelete = useCallback(() => onDelete(formula), [onDelete, formula])
+export const FormulaCard = React.memo(({ formula }: FormulaCardProps) => {
+  const { openDialog, duplicateFormula, deleteFormula } = useFormulaMasterStore()
+  
+  const handleDuplicate = useCallback(() => duplicateFormula(formula.id), [duplicateFormula, formula.id])
+  const handleEdit = useCallback(() => openDialog('edit', formula), [openDialog, formula])
+  const handleDelete = useCallback(() => deleteFormula(formula.id), [deleteFormula, formula.id])
   return (
     <Card className="group hover:shadow-md transition-shadow">
       <CardHeader className="pb-3">

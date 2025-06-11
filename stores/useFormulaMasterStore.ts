@@ -9,15 +9,24 @@ interface FormulaMasterStore {
   searchQuery: string
   selectedCategory: string
   
+  // Dialog state
+  isDialogOpen: boolean
+  dialogMode: 'create' | 'edit' | 'duplicate'
+  selectedFormula: FormulaMaster | null
+  
   // Actions
   setFormulas: (formulas: FormulaMaster[]) => void
   addFormula: (formula: FormulaMaster) => void
   updateFormula: (id: string, formula: Partial<FormulaMaster>) => void
   deleteFormula: (id: string) => void
-  duplicateFormula: (id: string, newName: string) => void
+  duplicateFormula: (id: string) => void
   setSearchQuery: (query: string) => void
   setSelectedCategory: (category: string) => void
   setIsLoading: (loading: boolean) => void
+  
+  // Dialog management
+  openDialog: (mode: 'create' | 'edit' | 'duplicate', formula?: FormulaMaster) => void
+  closeDialog: () => void
   
   // Computed
   getFilteredFormulas: () => FormulaMaster[]
@@ -30,6 +39,11 @@ export const useFormulaMasterStore = create<FormulaMasterStore>((set, get) => ({
   isLoading: false,
   searchQuery: '',
   selectedCategory: 'all',
+  
+  // Dialog state
+  isDialogOpen: false,
+  dialogMode: 'create',
+  selectedFormula: null,
   
   setFormulas: (formulas) => set({ formulas }),
   
@@ -49,7 +63,7 @@ export const useFormulaMasterStore = create<FormulaMasterStore>((set, get) => ({
     formulas: state.formulas.filter(formula => formula.id !== id)
   })),
   
-  duplicateFormula: (id, newName) => {
+  duplicateFormula: (id) => {
     const state = get()
     const originalFormula = state.formulas.find(f => f.id === id)
     if (!originalFormula) return
@@ -57,7 +71,7 @@ export const useFormulaMasterStore = create<FormulaMasterStore>((set, get) => ({
     const newFormula: FormulaMaster = {
       ...originalFormula,
       id: `formula_${Date.now()}`,
-      name: newName,
+      name: `${originalFormula.name} (Copy)`,
       createdAt: formatDateToISO(new Date()),
       updatedAt: formatDateToISO(new Date())
     }
@@ -65,6 +79,9 @@ export const useFormulaMasterStore = create<FormulaMasterStore>((set, get) => ({
     set((state) => ({
       formulas: [...state.formulas, newFormula]
     }))
+    
+    // Open edit dialog for the duplicated formula
+    get().openDialog('edit', newFormula)
   },
   
   setSearchQuery: (query) => set({ searchQuery: query }),
@@ -72,6 +89,18 @@ export const useFormulaMasterStore = create<FormulaMasterStore>((set, get) => ({
   setSelectedCategory: (category) => set({ selectedCategory: category }),
   
   setIsLoading: (loading) => set({ isLoading: loading }),
+  
+  // Dialog management
+  openDialog: (mode, formula) => set({
+    isDialogOpen: true,
+    dialogMode: mode,
+    selectedFormula: formula || null
+  }),
+  
+  closeDialog: () => set({
+    isDialogOpen: false,
+    selectedFormula: null
+  }),
   
   getFilteredFormulas: () => {
     const state = get()
