@@ -114,23 +114,9 @@ export function ImprovedManualConditionBuilder({
   };
 
   const renderCondition = (condition: SearchCondition, index: number, isNested = false, isGroupChild = false) => {
-    if (condition.type === 'group') {
-      return (
-        <ConditionGroup
-          key={condition.id}
-          group={condition}
-          index={index}
-          isNested={isNested}
-          onUpdate={updateCondition}
-          onRemove={removeCondition}
-          renderCondition={renderCondition}
-        />
-      );
-    }
-
     return (
       <div key={condition.id}>
-        {/* Logical operator for non-first items */}
+        {/* Logical operator for non-first items - applies to both conditions and groups */}
         {index > 0 && (
           <div className="flex items-center mb-2">
             <select
@@ -146,8 +132,20 @@ export function ImprovedManualConditionBuilder({
           </div>
         )}
 
-        {/* Simple condition */}
-        <div className="flex items-center gap-2 p-2 border rounded-lg bg-background">
+        {/* Render group or condition */}
+        {condition.type === 'group' ? (
+          <ConditionGroup
+            key={condition.id}
+            group={condition}
+            index={index}
+            isNested={isNested}
+            onUpdate={updateCondition}
+            onRemove={removeCondition}
+            renderCondition={renderCondition}
+          />
+        ) : (
+          /* Simple condition */
+          <div className="flex items-center gap-2 p-2 border rounded-lg bg-background">
           <Input
             placeholder="Parameter"
             value={condition.parameter || ''}
@@ -206,6 +204,7 @@ export function ImprovedManualConditionBuilder({
             )}
           </div>
         </div>
+        )}
       </div>
     );
   };

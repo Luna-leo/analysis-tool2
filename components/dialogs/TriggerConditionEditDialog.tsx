@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useSearchConditions } from '@/hooks/useSearchConditions';
 import { useTriggerConditionStore } from '@/stores/useTriggerConditionStore';
 import { useUIStore } from '@/stores/useUIStore';
-import { ConditionBuilderFullscreen } from './ConditionBuilderFullscreen';
+import { BaseTriggerConditionDialog } from './BaseTriggerConditionDialog';
 export function TriggerConditionEditDialog() {
   const { searchConditionDialogOpen, editingConditionId, closeSearchConditionDialog } = useUIStore();
   const { getConditionById, addCondition, updateCondition } = useTriggerConditionStore();
@@ -62,10 +62,14 @@ export function TriggerConditionEditDialog() {
     closeSearchConditionDialog();
   };
   
-  if (!searchConditionDialogOpen) return null;
-
   return (
-    <ConditionBuilderFullscreen
+    <BaseTriggerConditionDialog
+      open={searchConditionDialogOpen}
+      onClose={handleClose}
+      conditionName={conditionName}
+      conditionDescription={conditionDescription}
+      onConditionNameChange={setConditionName}
+      onConditionDescriptionChange={setConditionDescription}
       conditionMode={searchConditions.conditionMode}
       onConditionModeChange={searchConditions.setConditionMode}
       selectedPredefinedCondition={searchConditions.selectedPredefinedCondition}
@@ -80,16 +84,9 @@ export function TriggerConditionEditDialog() {
       onShowSaveDialog={() => searchConditions.setShowSaveDialog(true)}
       onLoadSavedCondition={searchConditions.loadSavedCondition}
       onDeleteSavedCondition={searchConditions.deleteSavedCondition}
-      onSave={handleSave}
-      onClose={handleClose}
-      canSave={!!conditionName && !!searchConditions.getCurrentExpression()}
       title={isEditing ? `Edit: ${conditionName}` : 'Create New Trigger Condition'}
-      isFullscreen={true}
-      onToggleFullscreen={() => {}}
-      conditionName={conditionName}
-      conditionDescription={conditionDescription}
-      onConditionNameChange={setConditionName}
-      onConditionDescriptionChange={setConditionDescription}
+      canSave={!!conditionName && !!searchConditions.getCurrentExpression()}
+      onSave={handleSave}
     />
   );
 }
