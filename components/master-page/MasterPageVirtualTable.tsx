@@ -52,7 +52,7 @@ const VirtualTableRow = React.memo(<T extends MasterItem>({
 
   return (
     <tr
-      className="hover:bg-gray-50 transition-colors duration-150 border-b border-gray-200"
+      className="hover:bg-blue-50 transition-colors border-b border-gray-100"
       style={{ 
         height: rowHeight,
         position: 'absolute',
@@ -67,7 +67,7 @@ const VirtualTableRow = React.memo(<T extends MasterItem>({
           key={column.key as string}
           className={`
             text-sm
-            ${column.sticky ? 'bg-white border-r border-gray-300' : ''}
+            ${column.sticky ? 'bg-white border-r-2 border-gray-200' : ''}
           `}
           style={{
             ...getStickyStyle(column, colIndex),
@@ -84,8 +84,8 @@ const VirtualTableRow = React.memo(<T extends MasterItem>({
       ))}
       {/* Actions column */}
       <td
-        className="text-center bg-white border-l border-gray-300 sticky right-0 z-10"
-        style={{ width: 180 }}
+        className="text-center bg-white border-l-2 border-gray-200 sticky right-0 z-10"
+        style={{ width: 120 }}
       >
         <div className="flex items-center justify-center gap-1 px-2">
           {enableDuplicate && onDuplicate && (
@@ -211,11 +211,12 @@ export function MasterPageVirtualTable<T extends MasterItem>({
 
   return (
     <div className="h-full flex flex-col">
-      <div 
-        ref={containerRef}
-        className="flex-1 overflow-auto"
-        onScroll={handleScroll}
-      >
+      <div className="rounded-lg border border-gray-200 shadow-sm overflow-hidden flex-1 flex flex-col">
+        <div 
+          ref={containerRef}
+          className="flex-1 overflow-auto"
+          onScroll={handleScroll}
+        >
         <div style={{ height: totalHeight, position: 'relative' }}>
           <table className="w-full border-collapse" style={{ position: 'sticky', top: 0 }}>
             <thead className="sticky top-0 z-20 bg-white">
@@ -248,7 +249,7 @@ export function MasterPageVirtualTable<T extends MasterItem>({
                 {/* Actions column */}
                 <th
                   className="text-center text-sm font-bold bg-gray-100 sticky right-0 z-10"
-                  style={{ width: 180, minWidth: 180 }}
+                  style={{ width: 120, minWidth: 120 }}
                 >
                   <div className="px-4 py-3">Actions</div>
                 </th>
@@ -273,19 +274,21 @@ export function MasterPageVirtualTable<T extends MasterItem>({
               ))}
             </tbody>
           </table>
+          </div>
         </div>
-      </div>
-      
-      {/* Add Row Button */}
-      <div className="border-t p-2">
-        <Button
-          variant="ghost"
-          onClick={onAdd}
-          className="w-full justify-start text-gray-600 hover:text-gray-900"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          Add Row
-        </Button>
+        
+        {/* Add Row Button */}
+        <div className="border-t border-gray-200 bg-gray-50 px-2 py-1 text-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onAdd}
+            className="h-6 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+          >
+            <Plus className="h-3 w-3 mr-1" />
+            Add Row
+          </Button>
+        </div>
       </div>
     </div>
   )

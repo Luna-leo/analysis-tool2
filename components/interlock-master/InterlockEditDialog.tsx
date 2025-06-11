@@ -18,59 +18,104 @@ import { defaultThresholdColors } from "@/data/interlockMaster"
 import { formatDateToISO } from "@/utils/dateUtils"
 
 interface InterlockEditDialogProps {
-  interlock: InterlockMaster
+  item: InterlockMaster
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSave: (interlock: InterlockMaster) => void
+  onSave: (item: InterlockMaster) => void
+  mode?: 'add' | 'edit' | 'duplicate'
 }
 
 export function InterlockEditDialog({
-  interlock,
+  item,
   open,
   onOpenChange,
   onSave,
+  mode,
 }: InterlockEditDialogProps) {
-  const [formData, setFormData] = useState<InterlockMaster>(interlock)
+  // Create default interlock data
+  const getDefaultInterlock = (): InterlockMaster => ({
+    id: '',
+    name: '',
+    category: 'Safety',
+    plant_name: '',
+    machine_no: '',
+    description: '',
+    x_parameter: '',
+    y_unit: '',
+    threshold_count: 0,
+    definition: {
+      id: '',
+      name: '',
+      description: '',
+      xParameter: '',
+      xUnit: '',
+      yUnit: '',
+      thresholds: []
+    },
+    createdAt: formatDateToISO(new Date()),
+    updatedAt: formatDateToISO(new Date())
+  })
+  
+  const [formData, setFormData] = useState<InterlockMaster>(() => 
+    item.id ? item : getDefaultInterlock()
+  )
   const [lineType, setLineType] = useState<"linear" | "step" | "stepBefore" | "stepAfter">("linear")
   const chartContainerRef = React.useRef<HTMLDivElement>(null)
   const [chartSize, setChartSize] = useState({ width: 600, height: 400 })
 
   useEffect(() => {
     if (open) {
-      setFormData(interlock)
-      // Set default sample data for new interlock
-      if (!interlock.id && (!interlock.definition.thresholds || interlock.definition.thresholds.length === 0)) {
-        setFormData(prev => ({
-          ...prev,
-          definition: {
-            ...prev.definition,
-            thresholds: [
-              {
-                id: `threshold_${Date.now()}_1`,
-                name: "Caution",
-                color: "#FFA500",
-                points: [
-                  { x: 0, y: 20 },
-                  { x: 50, y: 40 },
-                  { x: 100, y: 60 }
-                ]
-              },
-              {
-                id: `threshold_${Date.now()}_2`,
-                name: "Alarm",
-                color: "#FF0000",
-                points: [
-                  { x: 0, y: 40 },
-                  { x: 50, y: 60 },
-                  { x: 100, y: 80 }
-                ]
-              }
+      if (mode === 'add') {
+        // For add mode, create new data with sample thresholds
+        const newData = getDefaultInterlock()
+        newData.definition.thresholds = [
+          {
+            id: `threshold_${Date.now()}_1`,
+            name: "Caution",
+            color: "#FFA500",
+            points: [
+              { x: 0, y: 20 },
+              { x: 50, y: 40 },
+              { x: 100, y: 60 }
+            ]
+          },
+          {
+            id: `threshold_${Date.now()}_2`,
+            name: "Alarm",
+            color: "#FF0000",
+            points: [
+              { x: 0, y: 40 },
+              { x: 50, y: 60 },
+              { x: 100, y: 80 }
             ]
           }
-        }))
+        ]
+        setFormData(newData)
+      } else if (mode === 'duplicate') {
+        // For duplicate mode, deep copy the item data
+        // Note: name already has (Copy) suffix from useMasterPage
+        const duplicatedData = {
+          ...item,
+          id: '',
+          definition: {
+            ...item.definition,
+            id: '',
+            thresholds: item.definition?.thresholds?.map(threshold => ({
+              ...threshold,
+              id: `${threshold.id}_copy_${Date.now()}`,
+              points: [...threshold.points]
+            })) || []
+          },
+          createdAt: formatDateToISO(new Date()),
+          updatedAt: formatDateToISO(new Date())
+        }
+        setFormData(duplicatedData)
+      } else {
+        // For edit mode, use the item as is
+        setFormData(item)
       }
     }
-  }, [open, interlock])
+  }, [open, item, mode])
 
   // Resize observer for dynamic chart sizing
   useEffect(() => {
@@ -133,7 +178,7 @@ export function InterlockEditDialog({
       <DialogContent className="max-w-7xl w-[90vw] h-[95vh] flex flex-col overflow-hidden">
         <DialogHeader className="shrink-0">
           <DialogTitle>
-            {interlock.id ? "Edit Interlock" : "New Interlock Registration"}
+            {mode === 'edit' ? "Edit Interlock" : mode === 'duplicate' ? "Duplicate Interlock" : "New Interlock Registration"}
           </DialogTitle>
         </DialogHeader>
 
@@ -206,7 +251,7 @@ export function InterlockEditDialog({
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={!formData.name.trim() || !formData.plant_name.trim() || !formData.machine_no.trim()}>
-            {interlock.id ? "Update" : "Create"}
+            {mode === 'edit' ? "Update" : "Create"}
           </Button>
         </div>
       </DialogContent>

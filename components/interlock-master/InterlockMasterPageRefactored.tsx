@@ -26,33 +26,38 @@ const columns: ColumnConfig<InterlockMaster>[] = [
   {
     key: 'name',
     label: 'Name',
-    width: 200
-  },
-  {
-    key: 'category',
-    label: 'Category',
-    width: 150
-  },
-  {
-    key: 'description',
-    label: 'Description',
-    width: 300
-  },
-  {
-    key: 'x_parameter',
-    label: 'X Parameter',
-    width: 150
-  },
-  {
-    key: 'y_unit',
-    label: 'Y Unit',
-    width: 100
+    width: 250,
+    render: (item) => (
+      <div className="flex flex-col">
+        <span className="font-medium">{item.name}</span>
+        <span className="text-xs text-gray-500">X: {item.definition?.xParameter || '-'}</span>
+      </div>
+    )
   },
   {
     key: 'threshold_count',
-    label: 'Thresholds',
-    width: 100,
-    render: (item) => item.definition?.thresholds?.length || 0
+    label: 'Threshold',
+    width: 300,
+    render: (item) => {
+      const thresholds = item.definition?.thresholds || []
+      return (
+        <div className="flex gap-1 overflow-hidden">
+          {thresholds.map((threshold) => (
+            <span
+              key={threshold.id}
+              className="inline-flex items-center px-2 py-1 text-xs font-medium border rounded-full whitespace-nowrap"
+              style={{ 
+                backgroundColor: `${threshold.color}20`,
+                borderColor: threshold.color,
+                color: threshold.color
+              }}
+            >
+              {threshold.name}
+            </span>
+          ))}
+        </div>
+      )
+    }
   }
 ]
 
@@ -72,7 +77,7 @@ export function InterlockMasterPageRefactored() {
         itemName: 'interlock',
         viewType: 'table',
         columns: columns as ColumnConfig<ExtendedInterlockMaster>[],
-        DialogComponent: InterlockEditDialog as any,
+        DialogComponent: InterlockEditDialog,
         enableDuplicate: true,
         enableResize: true,
         searchPlaceholder: 'Search interlocks...'
@@ -80,8 +85,8 @@ export function InterlockMasterPageRefactored() {
       store={{
         items: store.interlocks as ExtendedInterlockMaster[],
         searchQuery: '',
-        addItem: store.addInterlock,
-        updateItem: store.updateInterlock,
+        addItem: (item: ExtendedInterlockMaster) => store.addInterlock(item as InterlockMaster),
+        updateItem: (item: ExtendedInterlockMaster) => store.updateInterlock(item as InterlockMaster),
         deleteItem: store.deleteInterlock,
         setSearchQuery: () => {}
       }}
