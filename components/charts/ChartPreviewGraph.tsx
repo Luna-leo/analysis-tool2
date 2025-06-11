@@ -11,9 +11,11 @@ import {
   ReferenceLines,
   generateMockData
 } from "./ChartPreview/index"
+import { convertToXValue } from "@/utils/chartAxisUtils"
+import { isValidYValue } from "@/types/chart-axis"
 
 interface ChartDataPoint {
-  x: number;
+  x: number | string | Date;
   y: number;
   series: string;
   seriesIndex: number;
@@ -42,16 +44,21 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   
   // Memoize all parameters needed for the chart
   const allParameters = React.useMemo(() => {
-    if (!editingChart.xParameter || !editingChart.yAxisParams?.length) return []
+    if (!editingChart.yAxisParams?.length) return []
     
-    const params = [editingChart.xParameter]
+    const params: string[] = []
+    // For datetime type, we don't need to fetch x parameter as we'll use timestamp
+    if (editingChart.xAxisType !== 'datetime' && editingChart.xParameter) {
+      params.push(editingChart.xParameter)
+    }
+    
     editingChart.yAxisParams.forEach(yParam => {
-      if (yParam.parameter && yParam.parameter !== editingChart.xParameter) {
+      if (yParam.parameter && !params.includes(yParam.parameter)) {
         params.push(yParam.parameter)
       }
     })
     return params
-  }, [editingChart.xParameter, editingChart.yAxisParams])
+  }, [editingChart.xAxisType, editingChart.xParameter, editingChart.yAxisParams])
 
   // Create a memoized version of editingChart without referenceLines to prevent re-renders
   const chartConfigWithoutRefLines = React.useMemo(() => {
@@ -85,7 +92,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   const chartData = React.useMemo(() => {
     const data: ChartDataPoint[] = []
     
-    if (selectedDataSourceItems.length > 0 && allParameters.length > 0) {
+    if (selectedDataSourceItems.length > 0 && (editingChart.xAxisType === 'datetime' || allParameters.length > 0)) {
       try {
         // Collect data from all selected data sources
         selectedDataSourceItems.forEach(dataSource => {
@@ -94,16 +101,26 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           if (csvData && csvData.length > 0) {
             csvData.forEach(point => {
               // Create data point for scatter plot
-              const xValue = point[editingChart.xParameter!]
+              const rawXValue = point[editingChart.xParameter!]
+              const xValue = convertToXValue(
+                rawXValue, 
+                editingChart.xAxisType || 'datetime',
+                point.timestamp
+              )
+              
               
               editingChart.yAxisParams?.forEach((yParam, index) => {
-                const yValue = point[yParam.parameter]
+                let yValue = point[yParam.parameter]
                 
-                if (xValue !== undefined && yValue !== undefined && 
-                    typeof xValue === 'number' && typeof yValue === 'number') {
+                // Ensure y value is numeric
+                if (typeof yValue === 'string' && !isNaN(Number(yValue))) {
+                  yValue = Number(yValue)
+                }
+                
+                if (xValue !== undefined && isValidYValue(yValue)) {
                   data.push({
                     x: xValue,
-                    y: yValue,
+                    y: Number(yValue),
                     series: yParam.parameter,
                     seriesIndex: index,
                     timestamp: point.timestamp,
@@ -121,7 +138,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     }
     
     return data
-  }, [selectedDataSourceItems, allParameters, editingChart.xParameter, editingChart.yAxisParams, getParameterData])
+  }, [selectedDataSourceItems, allParameters, editingChart.xParameter, editingChart.yAxisParams, getParameterData, editingChart.xAxisType])
 
   useEffect(() => {
     if (!svgRef.current) return

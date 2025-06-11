@@ -77,10 +77,12 @@ export function XParameterSettings({ editingChart, setEditingChart, selectedData
                   className="w-full h-8 px-2 py-1 border rounded-md text-sm"
                   value={editingChart.xAxisType || "datetime"}
                   onChange={(e) => {
+                    const newAxisType = e.target.value as "datetime" | "time" | "parameter"
                     setEditingChart({
                       ...editingChart,
-                      xAxisType: e.target.value as "datetime" | "time" | "parameter",
-                      ...(e.target.value !== "parameter" && { xParameter: "" }),
+                      xAxisType: newAxisType,
+                      // Clear xParameter when switching to datetime
+                      ...(newAxisType === "datetime" && { xParameter: "" }),
                     })
                   }}
                 >
@@ -91,8 +93,18 @@ export function XParameterSettings({ editingChart, setEditingChart, selectedData
               </div>
 
               <div className="flex-1">
-                <Label htmlFor="x-parameter" className="text-sm mb-1 block">Parameter</Label>
-                {editingChart.xAxisType === "parameter" ? (
+                <Label htmlFor="x-parameter" className="text-sm mb-1 block">
+                  {(editingChart.xAxisType || "datetime") === "datetime" ? "Datetime Field" : 
+                   editingChart.xAxisType === "time" ? "Time Field" : "Parameter"}
+                </Label>
+                {(editingChart.xAxisType || "datetime") === "datetime" ? (
+                  <Input
+                    id="x-parameter"
+                    value="Datetime"
+                    readOnly
+                    className="h-8 text-sm bg-muted"
+                  />
+                ) : (
                   <ParameterCombobox
                     value={editingChart.xParameter || ""}
                     onChange={(value) => {
@@ -103,20 +115,6 @@ export function XParameterSettings({ editingChart, setEditingChart, selectedData
                     }}
                     selectedDataSourceItems={selectedDataSourceItems}
                     className="h-8"
-                  />
-                ) : (
-                  <Input
-                    id="x-parameter"
-                    value={editingChart.xParameter || ""}
-                    onChange={(e) => {
-                      setEditingChart({
-                        ...editingChart,
-                        xParameter: e.target.value,
-                      })
-                    }}
-                    placeholder="Enter parameter"
-                    disabled={editingChart.xAxisType !== "parameter"}
-                    className="h-8 text-sm"
                   />
                 )}
               </div>

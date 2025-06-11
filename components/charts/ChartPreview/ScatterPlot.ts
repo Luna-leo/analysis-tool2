@@ -1,10 +1,11 @@
 import * as d3 from "d3"
 import { ChartComponent } from "@/types"
+import { formatXValue, getXValueForScale } from "@/utils/chartAxisUtils"
 
 interface RenderScatterPlotProps {
   g: d3.Selection<SVGGElement, unknown, null, undefined>
   data: Array<{
-    x: number
+    x: number | string | Date
     y: number
     series: string
     seriesIndex: number
@@ -25,21 +26,71 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
   // Clear previous content
   g.selectAll("*").remove()
 
+
   if (data.length === 0) {
     return
   }
 
-  // Create scales
-  const xExtent = d3.extent(data, d => d.x) as [number, number]
+  // Create scales based on x-axis type
+  let xScale: d3.ScaleTime<number, number> | d3.ScaleLinear<number, number>
+  let xAxis: d3.Axis<number | Date | { valueOf(): number }>
+  
+  
+  if (editingChart.xAxisType === 'datetime') {
+    // For datetime, convert string timestamps to Date objects
+    
+    const dateData = data.map(d => ({
+      ...d,
+      x: new Date(d.x as string)
+    }))
+    
+    
+    const xExtent = d3.extent(dateData, d => d.x) as [Date, Date]
+    
+    xScale = d3.scaleTime()
+      .domain(xExtent)
+      .range([0, width])
+      
+      
+    xAxis = d3.axisBottom(xScale)
+      .tickFormat(d3.timeFormat("%Y-%m-%d %H:%M"))
+  } else if (editingChart.xAxisType === 'time') {
+    // For elapsed time (already converted to minutes)
+    
+    const xExtent = d3.extent(data, d => d.x as number) as [number, number]
+    const xPadding = (xExtent[1] - xExtent[0]) * 0.05
+    
+    
+    xScale = d3.scaleLinear()
+      .domain([xExtent[0] - xPadding, xExtent[1] + xPadding])
+      .range([0, width])
+      
+      
+    xAxis = d3.axisBottom(xScale)
+      .tickFormat(d => {
+        const minutes = Number(d)
+        const hours = Math.floor(minutes / 60)
+        const mins = Math.floor(minutes % 60)
+        return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
+      })
+  } else {
+    // For numeric parameters
+    
+    const xExtent = d3.extent(data, d => d.x as number) as [number, number]
+    const xPadding = (xExtent[1] - xExtent[0]) * 0.05
+    
+    
+    xScale = d3.scaleLinear()
+      .domain([xExtent[0] - xPadding, xExtent[1] + xPadding])
+      .range([0, width])
+      
+      
+    xAxis = d3.axisBottom(xScale)
+      .tickFormat(d3.format(".2f"))
+  }
+
   const yExtent = d3.extent(data, d => d.y) as [number, number]
-
-  // Add padding to the extents
-  const xPadding = (xExtent[1] - xExtent[0]) * 0.05
   const yPadding = (yExtent[1] - yExtent[0]) * 0.05
-
-  const xScale = d3.scaleLinear()
-    .domain([xExtent[0] - xPadding, xExtent[1] + xPadding])
-    .range([0, width])
 
   const yScale = d3.scaleLinear()
     .domain([yExtent[0] - yPadding, yExtent[1] + yPadding])
@@ -53,9 +104,7 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
   const colorScale = d3.scaleOrdinal(d3.schemeCategory10)
     .domain(seriesNames)
 
-  // Create axes
-  const xAxis = d3.axisBottom(xScale)
-    .tickFormat(d3.format(".2f"))
+  // Create y-axis
   const yAxis = d3.axisLeft(yScale)
     .tickFormat(d3.format(".2f"))
 
@@ -111,9 +160,13 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
       .attr("class", `scatter-points-${seriesIndex}`)
 
     // Add scatter points based on marker type
+    
     if (markerConfig.type === 'circle') {
       points.append("circle")
-        .attr("cx", d => xScale(d.x))
+        .attr("cx", d => {
+          const scaledValue = getXValueForScale(d.x, editingChart.xAxisType || 'parameter')
+          return xScale(scaledValue)
+        })
         .attr("cy", d => yScale(d.y))
         .attr("r", markerConfig.size || 4)
         .style("fill", markerConfig.fillColor || colorScale(seriesData[0].series))
@@ -124,7 +177,11 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
     } else if (markerConfig.type === 'square') {
       const size = (markerConfig.size || 4) * 2
       points.append("rect")
-        .attr("x", d => xScale(d.x) - size/2)
+        .attr("x", d => {
+          const scaledValue = getXValueForScale(d.x, editingChart.xAxisType || 'parameter')
+          const xPos = xScale(scaledValue)
+          return xPos - size/2
+        })
         .attr("y", d => yScale(d.y) - size/2)
         .attr("width", size)
         .attr("height", size)
@@ -136,7 +193,10 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
     } else {
       // Default to circle for other marker types
       points.append("circle")
-        .attr("cx", d => xScale(d.x))
+        .attr("cx", d => {
+          const scaledValue = getXValueForScale(d.x, editingChart.xAxisType || 'parameter')
+          return xScale(scaledValue)
+        })
         .attr("cy", d => yScale(d.y))
         .attr("r", markerConfig.size || 4)
         .style("fill", markerConfig.fillColor || colorScale(seriesData[0].series))
@@ -165,9 +225,11 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
         .style("pointer-events", "none")
         .style("z-index", 1000)
 
+      const xDisplay = formatXValue(d.x, editingChart.xAxisType || 'parameter')
+      
       tooltip.html(`
         <div><strong>${d.series}</strong></div>
-        <div>X: ${d.x.toFixed(3)}</div>
+        <div>X: ${xDisplay}</div>
         <div>Y: ${d.y.toFixed(3)}</div>
         <div>Time: ${new Date(d.timestamp).toLocaleString()}</div>
         <div>Source: ${d.dataSourceLabel}</div>
@@ -192,8 +254,12 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
   // Add grid lines if enabled
   if (editingChart.yAxisParams?.some(param => true)) { // Assuming grid is enabled by default
     // Vertical grid lines
+    const xTicks = editingChart.xAxisType === 'datetime' 
+      ? (xScale as d3.ScaleTime<number, number>).ticks()
+      : (xScale as d3.ScaleLinear<number, number>).ticks()
+      
     g.selectAll(".grid-line-x")
-      .data(xScale.ticks())
+      .data(xTicks)
       .enter()
       .append("line")
       .attr("class", "grid-line-x")

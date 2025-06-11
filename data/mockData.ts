@@ -83,6 +83,8 @@ function generateTurbineCharts(prefix: string, count: number): ChartComponent[] 
       id: `${prefix}-chart-${i + 1}`,
       title: sensorName,
       data,
+      xAxisType: "datetime",  // Default to datetime
+      xParameter: "",         // Empty for datetime type
       dataSource: {
         name: getDataSourceForSensor(sensorName),
         table: sensorName.toLowerCase().replace(/\s+/g, "_"),
