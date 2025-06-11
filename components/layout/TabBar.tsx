@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { X, BarChart3, Database, Calculator } from "lucide-react"
+import { X, BarChart3, Database, Calculator, FunctionSquare, Zap, ArrowLeftRight, Calendar, Gauge, FileUp, Hash, Tag } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { FileNode } from "@/types"
 import { useFileStore } from "@/stores/useFileStore"
@@ -77,14 +77,47 @@ export function TabBar({ openTabs }: TabBarProps) {
           )}
           onClick={() => setActiveTab(tab.id)}
         >
-          {((tab as any).source === 'explorer' || !(tab as any).source) && (
-            <BarChart3 className="h-3.5 w-3.5 flex-shrink-0" />
+          {/* Specific tab type icons */}
+          {tab.type === 'formula-master' && (
+            <FunctionSquare className="h-3.5 w-3.5 flex-shrink-0" />
           )}
-          {(tab as any).source === 'database' && (
+          {tab.type === 'trigger-condition-master' && (
+            <Zap className="h-3.5 w-3.5 flex-shrink-0" />
+          )}
+          {tab.type === 'unit-converter-formula-master' && (
+            <ArrowLeftRight className="h-3.5 w-3.5 flex-shrink-0" />
+          )}
+          {tab.type === 'event-master' && (
+            <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
+          )}
+          {tab.type === 'interlock-master' && (
+            <Gauge className="h-3.5 w-3.5 flex-shrink-0" />
+          )}
+          {tab.type === 'csv-import' && (
+            <FileUp className="h-3.5 w-3.5 flex-shrink-0" />
+          )}
+          {tab.type === 'sensor-data-master' && (
             <Database className="h-3.5 w-3.5 flex-shrink-0" />
           )}
-          {(tab as any).source === 'calculator' && (
-            <Calculator className="h-3.5 w-3.5 flex-shrink-0" />
+          {tab.type === 'parameter-master' && (
+            <Hash className="h-3.5 w-3.5 flex-shrink-0" />
+          )}
+          {tab.type === 'tag-master' && (
+            <Tag className="h-3.5 w-3.5 flex-shrink-0" />
+          )}
+          {/* Default icons for other types */}
+          {!['formula-master', 'trigger-condition-master', 'unit-converter-formula-master', 'event-master', 'interlock-master', 'csv-import', 'sensor-data-master', 'parameter-master', 'tag-master'].includes(tab.type) && (
+            <>
+              {((tab as any).source === 'explorer' || !(tab as any).source) && (
+                <BarChart3 className="h-3.5 w-3.5 flex-shrink-0" />
+              )}
+              {(tab as any).source === 'database' && (
+                <Database className="h-3.5 w-3.5 flex-shrink-0" />
+              )}
+              {(tab as any).source === 'calculator' && (
+                <Calculator className="h-3.5 w-3.5 flex-shrink-0" />
+              )}
+            </>
           )}
           <span className="text-sm truncate max-w-[150px]">{tab.name}</span>
           <button

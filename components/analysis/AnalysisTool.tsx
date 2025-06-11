@@ -25,9 +25,10 @@ export default function AnalysisTool() {
       const csvImportFile: FileNode = {
         id: "csv-import",
         name: "CSV Import",
-        type: "file",
+        type: "csv-import",
         dataSources: [],
-        charts: []
+        charts: [],
+        isSystemNode: true
       }
       openFile(csvImportFile, 'database')
 

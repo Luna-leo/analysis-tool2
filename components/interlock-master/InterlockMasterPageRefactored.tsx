@@ -1,7 +1,7 @@
 "use client"
 
 import React from 'react'
-import { Shield } from 'lucide-react'
+import { Gauge } from 'lucide-react'
 import { useInterlockMasterStore } from '@/stores/useInterlockMasterStore'
 import { MasterPageTemplate, ColumnConfig } from '@/components/master-page'
 import { InterlockEditDialog } from './InterlockEditDialog'
@@ -73,7 +73,7 @@ export function InterlockMasterPageRefactored() {
     <MasterPageTemplate<ExtendedInterlockMaster>
       config={{
         title: 'Interlock Master',
-        icon: Shield,
+        icon: Gauge,
         itemName: 'interlock',
         viewType: 'table',
         columns: columns as ColumnConfig<ExtendedInterlockMaster>[],

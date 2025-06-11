@@ -16,7 +16,7 @@ import {
   Hash,
   Tag,
   BarChart3,
-  Lock,
+  Gauge,
   FileUp
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -113,7 +113,7 @@ export function Sidebar() {
     }
     
     // Open the Formula Master as a tab
-    openFile(formulaMasterNode, 'database')
+    openFile(formulaMasterNode, 'calculator')
   }
 
   const handleOpenTriggerConditionMaster = () => {
@@ -126,7 +126,7 @@ export function Sidebar() {
     }
     
     // Open the Trigger Condition Master as a tab
-    openFile(triggerConditionMasterNode, 'database')
+    openFile(triggerConditionMasterNode, 'calculator')
   }
 
   const handleOpenUnitConverterFormulaMaster = () => {
@@ -139,7 +139,7 @@ export function Sidebar() {
     }
     
     // Open the Unit Converter Formula Master as a tab
-    openFile(unitConverterFormulaMasterNode, 'database')
+    openFile(unitConverterFormulaMasterNode, 'calculator')
   }
 
   const renderSidebarContent = () => {
@@ -212,7 +212,7 @@ export function Sidebar() {
                 className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
                 onClick={handleOpenInterlockMaster}
               >
-                <Lock className="h-4 w-4 shrink-0" />
+                <Gauge className="h-4 w-4 shrink-0" />
                 <div className="flex flex-col items-start flex-1">
                   <span>Interlock Master</span>
                   <span className="text-xs text-muted-foreground">登録済み管理値、プラント・号機毎</span>
@@ -223,7 +223,7 @@ export function Sidebar() {
                 className="w-full justify-start gap-2 h-auto min-h-[36px] px-2 py-2 text-sm font-normal"
                 onClick={() => console.log("Sensor data Master")}
               >
-                <BarChart3 className="h-4 w-4 shrink-0" />
+                <Database className="h-4 w-4 shrink-0" />
                 <div className="flex flex-col items-start flex-1">
                   <span>Sensor data Master</span>
                   <span className="text-xs text-muted-foreground">プラントとか号機毎のデータ存在期間とか</span>
