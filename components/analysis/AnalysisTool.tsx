@@ -39,6 +39,42 @@ export default function AnalysisTool() {
         isSystemNode: true
       }
       openFile(eventMasterFile, 'database')
+
+      // Create and open Formula Master tab
+      const formulaMasterFile: FileNode = {
+        id: "formula-master",
+        name: "Formula Master",
+        type: "formula-master",
+        isSystemNode: true
+      }
+      openFile(formulaMasterFile, 'database')
+
+      // Create and open Interlock Master tab
+      const interlockMasterFile: FileNode = {
+        id: "interlock-master",
+        name: "Interlock Master",
+        type: "interlock-master",
+        isSystemNode: true
+      }
+      openFile(interlockMasterFile, 'database')
+
+      // Create and open Trigger Condition Master tab
+      const triggerConditionMasterFile: FileNode = {
+        id: "trigger-condition-master",
+        name: "Trigger Condition Master",
+        type: "trigger-condition-master",
+        isSystemNode: true
+      }
+      openFile(triggerConditionMasterFile, 'database')
+
+      // Create and open Unit Conversion Formula Master tab
+      const unitConverterFormulaMasterFile: FileNode = {
+        id: "unit-converter-formula-master",
+        name: "Unit Conversion Formula Master",
+        type: "unit-converter-formula-master",
+        isSystemNode: true
+      }
+      openFile(unitConverterFormulaMasterFile, 'database')
     }
   }, []) // Empty dependency array to run only once on mount
 
