@@ -309,46 +309,71 @@ export function Sidebar() {
     <>
       {/* Activity Bar */}
       <div className="w-16 bg-muted/50 border-r flex flex-col items-center py-2 gap-1">
-        <Button
-          variant={activeView === "explorer" ? "secondary" : "ghost"}
-          size="icon"
-          className="h-14 w-14 p-2 [&_svg]:size-auto"
-          onClick={() => handleViewClick("explorer")}
-        >
-          <ChartLine className="h-full w-full" />
-        </Button>
-        <Button
-          variant={activeView === "search" ? "secondary" : "ghost"}
-          size="icon"
-          className="h-14 w-14 p-2 [&_svg]:size-auto"
-          onClick={() => handleViewClick("search")}
-        >
-          <Search className="h-full w-full" />
-        </Button>
-        <Button
-          variant={activeView === "database" ? "secondary" : "ghost"}
-          size="icon"
-          className="h-14 w-14 p-2 [&_svg]:size-auto"
-          onClick={() => handleViewClick("database")}
-        >
-          <Database className="h-full w-full" />
-        </Button>
-        <Button
-          variant={activeView === "calculator" ? "secondary" : "ghost"}
-          size="icon"
-          className="h-14 w-14 p-2 [&_svg]:size-auto"
-          onClick={() => handleViewClick("calculator")}
-        >
-          <Calculator className="h-full w-full" />
-        </Button>
-        <Button
-          variant={activeView === "settings" ? "secondary" : "ghost"}
-          size="icon"
-          className="h-14 w-14 p-2 [&_svg]:size-auto"
-          onClick={() => handleViewClick("settings")}
-        >
-          <Settings className="h-full w-full" />
-        </Button>
+        <div className="relative">
+          <Button
+            variant={activeView === "explorer" ? "secondary" : "ghost"}
+            size="icon"
+            className="h-14 w-14 p-2 [&_svg]:size-auto relative"
+            onClick={() => handleViewClick("explorer")}
+          >
+            <ChartLine className="h-full w-full" />
+          </Button>
+          {activeView === "explorer" && (
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-primary rounded-r-sm" />
+          )}
+        </div>
+        <div className="relative">
+          <Button
+            variant={activeView === "search" ? "secondary" : "ghost"}
+            size="icon"
+            className="h-14 w-14 p-2 [&_svg]:size-auto relative"
+            onClick={() => handleViewClick("search")}
+          >
+            <Search className="h-full w-full" />
+          </Button>
+          {activeView === "search" && (
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-primary rounded-r-sm" />
+          )}
+        </div>
+        <div className="relative">
+          <Button
+            variant={activeView === "database" ? "secondary" : "ghost"}
+            size="icon"
+            className="h-14 w-14 p-2 [&_svg]:size-auto relative"
+            onClick={() => handleViewClick("database")}
+          >
+            <Database className="h-full w-full" />
+          </Button>
+          {activeView === "database" && (
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-primary rounded-r-sm" />
+          )}
+        </div>
+        <div className="relative">
+          <Button
+            variant={activeView === "calculator" ? "secondary" : "ghost"}
+            size="icon"
+            className="h-14 w-14 p-2 [&_svg]:size-auto relative"
+            onClick={() => handleViewClick("calculator")}
+          >
+            <Calculator className="h-full w-full" />
+          </Button>
+          {activeView === "calculator" && (
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-primary rounded-r-sm" />
+          )}
+        </div>
+        <div className="relative">
+          <Button
+            variant={activeView === "settings" ? "secondary" : "ghost"}
+            size="icon"
+            className="h-14 w-14 p-2 [&_svg]:size-auto relative"
+            onClick={() => handleViewClick("settings")}
+          >
+            <Settings className="h-full w-full" />
+          </Button>
+          {activeView === "settings" && (
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-primary rounded-r-sm" />
+          )}
+        </div>
       </div>
 
       {/* Sidebar Panel */}
