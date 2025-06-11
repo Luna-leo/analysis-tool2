@@ -33,7 +33,7 @@ interface VirtualTableRowProps<T extends MasterItem> {
   getColumnWidth: (key: string) => number
 }
 
-const VirtualTableRow = React.memo(<T extends MasterItem>({
+const VirtualTableRow = <T extends MasterItem>({
   item,
   index,
   startIndex,
@@ -121,9 +121,7 @@ const VirtualTableRow = React.memo(<T extends MasterItem>({
       </td>
     </tr>
   )
-})
-
-VirtualTableRow.displayName = 'VirtualTableRow'
+}
 
 export function MasterPageVirtualTable<T extends MasterItem>({
   items,
@@ -257,7 +255,7 @@ export function MasterPageVirtualTable<T extends MasterItem>({
             </thead>
             <tbody>
               {visibleItems.map((item, index) => (
-                <VirtualTableRow
+                <VirtualTableRow<T>
                   key={item.id}
                   item={item}
                   index={index}
