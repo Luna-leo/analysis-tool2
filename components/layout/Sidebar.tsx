@@ -278,7 +278,7 @@ export function Sidebar() {
 
       {/* Sidebar Panel */}
       {sidebarOpen && (
-        <div className="w-64 bg-background">
+        <div className="w-56 bg-background">
           <ScrollArea className="h-full">
             {renderSidebarContent()}
           </ScrollArea>

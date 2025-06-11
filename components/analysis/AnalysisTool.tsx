@@ -54,14 +54,14 @@ export default function AnalysisTool() {
     <div className="h-screen flex flex-col overflow-hidden">
       <ResizablePanelGroup direction="horizontal" className="flex-1">
         {/* Sidebar Panel */}
-        <ResizablePanel defaultSize={25} minSize={15} maxSize={40}>
+        <ResizablePanel defaultSize={20} minSize={15} maxSize={35}>
           <Sidebar />
         </ResizablePanel>
 
         <ResizableHandle />
 
         {/* Main Content Panel */}
-        <ResizablePanel defaultSize={75} minSize={50}>
+        <ResizablePanel defaultSize={80} minSize={50}>
           <div className="h-full flex flex-col">
             <TabHeader openTabs={openTabs} activeTab={activeTab} />
 
