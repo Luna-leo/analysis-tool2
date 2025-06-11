@@ -18,8 +18,8 @@ export interface DataSourceConfig {
 }
 
 export const DATA_SOURCE_CONFIGS: Record<CSVDataSourceType, DataSourceConfig> = {
-  SSAC: {
-    id: "SSAC",
+  CASS: {
+    id: "CASS",
     name: "CASS",
     description: "System Status and Control data source",
     columns: {
@@ -33,9 +33,9 @@ export const DATA_SOURCE_CONFIGS: Record<CSVDataSourceType, DataSourceConfig> = 
       quality: 'quality'
     }
   },
-  SCA: {
-    id: "SCA",
-    name: "ACS",
+  ASC: {
+    id: "ASC",
+    name: "ASC",
     description: "System Control Application data source",
     columns: {
       required: ['datetime', 'parameter', 'measurement', 'status'],
@@ -48,9 +48,9 @@ export const DATA_SOURCE_CONFIGS: Record<CSVDataSourceType, DataSourceConfig> = 
       quality: 'status'
     }
   },
-  INOMOT: {
-    id: "INOMOT",
-    name: "CHINAMI",
+  TOMONI: {
+    id: "TOMONI",
+    name: "TOMONI",
     description: "Industrial Motion data source",
     columns: {
       required: ['time', 'signal_id', 'data', 'valid'],

@@ -1,54 +1,35 @@
 import { useState, useCallback, useEffect } from 'react'
 import { CSVDataSourceType } from '@/types'
 import { useToast } from '@/hooks/use-toast'
-
-// Convert wildcard pattern to regex
-const wildcardToRegex = (pattern: string): RegExp => {
-  const escapedPattern = pattern
-    .replace(/[.+^${}()|[\]\\]/g, '\\$&') // Escape special regex chars except * and ?
-    .replace(/\*/g, '.*') // * matches any characters
-    .replace(/\?/g, '.') // ? matches single character
-  return new RegExp(`^${escapedPattern}$`, 'i')
-}
+import { useCSVValidation } from './useCSVValidation'
+import { filterFilesByPattern } from '@/utils/csv/parseUtils'
+import { CSV_DEFAULTS, CSV_VALIDATION_MESSAGES, CSV_UI_TEXT } from '@/constants/csvImport'
 
 export function useCSVImport(onImportComplete?: () => void) {
-  const [dataSourceType, setDataSourceType] = useState<CSVDataSourceType>("SSAC")
+  const [dataSourceType, setDataSourceType] = useState<CSVDataSourceType>(CSV_DEFAULTS.dataSourceType)
   const [plant, setPlant] = useState("")
   const [machineNo, setMachineNo] = useState("")
   const [filePaths, setFilePaths] = useState<string[]>([])
   const [allFilePaths, setAllFilePaths] = useState<string[]>([])
   const [fileNamePattern, setFileNamePattern] = useState("")
-  const [patternType, setPatternType] = useState<"wildcard" | "regex">("wildcard")
+  const [patternType, setPatternType] = useState<"wildcard" | "regex">(CSV_DEFAULTS.patternType)
   const [isImporting, setIsImporting] = useState(false)
   const [importProgress, setImportProgress] = useState(0)
   const [importStatus, setImportStatus] = useState("")
   
   const { toast } = useToast()
+  const { validate } = useCSVValidation()
 
   // Filter files based on pattern
-  const filterFilesByPattern = useCallback((pathsToFilter: string[]): string[] => {
-    if (!fileNamePattern) return pathsToFilter
-
-    try {
-      const regex = patternType === 'regex' 
-        ? new RegExp(fileNamePattern, 'i')
-        : wildcardToRegex(fileNamePattern)
-
-      return pathsToFilter.filter(path => {
-        const fileName = path.split('/').pop() || path.split('\\').pop() || ''
-        return regex.test(fileName)
-      })
-    } catch (error) {
-      // Invalid regex pattern
-      return pathsToFilter
-    }
+  const applyFileFilter = useCallback((pathsToFilter: string[]): string[] => {
+    return filterFilesByPattern(pathsToFilter, fileNamePattern, patternType)
   }, [fileNamePattern, patternType])
 
   // Apply pattern filter whenever pattern or files change
   useEffect(() => {
-    const filtered = filterFilesByPattern(allFilePaths)
+    const filtered = applyFileFilter(allFilePaths)
     setFilePaths(filtered)
-  }, [allFilePaths, fileNamePattern, patternType, filterFilesByPattern])
+  }, [allFilePaths, applyFileFilter])
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files
@@ -61,10 +42,12 @@ export function useCSVImport(onImportComplete?: () => void) {
   }, [])
 
   const handleImport = async () => {
-    if (!plant || !machineNo || filePaths.length === 0) {
+    const validation = validate({ plant, machineNo, files: filePaths })
+    
+    if (!validation.isValid) {
       toast({
-        title: "Input Error",
-        description: "Please fill in all required fields",
+        title: "Validation Error",
+        description: validation.errors.join(', '),
         variant: "destructive",
       })
       return

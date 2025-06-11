@@ -1,47 +1,17 @@
 import { ParsedCSVData } from '@/types/csv-data'
+import { parseCSVLine } from '../csv/parseUtils'
 
 /**
- * Parse CSV line handling quotes properly
+ * Check if the CSV data is in CASS format
  */
-function parseCSVLine(line: string): string[] {
-  const result: string[] = []
-  let current = ''
-  let inQuotes = false
-
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i]
-    const nextChar = line[i + 1]
-
-    if (char === '"') {
-      if (inQuotes && nextChar === '"') {
-        current += '"'
-        i++
-      } else {
-        inQuotes = !inQuotes
-      }
-    } else if (char === ',' && !inQuotes) {
-      result.push(current.trim())
-      current = ''
-    } else {
-      current += char
-    }
-  }
-
-  result.push(current.trim())
-  return result
-}
-
-/**
- * Check if the CSV data is in SSAC format
- */
-export function isSSACFormat(lines: string[]): boolean {
+export function isCASSFormat(lines: string[]): boolean {
   if (lines.length < 3) return false
   
   const firstLine = parseCSVLine(lines[0])
   const secondLine = parseCSVLine(lines[1])
   const thirdLine = parseCSVLine(lines[2])
   
-  // SSAC format detection:
+  // CASS format detection:
   // - First row starts with Datetime or empty, followed by P#### pattern
   // - Second row has parameter names
   // - Third row has units
@@ -55,13 +25,13 @@ export function isSSACFormat(lines: string[]): boolean {
 }
 
 /**
- * Parse SSAC format CSV
+ * Parse CASS format CSV
  * Row 1: ID row (Datetime, P0001, P0002, ...)
  * Row 2: Parameter names
  * Row 3: Units
  * Row 4+: Data
  */
-export function parseSSACFormat(lines: string[], fileName: string): ParsedCSVData {
+export function parseCASSFormat(lines: string[], fileName: string): ParsedCSVData {
   const idRow = parseCSVLine(lines[0])
   const paramRow = parseCSVLine(lines[1])
   const unitRow = parseCSVLine(lines[2])
@@ -96,7 +66,7 @@ export function parseSSACFormat(lines: string[], fileName: string): ParsedCSVDat
     rows,
     metadata: {
       fileName,
-      format: 'SSAC',
+      format: 'CASS',
       parameterInfo: {
         ids: idRow.slice(1),
         parameters: paramRow.slice(1),

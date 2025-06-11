@@ -1,7 +1,7 @@
 import { CSVDataSourceType } from "@/types"
 import { StandardizedCSVData, ParsedCSVData } from "@/types/csv-data"
 import { getDataSourceConfig } from "@/data/dataSourceTypes"
-import { parseSSACFormat, parseStandardFormat, isSSACFormat, removeBOM } from "./csvParsers"
+import { parseCASSFormat, parseStandardFormat, isCASSFormat, removeBOM } from "./csvParsers"
 
 export interface CSVParseResult {
   success: boolean
@@ -37,8 +37,8 @@ function parseCSV(text: string, fileName: string): ParsedCSVData {
   const lines = cleanText.trim().split('\n')
   
   // Check format and parse accordingly
-  if (isSSACFormat(lines)) {
-    return parseSSACFormat(lines, fileName)
+  if (isCASSFormat(lines)) {
+    return parseCASSFormat(lines, fileName)
   } else {
     return parseStandardFormat(lines, fileName)
   }
@@ -49,9 +49,9 @@ export function validateCSVStructure(
   dataSourceType: CSVDataSourceType,
   metadata?: ParsedCSVData['metadata']
 ): { valid: boolean; missingColumns?: string[] } {
-  // For SSAC format, validation is different
-  if (dataSourceType === 'SSAC' && metadata?.format === 'SSAC') {
-    // SSAC format should have Datetime column and at least one parameter
+  // For CASS format, validation is different
+  if (dataSourceType === 'CASS' && metadata?.format === 'CASS') {
+    // CASS format should have Datetime column and at least one parameter
     const hasDatetime = headers.includes('Datetime')
     const hasParameters = headers.length > 1
     

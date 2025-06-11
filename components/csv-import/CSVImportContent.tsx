@@ -14,7 +14,7 @@ interface CSVImportContentProps {
   onImportComplete?: () => void
 }
 
-export const CSVImportContentRefactored = React.memo(function CSVImportContentRefactored({ 
+export const CSVImportContent = React.memo(function CSVImportContent({ 
   mode = 'page', 
   onImportComplete 
 }: CSVImportContentProps) {

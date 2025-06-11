@@ -15,6 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CSVDataSourceType, CSVImportData } from "@/types"
 import { getDataSourceTypes } from "@/data/dataSourceTypes"
 import { useToast } from "@/hooks/use-toast"
+import { useCSVValidation } from "@/hooks/useCSVValidation"
+import { CSV_DEFAULTS, CSV_UI_TEXT } from "@/constants/csvImport"
+import { validateCSVFiles } from "@/utils/csv/parseUtils"
 
 interface ImportCSVDialogProps {
   open: boolean
@@ -26,9 +29,10 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
   const [files, setFiles] = useState<File[]>([])
   const [plant, setPlant] = useState("")
   const [machineNo, setMachineNo] = useState("")
-  const [dataSourceType, setDataSourceType] = useState<CSVDataSourceType>("SSAC")
+  const [dataSourceType, setDataSourceType] = useState<CSVDataSourceType>(CSV_DEFAULTS.dataSourceType)
   const [isImporting, setIsImporting] = useState(false)
   const { toast } = useToast()
+  const { validate } = useCSVValidation()
 
   const handleClose = () => {
     onOpenChange(false)
@@ -36,24 +40,24 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
     setFiles([])
     setPlant("")
     setMachineNo("")
-    setDataSourceType("SSAC")
+    setDataSourceType(CSV_DEFAULTS.dataSourceType)
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files
     if (selectedFiles) {
-      const csvFiles = Array.from(selectedFiles).filter(
-        file => file.name.toLowerCase().endsWith('.csv')
-      )
+      const csvFiles = validateCSVFiles(Array.from(selectedFiles))
       setFiles(csvFiles)
     }
   }
 
   const handleImport = async () => {
-    if (!plant || !machineNo || files.length === 0) {
+    const validation = validate({ plant, machineNo, files })
+    
+    if (!validation.isValid) {
       toast({
-        title: "入力エラー",
-        description: "すべての必須項目を入力してください",
+        title: "Validation Error",
+        description: validation.errors.join(', '),
         variant: "destructive",
       })
       return
@@ -70,8 +74,8 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
       handleClose()
     } catch (error) {
       toast({
-        title: "インポートエラー",
-        description: error instanceof Error ? error.message : "インポート中にエラーが発生しました",
+        title: "Import Error",
+        description: error instanceof Error ? error.message : "An error occurred during import",
         variant: "destructive",
       })
     } finally {
@@ -79,7 +83,7 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
     }
   }
 
-  const isValid = plant && machineNo && files.length > 0
+  const { isValid } = validate({ plant, machineNo, files })
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -87,13 +91,13 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
         <DialogHeader>
           <DialogTitle>Import CSV</DialogTitle>
           <DialogDescription>
-            CSVファイルをインポートして、データ期間を登録します。
+            {CSV_UI_TEXT.importDescription}
           </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="csv-files">CSVファイル</Label>
+            <Label htmlFor="csv-files">{CSV_UI_TEXT.selectFiles}</Label>
             <Input
               id="csv-files"
               type="file"
@@ -104,35 +108,35 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
             />
             {files.length > 0 && (
               <p className="text-sm text-muted-foreground">
-                {files.length}個のファイルが選択されています
+                {CSV_UI_TEXT.filesSelected(files.length)}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="plant">Plant</Label>
+            <Label htmlFor="plant">{CSV_UI_TEXT.plant} *</Label>
             <Input
               id="plant"
               value={plant}
               onChange={(e) => setPlant(e.target.value)}
-              placeholder="例: Plant A"
+              placeholder="Enter plant name"
               disabled={isImporting}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="machine-no">Machine No</Label>
+            <Label htmlFor="machine-no">{CSV_UI_TEXT.machineNo} *</Label>
             <Input
               id="machine-no"
               value={machineNo}
               onChange={(e) => setMachineNo(e.target.value)}
-              placeholder="例: GT-01"
+              placeholder="Enter machine number"
               disabled={isImporting}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="data-source-type">Data Source Type</Label>
+            <Label htmlFor="data-source-type">{CSV_UI_TEXT.dataSourceType}</Label>
             <Select
               value={dataSourceType}
               onValueChange={(value) => setDataSourceType(value as CSVDataSourceType)}
@@ -154,10 +158,10 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
 
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={handleClose} disabled={isImporting}>
-            キャンセル
+            {CSV_UI_TEXT.cancel}
           </Button>
           <Button onClick={handleImport} disabled={!isValid || isImporting}>
-            {isImporting ? "インポート中..." : "インポート"}
+            {isImporting ? CSV_UI_TEXT.importing : CSV_UI_TEXT.import}
           </Button>
         </div>
       </DialogContent>

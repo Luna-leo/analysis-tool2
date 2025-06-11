@@ -6,7 +6,7 @@ export type ActiveView = "explorer" | "search" | "database" | "calculator" | "se
 
 export type ConditionMode = "predefined" | "manual"
 
-export type CSVDataSourceType = "SSAC" | "SCA" | "INOMOT"
+export type CSVDataSourceType = "CASS" | "ASC" | "TOMONI"
 
 
 export type AxisType = "datetime" | "time" | "numeric" | "category" | "parameter"
