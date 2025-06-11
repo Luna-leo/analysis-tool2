@@ -199,7 +199,7 @@ export function YAxisGroup({
               <div className="flex gap-2 mb-1 px-1 text-xs font-medium text-muted-foreground border-b pb-1 mt-1">
                 <div className="w-24">Type</div>
                 <div className="flex-1">Parameter</div>
-                <div className="w-20">Display Unit</div>
+                <div className="w-24">Display Unit</div>
                 <div className="w-7 flex justify-center">
                   <Button
                     variant="outline"

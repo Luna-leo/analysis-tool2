@@ -134,7 +134,7 @@ export function UnitSelector({
   }, [openUnitConverterDialog])
 
   return (
-    <div className="w-20">
+    <div className="w-24">
       <Popover open={openUnitCombobox} onOpenChange={setOpenUnitCombobox}>
         <PopoverTrigger asChild>
           <Button
