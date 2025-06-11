@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from "react"
-import { File, Folder, ChevronRight, ChevronDown, MoreVertical, Edit2, FilePlus, FolderPlus } from "lucide-react"
+import { ChartLine, Folder, ChevronRight, ChevronDown, MoreVertical, Edit2, FilePlus, FolderPlus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { FileNode } from "@/types"
 import { useFileStore } from "@/stores/useFileStore"
@@ -195,7 +195,7 @@ export function FileTreeNode({ node, depth = 0 }: FileTreeNodeProps) {
           ) : (
             <>
               <div className="w-4" />
-              <File className="h-4 w-4" />
+              <ChartLine className="h-4 w-4" />
             </>
           )}
           {renamingNode === node.id ? (
@@ -280,7 +280,7 @@ export function FileTreeNode({ node, depth = 0 }: FileTreeNodeProps) {
               {creatingNodeType === "folder" ? (
                 <Folder className="h-4 w-4" />
               ) : (
-                <File className="h-4 w-4" />
+                <ChartLine className="h-4 w-4" />
               )}
               <Input
                 ref={inputRef}

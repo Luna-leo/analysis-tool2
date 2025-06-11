@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from "react"
-import { File, Folder } from "lucide-react"
+import { ChartLine, Folder } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useFileStore } from "@/stores/useFileStore"
 import { Input } from "@/components/ui/input"
@@ -100,7 +100,7 @@ export function FileExplorer() {
           {creatingNodeType === "folder" ? (
             <Folder className="h-4 w-4" />
           ) : (
-            <File className="h-4 w-4" />
+            <ChartLine className="h-4 w-4" />
           )}
           <Input
             ref={inputRef}

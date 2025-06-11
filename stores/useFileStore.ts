@@ -4,7 +4,7 @@ import type { FileNode } from '@/types'
 import { mockFileTree } from '@/data/mockData'
 
 interface OpenTab extends FileNode {
-  source?: 'explorer' | 'database'
+  source?: 'explorer' | 'database' | 'calculator'
 }
 
 interface FileState {
@@ -23,7 +23,7 @@ interface FileState {
 }
 
 interface FileActions {
-  openFile: (file: FileNode, source?: 'explorer' | 'database') => void
+  openFile: (file: FileNode, source?: 'explorer' | 'database' | 'calculator') => void
   closeTab: (fileId: string) => void
   setActiveTab: (tabId: string) => void
   toggleFolder: (folderId: string) => void

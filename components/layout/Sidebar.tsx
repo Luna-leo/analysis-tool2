@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react"
 import { 
-  FolderOpen, 
+  ChartLine, 
   Search, 
   Database, 
   Calculator, 
@@ -15,7 +15,6 @@ import {
   Calendar,
   Hash,
   Tag,
-  BarChart3,
   Gauge,
   FileUp
 } from "lucide-react"
@@ -30,7 +29,7 @@ import { useUIStore } from "@/stores/useUIStore"
 
 export function Sidebar() {
   const { activeView, sidebarOpen, setActiveView, setSidebarOpen } = useViewStore()
-  const { fileTree, setCreatingNode, openFile } = useFileStore()
+  const { setCreatingNode, openFile } = useFileStore()
   const layoutStore = useLayoutStore()
   const uiStore = useUIStore()
 
@@ -316,7 +315,7 @@ export function Sidebar() {
           className="h-10 w-10"
           onClick={() => handleViewClick("explorer")}
         >
-          <FolderOpen className="h-5 w-5" />
+          <ChartLine className="h-5 w-5" />
         </Button>
         <Button
           variant={activeView === "search" ? "secondary" : "ghost"}

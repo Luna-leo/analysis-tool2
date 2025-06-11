@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { X, BarChart3, Database, Calculator, FunctionSquare, Zap, ArrowLeftRight, Calendar, Gauge, FileUp, Hash, Tag } from "lucide-react"
+import { X, ChartLine, Database, Calculator, FunctionSquare, Zap, ArrowLeftRight, Calendar, Gauge, FileUp, Hash, Tag } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { FileNode } from "@/types"
 import { useFileStore } from "@/stores/useFileStore"
@@ -109,7 +109,7 @@ export function TabBar({ openTabs }: TabBarProps) {
           {!['formula-master', 'trigger-condition-master', 'unit-converter-formula-master', 'event-master', 'interlock-master', 'csv-import', 'sensor-data-master', 'parameter-master', 'tag-master'].includes(tab.type) && (
             <>
               {((tab as any).source === 'explorer' || !(tab as any).source) && (
-                <BarChart3 className="h-3.5 w-3.5 flex-shrink-0" />
+                <ChartLine className="h-3.5 w-3.5 flex-shrink-0" />
               )}
               {(tab as any).source === 'database' && (
                 <Database className="h-3.5 w-3.5 flex-shrink-0" />
