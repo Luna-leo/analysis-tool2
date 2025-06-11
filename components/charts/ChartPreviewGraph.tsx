@@ -166,6 +166,9 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       // Render empty chart with axes
       renderEmptyChart({ g, width, height, chartType: "scatter", editingChart, scalesRef })
     }
+    
+    // Ensure reference lines layer is always on top
+    svg.select(".reference-lines-layer").raise()
 
   }, [chartConfigWithoutRefLines, chartData, dimensions])
 

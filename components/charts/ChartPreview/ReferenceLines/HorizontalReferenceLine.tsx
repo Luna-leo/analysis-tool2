@@ -73,7 +73,6 @@ export function HorizontalReferenceLine({
       .attr("stroke", color)
       .attr("stroke-width", 1)
       .attr("stroke-dasharray", strokeDasharray)
-      .attr("opacity", 0.8)
     
     // Update or create interactive area
     if (isInteractive) {
@@ -86,8 +85,9 @@ export function HorizontalReferenceLine({
           onDragStart()
           // Store the current label offset at drag start
           const currentGroup = d3.select(this.parentNode as SVGGElement)
-          const currentLabel = currentGroup.select(".line-label")
-          if (!currentLabel.empty()) {
+          const currentLabelGroup = currentGroup.select(".line-label-group")
+          if (!currentLabelGroup.empty()) {
+            const currentLabel = currentLabelGroup.select(".line-label")
             const labelY = parseFloat(currentLabel.attr("y"))
             const lineY = parseFloat(currentGroup.select(".main-line").attr("y1"))
             labelOffsetY = labelY - lineY
@@ -105,16 +105,26 @@ export function HorizontalReferenceLine({
           currentGroup.select(".interactive-line")
             .attr("y1", clampedY)
             .attr("y2", clampedY)
-          const currentLabel = currentGroup.select(".line-label")
-          if (!currentLabel.empty() && labelOffsetY !== null) {
-            // Update label position maintaining the offset
-            currentLabel
-              .attr("y", clampedY + labelOffsetY)
+          const currentLabelGroup = currentGroup.select(".line-label-group")
+          if (!currentLabelGroup.empty() && labelOffsetY !== null) {
+            // Update label and background position maintaining the offset
+            const currentLabel = currentLabelGroup.select(".line-label")
+            currentLabel.attr("y", clampedY + labelOffsetY)
+            
+            // Update background position
+            const textBBox = (currentLabel.node() as SVGTextElement).getBBox()
+            currentLabelGroup.select(".line-label-background")
+              .attr("x", textBBox.x - 4)
+              .attr("y", textBBox.y - 2)
+              .attr("width", textBBox.width + 8)
+              .attr("height", textBBox.height + 4)
           }
         })
         .on("end", function(event) {
           const clampedY = Math.max(0, Math.min(height, event.y))
-          const newValue = Math.round(yScale.invert(clampedY))
+          const numValue = yScale.invert(clampedY)
+          // Keep decimal precision
+          const newValue = Math.round(numValue * 1000) / 1000 // 3 decimal places
           onDragEnd(newValue)
         })
       
@@ -138,7 +148,14 @@ export function HorizontalReferenceLine({
     
     // Update or create label
     if (line.label) {
-      let labelText = group.select<SVGTextElement>(".line-label")
+      let labelGroup = group.select<SVGGElement>(".line-label-group")
+      if (labelGroup.empty()) {
+        labelGroup = group.append("g")
+          .attr("class", "line-label-group")
+      }
+      
+      let labelBackground = labelGroup.select<SVGRectElement>(".line-label-background")
+      let labelText = labelGroup.select<SVGTextElement>(".line-label")
       
       // Calculate label position
       let labelX = 5
@@ -154,8 +171,18 @@ export function HorizontalReferenceLine({
         labelY = yPos + (line.labelOffset.y || -3)
       }
       
+      if (labelBackground.empty()) {
+        labelBackground = labelGroup.append("rect")
+          .attr("class", "line-label-background")
+          .attr("fill", "white")
+          .attr("stroke", color)
+          .attr("stroke-width", 0.5)
+          .attr("rx", 2)
+          .attr("ry", 2)
+      }
+      
       if (labelText.empty()) {
-        labelText = group.append("text")
+        labelText = labelGroup.append("text")
           .attr("class", "line-label")
           .style("font-size", "12px")
           .style("cursor", "move")
@@ -163,16 +190,25 @@ export function HorizontalReferenceLine({
       
       // Create label drag behavior
       if (isInteractive) {
-        const labelDrag = d3.drag<SVGTextElement, any>()
+        const labelDrag = d3.drag<SVGGElement, any>()
           .on("start", function() {
             onLabelDragStart()
           })
           .on("drag", function(event) {
             onLabelDrag(event.x, event.y)
             
-            d3.select(this)
+            const g = d3.select(this)
+            g.select(".line-label")
               .attr("x", event.x)
               .attr("y", event.y)
+            
+            // Update background position based on text
+            const textBBox = (g.select(".line-label").node() as SVGTextElement).getBBox()
+            g.select(".line-label-background")
+              .attr("x", textBBox.x - 4)
+              .attr("y", textBBox.y - 2)
+              .attr("width", textBBox.width + 8)
+              .attr("height", textBBox.height + 4)
           })
           .on("end", function(event) {
             // Get the current line position from DOM
@@ -187,7 +223,7 @@ export function HorizontalReferenceLine({
             onLabelDragEnd(offsetX, offsetY)
           })
           
-        labelText.call(labelDrag)
+        labelGroup.call(labelDrag)
       }
       
       labelText
@@ -196,9 +232,19 @@ export function HorizontalReferenceLine({
         .attr("fill", color)
         .style("font-weight", "normal")
         .text(line.label)
-        .raise()
+      
+      // Update background to match text size
+      const textBBox = (labelText.node() as SVGTextElement).getBBox()
+      labelBackground
+        .attr("x", textBBox.x - 4)
+        .attr("y", textBBox.y - 2)
+        .attr("width", textBBox.width + 8)
+        .attr("height", textBBox.height + 4)
+      
+      // Ensure label group is on top
+      labelGroup.raise()
     } else {
-      group.select(".line-label").remove()
+      group.select(".line-label-group").remove()
     }
     
     // Remove any existing handle (no handle for horizontal lines)
