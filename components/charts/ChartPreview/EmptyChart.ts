@@ -1,6 +1,7 @@
 import * as d3 from "d3"
 import { ChartComponent } from "@/types"
 import { getTimeFormat } from "./utils"
+import { calculateXAxisPosition } from "@/utils/chart/axisPositioning"
 
 interface EmptyChartProps {
   g: d3.Selection<SVGGElement, unknown, null, undefined>
@@ -50,11 +51,14 @@ export const renderEmptyChart = ({ g, width, height, chartType, editingChart, sc
       .nice()
       .range([height, 0])
     
+    // Calculate X-axis position
+    const xAxisY = calculateXAxisPosition(yDomain, yScale, height)
+    
     // X axis
     if (xAxisType === "datetime") {
       const timeFormat = getTimeFormat(xDomain[0] as Date, xDomain[1] as Date)
       g.append("g")
-        .attr("transform", `translate(0,${height})`)
+        .attr("transform", `translate(0,${xAxisY})`)
         .call(d3.axisBottom(xScale as d3.ScaleTime<number, number>)
           .ticks(5)
           .tickFormat((d) => d3.timeFormat(timeFormat)(d as Date)))
@@ -62,7 +66,7 @@ export const renderEmptyChart = ({ g, width, height, chartType, editingChart, sc
         .style("font-size", "12px")
     } else if (xAxisType === "time") {
       g.append("g")
-        .attr("transform", `translate(0,${height})`)
+        .attr("transform", `translate(0,${xAxisY})`)
         .call(d3.axisBottom(xScale as d3.ScaleLinear<number, number>)
           .ticks(5)
           .tickFormat((d) => `${d}min`))
@@ -70,7 +74,7 @@ export const renderEmptyChart = ({ g, width, height, chartType, editingChart, sc
         .style("font-size", "12px")
     } else {
       g.append("g")
-        .attr("transform", `translate(0,${height})`)
+        .attr("transform", `translate(0,${xAxisY})`)
         .call(d3.axisBottom(xScale as d3.ScaleLinear<number, number>)
           .ticks(5))
         .selectAll("text")

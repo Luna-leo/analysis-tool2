@@ -2,11 +2,11 @@
 
 import React from 'react'
 import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CSVDataSourceType } from '@/types'
 import { getDataSourceTypes, getDataSourceConfig } from '@/data/dataSourceTypes'
+import { PlantMachineFields } from '@/components/charts/EditModal/parameters/PlantMachineFields'
 
 interface DataSourceInfoSectionProps {
   dataSourceType: CSVDataSourceType
@@ -57,24 +57,14 @@ export function DataSourceInfoSection({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="plant">Plant *</Label>
-          <Input
-            id="plant"
-            placeholder="Enter plant name"
-            value={plant}
-            onChange={(e) => setPlant(e.target.value)}
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="machineNo">Machine No *</Label>
-          <Input
-            id="machineNo"
-            placeholder="Enter machine number"
-            value={machineNo}
-            onChange={(e) => setMachineNo(e.target.value)}
-            required
+          <div className="text-sm font-medium">
+            Plant * / Machine No *
+          </div>
+          <PlantMachineFields
+            plant={plant}
+            onPlantChange={setPlant}
+            machineNo={machineNo}
+            onMachineNoChange={setMachineNo}
           />
         </div>
       </CardContent>

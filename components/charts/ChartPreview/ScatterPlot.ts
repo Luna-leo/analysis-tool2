@@ -1,6 +1,7 @@
 import * as d3 from "d3"
 import { ChartComponent } from "@/types"
 import { formatXValue, getXValueForScale } from "@/utils/chartAxisUtils"
+import { calculateXAxisPosition } from "@/utils/chart/axisPositioning"
 
 interface RenderScatterPlotProps {
   g: d3.Selection<SVGGElement, unknown, null, undefined>
@@ -109,9 +110,12 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
     .tickFormat(d3.format(".2f"))
 
   // Add axes
+  const yDomain = yScale.domain()
+  const xAxisY = calculateXAxisPosition(yDomain as [number, number], yScale, height)
+  
   g.append("g")
     .attr("class", "x-axis")
-    .attr("transform", `translate(0,${height})`)
+    .attr("transform", `translate(0,${xAxisY})`)
     .call(xAxis)
 
   g.append("g")

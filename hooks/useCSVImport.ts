@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast'
 import { useCSVValidation } from './useCSVValidation'
 import { filterFilesByPattern } from '@/utils/csv/parseUtils'
 import { CSV_DEFAULTS, CSV_VALIDATION_MESSAGES, CSV_UI_TEXT } from '@/constants/csvImport'
+import { useInputHistoryStore } from '@/stores/useInputHistoryStore'
 
 export function useCSVImport(onImportComplete?: () => void) {
   const [dataSourceType, setDataSourceType] = useState<CSVDataSourceType>(CSV_DEFAULTS.dataSourceType)
@@ -19,6 +20,7 @@ export function useCSVImport(onImportComplete?: () => void) {
   
   const { toast } = useToast()
   const { validate } = useCSVValidation()
+  const { addPlantHistory, addMachineHistory } = useInputHistoryStore()
 
   // Filter files based on pattern
   const applyFileFilter = useCallback((pathsToFilter: string[]): string[] => {
@@ -70,6 +72,10 @@ export function useCSVImport(onImportComplete?: () => void) {
         title: "Import Successful",
         description: `Successfully imported ${totalFiles} CSV files`,
       })
+      
+      // Save to history on successful import
+      addPlantHistory(plant)
+      addMachineHistory(machineNo)
       
       if (onImportComplete) {
         onImportComplete()

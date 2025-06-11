@@ -13,6 +13,8 @@ import { EventInfo } from "@/types"
 import { useTimeAdjustment } from "@/hooks/useTimeAdjustment"
 import { ManualEntryData } from "@/hooks/useManualEntry"
 import { TimeAdjustmentSection } from "./TimeAdjustmentSection"
+import { PlantMachineFields } from "@/components/charts/EditModal/parameters/PlantMachineFields"
+import { useInputHistoryStore } from "@/stores/useInputHistoryStore"
 
 interface ManualEntryDialogProps {
   isOpen: boolean
@@ -34,6 +36,7 @@ export const ManualEntryDialog: React.FC<ManualEntryDialogProps> = ({
   isValid
 }) => {
   const { target, setTarget, unit, setUnit, adjustTime } = useTimeAdjustment()
+  const { addPlantHistory, addMachineHistory } = useInputHistoryStore()
 
   const handleTimeAdjustment = (amount: number) => {
     adjustTime(
@@ -41,6 +44,15 @@ export const ManualEntryDialog: React.FC<ManualEntryDialogProps> = ({
       amount,
       (timeData) => onUpdateData(timeData)
     )
+  }
+
+  const handleSave = () => {
+    // Save to history only for new entries
+    if (!editingItemId) {
+      addPlantHistory(data.plant)
+      addMachineHistory(data.machineNo)
+    }
+    onSave(data, editingItemId)
   }
 
   return (
@@ -60,34 +72,13 @@ export const ManualEntryDialog: React.FC<ManualEntryDialogProps> = ({
           <div className="space-y-3">
             <h5 className="text-sm font-medium text-muted-foreground">Required Fields</h5>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="manual-plant" className="text-sm">
-                  Plant <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="manual-plant"
-                  value={data.plant}
-                  onChange={(e) => onUpdateData({ plant: e.target.value })}
-                  className="mt-1"
-                  placeholder="Enter plant name"
-                  disabled={!!editingItemId}
-                />
-              </div>
-              <div>
-                <Label htmlFor="manual-machine" className="text-sm">
-                  Machine No <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="manual-machine"
-                  value={data.machineNo}
-                  onChange={(e) => onUpdateData({ machineNo: e.target.value })}
-                  className="mt-1"
-                  placeholder="Enter machine number"
-                  disabled={!!editingItemId}
-                />
-              </div>
-            </div>
+            <PlantMachineFields
+              plant={data.plant}
+              onPlantChange={(plant) => onUpdateData({ plant })}
+              machineNo={data.machineNo}
+              onMachineNoChange={(machineNo) => onUpdateData({ machineNo })}
+              disabled={!!editingItemId}
+            />
             
             {/* Legend Field */}
             <div>
@@ -159,7 +150,7 @@ export const ManualEntryDialog: React.FC<ManualEntryDialogProps> = ({
               Cancel
             </Button>
             <Button 
-              onClick={() => onSave(data, editingItemId)}
+              onClick={handleSave}
               disabled={!isValid}
             >
               {editingItemId ? "Update Entry" : "Add Entry"}

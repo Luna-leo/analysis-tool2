@@ -2,6 +2,7 @@ import * as d3 from "d3"
 import { ChartComponent, MarkerType } from "@/types"
 import { ChartDataPoint } from "@/types/chart-data"
 import { getTimeFormat } from "./utils"
+import { calculateXAxisPosition } from "@/utils/chart/axisPositioning"
 
 interface ChartDataItem {
   timestamp: Date | number
@@ -243,8 +244,12 @@ export const renderLineChart = ({ g, data, width, height, editingChart, scalesRe
   }
 
   const timeFormat = getTimeFormat(xDomain[0], xDomain[1])
+  
+  // Calculate X-axis position
+  const xAxisY = calculateXAxisPosition(yDomain, yScale, height)
+  
   g.append("g")
-    .attr("transform", `translate(0,${height})`)
+    .attr("transform", `translate(0,${xAxisY})`)
     .call(d3.axisBottom(xScale)
       .ticks(5)
       .tickFormat((d) => d3.timeFormat(timeFormat)(d as Date)))

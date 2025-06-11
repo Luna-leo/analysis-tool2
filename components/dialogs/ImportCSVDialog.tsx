@@ -18,6 +18,8 @@ import { useToast } from "@/hooks/use-toast"
 import { useCSVValidation } from "@/hooks/useCSVValidation"
 import { CSV_DEFAULTS, CSV_UI_TEXT } from "@/constants/csvImport"
 import { validateCSVFiles } from "@/utils/csv/parseUtils"
+import { PlantMachineFields } from "@/components/charts/EditModal/parameters/PlantMachineFields"
+import { useInputHistoryStore } from "@/stores/useInputHistoryStore"
 
 interface ImportCSVDialogProps {
   open: boolean
@@ -33,6 +35,7 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
   const [isImporting, setIsImporting] = useState(false)
   const { toast } = useToast()
   const { validate } = useCSVValidation()
+  const { addPlantHistory, addMachineHistory } = useInputHistoryStore()
 
   const handleClose = () => {
     onOpenChange(false)
@@ -71,6 +74,11 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
         machineNo,
         dataSourceType
       })
+      
+      // Save to history on successful import
+      addPlantHistory(plant)
+      addMachineHistory(machineNo)
+      
       handleClose()
     } catch (error) {
       toast({
@@ -114,23 +122,14 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="plant">{CSV_UI_TEXT.plant} *</Label>
-            <Input
-              id="plant"
-              value={plant}
-              onChange={(e) => setPlant(e.target.value)}
-              placeholder="Enter plant name"
-              disabled={isImporting}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="machine-no">{CSV_UI_TEXT.machineNo} *</Label>
-            <Input
-              id="machine-no"
-              value={machineNo}
-              onChange={(e) => setMachineNo(e.target.value)}
-              placeholder="Enter machine number"
+            <div className="text-sm font-medium mb-2">
+              {CSV_UI_TEXT.plant} * / {CSV_UI_TEXT.machineNo} *
+            </div>
+            <PlantMachineFields
+              plant={plant}
+              onPlantChange={setPlant}
+              machineNo={machineNo}
+              onMachineNoChange={setMachineNo}
               disabled={isImporting}
             />
           </div>
