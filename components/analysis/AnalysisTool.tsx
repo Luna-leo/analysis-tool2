@@ -6,7 +6,6 @@ import { Sidebar, TabHeader, BreadcrumbNavigation, WelcomeMessage } from "../lay
 import { ChartGrid, ChartEditModal } from "../charts"
 import { useFileStore } from "@/stores/useFileStore"
 import { useParameterStore } from "@/stores/useParameterStore"
-import { FileNode, ActiveView } from "@/types"
 
 export default function AnalysisTool() {
   const { openTabs, activeTab, openFile, fileTree } = useFileStore()
@@ -25,28 +24,6 @@ export default function AnalysisTool() {
       if (speedUpFile) {
         openFile(speedUpFile, 'explorer')
       }
-
-      // Define initial system tabs to open
-      const initialSystemTabs: Array<{ id: string; name: string; type: string; viewType: ActiveView }> = [
-        { id: "csv-import", name: "CSV Import", type: "csv-import", viewType: 'database' },
-        { id: "event-master", name: "Event Master", type: "event-master", viewType: 'database' },
-        { id: "formula-master", name: "Formula Master", type: "formula-master", viewType: 'database' },
-        { id: "interlock-master", name: "Interlock Master", type: "interlock-master", viewType: 'database' },
-        { id: "trigger-condition-master", name: "Trigger Condition Master", type: "trigger-condition-master", viewType: 'database' },
-        { id: "unit-converter-formula-master", name: "Unit Conversion Formula Master", type: "unit-converter-formula-master", viewType: 'database' }
-      ]
-
-      // Open all initial system tabs
-      initialSystemTabs.forEach(tab => {
-        const node: FileNode = {
-          id: tab.id,
-          name: tab.name,
-          type: tab.type,
-          isSystemNode: true,
-          ...(tab.id === "csv-import" && { dataSources: [], charts: [] })
-        }
-        openFile(node, tab.viewType)
-      })
     }
   }, []) // Empty dependency array to run only once on mount
 

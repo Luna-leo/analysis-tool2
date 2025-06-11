@@ -268,7 +268,6 @@ export function Sidebar() {
         {ACTIVITY_BAR_ITEMS.map(({ view, icon: Icon }) => (
           <ActivityBarButton
             key={view}
-            view={view}
             icon={Icon}
             isActive={activeView === view}
             onClick={() => handleViewClick(view)}
@@ -290,12 +289,10 @@ export function Sidebar() {
 
 // Sub-components
 function ActivityBarButton({ 
-  view, 
   icon: Icon, 
   isActive, 
   onClick 
 }: {
-  view: ActiveView
   icon: React.ComponentType<{ className?: string }>
   isActive: boolean
   onClick: () => void
