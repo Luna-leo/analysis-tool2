@@ -6,7 +6,7 @@ import { Sidebar, TabHeader, BreadcrumbNavigation, WelcomeMessage } from "../lay
 import { ChartGrid, ChartEditModal } from "../charts"
 import { useFileStore } from "@/stores/useFileStore"
 import { useParameterStore } from "@/stores/useParameterStore"
-import { FileNode } from "@/types"
+import { FileNode, ActiveView } from "@/types"
 
 export default function AnalysisTool() {
   const { openTabs, activeTab, openFile, fileTree } = useFileStore()
@@ -26,61 +26,27 @@ export default function AnalysisTool() {
         openFile(speedUpFile, 'explorer')
       }
 
-      // Create and open CSV Import tab
-      const csvImportFile: FileNode = {
-        id: "csv-import",
-        name: "CSV Import",
-        type: "csv-import",
-        dataSources: [],
-        charts: [],
-        isSystemNode: true
-      }
-      openFile(csvImportFile, 'database')
+      // Define initial system tabs to open
+      const initialSystemTabs: Array<{ id: string; name: string; type: string; viewType: ActiveView }> = [
+        { id: "csv-import", name: "CSV Import", type: "csv-import", viewType: 'database' },
+        { id: "event-master", name: "Event Master", type: "event-master", viewType: 'database' },
+        { id: "formula-master", name: "Formula Master", type: "formula-master", viewType: 'database' },
+        { id: "interlock-master", name: "Interlock Master", type: "interlock-master", viewType: 'database' },
+        { id: "trigger-condition-master", name: "Trigger Condition Master", type: "trigger-condition-master", viewType: 'database' },
+        { id: "unit-converter-formula-master", name: "Unit Conversion Formula Master", type: "unit-converter-formula-master", viewType: 'database' }
+      ]
 
-      // Create and open Event Master tab
-      const eventMasterFile: FileNode = {
-        id: "event-master",
-        name: "Event Master",
-        type: "event-master",
-        isSystemNode: true
-      }
-      openFile(eventMasterFile, 'database')
-
-      // Create and open Formula Master tab
-      const formulaMasterFile: FileNode = {
-        id: "formula-master",
-        name: "Formula Master",
-        type: "formula-master",
-        isSystemNode: true
-      }
-      openFile(formulaMasterFile, 'database')
-
-      // Create and open Interlock Master tab
-      const interlockMasterFile: FileNode = {
-        id: "interlock-master",
-        name: "Interlock Master",
-        type: "interlock-master",
-        isSystemNode: true
-      }
-      openFile(interlockMasterFile, 'database')
-
-      // Create and open Trigger Condition Master tab
-      const triggerConditionMasterFile: FileNode = {
-        id: "trigger-condition-master",
-        name: "Trigger Condition Master",
-        type: "trigger-condition-master",
-        isSystemNode: true
-      }
-      openFile(triggerConditionMasterFile, 'database')
-
-      // Create and open Unit Conversion Formula Master tab
-      const unitConverterFormulaMasterFile: FileNode = {
-        id: "unit-converter-formula-master",
-        name: "Unit Conversion Formula Master",
-        type: "unit-converter-formula-master",
-        isSystemNode: true
-      }
-      openFile(unitConverterFormulaMasterFile, 'database')
+      // Open all initial system tabs
+      initialSystemTabs.forEach(tab => {
+        const node: FileNode = {
+          id: tab.id,
+          name: tab.name,
+          type: tab.type,
+          isSystemNode: true,
+          ...(tab.id === "csv-import" && { dataSources: [], charts: [] })
+        }
+        openFile(node, tab.viewType)
+      })
     }
   }, []) // Empty dependency array to run only once on mount
 
@@ -89,9 +55,7 @@ export default function AnalysisTool() {
       <ResizablePanelGroup direction="horizontal" className="flex-1">
         {/* Sidebar Panel */}
         <ResizablePanel defaultSize={25} minSize={15} maxSize={40}>
-          <div className="flex h-full">
-            <Sidebar />
-          </div>
+          <Sidebar />
         </ResizablePanel>
 
         <ResizableHandle />

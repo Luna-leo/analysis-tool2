@@ -21,11 +21,73 @@ import {
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { FileExplorer } from "./FileExplorer"
-import { ActiveView, FileNode } from "@/types"
+import { ActiveView, FileNode, SystemNodeConfig, ActivityBarItem } from "@/types"
 import { useViewStore } from "@/stores/useViewStore"
 import { useFileStore } from "@/stores/useFileStore"
 import { useLayoutStore } from "@/stores/useLayoutStore"
 import { useUIStore } from "@/stores/useUIStore"
+import { cn } from "@/lib/utils"
+
+// Constants
+const SYSTEM_NODES: Record<string, SystemNodeConfig> = {
+  csvImport: {
+    id: 'csv-import',
+    name: 'CSV Import',
+    type: 'csv-import',
+    icon: FileUp,
+    viewType: 'database'
+  },
+  eventMaster: {
+    id: 'event-master',
+    name: 'Event Master',
+    type: 'event-master',
+    icon: Calendar,
+    viewType: 'database'
+  },
+  interlockMaster: {
+    id: 'interlock-master',
+    name: 'Interlock Master',
+    type: 'interlock-master',
+    icon: Gauge,
+    viewType: 'database'
+  },
+  formulaMaster: {
+    id: 'formula-master',
+    name: 'Formula Master',
+    type: 'formula-master',
+    icon: FunctionSquare,
+    viewType: 'calculator'
+  },
+  triggerConditionMaster: {
+    id: 'trigger-condition-master',
+    name: 'Trigger Condition Master',
+    type: 'trigger-condition-master',
+    icon: Zap,
+    viewType: 'calculator'
+  },
+  unitConverterFormulaMaster: {
+    id: 'unit-converter-formula-master',
+    name: 'Unit Converter Formula Master',
+    type: 'unit-converter-formula-master',
+    icon: ArrowLeftRight,
+    viewType: 'calculator'
+  },
+  settings: {
+    id: 'settings',
+    name: 'Personal Settings',
+    type: 'settings',
+    icon: Settings,
+    viewType: 'settings'
+  }
+}
+
+const ACTIVITY_BAR_ITEMS: ActivityBarItem[] = [
+  { view: 'explorer', icon: ChartLine },
+  { view: 'search', icon: Search },
+  { view: 'database', icon: Database },
+  { view: 'calculator', icon: Calculator },
+  { view: 'settings', icon: Settings }
+]
 
 export function Sidebar() {
   const { activeView, sidebarOpen, setActiveView, setSidebarOpen } = useViewStore()
@@ -58,98 +120,23 @@ export function Sidebar() {
     }
   }
 
-  const handleOpenCSVImport = () => {
-    // Create a special CSV Import tab
-    const csvImportNode: FileNode = {
-      id: 'csv-import',
-      name: 'CSV Import',
-      type: 'csv-import',
+  const openSystemNode = (nodeConfig: SystemNodeConfig) => {
+    const node: FileNode = {
+      id: nodeConfig.id,
+      name: nodeConfig.name,
+      type: nodeConfig.type,
       isSystemNode: true
     }
     
-    // Open the CSV Import as a tab
-    openFile(csvImportNode, 'database')
-    // Set current page and initialize settings
-    setTimeout(() => {
-      uiStore.setCurrentPage(1)
-      layoutStore.initializeSettings(csvImportNode.id)
-    }, 0)
-  }
-
-  const handleOpenEventMaster = () => {
-    // Create a special Event Master tab
-    const eventMasterNode: FileNode = {
-      id: 'event-master',
-      name: 'Event Master',
-      type: 'event-master',
-      isSystemNode: true
-    }
+    openFile(node, nodeConfig.viewType)
     
-    // Open the Event Master as a tab
-    openFile(eventMasterNode, 'database')
-  }
-
-  const handleOpenInterlockMaster = () => {
-    // Create a special Interlock Master tab
-    const interlockMasterNode: FileNode = {
-      id: 'interlock-master',
-      name: 'Interlock Master',
-      type: 'interlock-master',
-      isSystemNode: true
+    // Special handling for CSV Import
+    if (nodeConfig.id === 'csv-import') {
+      setTimeout(() => {
+        uiStore.setCurrentPage(1)
+        layoutStore.initializeSettings(node.id)
+      }, 0)
     }
-    
-    // Open the Interlock Master as a tab
-    openFile(interlockMasterNode, 'database')
-  }
-
-  const handleOpenFormulaMaster = () => {
-    // Create a special Formula Master tab
-    const formulaMasterNode: FileNode = {
-      id: 'formula-master',
-      name: 'Formula Master',
-      type: 'formula-master',
-      isSystemNode: true
-    }
-    
-    // Open the Formula Master as a tab
-    openFile(formulaMasterNode, 'calculator')
-  }
-
-  const handleOpenTriggerConditionMaster = () => {
-    // Create a special Trigger Condition Master tab
-    const triggerConditionMasterNode: FileNode = {
-      id: 'trigger-condition-master',
-      name: 'Trigger Condition Master',
-      type: 'trigger-condition-master',
-      isSystemNode: true
-    }
-    
-    // Open the Trigger Condition Master as a tab
-    openFile(triggerConditionMasterNode, 'calculator')
-  }
-
-  const handleOpenUnitConverterFormulaMaster = () => {
-    // Create a special Unit Converter Formula Master tab
-    const unitConverterFormulaMasterNode: FileNode = {
-      id: 'unit-converter-formula-master',
-      name: 'Unit Converter Formula Master',
-      type: 'unit-converter-formula-master',
-      isSystemNode: true
-    }
-    
-    // Open the Unit Converter Formula Master as a tab
-    openFile(unitConverterFormulaMasterNode, 'calculator')
-  }
-
-  const handleOpenSettings = () => {
-    const settingsNode: FileNode = {
-      id: 'settings',
-      name: 'Personal Settings',
-      type: 'settings',
-      isSystemNode: true
-    }
-    
-    openFile(settingsNode, 'settings')
   }
 
   const renderSidebarContent = () => {
@@ -195,56 +182,38 @@ export function Sidebar() {
           <>
             <h2 className="text-base font-semibold px-4 py-3">Database</h2>
             <div className="px-2 space-y-1">
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3 h-12 px-3 text-base font-normal"
-                onClick={handleOpenCSVImport}
-              >
-                <FileUp className="h-5 w-5 shrink-0" />
-                <span className="text-base">CSV Import</span>
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3 h-12 px-3 text-base font-normal"
-                onClick={handleOpenEventMaster}
-              >
-                <Calendar className="h-5 w-5 shrink-0" />
-                <span className="text-base">Event Master</span>
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3 h-12 px-3 text-base font-normal"
-                onClick={handleOpenInterlockMaster}
-              >
-                <Gauge className="h-5 w-5 shrink-0" />
-                <span className="text-base">Interlock Master</span>
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3 h-12 px-3 text-base font-normal"
+              <SidebarButton
+                icon={SYSTEM_NODES.csvImport.icon}
+                label={SYSTEM_NODES.csvImport.name}
+                onClick={() => openSystemNode(SYSTEM_NODES.csvImport)}
+              />
+              <SidebarButton
+                icon={SYSTEM_NODES.eventMaster.icon}
+                label={SYSTEM_NODES.eventMaster.name}
+                onClick={() => openSystemNode(SYSTEM_NODES.eventMaster)}
+              />
+              <SidebarButton
+                icon={SYSTEM_NODES.interlockMaster.icon}
+                label={SYSTEM_NODES.interlockMaster.name}
+                onClick={() => openSystemNode(SYSTEM_NODES.interlockMaster)}
+              />
+              <SidebarButton
+                icon={Database}
+                label="Sensor data Master"
                 onClick={() => console.log("Sensor data Master")}
-              >
-                <Database className="h-5 w-5 shrink-0" />
-                <span className="text-base">Sensor data Master</span>
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3 h-12 px-3 text-base font-normal"
+              />
+              <SidebarButton
+                icon={Hash}
+                label="Parameter Master"
                 onClick={() => console.log("Parameter Master")}
                 disabled
-              >
-                <Hash className="h-5 w-5 shrink-0" />
-                <span className="text-base">Parameter Master</span>
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3 h-12 px-3 text-base font-normal"
+              />
+              <SidebarButton
+                icon={Tag}
+                label="Tag Master"
                 onClick={() => console.log("Tag Master")}
                 disabled
-              >
-                <Tag className="h-5 w-5 shrink-0" />
-                <span className="text-base">Tag Master</span>
-              </Button>
+              />
             </div>
           </>
         )
@@ -253,30 +222,21 @@ export function Sidebar() {
           <>
             <h2 className="text-base font-semibold px-4 py-3">Calculator</h2>
             <div className="px-2 space-y-1">
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3 h-12 px-3 text-base font-normal"
-                onClick={handleOpenFormulaMaster}
-              >
-                <FunctionSquare className="h-5 w-5 shrink-0" />
-                <span className="text-base">Formula Master</span>
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3 h-12 px-3 text-base font-normal"
-                onClick={handleOpenTriggerConditionMaster}
-              >
-                <Zap className="h-5 w-5 shrink-0" />
-                <span className="text-base">Trigger Condition Master</span>
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3 h-12 px-3 text-base font-normal"
-                onClick={handleOpenUnitConverterFormulaMaster}
-              >
-                <ArrowLeftRight className="h-5 w-5 shrink-0" />
-                <span className="text-base">Unit Convert Formula Master</span>
-              </Button>
+              <SidebarButton
+                icon={SYSTEM_NODES.formulaMaster.icon}
+                label={SYSTEM_NODES.formulaMaster.name}
+                onClick={() => openSystemNode(SYSTEM_NODES.formulaMaster)}
+              />
+              <SidebarButton
+                icon={SYSTEM_NODES.triggerConditionMaster.icon}
+                label={SYSTEM_NODES.triggerConditionMaster.name}
+                onClick={() => openSystemNode(SYSTEM_NODES.triggerConditionMaster)}
+              />
+              <SidebarButton
+                icon={SYSTEM_NODES.unitConverterFormulaMaster.icon}
+                label="Unit Convert Formula Master"
+                onClick={() => openSystemNode(SYSTEM_NODES.unitConverterFormulaMaster)}
+              />
             </div>
           </>
         )
@@ -285,14 +245,11 @@ export function Sidebar() {
           <>
             <h2 className="text-base font-semibold px-4 py-3">Settings</h2>
             <div className="px-2 space-y-1">
-              <Button
-                variant="ghost"
-                className="w-full justify-start gap-3 h-12 px-3 text-base font-normal"
-                onClick={handleOpenSettings}
-              >
-                <Settings className="h-5 w-5 shrink-0" />
-                <span className="text-base">Personal Settings</span>
-              </Button>
+              <SidebarButton
+                icon={SYSTEM_NODES.settings.icon}
+                label={SYSTEM_NODES.settings.name}
+                onClick={() => openSystemNode(SYSTEM_NODES.settings)}
+              />
             </div>
           </>
         )
@@ -302,84 +259,84 @@ export function Sidebar() {
   }
 
   return (
-    <>
+    <div className="flex h-full border-r">
       {/* Activity Bar */}
-      <div className="w-14 bg-muted/50 border-r flex flex-col items-center py-2 gap-1">
-        <div className="relative">
-          <Button
-            variant={activeView === "explorer" ? "secondary" : "ghost"}
-            size="icon"
-            className="h-14 w-14 p-2 [&_svg]:size-auto relative"
-            onClick={() => handleViewClick("explorer")}
-          >
-            <ChartLine className="h-full w-full" />
-          </Button>
-          {activeView === "explorer" && (
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-primary rounded-r-sm" />
-          )}
-        </div>
-        <div className="relative">
-          <Button
-            variant={activeView === "search" ? "secondary" : "ghost"}
-            size="icon"
-            className="h-14 w-14 p-2 [&_svg]:size-auto relative"
-            onClick={() => handleViewClick("search")}
-          >
-            <Search className="h-full w-full" />
-          </Button>
-          {activeView === "search" && (
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-primary rounded-r-sm" />
-          )}
-        </div>
-        <div className="relative">
-          <Button
-            variant={activeView === "database" ? "secondary" : "ghost"}
-            size="icon"
-            className="h-14 w-14 p-2 [&_svg]:size-auto relative"
-            onClick={() => handleViewClick("database")}
-          >
-            <Database className="h-full w-full" />
-          </Button>
-          {activeView === "database" && (
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-primary rounded-r-sm" />
-          )}
-        </div>
-        <div className="relative">
-          <Button
-            variant={activeView === "calculator" ? "secondary" : "ghost"}
-            size="icon"
-            className="h-14 w-14 p-2 [&_svg]:size-auto relative"
-            onClick={() => handleViewClick("calculator")}
-          >
-            <Calculator className="h-full w-full" />
-          </Button>
-          {activeView === "calculator" && (
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-primary rounded-r-sm" />
-          )}
-        </div>
-        <div className="relative">
-          <Button
-            variant={activeView === "settings" ? "secondary" : "ghost"}
-            size="icon"
-            className="h-14 w-14 p-2 [&_svg]:size-auto relative"
-            onClick={() => handleViewClick("settings")}
-          >
-            <Settings className="h-full w-full" />
-          </Button>
-          {activeView === "settings" && (
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-primary rounded-r-sm" />
-          )}
-        </div>
+      <div className={cn(
+        "w-14 bg-muted/50 flex flex-col items-center py-2 gap-1",
+        sidebarOpen && "border-r"
+      )}>
+        {ACTIVITY_BAR_ITEMS.map(({ view, icon: Icon }) => (
+          <ActivityBarButton
+            key={view}
+            view={view}
+            icon={Icon}
+            isActive={activeView === view}
+            onClick={() => handleViewClick(view)}
+          />
+        ))}
       </div>
 
       {/* Sidebar Panel */}
       {sidebarOpen && (
-        <div className="w-64 border-r bg-background">
+        <div className="w-64 bg-background">
           <ScrollArea className="h-full">
             {renderSidebarContent()}
           </ScrollArea>
         </div>
       )}
-    </>
+    </div>
+  )
+}
+
+// Sub-components
+function ActivityBarButton({ 
+  view, 
+  icon: Icon, 
+  isActive, 
+  onClick 
+}: {
+  view: ActiveView
+  icon: React.ComponentType<{ className?: string }>
+  isActive: boolean
+  onClick: () => void
+}) {
+  return (
+    <div className="relative">
+      <Button
+        variant={isActive ? "secondary" : "ghost"}
+        size="icon"
+        className="h-14 w-14 p-2 [&_svg]:size-auto relative"
+        onClick={onClick}
+      >
+        <Icon className="h-full w-full" />
+      </Button>
+      {isActive && (
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-10 bg-primary rounded-r-sm" />
+      )}
+    </div>
+  )
+}
+
+function SidebarButton({ 
+  icon: Icon, 
+  label, 
+  onClick, 
+  disabled = false 
+}: {
+  icon: React.ComponentType<{ className?: string }>
+  label: string
+  onClick: () => void
+  disabled?: boolean
+}) {
+  return (
+    <Button
+      variant="ghost"
+      className="w-full justify-start gap-3 h-12 px-3 text-base font-normal"
+      onClick={onClick}
+      disabled={disabled}
+    >
+      <Icon className="h-5 w-5 shrink-0" />
+      <span className="text-base">{label}</span>
+    </Button>
   )
 }

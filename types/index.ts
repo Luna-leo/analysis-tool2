@@ -243,3 +243,6 @@ export interface EventMaster {
   end: Date | string
   [key: string]: string | number | boolean | Date | null | undefined
 }
+
+// Re-export sidebar types
+export * from './sidebar'
