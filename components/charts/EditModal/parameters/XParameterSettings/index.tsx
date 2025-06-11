@@ -12,6 +12,7 @@ import { ChevronDown, ChevronRight } from "lucide-react"
 import { DateTimeRangeSettings } from "./DateTimeRangeSettings"
 import { TimeRangeSettings } from "./TimeRangeSettings"
 import { ParameterRangeSettings } from "./ParameterRangeSettings"
+import { ParameterCombobox } from "@/components/search"
 
 interface XParameterSettingsProps {
   editingChart: ChartComponent
@@ -91,19 +92,33 @@ export function XParameterSettings({ editingChart, setEditingChart, selectedData
 
               <div className="flex-1">
                 <Label htmlFor="x-parameter" className="text-sm mb-1 block">Parameter</Label>
-                <Input
-                  id="x-parameter"
-                  value={editingChart.xParameter || ""}
-                  onChange={(e) => {
-                    setEditingChart({
-                      ...editingChart,
-                      xParameter: e.target.value,
-                    })
-                  }}
-                  placeholder="Enter parameter"
-                  disabled={editingChart.xAxisType !== "parameter"}
-                  className="h-8 text-sm"
-                />
+                {editingChart.xAxisType === "parameter" ? (
+                  <ParameterCombobox
+                    value={editingChart.xParameter || ""}
+                    onChange={(value) => {
+                      setEditingChart({
+                        ...editingChart,
+                        xParameter: value,
+                      })
+                    }}
+                    selectedDataSourceItems={selectedDataSourceItems}
+                    className="h-8"
+                  />
+                ) : (
+                  <Input
+                    id="x-parameter"
+                    value={editingChart.xParameter || ""}
+                    onChange={(e) => {
+                      setEditingChart({
+                        ...editingChart,
+                        xParameter: e.target.value,
+                      })
+                    }}
+                    placeholder="Enter parameter"
+                    disabled={editingChart.xAxisType !== "parameter"}
+                    className="h-8 text-sm"
+                  />
+                )}
               </div>
 
               <div className="flex-1">

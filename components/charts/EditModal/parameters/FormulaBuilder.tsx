@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
 import { FormulaElements } from "./FormulaElements"
 import { ParameterSelector, OperatorSelector, FunctionSelector, ConstantSelector, NumberInput } from "./FormulaSelectors"
+import { EventInfo } from "@/types"
 
 export interface FormulaElement {
   id: string
@@ -16,9 +17,10 @@ export interface FormulaElement {
 interface FormulaBuilderProps {
   elements: FormulaElement[]
   onElementsChange: (elements: FormulaElement[]) => void
+  selectedDataSourceItems?: EventInfo[]
 }
 
-export function FormulaBuilder({ elements, onElementsChange }: FormulaBuilderProps) {
+export function FormulaBuilder({ elements, onElementsChange, selectedDataSourceItems }: FormulaBuilderProps) {
   const addElement = (element: FormulaElement) => {
     onElementsChange([...elements, { ...element, id: `elem_${Date.now()}` }])
   }
@@ -47,7 +49,7 @@ export function FormulaBuilder({ elements, onElementsChange }: FormulaBuilderPro
         <div className="space-y-4">
           {/* Quick Add Section */}
           <div className="grid grid-cols-5 gap-2">
-            <ParameterSelector onAddElement={addElement} />
+            <ParameterSelector onAddElement={addElement} selectedDataSourceItems={selectedDataSourceItems} />
             <NumberInput onAddElement={addElement} />
             <OperatorSelector onAddElement={addElement} />
             <FunctionSelector onAddElement={addElement} />

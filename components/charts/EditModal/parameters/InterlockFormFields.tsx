@@ -3,6 +3,9 @@
 import React from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { ParameterCombobox } from "@/components/search"
+import { EventInfo } from "@/types"
+import { parseParameterKey } from "@/utils/parameterUtils"
 
 interface InterlockFormFieldsProps {
   name: string
@@ -13,6 +16,7 @@ interface InterlockFormFieldsProps {
   onXUnitChange: (xUnit: string) => void
   yUnit: string
   onYUnitChange: (yUnit: string) => void
+  selectedDataSourceItems?: EventInfo[]
 }
 
 export function InterlockFormFields({
@@ -23,8 +27,16 @@ export function InterlockFormFields({
   xUnit,
   onXUnitChange,
   yUnit,
-  onYUnitChange
+  onYUnitChange,
+  selectedDataSourceItems
 }: InterlockFormFieldsProps) {
+  const handleParameterSelect = (paramKey: string) => {
+    const parsed = parseParameterKey(paramKey)
+    if (parsed) {
+      onXParameterChange(paramKey)
+      onXUnitChange(parsed.unit) // Automatically set X Unit
+    }
+  }
   return (
     <div className="space-y-2">
       <div className="grid grid-cols-2 gap-2">
@@ -53,11 +65,10 @@ export function InterlockFormFields({
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1">
           <Label htmlFor="x-parameter" className="text-sm">X Parameter</Label>
-          <Input
-            id="x-parameter"
+          <ParameterCombobox
             value={xParameter}
-            onChange={(e) => onXParameterChange(e.target.value)}
-            placeholder="Temperature"
+            onChange={handleParameterSelect}
+            selectedDataSourceItems={selectedDataSourceItems}
             className="h-8"
           />
         </div>
@@ -66,9 +77,8 @@ export function InterlockFormFields({
           <Input
             id="x-unit"
             value={xUnit}
-            onChange={(e) => onXUnitChange(e.target.value)}
-            placeholder="°C"
-            className="h-8"
+            readOnly
+            className="h-8 bg-muted"
           />
         </div>
       </div>

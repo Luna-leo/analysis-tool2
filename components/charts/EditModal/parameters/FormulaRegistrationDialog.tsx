@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { FormulaMaster } from "@/data/formulaMaster"
 import { FormulaBuilder, FormulaElement } from "./FormulaBuilder"
 import { FormulaValidation } from "./FormulaValidation"
+import { EventInfo } from "@/types"
 
 interface FormulaRegistrationDialogProps {
   open: boolean
@@ -17,6 +18,7 @@ interface FormulaRegistrationDialogProps {
   onSave: (formula: FormulaMaster) => void
   initialFormula?: FormulaMaster
   mode?: "create" | "edit" | "duplicate"
+  selectedDataSourceItems?: EventInfo[]
 }
 
 const categories = [
@@ -36,7 +38,8 @@ export function FormulaRegistrationDialog({
   onOpenChange,
   onSave,
   initialFormula,
-  mode = "create"
+  mode = "create",
+  selectedDataSourceItems
 }: FormulaRegistrationDialogProps) {
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
@@ -207,6 +210,7 @@ export function FormulaRegistrationDialog({
               <FormulaBuilder
                 elements={elements}
                 onElementsChange={setElements}
+                selectedDataSourceItems={selectedDataSourceItems}
               />
             </div>
           </div>

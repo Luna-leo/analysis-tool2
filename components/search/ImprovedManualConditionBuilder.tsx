@@ -6,6 +6,7 @@ import { Plus, Minus, ChevronDown } from 'lucide-react';
 import { SearchCondition } from '@/types';
 import { cn } from '@/lib/utils';
 import { generateConditionId, operatorLabels, isBooleanOperator } from '@/lib/conditionUtils';
+import { ParameterCombobox } from './ParameterCombobox';
 
 interface ImprovedManualConditionBuilderProps {
   conditions: SearchCondition[];
@@ -146,11 +147,10 @@ export function ImprovedManualConditionBuilder({
         ) : (
           /* Simple condition */
           <div className="flex items-center gap-2 p-2 border rounded-lg bg-background">
-          <Input
-            placeholder="Parameter"
+          <ParameterCombobox
             value={condition.parameter || ''}
-            onChange={(e) => updateCondition(index, { parameter: e.target.value })}
-            className="flex-1 h-8 text-sm"
+            onChange={(value) => updateCondition(index, { parameter: value })}
+            className="flex-1"
           />
           
           <select

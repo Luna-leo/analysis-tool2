@@ -232,6 +232,7 @@ export function YParametersSettings({ editingChart, setEditingChart, isReference
         editingChart={editingChart}
         handleInterlockSave={handleInterlockSave}
         handleFormulaSave={handleFormulaSave}
+        selectedDataSourceItems={selectedDataSourceItems}
       />
     </>
   )

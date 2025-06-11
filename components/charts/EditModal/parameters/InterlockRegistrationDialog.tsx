@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
-import { InterlockDefinition, InterlockThreshold } from "@/types"
+import { InterlockDefinition, InterlockThreshold, EventInfo } from "@/types"
 import { InterlockFormFields } from "./InterlockFormFields"
 import { PlantMachineFields } from "./PlantMachineFields"
 import { ThresholdColorSection } from "./ThresholdColorSection"
@@ -21,6 +21,7 @@ interface InterlockRegistrationDialogProps {
   initialPlant?: string
   initialMachineNo?: string
   mode?: "create" | "edit" | "duplicate"
+  selectedDataSourceItems?: EventInfo[]
 }
 
 export function InterlockRegistrationDialog({
@@ -31,7 +32,8 @@ export function InterlockRegistrationDialog({
   initialSelectedThresholds,
   initialPlant,
   initialMachineNo,
-  mode = "create"
+  mode = "create",
+  selectedDataSourceItems
 }: InterlockRegistrationDialogProps) {
   const [name, setName] = useState(initialDefinition?.name || "")
   const [plant, setPlant] = useState(initialPlant || "")
@@ -206,6 +208,7 @@ export function InterlockRegistrationDialog({
                 onXUnitChange={setXUnit}
                 yUnit={yUnit}
                 onYUnitChange={setYUnit}
+                selectedDataSourceItems={selectedDataSourceItems}
               />
               <div className="mt-2">
                 <ThresholdColorSection

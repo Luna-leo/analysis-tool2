@@ -4,7 +4,7 @@ import React from "react"
 import { InterlockRegistrationDialog } from "./InterlockRegistrationDialog"
 import { FormulaRegistrationDialog } from "./FormulaRegistrationDialog"
 import { formulaDefinitionToMaster } from "@/utils/formulaUtils"
-import { ChartComponent, InterlockDefinition } from "@/types"
+import { ChartComponent, InterlockDefinition, EventInfo } from "@/types"
 import { FormulaMaster } from "@/data/formulaMaster"
 
 interface YParameterDialogsProps {
@@ -21,6 +21,7 @@ interface YParameterDialogsProps {
   editingChart: ChartComponent
   handleInterlockSave: (interlockDefinition: InterlockDefinition, selectedThresholds: string[], plant: string, machineNo: string) => void
   handleFormulaSave: (formula: FormulaMaster) => void
+  selectedDataSourceItems?: EventInfo[]
 }
 
 export function YParameterDialogs({
@@ -36,7 +37,8 @@ export function YParameterDialogs({
   editingFormulaIndex,
   editingChart,
   handleInterlockSave,
-  handleFormulaSave
+  handleFormulaSave,
+  selectedDataSourceItems
 }: YParameterDialogsProps) {
   return (
     <>
@@ -60,6 +62,7 @@ export function YParameterDialogs({
             ? editingChart.yAxisParams?.[editingInterlockIndex]?.selectedThresholds 
             : undefined
         }
+        selectedDataSourceItems={selectedDataSourceItems}
       />
 
       <FormulaRegistrationDialog
@@ -77,6 +80,7 @@ export function YParameterDialogs({
             ? formulaDefinitionToMaster(editingChart.yAxisParams[editingFormulaIndex].formulaDefinition!)
             : undefined
         }
+        selectedDataSourceItems={selectedDataSourceItems}
       />
     </>
   )
