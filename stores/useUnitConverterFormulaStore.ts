@@ -116,7 +116,7 @@ export const useUnitConverterFormulaStore = create<UnitConverterFormulaStore>((s
     if (formula) {
       const duplicated = {
         ...formula,
-        name: `${formula.name} (コピー)`,
+        name: `${formula.name} (Copy)`,
         id: `ucf-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -127,6 +127,9 @@ export const useUnitConverterFormulaStore = create<UnitConverterFormulaStore>((s
       set((state) => ({
         formulas: [...state.formulas, duplicated]
       }));
+      
+      // Open edit dialog for the duplicated formula
+      get().openDialog('edit', duplicated);
     }
   },
   

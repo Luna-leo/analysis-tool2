@@ -1,14 +1,8 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { MoreVertical, Edit, Copy, Trash, Star, StarOff, ChevronDown, ChevronUp } from 'lucide-react';
+import { Edit2, Copy, Trash2, Star, StarOff, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { UnitConverterFormula, UNIT_CATEGORIES } from '@/types/unit-converter';
 import { useUnitConverterFormulaStore } from '@/stores/useUnitConverterFormulaStore';
@@ -19,7 +13,6 @@ interface UnitConverterFormulaCardProps {
 
 export const UnitConverterFormulaCard = React.memo(({ formula }: UnitConverterFormulaCardProps) => {
   const [isAliasOpen, setIsAliasOpen] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
   
   const { 
     openDialog, 
@@ -62,26 +55,22 @@ export const UnitConverterFormulaCard = React.memo(({ formula }: UnitConverterFo
   }, [formula.formula, formula.fromUnit.primarySymbol, formula.toUnit.primarySymbol]);
 
   return (
-    <Card 
-      className="group relative"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
+    <Card className="group hover:shadow-md transition-shadow">
       <CardContent className="p-4">
         {/* Header section */}
         <div className="flex items-start justify-between mb-3">
-          <div className="flex-1">
+          <div className="flex-1 pr-2">
             <h3 className="font-semibold text-base mb-1">{formula.name}</h3>
             <p className="text-sm text-muted-foreground">{formula.description}</p>
           </div>
           
           {/* Action buttons */}
-          <div className={`flex items-center gap-1 transition-opacity ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <Button
               variant="ghost"
-              size="icon"
-              className="h-8 w-8"
+              size="sm"
               onClick={handleToggleFavorite}
+              className="h-8 w-8 p-0"
             >
               {formula.isFavorite ? (
                 <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
@@ -89,28 +78,30 @@ export const UnitConverterFormulaCard = React.memo(({ formula }: UnitConverterFo
                 <StarOff className="h-4 w-4" />
               )}
             </Button>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleEdit}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleDuplicate}>
-                  <Copy className="mr-2 h-4 w-4" />
-                  Duplicate
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleDelete} className="text-destructive">
-                  <Trash className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDuplicate}
+              className="h-8 w-8 p-0"
+            >
+              <Copy className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleEdit}
+              className="h-8 w-8 p-0"
+            >
+              <Edit2 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDelete}
+              className="h-8 w-8 p-0 hover:text-red-600"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
