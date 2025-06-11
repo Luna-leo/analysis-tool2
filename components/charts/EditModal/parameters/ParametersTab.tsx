@@ -122,6 +122,7 @@ export function ParametersTab({ editingChart, setEditingChart, selectedDataSourc
         editingChart={editingChart} 
         setEditingChart={setEditingChart}
         isReferenceLinesOpen={isReferenceLinesOpen}
+        selectedDataSourceItems={selectedDataSourceItems}
       />
 
       <ReferenceLinesSettings 

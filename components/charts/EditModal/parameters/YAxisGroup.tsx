@@ -8,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Plus, ChevronDown, ChevronRight, Trash2 } from "lucide-react"
-import { ChartComponent, InterlockMaster } from "@/types"
+import { ChartComponent, InterlockMaster, EventInfo } from "@/types"
 import { FormulaMaster } from "@/data/formulaMaster"
 import { ParameterRow } from "./ParameterRow"
 
@@ -41,6 +41,7 @@ interface YAxisGroupProps {
   filterInterlocks: (interlocks: InterlockMaster[]) => InterlockMaster[]
   handleThresholdRemove: (paramIndex: number, thresholdId: string) => void
   handleThresholdAdd: (paramIndex: number, thresholdId: string) => void
+  selectedDataSourceItems?: EventInfo[]
 }
 
 export function YAxisGroup({
@@ -69,6 +70,7 @@ export function YAxisGroup({
   filterInterlocks,
   handleThresholdRemove,
   handleThresholdAdd,
+  selectedDataSourceItems,
 }: YAxisGroupProps) {
   const [isOpen, setIsOpen] = useState(true)
 
@@ -220,6 +222,7 @@ export function YAxisGroup({
                     filterInterlocks={filterInterlocks}
                     handleThresholdRemove={handleThresholdRemove}
                     handleThresholdAdd={handleThresholdAdd}
+                    selectedDataSourceItems={selectedDataSourceItems}
                   />
                 ))}
 

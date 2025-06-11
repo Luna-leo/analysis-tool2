@@ -3,7 +3,7 @@
 import React, { useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
-import { ChartComponent } from "@/types"
+import { ChartComponent, EventInfo } from "@/types"
 import { FormulaMaster } from "@/data/formulaMaster"
 import { mockInterlockMaster } from "@/data/interlockMaster"
 import { FormulaParameterRow } from "./FormulaParameterRow"
@@ -27,6 +27,7 @@ interface ParameterRowProps {
   filterInterlocks: (interlocks: typeof mockInterlockMaster) => typeof mockInterlockMaster
   handleThresholdRemove: (paramIndex: number, thresholdId: string) => void
   handleThresholdAdd: (paramIndex: number, thresholdId: string) => void
+  selectedDataSourceItems?: EventInfo[]
 }
 
 export const ParameterRow = React.memo(({
@@ -46,6 +47,7 @@ export const ParameterRow = React.memo(({
   filterInterlocks,
   handleThresholdRemove,
   handleThresholdAdd,
+  selectedDataSourceItems,
 }: ParameterRowProps) => {
   const param = editingChart.yAxisParams![index]
   
@@ -110,7 +112,7 @@ export const ParameterRow = React.memo(({
               parameter={param.parameter}
               editingChart={editingChart}
               setEditingChart={setEditingChart}
-              parameterInputRefs={parameterInputRefs}
+              selectedDataSourceItems={selectedDataSourceItems}
             />
           )}
         </div>

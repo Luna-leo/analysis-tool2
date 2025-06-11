@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { ChevronDown, ChevronRight } from "lucide-react"
-import { ChartComponent, InterlockMaster, InterlockDefinition } from "@/types"
+import { ChartComponent, InterlockMaster, InterlockDefinition, EventInfo } from "@/types"
 import { FormulaDefinition } from "@/types/formula"
 import { FormulaMaster } from "@/data/formulaMaster"
 import { formulaMasterToDefinition } from "@/utils/formulaUtils"
@@ -17,9 +17,10 @@ interface YParametersSettingsProps {
   editingChart: ChartComponent
   setEditingChart: (chart: ChartComponent) => void
   isReferenceLinesOpen?: boolean
+  selectedDataSourceItems?: EventInfo[]
 }
 
-export function YParametersSettings({ editingChart, setEditingChart, isReferenceLinesOpen }: YParametersSettingsProps) {
+export function YParametersSettings({ editingChart, setEditingChart, isReferenceLinesOpen, selectedDataSourceItems }: YParametersSettingsProps) {
   const [isOpen, setIsOpen] = useState(true)
   const [lastAddedParamIndex, setLastAddedParamIndex] = useState<number | null>(null)
   const [lastAddedAxisNo, setLastAddedAxisNo] = useState<number | null>(null)
@@ -210,6 +211,7 @@ export function YParametersSettings({ editingChart, setEditingChart, isReference
                 addParameterToAxis={addParameterToAxis}
                 removeAxisGroup={removeAxisGroup}
                 groupParametersByAxis={groupParametersByAxis}
+                selectedDataSourceItems={selectedDataSourceItems}
               />
             </div>
           </CollapsibleContent>

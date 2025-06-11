@@ -5,12 +5,17 @@ import { ResizablePanelGroup, ResizablePanel } from "@/components/ui/resizable"
 import { Sidebar, TabHeader, BreadcrumbNavigation, WelcomeMessage } from "../layout"
 import { ChartGrid, ChartEditModal } from "../charts"
 import { useFileStore } from "@/stores/useFileStore"
+import { useParameterStore } from "@/stores/useParameterStore"
 import { FileNode } from "@/types"
 
 export default function AnalysisTool() {
   const { openTabs, activeTab, openFile, fileTree } = useFileStore()
+  const { loadParameters } = useParameterStore()
 
   useEffect(() => {
+    // Load parameters on mount
+    loadParameters()
+    
     // Open initial tabs on first mount
     if (openTabs.length === 0) {
       // Find Speed Up file from Plant A

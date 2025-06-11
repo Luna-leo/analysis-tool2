@@ -1,0 +1,301 @@
+﻿ID,Parameter,Unit,Plant,Machine_no,Source
+P0001,Generator Electrical Output,MW,PlantA,GT-1,CASS
+P0002,Turbine Shaft Output,MW,PlantA,GT-1,CASS
+P0003,Gross Electrical Output,MW,PlantA,GT-1,CASS
+P0004,Net Electrical Output,MW,PlantA,GT-1,CASS
+P0005,Rotor Speed,rpm,PlantA,GT-1,CASS
+P0006,Shaft Speed,rpm,PlantA,GT-1,CASS
+P0007,Compressor Speed,rpm,PlantA,GT-1,CASS
+P0008,Turbine Inlet Temperature 1,°C,PlantA,GT-1,CASS
+P0009,Turbine Inlet Temperature 2,°C,PlantA,GT-1,CASS
+P0010,Turbine Inlet Temperature 3,°C,PlantA,GT-1,CASS
+P0011,Turbine Inlet Temperature 4,°C,PlantA,GT-1,CASS
+P0012,Turbine Inlet Temperature 5,°C,PlantA,GT-1,CASS
+P0013,Turbine Inlet Temperature 6,°C,PlantA,GT-1,CASS
+P0014,Turbine Inlet Temperature 7,°C,PlantA,GT-1,CASS
+P0015,Turbine Inlet Temperature 8,°C,PlantA,GT-1,CASS
+P0016,Turbine Inlet Temperature 9,°C,PlantA,GT-1,CASS
+P0017,Turbine Inlet Temperature 10,°C,PlantA,GT-1,CASS
+P0018,Turbine Exhaust Temperature 1,°C,PlantA,GT-1,CASS
+P0019,Turbine Exhaust Temperature 2,°C,PlantA,GT-1,CASS
+P0020,Turbine Exhaust Temperature 3,°C,PlantA,GT-1,CASS
+P0021,Turbine Exhaust Temperature 4,°C,PlantA,GT-1,CASS
+P0022,Turbine Exhaust Temperature 5,°C,PlantA,GT-1,CASS
+P0023,Turbine Exhaust Temperature 6,°C,PlantA,GT-1,CASS
+P0024,Turbine Exhaust Temperature 7,°C,PlantA,GT-1,CASS
+P0025,Turbine Exhaust Temperature 8,°C,PlantA,GT-1,CASS
+P0026,Turbine Exhaust Temperature 9,°C,PlantA,GT-1,CASS
+P0027,Turbine Exhaust Temperature 10,°C,PlantA,GT-1,CASS
+P0028,Compressor Inlet Temperature 1,°C,PlantA,GT-1,CASS
+P0029,Compressor Inlet Temperature 2,°C,PlantA,GT-1,CASS
+P0030,Compressor Inlet Temperature 3,°C,PlantA,GT-1,CASS
+P0031,Compressor Inlet Temperature 4,°C,PlantA,GT-1,CASS
+P0032,Compressor Inlet Temperature 5,°C,PlantA,GT-1,CASS
+P0033,Compressor Outlet Temperature 1,°C,PlantA,GT-1,CASS
+P0034,Compressor Outlet Temperature 2,°C,PlantA,GT-1,CASS
+P0035,Compressor Outlet Temperature 3,°C,PlantA,GT-1,CASS
+P0036,Compressor Outlet Temperature 4,°C,PlantA,GT-1,CASS
+P0037,Compressor Outlet Temperature 5,°C,PlantA,GT-1,CASS
+P0038,Compressor Inlet Pressure 1,kPa,PlantA,GT-1,CASS
+P0039,Compressor Inlet Pressure 2,kPa,PlantA,GT-1,CASS
+P0040,Compressor Inlet Pressure 3,kPa,PlantA,GT-1,CASS
+P0041,Compressor Inlet Pressure 4,kPa,PlantA,GT-1,CASS
+P0042,Compressor Inlet Pressure 5,kPa,PlantA,GT-1,CASS
+P0043,Compressor Outlet Pressure 1,kPa,PlantA,GT-1,CASS
+P0044,Compressor Outlet Pressure 2,kPa,PlantA,GT-1,CASS
+P0045,Compressor Outlet Pressure 3,kPa,PlantA,GT-1,CASS
+P0046,Compressor Outlet Pressure 4,kPa,PlantA,GT-1,CASS
+P0047,Compressor Outlet Pressure 5,kPa,PlantA,GT-1,CASS
+P0048,Steam Pressure Stage 1,kPa,PlantA,GT-1,CASS
+P0049,Steam Pressure Stage 2,kPa,PlantA,GT-1,CASS
+P0050,Steam Pressure Stage 3,kPa,PlantA,GT-1,CASS
+P0051,Steam Pressure Stage 4,kPa,PlantA,GT-1,CASS
+P0052,Steam Pressure Stage 5,kPa,PlantA,GT-1,CASS
+P0053,Steam Temperature Stage 1,°C,PlantA,GT-1,CASS
+P0054,Steam Temperature Stage 2,°C,PlantA,GT-1,CASS
+P0055,Steam Temperature Stage 3,°C,PlantA,GT-1,CASS
+P0056,Steam Temperature Stage 4,°C,PlantA,GT-1,CASS
+P0057,Steam Temperature Stage 5,°C,PlantA,GT-1,CASS
+P0058,Steam Temperature Stage 6,°C,PlantA,GT-1,CASS
+P0059,Steam Temperature Stage 7,°C,PlantA,GT-1,CASS
+P0060,Steam Temperature Stage 8,°C,PlantA,GT-1,CASS
+P0061,Fuel Flow 1,kg/h,PlantA,GT-1,CASS
+P0062,Fuel Flow 2,kg/h,PlantA,GT-1,CASS
+P0063,Fuel Flow 3,kg/h,PlantA,GT-1,CASS
+P0064,Fuel Flow 4,kg/h,PlantA,GT-1,CASS
+P0065,Fuel Flow 5,kg/h,PlantA,GT-1,CASS
+P0066,Lube Oil Temperature 1,°C,PlantA,GT-1,CASS
+P0067,Lube Oil Temperature 2,°C,PlantA,GT-1,CASS
+P0068,Lube Oil Temperature 3,°C,PlantA,GT-1,CASS
+P0069,Lube Oil Temperature 4,°C,PlantA,GT-1,CASS
+P0070,Lube Oil Temperature 5,°C,PlantA,GT-1,CASS
+P0071,Lube Oil Pressure 1,kPa,PlantA,GT-1,CASS
+P0072,Lube Oil Pressure 2,kPa,PlantA,GT-1,CASS
+P0073,Lube Oil Pressure 3,kPa,PlantA,GT-1,CASS
+P0074,Lube Oil Pressure 4,kPa,PlantA,GT-1,CASS
+P0075,Lube Oil Pressure 5,kPa,PlantA,GT-1,CASS
+P0076,Bearing Vibration 1,mm/s,PlantA,GT-1,CASS
+P0077,Bearing Vibration 2,mm/s,PlantA,GT-1,CASS
+P0078,Bearing Vibration 3,mm/s,PlantA,GT-1,CASS
+P0079,Bearing Vibration 4,mm/s,PlantA,GT-1,CASS
+P0080,Bearing Vibration 5,mm/s,PlantA,GT-1,CASS
+P0081,Bearing Vibration 6,mm/s,PlantA,GT-1,CASS
+P0082,Bearing Vibration 7,mm/s,PlantA,GT-1,CASS
+P0083,Bearing Vibration 8,mm/s,PlantA,GT-1,CASS
+P0084,Bearing Vibration 9,mm/s,PlantA,GT-1,CASS
+P0085,Bearing Vibration 10,mm/s,PlantA,GT-1,CASS
+P0086,Valve Position 1,%,PlantA,GT-1,CASS
+P0087,Valve Position 2,%,PlantA,GT-1,CASS
+P0088,Valve Position 3,%,PlantA,GT-1,CASS
+P0089,Valve Position 4,%,PlantA,GT-1,CASS
+P0090,Valve Position 5,%,PlantA,GT-1,CASS
+P0091,Valve Position 6,%,PlantA,GT-1,CASS
+P0092,Valve Position 7,%,PlantA,GT-1,CASS
+P0093,Valve Position 8,%,PlantA,GT-1,CASS
+P0094,Valve Position 9,%,PlantA,GT-1,CASS
+P0095,Valve Position 10,%,PlantA,GT-1,CASS
+P0096,Guide Vane Angle 1,°,PlantA,GT-1,CASS
+P0097,Guide Vane Angle 2,°,PlantA,GT-1,CASS
+P0098,Guide Vane Angle 3,°,PlantA,GT-1,CASS
+P0099,Guide Vane Angle 4,°,PlantA,GT-1,CASS
+P0100,Guide Vane Angle 5,°,PlantA,GT-1,CASS
+P0001,Generator Electrical Output,MW,PlantA,GT-2,CASS
+P0002,Turbine Shaft Output,MW,PlantA,GT-2,CASS
+P0003,Gross Electrical Output,MW,PlantA,GT-2,CASS
+P0004,Net Electrical Output,MW,PlantA,GT-2,CASS
+P0005,Rotor Speed,rpm,PlantA,GT-2,CASS
+P0006,Shaft Speed,rpm,PlantA,GT-2,CASS
+P0007,Compressor Speed,rpm,PlantA,GT-2,CASS
+P0008,Turbine Inlet Temperature 1,°C,PlantA,GT-2,CASS
+P0009,Turbine Inlet Temperature 2,°C,PlantA,GT-2,CASS
+P0010,Turbine Inlet Temperature 3,°C,PlantA,GT-2,CASS
+P0011,Turbine Inlet Temperature 4,°C,PlantA,GT-2,CASS
+P0012,Turbine Inlet Temperature 5,°C,PlantA,GT-2,CASS
+P0013,Turbine Inlet Temperature 6,°C,PlantA,GT-2,CASS
+P0014,Turbine Inlet Temperature 7,°C,PlantA,GT-2,CASS
+P0015,Turbine Inlet Temperature 8,°C,PlantA,GT-2,CASS
+P0016,Turbine Inlet Temperature 9,°C,PlantA,GT-2,CASS
+P0017,Turbine Inlet Temperature 10,°C,PlantA,GT-2,CASS
+P0018,Turbine Exhaust Temperature 1,°C,PlantA,GT-2,CASS
+P0019,Turbine Exhaust Temperature 2,°C,PlantA,GT-2,CASS
+P0020,Turbine Exhaust Temperature 3,°C,PlantA,GT-2,CASS
+P0021,Turbine Exhaust Temperature 4,°C,PlantA,GT-2,CASS
+P0022,Turbine Exhaust Temperature 5,°C,PlantA,GT-2,CASS
+P0023,Turbine Exhaust Temperature 6,°C,PlantA,GT-2,CASS
+P0024,Turbine Exhaust Temperature 7,°C,PlantA,GT-2,CASS
+P0025,Turbine Exhaust Temperature 8,°C,PlantA,GT-2,CASS
+P0026,Turbine Exhaust Temperature 9,°C,PlantA,GT-2,CASS
+P0027,Turbine Exhaust Temperature 10,°C,PlantA,GT-2,CASS
+P0028,Compressor Inlet Temperature 1,°C,PlantA,GT-2,CASS
+P0029,Compressor Inlet Temperature 2,°C,PlantA,GT-2,CASS
+P0030,Compressor Inlet Temperature 3,°C,PlantA,GT-2,CASS
+P0031,Compressor Inlet Temperature 4,°C,PlantA,GT-2,CASS
+P0032,Compressor Inlet Temperature 5,°C,PlantA,GT-2,CASS
+P0033,Compressor Outlet Temperature 1,°C,PlantA,GT-2,CASS
+P0034,Compressor Outlet Temperature 2,°C,PlantA,GT-2,CASS
+P0035,Compressor Outlet Temperature 3,°C,PlantA,GT-2,CASS
+P0036,Compressor Outlet Temperature 4,°C,PlantA,GT-2,CASS
+P0037,Compressor Outlet Temperature 5,°C,PlantA,GT-2,CASS
+P0038,Compressor Inlet Pressure 1,kPa,PlantA,GT-2,CASS
+P0039,Compressor Inlet Pressure 2,kPa,PlantA,GT-2,CASS
+P0040,Compressor Inlet Pressure 3,kPa,PlantA,GT-2,CASS
+P0041,Compressor Inlet Pressure 4,kPa,PlantA,GT-2,CASS
+P0042,Compressor Inlet Pressure 5,kPa,PlantA,GT-2,CASS
+P0043,Compressor Outlet Pressure 1,kPa,PlantA,GT-2,CASS
+P0044,Compressor Outlet Pressure 2,kPa,PlantA,GT-2,CASS
+P0045,Compressor Outlet Pressure 3,kPa,PlantA,GT-2,CASS
+P0046,Compressor Outlet Pressure 4,kPa,PlantA,GT-2,CASS
+P0047,Compressor Outlet Pressure 5,kPa,PlantA,GT-2,CASS
+P0048,Steam Pressure Stage 1,kPa,PlantA,GT-2,CASS
+P0049,Steam Pressure Stage 2,kPa,PlantA,GT-2,CASS
+P0050,Steam Pressure Stage 3,kPa,PlantA,GT-2,CASS
+P0051,Steam Pressure Stage 4,kPa,PlantA,GT-2,CASS
+P0052,Steam Pressure Stage 5,kPa,PlantA,GT-2,CASS
+P0053,Steam Temperature Stage 1,°C,PlantA,GT-2,CASS
+P0054,Steam Temperature Stage 2,°C,PlantA,GT-2,CASS
+P0055,Steam Temperature Stage 3,°C,PlantA,GT-2,CASS
+P0056,Steam Temperature Stage 4,°C,PlantA,GT-2,CASS
+P0057,Steam Temperature Stage 5,°C,PlantA,GT-2,CASS
+P0058,Steam Temperature Stage 6,°C,PlantA,GT-2,CASS
+P0059,Steam Temperature Stage 7,°C,PlantA,GT-2,CASS
+P0060,Steam Temperature Stage 8,°C,PlantA,GT-2,CASS
+P0061,Fuel Flow 1,kg/h,PlantA,GT-2,CASS
+P0062,Fuel Flow 2,kg/h,PlantA,GT-2,CASS
+P0063,Fuel Flow 3,kg/h,PlantA,GT-2,CASS
+P0064,Fuel Flow 4,kg/h,PlantA,GT-2,CASS
+P0065,Fuel Flow 5,kg/h,PlantA,GT-2,CASS
+P0066,Lube Oil Temperature 1,°C,PlantA,GT-2,CASS
+P0067,Lube Oil Temperature 2,°C,PlantA,GT-2,CASS
+P0068,Lube Oil Temperature 3,°C,PlantA,GT-2,CASS
+P0069,Lube Oil Temperature 4,°C,PlantA,GT-2,CASS
+P0070,Lube Oil Temperature 5,°C,PlantA,GT-2,CASS
+P0071,Lube Oil Pressure 1,kPa,PlantA,GT-2,CASS
+P0072,Lube Oil Pressure 2,kPa,PlantA,GT-2,CASS
+P0073,Lube Oil Pressure 3,kPa,PlantA,GT-2,CASS
+P0074,Lube Oil Pressure 4,kPa,PlantA,GT-2,CASS
+P0075,Lube Oil Pressure 5,kPa,PlantA,GT-2,CASS
+P0076,Bearing Vibration 1,mm/s,PlantA,GT-2,CASS
+P0077,Bearing Vibration 2,mm/s,PlantA,GT-2,CASS
+P0078,Bearing Vibration 3,mm/s,PlantA,GT-2,CASS
+P0079,Bearing Vibration 4,mm/s,PlantA,GT-2,CASS
+P0080,Bearing Vibration 5,mm/s,PlantA,GT-2,CASS
+P0081,Bearing Vibration 6,mm/s,PlantA,GT-2,CASS
+P0082,Bearing Vibration 7,mm/s,PlantA,GT-2,CASS
+P0083,Bearing Vibration 8,mm/s,PlantA,GT-2,CASS
+P0084,Bearing Vibration 9,mm/s,PlantA,GT-2,CASS
+P0085,Bearing Vibration 10,mm/s,PlantA,GT-2,CASS
+P0086,Valve Position 1,%,PlantA,GT-2,CASS
+P0087,Valve Position 2,%,PlantA,GT-2,CASS
+P0088,Valve Position 3,%,PlantA,GT-2,CASS
+P0089,Valve Position 4,%,PlantA,GT-2,CASS
+P0090,Valve Position 5,%,PlantA,GT-2,CASS
+P0091,Valve Position 6,%,PlantA,GT-2,CASS
+P0092,Valve Position 7,%,PlantA,GT-2,CASS
+P0093,Valve Position 8,%,PlantA,GT-2,CASS
+P0094,Valve Position 9,%,PlantA,GT-2,CASS
+P0095,Valve Position 10,%,PlantA,GT-2,CASS
+P0096,Guide Vane Angle 1,°,PlantA,GT-2,CASS
+P0097,Guide Vane Angle 2,°,PlantA,GT-2,CASS
+P0098,Guide Vane Angle 3,°,PlantA,GT-2,CASS
+P0099,Guide Vane Angle 4,°,PlantA,GT-2,CASS
+P0100,Guide Vane Angle 5,°,PlantA,GT-2,CASS
+P0001,Generator Electrical Output,MW,PlantA,GT-3,CASS
+P0002,Turbine Shaft Output,MW,PlantA,GT-3,CASS
+P0003,Gross Electrical Output,MW,PlantA,GT-3,CASS
+P0004,Net Electrical Output,MW,PlantA,GT-3,CASS
+P0005,Rotor Speed,rpm,PlantA,GT-3,CASS
+P0006,Shaft Speed,rpm,PlantA,GT-3,CASS
+P0007,Compressor Speed,rpm,PlantA,GT-3,CASS
+P0008,Turbine Inlet Temperature 1,°C,PlantA,GT-3,CASS
+P0009,Turbine Inlet Temperature 2,°C,PlantA,GT-3,CASS
+P0010,Turbine Inlet Temperature 3,°C,PlantA,GT-3,CASS
+P0011,Turbine Inlet Temperature 4,°C,PlantA,GT-3,CASS
+P0012,Turbine Inlet Temperature 5,°C,PlantA,GT-3,CASS
+P0013,Turbine Inlet Temperature 6,°C,PlantA,GT-3,CASS
+P0014,Turbine Inlet Temperature 7,°C,PlantA,GT-3,CASS
+P0015,Turbine Inlet Temperature 8,°C,PlantA,GT-3,CASS
+P0016,Turbine Inlet Temperature 9,°C,PlantA,GT-3,CASS
+P0017,Turbine Inlet Temperature 10,°C,PlantA,GT-3,CASS
+P0018,Turbine Exhaust Temperature 1,°C,PlantA,GT-3,CASS
+P0019,Turbine Exhaust Temperature 2,°C,PlantA,GT-3,CASS
+P0020,Turbine Exhaust Temperature 3,°C,PlantA,GT-3,CASS
+P0021,Turbine Exhaust Temperature 4,°C,PlantA,GT-3,CASS
+P0022,Turbine Exhaust Temperature 5,°C,PlantA,GT-3,CASS
+P0023,Turbine Exhaust Temperature 6,°C,PlantA,GT-3,CASS
+P0024,Turbine Exhaust Temperature 7,°C,PlantA,GT-3,CASS
+P0025,Turbine Exhaust Temperature 8,°C,PlantA,GT-3,CASS
+P0026,Turbine Exhaust Temperature 9,°C,PlantA,GT-3,CASS
+P0027,Turbine Exhaust Temperature 10,°C,PlantA,GT-3,CASS
+P0028,Compressor Inlet Temperature 1,°C,PlantA,GT-3,CASS
+P0029,Compressor Inlet Temperature 2,°C,PlantA,GT-3,CASS
+P0030,Compressor Inlet Temperature 3,°C,PlantA,GT-3,CASS
+P0031,Compressor Inlet Temperature 4,°C,PlantA,GT-3,CASS
+P0032,Compressor Inlet Temperature 5,°C,PlantA,GT-3,CASS
+P0033,Compressor Outlet Temperature 1,°C,PlantA,GT-3,CASS
+P0034,Compressor Outlet Temperature 2,°C,PlantA,GT-3,CASS
+P0035,Compressor Outlet Temperature 3,°C,PlantA,GT-3,CASS
+P0036,Compressor Outlet Temperature 4,°C,PlantA,GT-3,CASS
+P0037,Compressor Outlet Temperature 5,°C,PlantA,GT-3,CASS
+P0038,Compressor Inlet Pressure 1,kPa,PlantA,GT-3,CASS
+P0039,Compressor Inlet Pressure 2,kPa,PlantA,GT-3,CASS
+P0040,Compressor Inlet Pressure 3,kPa,PlantA,GT-3,CASS
+P0041,Compressor Inlet Pressure 4,kPa,PlantA,GT-3,CASS
+P0042,Compressor Inlet Pressure 5,kPa,PlantA,GT-3,CASS
+P0043,Compressor Outlet Pressure 1,kPa,PlantA,GT-3,CASS
+P0044,Compressor Outlet Pressure 2,kPa,PlantA,GT-3,CASS
+P0045,Compressor Outlet Pressure 3,kPa,PlantA,GT-3,CASS
+P0046,Compressor Outlet Pressure 4,kPa,PlantA,GT-3,CASS
+P0047,Compressor Outlet Pressure 5,kPa,PlantA,GT-3,CASS
+P0048,Steam Pressure Stage 1,kPa,PlantA,GT-3,CASS
+P0049,Steam Pressure Stage 2,kPa,PlantA,GT-3,CASS
+P0050,Steam Pressure Stage 3,kPa,PlantA,GT-3,CASS
+P0051,Steam Pressure Stage 4,kPa,PlantA,GT-3,CASS
+P0052,Steam Pressure Stage 5,kPa,PlantA,GT-3,CASS
+P0053,Steam Temperature Stage 1,°C,PlantA,GT-3,CASS
+P0054,Steam Temperature Stage 2,°C,PlantA,GT-3,CASS
+P0055,Steam Temperature Stage 3,°C,PlantA,GT-3,CASS
+P0056,Steam Temperature Stage 4,°C,PlantA,GT-3,CASS
+P0057,Steam Temperature Stage 5,°C,PlantA,GT-3,CASS
+P0058,Steam Temperature Stage 6,°C,PlantA,GT-3,CASS
+P0059,Steam Temperature Stage 7,°C,PlantA,GT-3,CASS
+P0060,Steam Temperature Stage 8,°C,PlantA,GT-3,CASS
+P0061,Fuel Flow 1,kg/h,PlantA,GT-3,CASS
+P0062,Fuel Flow 2,kg/h,PlantA,GT-3,CASS
+P0063,Fuel Flow 3,kg/h,PlantA,GT-3,CASS
+P0064,Fuel Flow 4,kg/h,PlantA,GT-3,CASS
+P0065,Fuel Flow 5,kg/h,PlantA,GT-3,CASS
+P0066,Lube Oil Temperature 1,°C,PlantA,GT-3,CASS
+P0067,Lube Oil Temperature 2,°C,PlantA,GT-3,CASS
+P0068,Lube Oil Temperature 3,°C,PlantA,GT-3,CASS
+P0069,Lube Oil Temperature 4,°C,PlantA,GT-3,CASS
+P0070,Lube Oil Temperature 5,°C,PlantA,GT-3,CASS
+P0071,Lube Oil Pressure 1,kPa,PlantA,GT-3,CASS
+P0072,Lube Oil Pressure 2,kPa,PlantA,GT-3,CASS
+P0073,Lube Oil Pressure 3,kPa,PlantA,GT-3,CASS
+P0074,Lube Oil Pressure 4,kPa,PlantA,GT-3,CASS
+P0075,Lube Oil Pressure 5,kPa,PlantA,GT-3,CASS
+P0076,Bearing Vibration 1,mm/s,PlantA,GT-3,CASS
+P0077,Bearing Vibration 2,mm/s,PlantA,GT-3,CASS
+P0078,Bearing Vibration 3,mm/s,PlantA,GT-3,CASS
+P0079,Bearing Vibration 4,mm/s,PlantA,GT-3,CASS
+P0080,Bearing Vibration 5,mm/s,PlantA,GT-3,CASS
+P0081,Bearing Vibration 6,mm/s,PlantA,GT-3,CASS
+P0082,Bearing Vibration 7,mm/s,PlantA,GT-3,CASS
+P0083,Bearing Vibration 8,mm/s,PlantA,GT-3,CASS
+P0084,Bearing Vibration 9,mm/s,PlantA,GT-3,CASS
+P0085,Bearing Vibration 10,mm/s,PlantA,GT-3,CASS
+P0086,Valve Position 1,%,PlantA,GT-3,CASS
+P0087,Valve Position 2,%,PlantA,GT-3,CASS
+P0088,Valve Position 3,%,PlantA,GT-3,CASS
+P0089,Valve Position 4,%,PlantA,GT-3,CASS
+P0090,Valve Position 5,%,PlantA,GT-3,CASS
+P0091,Valve Position 6,%,PlantA,GT-3,CASS
+P0092,Valve Position 7,%,PlantA,GT-3,CASS
+P0093,Valve Position 8,%,PlantA,GT-3,CASS
+P0094,Valve Position 9,%,PlantA,GT-3,CASS
+P0095,Valve Position 10,%,PlantA,GT-3,CASS
+P0096,Guide Vane Angle 1,°,PlantA,GT-3,CASS
+P0097,Guide Vane Angle 2,°,PlantA,GT-3,CASS
+P0098,Guide Vane Angle 3,°,PlantA,GT-3,CASS
+P0099,Guide Vane Angle 4,°,PlantA,GT-3,CASS
+P0100,Guide Vane Angle 5,°,PlantA,GT-3,CASS

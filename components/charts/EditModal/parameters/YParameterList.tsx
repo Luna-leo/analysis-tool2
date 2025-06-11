@@ -2,7 +2,7 @@
 
 import React from "react"
 import { YAxisGroup } from "./YAxisGroup"
-import { ChartComponent, InterlockMaster } from "@/types"
+import { ChartComponent, InterlockMaster, EventInfo } from "@/types"
 import { FormulaMaster } from "@/data/formulaMaster"
 
 interface YParameterListProps {
@@ -27,6 +27,7 @@ interface YParameterListProps {
   addParameterToAxis: (axisNo: number) => void
   removeAxisGroup: (axisNo: number) => void
   groupParametersByAxis: () => Record<number, number[]>
+  selectedDataSourceItems?: EventInfo[]
 }
 
 export function YParameterList({
@@ -50,7 +51,8 @@ export function YParameterList({
   updateAxisRange,
   addParameterToAxis,
   removeAxisGroup,
-  groupParametersByAxis
+  groupParametersByAxis,
+  selectedDataSourceItems
 }: YParameterListProps) {
   return (
     <div className="space-y-4">
@@ -92,6 +94,7 @@ export function YParameterList({
               filterInterlocks={filterInterlocks}
               handleThresholdRemove={handleThresholdRemove}
               handleThresholdAdd={handleThresholdAdd}
+              selectedDataSourceItems={selectedDataSourceItems}
             />
           )
         })
