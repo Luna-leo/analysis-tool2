@@ -91,6 +91,7 @@ export function MasterPageTemplate<T extends MasterItem>({
           <MasterPageCardGrid
             items={filteredItems}
             cardRenderer={config.cardRenderer}
+            columns={config.cardColumns}
             emptyState={
               <MasterPageEmptyState
                 itemName={config.itemName}

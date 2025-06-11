@@ -33,6 +33,7 @@ export interface MasterPageConfig<T extends MasterItem> {
   viewType: 'table' | 'cards'
   columns?: ColumnConfig<T>[]
   cardRenderer?: (item: T) => ReactNode
+  cardColumns?: 1 | 2 | 3 | 4
   
   // Dialog
   DialogComponent: ComponentType<DialogProps<T>>
