@@ -92,6 +92,7 @@ export const ReferenceLineRow = React.memo(({
           ) : (
             <Input
               type="number"
+              step="any"
               value={line.xValue || ""}
               onChange={handleXValueChange}
               placeholder={(editingChart.xAxisType || "datetime") === "time" ? "Time(s)" : "X value"}
@@ -101,6 +102,7 @@ export const ReferenceLineRow = React.memo(({
         ) : (
           <Input
             type="number"
+            step="any"
             value={line.yValue || ""}
             onChange={handleYValueChange}
             placeholder="Y value"

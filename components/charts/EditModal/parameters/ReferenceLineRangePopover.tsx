@@ -53,6 +53,7 @@ export function ReferenceLineRangePopover({
                 <Input
                   id={`y-min-${line.id}`}
                   type="number"
+                  step="any"
                   value={line.yRange?.min || "0"}
                   onChange={(e) => onUpdateRange(line.id, 'yRange', 'min', e.target.value)}
                   disabled={line.yRange?.auto ?? true}
@@ -64,6 +65,7 @@ export function ReferenceLineRangePopover({
                 <Input
                   id={`y-max-${line.id}`}
                   type="number"
+                  step="any"
                   value={line.yRange?.max || "100"}
                   onChange={(e) => onUpdateRange(line.id, 'yRange', 'max', e.target.value)}
                   disabled={line.yRange?.auto ?? true}
@@ -113,6 +115,7 @@ export function ReferenceLineRangePopover({
                   <Input
                     id={`x-min-${line.id}`}
                     type="number"
+                    step="any"
                     value={line.xRange?.min || "0"}
                     onChange={(e) => onUpdateRange(line.id, 'xRange', 'min', e.target.value)}
                     disabled={line.xRange?.auto ?? true}
@@ -136,6 +139,7 @@ export function ReferenceLineRangePopover({
                   <Input
                     id={`x-max-${line.id}`}
                     type="number"
+                    step="any"
                     value={line.xRange?.max || "100"}
                     onChange={(e) => onUpdateRange(line.id, 'xRange', 'max', e.target.value)}
                     disabled={line.xRange?.auto ?? true}
