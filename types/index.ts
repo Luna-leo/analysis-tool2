@@ -139,7 +139,7 @@ export interface ChartComponent {
 export interface FileNode {
   id: string
   name: string
-  type: "file" | "folder" | "csv-import" | "event-master" | "interlock-master" | "formula-master" | "trigger-condition-master" | "unit-converter-formula-master" | "sensor-data-master" | "parameter-master" | "tag-master"
+  type: "file" | "folder" | "csv-import" | "event-master" | "interlock-master" | "formula-master" | "trigger-condition-master" | "unit-converter-formula-master" | "sensor-data-master" | "parameter-master" | "tag-master" | "settings"
   children?: FileNode[]
   dataSources?: string[]
   charts?: ChartComponent[]

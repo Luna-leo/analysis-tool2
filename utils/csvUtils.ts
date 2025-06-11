@@ -1,16 +1,6 @@
 import { CSVDataSourceType } from "@/types"
-import { StandardizedCSVData } from "@/types/csv-data"
+import { StandardizedCSVData, ParsedCSVData } from "@/types/csv-data"
 import { getDataSourceConfig } from "@/data/dataSourceTypes"
-
-export interface ParsedCSVData {
-  headers: string[]
-  rows: string[][]
-  metadata: {
-    fileName: string
-    rowCount: number
-    columnCount: number
-  }
-}
 
 export interface CSVParseResult {
   success: boolean
@@ -41,17 +31,94 @@ export async function parseCSVFiles(files: File[]): Promise<CSVParseResult> {
 }
 
 function parseCSV(text: string, fileName: string): ParsedCSVData {
-  const lines = text.trim().split('\n')
-  const headers = parseCSVLine(lines[0])
-  const rows = lines.slice(1).map(line => parseCSVLine(line))
+  // Remove BOM if present
+  const cleanText = text.charAt(0) === '\uFEFF' ? text.slice(1) : text
+  const lines = cleanText.trim().split('\n')
+  
+  // Check if this is SSAC format (by looking for typical SSAC structure)
+  const firstLine = parseCSVLine(lines[0])
+  const secondLine = lines.length > 1 ? parseCSVLine(lines[1]) : []
+  const thirdLine = lines.length > 2 ? parseCSVLine(lines[2]) : []
+  
+  // SSAC format detection:
+  // - First row starts with Datetime or empty, followed by P#### pattern
+  // - Second row has parameter names
+  // - Third row has units
+  const isSSACFormat = lines.length >= 3 && 
+    firstLine.length > 1 && 
+    (firstLine[0].toLowerCase().includes('datetime') || firstLine[0] === '' || firstLine[0] === '﻿Datetime') &&
+    (firstLine[1] && firstLine[1].match(/^P\d+$/)) &&
+    secondLine.length > 1 &&
+    thirdLine.length > 1
+  
+  if (isSSACFormat) {
+    // SSAC format: 3 header rows, data starts from row 4
+    // Extract parameter information from the header rows
+    const idRow = parseCSVLine(lines[0])
+    const paramRow = parseCSVLine(lines[1])
+    const unitRow = parseCSVLine(lines[2])
+    
+    // Create headers from parameter names
+    const headers = ['Datetime']
+    for (let i = 1; i < paramRow.length; i++) {
+      if (paramRow[i]) {
+        headers.push(paramRow[i])
+      }
+    }
+    
+    // Parse data rows starting from row 4 (index 3)
+    const rows = []
+    for (let i = 3; i < lines.length; i++) {
+      const rowArray = parseCSVLine(lines[i])
+      if (rowArray.length === 0 || !rowArray[0]) continue // Skip empty rows
+      
+      const rowObj: Record<string, string | number | null> = {}
+      rowObj['Datetime'] = rowArray[0] // First column is datetime
+      
+      for (let j = 1; j < rowArray.length && j < headers.length; j++) {
+        const value = rowArray[j] || null
+        const numValue = Number(value)
+        rowObj[headers[j]] = !isNaN(numValue) && value !== '' ? numValue : value
+      }
+      rows.push(rowObj)
+    }
+    
+    return {
+      headers,
+      rows,
+      metadata: {
+        fileName,
+        format: 'SSAC',
+        parameterInfo: {
+          ids: idRow.slice(1),
+          parameters: paramRow.slice(1),
+          units: unitRow.slice(1)
+        }
+      }
+    }
+  } else {
+    // Standard CSV format
+    const headers = parseCSVLine(lines[0])
+    const rowArrays = lines.slice(1).map(line => parseCSVLine(line))
+    
+    // Convert array rows to object rows
+    const rows = rowArrays.map(rowArray => {
+      const rowObj: Record<string, string | number | null> = {}
+      headers.forEach((header, index) => {
+        const value = rowArray[index] || null
+        // Try to parse as number
+        const numValue = Number(value)
+        rowObj[header] = !isNaN(numValue) && value !== '' ? numValue : value
+      })
+      return rowObj
+    })
 
-  return {
-    headers,
-    rows,
-    metadata: {
-      fileName,
-      rowCount: rows.length,
-      columnCount: headers.length
+    return {
+      headers,
+      rows,
+      metadata: {
+        fileName
+      }
     }
   }
 }
@@ -86,8 +153,27 @@ function parseCSVLine(line: string): string[] {
 
 export function validateCSVStructure(
   headers: string[], 
-  dataSourceType: CSVDataSourceType
+  dataSourceType: CSVDataSourceType,
+  metadata?: ParsedCSVData['metadata']
 ): { valid: boolean; missingColumns?: string[] } {
+  // For SSAC format, validation is different
+  if (dataSourceType === 'SSAC' && metadata?.format === 'SSAC') {
+    // SSAC format should have Datetime column and at least one parameter
+    const hasDatetime = headers.includes('Datetime')
+    const hasParameters = headers.length > 1
+    
+    if (!hasDatetime) {
+      return { valid: false, missingColumns: ['Datetime'] }
+    }
+    
+    if (!hasParameters) {
+      return { valid: false, missingColumns: ['At least one parameter column'] }
+    }
+    
+    return { valid: true }
+  }
+  
+  // Standard validation for other formats
   const config = getDataSourceConfig(dataSourceType)
   const headerLower = headers.map(h => h.toLowerCase())
   

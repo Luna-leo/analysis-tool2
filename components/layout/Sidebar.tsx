@@ -141,6 +141,17 @@ export function Sidebar() {
     openFile(unitConverterFormulaMasterNode, 'calculator')
   }
 
+  const handleOpenSettings = () => {
+    const settingsNode: FileNode = {
+      id: 'settings',
+      name: 'Personal Settings',
+      type: 'settings',
+      isSystemNode: true
+    }
+    
+    openFile(settingsNode, 'settings')
+  }
+
   const renderSidebarContent = () => {
     switch (activeView) {
       case "explorer":
@@ -273,7 +284,16 @@ export function Sidebar() {
         return (
           <>
             <h2 className="text-base font-semibold px-4 py-3">Settings</h2>
-            <div className="px-4 py-2 text-base text-muted-foreground">Settings panel coming soon...</div>
+            <div className="px-2 space-y-1">
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-3 h-12 px-3 text-base font-normal"
+                onClick={handleOpenSettings}
+              >
+                <Settings className="h-5 w-5 shrink-0" />
+                <span className="text-base">Personal Settings</span>
+              </Button>
+            </div>
           </>
         )
       default:

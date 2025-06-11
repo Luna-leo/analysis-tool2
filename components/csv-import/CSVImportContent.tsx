@@ -19,6 +19,10 @@ import { getDataSourceTypes, getDataSourceConfig } from "@/data/dataSourceTypes"
 import { useToast } from "@/hooks/use-toast"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { parseCSVFiles } from "@/utils/csvUtils"
+import { extractDateRangeFromCSV, formatDateRange } from "@/utils/csvDateRangeUtils"
+import { useCollectedPeriodStore } from "@/stores/useCollectedPeriodStore"
+import { CollectedPeriod } from "@/types/collected-period"
 
 interface CSVImportContentProps {
   mode?: 'page' | 'dialog'
@@ -40,6 +44,8 @@ export const CSVImportContent = React.memo(function CSVImportContent({ mode = 'p
   const [machineNo, setMachineNo] = useState("")
   const [filePaths, setFilePaths] = useState<string[]>([])
   const [allFilePaths, setAllFilePaths] = useState<string[]>([]) // All selected file paths before filtering
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]) // Store actual File objects
+  const [allFiles, setAllFiles] = useState<File[]>([]) // All File objects before filtering
   const [fileNamePattern, setFileNamePattern] = useState("")
   const [patternType, setPatternType] = useState<"wildcard" | "regex">("wildcard")
   const [isImporting, setIsImporting] = useState(false)
@@ -47,45 +53,47 @@ export const CSVImportContent = React.memo(function CSVImportContent({ mode = 'p
   const fileInputRef = useRef<HTMLInputElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
+  const { addPeriod } = useCollectedPeriodStore()
 
   // Filter files based on pattern
-  const filterFilesByPattern = useCallback((pathsToFilter: string[]): string[] => {
-    if (!fileNamePattern) return pathsToFilter
+  const filterFilesByPattern = useCallback((filesToFilter: File[]): File[] => {
+    if (!fileNamePattern) return filesToFilter
 
     try {
       const regex = patternType === 'regex' 
         ? new RegExp(fileNamePattern, 'i')
         : wildcardToRegex(fileNamePattern)
 
-      return pathsToFilter.filter(path => {
-        const fileName = path.split('/').pop() || path.split('\\').pop() || ''
-        return regex.test(fileName)
+      return filesToFilter.filter(file => {
+        return regex.test(file.name)
       })
     } catch (error) {
       // Invalid regex pattern
-      return pathsToFilter
+      return filesToFilter
     }
   }, [fileNamePattern, patternType])
 
   // Apply pattern filter whenever pattern or files change
   useEffect(() => {
-    const filtered = filterFilesByPattern(allFilePaths)
-    setFilePaths(filtered)
-  }, [allFilePaths, fileNamePattern, patternType, filterFilesByPattern])
+    const filteredFiles = filterFilesByPattern(allFiles)
+    setSelectedFiles(filteredFiles)
+    setFilePaths(filteredFiles.map(f => f.name))
+  }, [allFiles, fileNamePattern, patternType, filterFilesByPattern])
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = e.target.files
     if (selectedFiles) {
-      const paths = Array.from(selectedFiles)
+      const csvFiles = Array.from(selectedFiles)
         .filter(file => file.name.endsWith('.csv') || file.name.endsWith('.CSV'))
-        .map(file => file.name) // Note: Browser security prevents getting full paths
-      setAllFilePaths(paths)
+      
+      setAllFiles(csvFiles)
+      setAllFilePaths(csvFiles.map(f => f.name))
     }
   }, [])
 
 
   const handleImport = async () => {
-    if (!plant || !machineNo || filePaths.length === 0) {
+    if (!plant || !machineNo || selectedFiles.length === 0) {
       toast({
         title: "入力エラー",
         description: "すべての必須項目を入力してください",
@@ -96,31 +104,77 @@ export const CSVImportContent = React.memo(function CSVImportContent({ mode = 'p
 
     setIsImporting(true)
     try {
-      // Prepare import conditions
-      const importConditions = {
-        dataSourceType,
-        plant,
-        machineNo,
-        filePaths,
-        fileNamePattern: fileNamePattern || undefined,
-        patternType: fileNamePattern ? patternType : undefined,
-        timestamp: new Date().toISOString()
+      // Parse CSV files
+      const parseResult = await parseCSVFiles(selectedFiles)
+      
+      if (!parseResult.success || !parseResult.data) {
+        throw new Error(parseResult.error || "CSVファイルの解析に失敗しました")
       }
 
-      // Log to console (temporary implementation)
-      console.log('CSV Import Conditions:', importConditions)
+      // Extract date ranges from all files
+      let overallMinDate: Date | null = null
+      let overallMaxDate: Date | null = null
+      let dateColumnName: string | null = null
 
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      for (const parsedData of parseResult.data) {
+        const dateRange = extractDateRangeFromCSV(parsedData, dataSourceType)
+        
+        if (dateRange.minDate && dateRange.maxDate) {
+          if (!overallMinDate || dateRange.minDate < overallMinDate) {
+            overallMinDate = dateRange.minDate
+          }
+          if (!overallMaxDate || dateRange.maxDate > overallMaxDate) {
+            overallMaxDate = dateRange.maxDate
+          }
+          if (!dateColumnName && dateRange.dateColumnName) {
+            dateColumnName = dateRange.dateColumnName
+          }
+        }
+      }
 
-      toast({
-        title: "インポート条件送信",
-        description: `${filePaths.length}個のファイルの条件をAPIに送信しました（仮実装）`,
-      })
+      if (!overallMinDate || !overallMaxDate) {
+        toast({
+          title: "警告",
+          description: "CSVファイルから日付範囲を取得できませんでした",
+          variant: "destructive",
+        })
+      } else {
+        // Create collected period entry
+        const collectedPeriod: CollectedPeriod = {
+          id: `cp_${Date.now()}`,
+          plant,
+          machineNo,
+          dataSourceType,
+          startDate: overallMinDate.toISOString(),
+          endDate: overallMaxDate.toISOString(),
+          fileCount: selectedFiles.length,
+          importedAt: new Date().toISOString(),
+          metadata: {
+            fileNames: selectedFiles.map(f => f.name),
+            dateColumnName: dateColumnName || undefined
+          }
+        }
+
+        // Add to store
+        addPeriod(collectedPeriod)
+
+        const dateRangeStr = formatDateRange({ 
+          minDate: overallMinDate, 
+          maxDate: overallMaxDate, 
+          dateColumnName 
+        })
+
+        toast({
+          title: "インポート完了",
+          description: `${selectedFiles.length}個のファイルをインポートしました。期間: ${dateRangeStr}`,
+        })
+      }
 
       // Reset form
       setFilePaths([])
       setAllFilePaths([])
+      setSelectedFiles([])
+      setAllFiles([])
       setFileNamePattern("")
       
       // Call completion callback if provided

@@ -19,4 +19,13 @@ export interface ParsedCSVData {
   headers: string[]
   rows: Array<Record<string, string | number | null>>
   columns?: ParsedCSVColumn[]
+  metadata?: {
+    fileName: string
+    format?: 'SSAC' | 'standard'
+    parameterInfo?: {
+      ids: string[]
+      parameters: string[]
+      units: string[]
+    }
+  }
 }

@@ -74,7 +74,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       .attr("class", "main-chart-group")
       .attr("transform", `translate(${margin.left},${margin.top})`)
 
-    const data = generateMockData(editingChart, selectedDataSourceItems)
+    // Don't generate mock data - leave the chart empty
+    const data: any[] = []
     
     if (data.length > 0) {
       // Always render as line/scatter chart

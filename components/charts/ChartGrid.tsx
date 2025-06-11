@@ -12,6 +12,7 @@ import { InterlockMasterPageWrapper } from "@/components/interlock-master/Interl
 import { FormulaMasterPage } from "@/components/formula-master"
 import { TriggerConditionMasterPage } from "@/components/trigger-condition-master"
 import { UnitConverterFormulaMasterPage } from "@/components/unit-converter-formula"
+import { SettingsPage } from "@/components/settings"
 import { useFileStore } from "@/stores/useFileStore"
 import { useLayoutStore } from "@/stores/useLayoutStore"
 import { useUIStore } from "@/stores/useUIStore"
@@ -98,6 +99,11 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
   // Check if this is a Unit Converter Formula Master tab
   if (file.id === 'unit-converter-formula-master') {
     return <UnitConverterFormulaMasterPage />
+  }
+
+  // Check if this is a Settings tab
+  if (file.id === 'settings') {
+    return <SettingsPage />
   }
 
   if (!file.charts || file.charts.length === 0) {

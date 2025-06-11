@@ -7,5 +7,9 @@ interface CSVImportPageProps {
 }
 
 export function CSVImportPage(_props: CSVImportPageProps) {
-  return <CSVImportContent mode="page" />
+  return (
+    <div className="p-4 h-full">
+      <CSVImportContent mode="page" />
+    </div>
+  )
 }

@@ -1,13 +1,21 @@
 "use client"
 
 import React, { useState, useMemo } from "react"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ChevronDown } from "lucide-react"
 import { ChartComponent, EventInfo } from "@/types"
 import { useParameterStore } from "@/stores/useParameterStore"
+import { useSettingsStore } from "@/stores/useSettingsStore"
 import { parseParameterKey, createParameterKey } from "@/utils/parameterUtils"
+import { 
+  EnhancedParameter, 
+  extractParametersFromCSV, 
+  mergeParametersWithPriority,
+  shouldUseDataSourcePriority 
+} from "@/utils/dataSourceParameterUtils"
 
 interface RegularParameterRowProps {
   index: number
@@ -27,20 +35,72 @@ export function RegularParameterRow({
   const [open, setOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const { parameters, getUniqueParameters } = useParameterStore()
+  const { settings } = useSettingsStore()
 
-  // Get unique parameters (by name + unit)
-  const uniqueParameters = useMemo(() => getUniqueParameters(), [getUniqueParameters])
+  // Get parameters based on settings
+  const enhancedParameters = useMemo(() => {
+    const masterParams = getUniqueParameters()
+    
+    // Check if we should use data source priority
+    const useDataSourcePriority = shouldUseDataSourcePriority(settings.toolDefaults.parameterSource) && selectedDataSourceItems && selectedDataSourceItems.length > 0
+    
+    if (!useDataSourcePriority) {
+      // Convert to enhanced parameters without data source info
+      return masterParams.map(param => ({
+        ...param,
+        isFromDataSource: false,
+        matchesDataSource: false
+      } as EnhancedParameter))
+    }
+    
+    // TODO: Get actual CSV data from selected data sources
+    // For now, we'll simulate data source parameters
+    const dataSourceParams: EnhancedParameter[] = [
+      // Simulate some parameters that would come from a data source
+      {
+        id: 'ds_temp_avg',
+        name: 'Temperature Average',
+        unit: '°C',
+        plant: selectedDataSourceItems[0]?.plant || '',
+        machineNo: selectedDataSourceItems[0]?.machineNo || '',
+        source: 'DataSource',
+        isFromDataSource: true
+      },
+      {
+        id: 'ds_pressure',
+        name: 'Pressure',
+        unit: 'kPa',
+        plant: selectedDataSourceItems[0]?.plant || '',
+        machineNo: selectedDataSourceItems[0]?.machineNo || '',
+        source: 'DataSource',
+        isFromDataSource: true
+      },
+      // This one matches a master parameter (Turbine Inlet Temperature 1)
+      {
+        id: 'ds_turbine_inlet_temp',
+        name: 'Turbine Inlet Temperature 1',
+        unit: '°C',
+        plant: selectedDataSourceItems[0]?.plant || '',
+        machineNo: selectedDataSourceItems[0]?.machineNo || '',
+        source: 'DataSource',
+        isFromDataSource: true
+      }
+    ]
+    
+    // Merge master and data source parameters with priority
+    return mergeParametersWithPriority(masterParams, dataSourceParams)
+  }, [getUniqueParameters, settings.toolDefaults.parameterSource, selectedDataSourceItems])
 
   // Filter by search query
   const searchFilteredParameters = useMemo(() => {
-    if (!searchQuery) return uniqueParameters
+    if (!searchQuery) return enhancedParameters
     
     const query = searchQuery.toLowerCase()
-    return uniqueParameters.filter(p => 
+    return enhancedParameters.filter(p => 
       p.name.toLowerCase().includes(query) ||
       p.unit.toLowerCase().includes(query)
     )
-  }, [uniqueParameters, searchQuery])
+  }, [enhancedParameters, searchQuery])
 
   const handleParameterSelect = (paramKey: string) => {
     const newParams = [...(editingChart.yAxisParams || [])]
@@ -100,15 +160,40 @@ export function RegularParameterRow({
             >
               {searchFilteredParameters.map((param, idx) => {
                 const paramKey = createParameterKey(param.name, param.unit)
+                const isDataSourceRelated = param.isFromDataSource || param.matchesDataSource
+                
                 return (
                   <CommandItem
                     key={`${paramKey}-${idx}`}
                     value={paramKey}
                     onSelect={handleParameterSelect}
-                    className="flex flex-col items-start"
+                    className={cn(
+                      "flex flex-col items-start relative",
+                      isDataSourceRelated && "bg-primary/5"
+                    )}
                   >
-                    <span className="font-medium">{param.name}</span>
-                    <span className="text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 w-full">
+                      <span className={cn(
+                        "font-medium",
+                        isDataSourceRelated && "text-primary"
+                      )}>
+                        {param.name}
+                      </span>
+                      {param.isFromDataSource && (
+                        <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+                          DS
+                        </span>
+                      )}
+                      {param.matchesDataSource && !param.isFromDataSource && (
+                        <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+                          ✓
+                        </span>
+                      )}
+                    </div>
+                    <span className={cn(
+                      "text-xs",
+                      isDataSourceRelated ? "text-primary/70" : "text-muted-foreground"
+                    )}>
                       {param.unit}
                     </span>
                   </CommandItem>

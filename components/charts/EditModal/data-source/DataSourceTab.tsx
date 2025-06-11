@@ -13,6 +13,8 @@ import { EventInfo, SearchResult, CSVImportData } from "@/types"
 import { processManualEntryData, createEventFromSearchResult } from "@/utils/dataSourceUtils"
 import { parseCSVFiles, validateCSVStructure, mapCSVDataToStandardFormat } from "@/utils/csvUtils"
 import { useToast } from "@/hooks/use-toast"
+import { useCollectedPeriodStore } from "@/stores/useCollectedPeriodStore"
+import { extractDateRangeFromCSV } from "@/utils/csvDateRangeUtils"
 import {
   TimeOffsetSettings,
   SelectedDataSourceTable,
@@ -43,6 +45,7 @@ export function DataSourceTab({
   const [originalSearchResults, setOriginalSearchResults] = useState<Map<string, SearchResult>>(new Map())
   
   const { toast } = useToast()
+  const { addPeriod } = useCollectedPeriodStore()
 
   const handleSaveManualEntry = (data: any, editingItemId: string | null) => {
     const processedData = processManualEntryData(data)
@@ -168,55 +171,78 @@ export function DataSourceTab({
         throw new Error(parseResult.error || "CSV解析に失敗しました")
       }
 
-      // Validate and process each file
-      let totalRowsImported = 0
-      const importedEvents: EventInfo[] = []
+      // Extract date range from the CSV data
+      let overallMinDate: Date | null = null
+      let overallMaxDate: Date | null = null
+      let dateColumnName: string | null = null
       
       for (const parsedFile of parseResult.data) {
         // Validate CSV structure
-        const validation = validateCSVStructure(parsedFile.headers, data.dataSourceType)
+        const validation = validateCSVStructure(parsedFile.headers, data.dataSourceType, parsedFile.metadata)
         if (!validation.valid) {
-          throw new Error(`ファイル ${parsedFile.metadata.fileName} の必須カラムが不足しています: ${validation.missingColumns?.join(', ')}`)
+          throw new Error(`ファイル ${parsedFile.metadata?.fileName || 'unknown'} の必須カラムが不足しています: ${validation.missingColumns?.join(', ')}`)
         }
 
-        // Map data to standard format
-        const standardData = mapCSVDataToStandardFormat(
-          parsedFile,
-          data.dataSourceType,
-          data.plant,
-          data.machineNo
-        )
-
-        // Convert to EventInfo format for each row
-        standardData.forEach((row, index) => {
-          const eventInfo: EventInfo = {
-            id: `csv_${data.dataSourceType}_${Date.now()}_${index}`,
-            plant: data.plant,
-            machineNo: data.machineNo,
-            label: `${data.dataSourceType} Import`,
-            labelDescription: `Imported from ${parsedFile.metadata.fileName}`,
-            event: `Row ${row.rowNumber}`,
-            eventDetail: JSON.stringify(row),
-            start: String(row.timestamp || row.datetime || row.time || new Date().toISOString()),
-            end: String(row.timestamp || row.datetime || row.time || new Date().toISOString())
-          }
-          importedEvents.push(eventInfo)
-        })
+        // Extract date range from this file
+        const dateRange = extractDateRangeFromCSV(parsedFile, data.dataSourceType)
         
-        totalRowsImported += standardData.length
+        if (dateRange.minDate && dateRange.maxDate) {
+          if (!overallMinDate || dateRange.minDate < overallMinDate) {
+            overallMinDate = dateRange.minDate
+          }
+          if (!overallMaxDate || dateRange.maxDate > overallMaxDate) {
+            overallMaxDate = dateRange.maxDate
+          }
+          if (!dateColumnName && dateRange.dateColumnName) {
+            dateColumnName = dateRange.dateColumnName
+          }
+        }
       }
 
-      // Add imported events to period pool
-      dataSource.setPeriodPool([...dataSource.periodPool, ...importedEvents])
+      if (!overallMinDate || !overallMaxDate) {
+        throw new Error("CSVファイルから日付範囲を抽出できませんでした")
+      }
+
+      // Create a CollectedPeriod entry
+      const collectedPeriod = {
+        id: `collected_${Date.now()}`,
+        plant: data.plant,
+        machineNo: data.machineNo,
+        dataSourceType: data.dataSourceType,
+        startDate: overallMinDate.toISOString(),
+        endDate: overallMaxDate.toISOString(),
+        fileCount: data.files.length,
+        importedAt: new Date().toISOString(),
+        metadata: {
+          dateColumnName: dateColumnName || undefined
+        }
+      }
+
+      // Add to CollectedPeriod store
+      addPeriod(collectedPeriod)
+
+      // Create an EventInfo entry for the period pool
+      const periodEvent: EventInfo = {
+        id: collectedPeriod.id,
+        plant: data.plant,
+        machineNo: data.machineNo,
+        label: `${data.dataSourceType} Period`,
+        labelDescription: `${data.files.length} files imported`,
+        event: `${overallMinDate.toLocaleDateString()} - ${overallMaxDate.toLocaleDateString()}`,
+        eventDetail: JSON.stringify(collectedPeriod),
+        start: collectedPeriod.startDate,
+        end: collectedPeriod.endDate
+      }
+
+      // Add to period pool
+      dataSource.setPeriodPool([...dataSource.periodPool, periodEvent])
       
-      // Automatically select the newly imported events
-      const newSelectedIds = new Set([...dataSource.selectedPoolIds])
-      importedEvents.forEach(event => newSelectedIds.add(event.id))
-      dataSource.setSelectedPoolIds(newSelectedIds)
+      // Automatically select the newly imported period
+      dataSource.setSelectedPoolIds(new Set([...dataSource.selectedPoolIds, periodEvent.id]))
 
       toast({
         title: "インポート完了",
-        description: `${data.files.length}個のファイルから${totalRowsImported}件のデータをインポートしました`,
+        description: `${data.files.length}個のファイルから期間データをインポートしました`,
       })
     } catch (error) {
       toast({
