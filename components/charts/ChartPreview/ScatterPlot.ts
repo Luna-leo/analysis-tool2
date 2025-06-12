@@ -202,7 +202,12 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
     const yAxisLabels = editingChart.yAxisLabels || {}
     const firstYAxisLabel = yAxisLabels[1] || Object.values(yAxisLabels)[0] || ""
     
-    if (firstYAxisLabel) {
+    // Get unit from the first Y parameter
+    const firstYParam = editingChart.yAxisParams?.find(param => (param.axisNo || 1) === 1)
+    const unit = firstYParam?.unit
+    const labelWithUnit = firstYAxisLabel && unit ? `${firstYAxisLabel} [${unit}]` : firstYAxisLabel
+    
+    if (labelWithUnit) {
       g.append("text")
         .attr("class", "y-axis-label")
         .attr("text-anchor", "middle")
@@ -210,7 +215,7 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
         .attr("x", -height / 2)
         .attr("y", -40)
         .style("font-size", "12px")
-        .text(firstYAxisLabel)
+        .text(labelWithUnit)
     }
     
     return // Exit early for canvas rendering
@@ -244,7 +249,12 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
   const yAxisLabels = editingChart.yAxisLabels || {}
   const firstYAxisLabel = yAxisLabels[1] || Object.values(yAxisLabels)[0] || ""
   
-  if (firstYAxisLabel) {
+  // Get unit from the first Y parameter
+  const firstYParam = editingChart.yAxisParams?.find(param => (param.axisNo || 1) === 1)
+  const unit = firstYParam?.unit
+  const labelWithUnit = firstYAxisLabel && unit ? `${firstYAxisLabel} [${unit}]` : firstYAxisLabel
+  
+  if (labelWithUnit) {
     g.append("text")
       .attr("class", "y-axis-label")
       .attr("text-anchor", "middle")
@@ -252,7 +262,7 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
       .attr("x", -height / 2)
       .attr("y", -40)
       .style("font-size", "12px")
-      .text(firstYAxisLabel)
+      .text(labelWithUnit)
   }
 
   // Add grid lines based on LOD level

@@ -107,6 +107,10 @@ export const renderEmptyChart = ({ g, width, height, chartType, editingChart, sc
     const yAxisLabels = editingChart.yAxisLabels || {}
     const firstYAxisLabel = Object.values(yAxisLabels)[0] || "Value"
     
+    // Get unit from the first Y parameter (reuse existing firstYParam variable)
+    const unit = firstYParam?.unit
+    const labelWithUnit = firstYAxisLabel && unit ? `${firstYAxisLabel} [${unit}]` : firstYAxisLabel
+    
     g.append("text")
       .attr("transform", "rotate(-90)")
       .attr("x", -height / 2)
@@ -114,7 +118,7 @@ export const renderEmptyChart = ({ g, width, height, chartType, editingChart, sc
       .attr("text-anchor", "middle")
       .attr("fill", "#6b7280")
       .style("font-size", "12px")
-      .text(firstYAxisLabel)
+      .text(labelWithUnit)
     
   // Store scales for reference lines
   scalesRef.current = { xScale, yScale }

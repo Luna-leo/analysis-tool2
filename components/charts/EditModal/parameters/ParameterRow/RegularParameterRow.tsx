@@ -104,16 +104,18 @@ export function RegularParameterRow({
 
   const handleParameterSelect = (paramKey: string) => {
     const newParams = [...(editingChart.yAxisParams || [])]
-    // Reset unit when parameter changes
+    
+    // Parse the parameter key to get the name and unit
+    const parsedParam = parseParameterKey(paramKey)
+    
+    // Set parameter with its default unit
     newParams[index] = { 
       ...newParams[index], 
       parameter: paramKey,
-      unit: undefined,  // Reset to default unit
+      unit: parsedParam?.unit || undefined,  // Set default unit from parameter
       unitConversionId: undefined  // Clear any conversion
     }
     
-    // Parse the parameter key to get the name
-    const parsedParam = parseParameterKey(paramKey)
     if (parsedParam && newParams[index]) {
       const axisNo = newParams[index].axisNo || 1
       
