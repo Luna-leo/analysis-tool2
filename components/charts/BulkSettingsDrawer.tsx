@@ -61,6 +61,11 @@ export function BulkSettingsDrawer({ open, onOpenChange, file }: BulkSettingsDra
     }
   }>({})
   
+  // チャートタイトルの設定
+  const [chartTitleSettings, setChartTitleSettings] = useState<{
+    [chartIndex: number]: string
+  }>({})
+  
   // CSVインポート用
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [csvPreviewData, setCsvPreviewData] = useState<any[]>([])
@@ -137,10 +142,16 @@ export function BulkSettingsDrawer({ open, onOpenChange, file }: BulkSettingsDra
 
   const handleApplyCSVSettings = () => {
     const newSettings = { ...yParameterSettings }
+    const newTitleSettings = { ...chartTitleSettings }
     
     csvPreviewData.forEach(row => {
       const chartIndex = row.chart_index
       const yAxisIndex = row.y_axis_index
+      
+      // Apply chart title if provided
+      if (row.chart_title && row.chart_title.trim() !== '') {
+        newTitleSettings[chartIndex] = row.chart_title
+      }
       
       if (!newSettings[chartIndex]) newSettings[chartIndex] = {}
       if (!newSettings[chartIndex][yAxisIndex]) newSettings[chartIndex][yAxisIndex] = {}
@@ -154,6 +165,7 @@ export function BulkSettingsDrawer({ open, onOpenChange, file }: BulkSettingsDra
     })
     
     setYParameterSettings(newSettings)
+    setChartTitleSettings(newTitleSettings)
     setCsvPreviewData([])
     toast({
       title: "成功",
@@ -228,6 +240,11 @@ export function BulkSettingsDrawer({ open, onOpenChange, file }: BulkSettingsDra
     if (file.charts) {
       const updatedCharts = file.charts.map((chart, chartIndex) => {
         const updatedChart: ChartComponent = { ...chart }
+        
+        // Apply chart title if set
+        if (chartTitleSettings[chartIndex]) {
+          updatedChart.title = chartTitleSettings[chartIndex]
+        }
 
         // Apply data source settings
         if (dataSourceSettings.action !== "none" && dataSourceSettings.sources.length > 0) {
@@ -547,9 +564,21 @@ export function BulkSettingsDrawer({ open, onOpenChange, file }: BulkSettingsDra
                 <div className="space-y-6">
                   {file.charts?.map((chart, chartIndex) => (
                     <div key={chart.id} className="space-y-4 p-4 border rounded-lg">
-                      <h4 className="font-medium text-sm">
-                        グラフ {chartIndex + 1}: {chart.title || "無題"}
-                      </h4>
+                      <div className="flex items-center gap-3 mb-3">
+                        <h4 className="font-medium text-sm">
+                          グラフ {chartIndex + 1}:
+                        </h4>
+                        <Input
+                          value={chartTitleSettings[chartIndex] ?? chart.title ?? ""}
+                          onChange={(e) => {
+                            const newSettings = { ...chartTitleSettings }
+                            newSettings[chartIndex] = e.target.value
+                            setChartTitleSettings(newSettings)
+                          }}
+                          placeholder="グラフタイトル"
+                          className="flex-1"
+                        />
+                      </div>
                       
                       {chart.yAxisParams?.map((yParam, yParamIndex) => (
                         <div key={yParamIndex} className="pl-4 border-l-2">
