@@ -66,19 +66,29 @@ export const useCSVDataStore = create<CSVDataStore>()(
         const parameters: string[] = []
         const units: Record<string, string> = {}
         
-        // Extract parameter names and units from metadata if available
+        console.log('saveCSVData called:', {
+          periodId,
+          firstDataKeys: Object.keys(first),
+          metadata
+        })
+        
+        // Extract parameter names from actual data keys (more reliable)
+        const excludedKeys = ['plant', 'machineNo', 'sourceType', 'rowNumber', 'timestamp']
+        Object.keys(first).forEach(key => {
+          if (!excludedKeys.includes(key)) {
+            parameters.push(key)
+          }
+        })
+        
+        // Extract units from metadata if available
         if (metadata?.parameterInfo) {
-          parameters.push(...metadata.parameterInfo.parameters)
-          metadata.parameterInfo.parameters.forEach((param: string, index: number) => {
-            if (metadata.parameterInfo.units[index]) {
-              units[param] = metadata.parameterInfo.units[index]
-            }
-          })
-        } else {
-          // Fallback: extract from data keys
-          Object.keys(first).forEach(key => {
-            if (!['plant', 'machineNo', 'sourceType', 'rowNumber', 'timestamp'].includes(key)) {
-              parameters.push(key)
+          // Map parameter names to units based on the headers
+          const headers = Object.keys(first).filter(k => !excludedKeys.includes(k))
+          headers.forEach((header) => {
+            // Find matching parameter in metadata
+            const paramIndex = metadata.parameterInfo.parameters.findIndex((p: string) => p === header)
+            if (paramIndex !== -1 && metadata.parameterInfo.units[paramIndex]) {
+              units[header] = metadata.parameterInfo.units[paramIndex]
             }
           })
         }
@@ -138,7 +148,8 @@ export const useCSVDataStore = create<CSVDataStore>()(
           requestedParameters: parameters,
           availableParameters: dataset.parameters,
           dataLength: dataset.data.length,
-          sampleData: dataset.data[0]
+          sampleData: dataset.data[0],
+          actualDataKeys: dataset.data.length > 0 ? Object.keys(dataset.data[0]) : []
         })
 
         // Extract parameter data with cleaning
