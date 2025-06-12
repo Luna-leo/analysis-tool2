@@ -16,7 +16,7 @@ export function extractDateRangeFromCSV(
   dataSourceType: CSVDataSourceType
 ): DateRange {
   // Check if this is SSAC format with special handling
-  if ((dataSourceType === 'SSAC' || parsedData.metadata?.format === 'SSAC') && dataSourceType !== 'CASS' && dataSourceType !== 'CHINAMI' && dataSourceType !== 'standard') {
+  if (parsedData.metadata?.format === 'SSAC') {
     // For SSAC format, datetime is always in the 'Datetime' column
     return extractDateRangeFromColumn(parsedData.rows, 'Datetime')
   }

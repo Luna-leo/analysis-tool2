@@ -3,7 +3,10 @@ import { ChartComponent } from "@/types"
 import { formatXValue, getXValueForScale } from "@/utils/chartAxisUtils"
 import { calculateXAxisPosition } from "@/utils/chart/axisPositioning"
 import { calculateConsistentYDomain } from "@/utils/chart/scaleUtils"
-import { showTooltip, updateTooltipPosition, hideTooltip, hideAllTooltips } from "@/utils/chartTooltip"
+import { showTooltip, updateTooltipPosition, hideTooltip } from "@/utils/chartTooltip"
+import { determineLODLevel, simplifyData, renderLODGrid, getRenderMethod } from "./LODRenderer"
+import { renderWithCanvas } from "./CanvasRenderer"
+import { performanceTracker } from "@/utils/performanceTracking"
 
 interface RenderScatterPlotProps {
   g: d3.Selection<SVGGElement, unknown, null, undefined>
@@ -26,12 +29,20 @@ interface RenderScatterPlotProps {
 }
 
 export function renderScatterPlot({ g, data, width, height, editingChart, scalesRef }: RenderScatterPlotProps) {
+  // Start performance tracking
+  performanceTracker.mark('scatter-plot-render-start')
+  
   // Clear previous content
   g.selectAll("*").remove()
 
   if (data.length === 0) {
     return
   }
+  
+  // Determine LOD level and render method
+  const viewportSize = { width, height }
+  const lodConfig = determineLODLevel(data.length, 1, viewportSize)
+  const renderMethod = getRenderMethod(data.length, viewportSize)
   
   // Add event listener to close tooltips on wheel/drag
   const svg = g.node()?.ownerSVGElement
@@ -115,10 +126,91 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
   const seriesNames = Array.from(new Set(data.map(d => d.series)))
   const colorScale = d3.scaleOrdinal(d3.schemeCategory10)
     .domain(seriesNames)
-
+  
   // Create y-axis
   const yAxis = d3.axisLeft(yScale)
     .tickFormat(d3.format(".2f"))
+  
+  // Use canvas rendering for high-density data
+  if (renderMethod === 'canvas' && data.length > 1000) {
+    // Create canvas element
+    const svg = g.node()?.ownerSVGElement
+    if (!svg) return
+    
+    const svgRect = svg.getBoundingClientRect()
+    const canvas = document.createElement('canvas')
+    canvas.style.position = 'absolute'
+    canvas.style.left = `${svgRect.left}px`
+    canvas.style.top = `${svgRect.top}px`
+    canvas.style.pointerEvents = 'none'
+    
+    // Add canvas to DOM temporarily for rendering
+    document.body.appendChild(canvas)
+    
+    // Render with canvas
+    const margin = { top: 0, right: 0, bottom: 0, left: 0 }
+    renderWithCanvas({
+      canvas,
+      data,
+      width,
+      height,
+      margin,
+      xScale,
+      yScale,
+      editingChart,
+      colorScale: (series: string) => colorScale(series) as string
+    })
+    
+    // Convert canvas to image and embed in SVG
+    const dataURL = canvas.toDataURL()
+    g.append("image")
+      .attr("xlink:href", dataURL)
+      .attr("x", 0)
+      .attr("y", 0)
+      .attr("width", width)
+      .attr("height", height)
+      .attr("preserveAspectRatio", "none")
+    
+    // Remove canvas from DOM
+    document.body.removeChild(canvas)
+    
+    // Add axes and labels over the canvas image
+    const yScaleDomain = yScale.domain()
+    const xAxisY = calculateXAxisPosition(yScaleDomain as [number, number], yScale, height)
+    
+    g.append("g")
+      .attr("class", "x-axis")
+      .attr("transform", `translate(0,${xAxisY})`)
+      .call(xAxis)
+
+    g.append("g")
+      .attr("class", "y-axis")
+      .call(yAxis)
+    
+    // Add axis labels
+    if (editingChart.xLabel || editingChart.xParameter) {
+      g.append("text")
+        .attr("class", "x-axis-label")
+        .attr("text-anchor", "middle")
+        .attr("x", width / 2)
+        .attr("y", height + 40)
+        .style("font-size", "12px")
+        .text(editingChart.xLabel || editingChart.xParameter || "X Axis")
+    }
+
+    if (editingChart.yLabel) {
+      g.append("text")
+        .attr("class", "y-axis-label")
+        .attr("text-anchor", "middle")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -height / 2)
+        .attr("y", -40)
+        .style("font-size", "12px")
+        .text(editingChart.yLabel)
+    }
+    
+    return // Exit early for canvas rendering
+  }
 
   // Add axes
   const yScaleDomain = yScale.domain()
@@ -155,42 +247,8 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
       .text(editingChart.yLabel)
   }
 
-  // Add grid lines if enabled
-  if (editingChart.yAxisParams?.some(param => true)) { // Assuming grid is enabled by default
-    // Vertical grid lines
-    const xTicks = editingChart.xAxisType === 'datetime' 
-      ? (xScale as d3.ScaleTime<number, number>).ticks()
-      : (xScale as d3.ScaleLinear<number, number>).ticks()
-      
-    g.selectAll(".grid-line-x")
-      .data(xTicks as any[])
-      .enter()
-      .append("line")
-      .attr("class", "grid-line-x")
-      .attr("x1", d => xScale(d as any))
-      .attr("x2", d => xScale(d as any))
-      .attr("y1", 0)
-      .attr("y2", height)
-      .style("stroke", "#e0e0e0")
-      .style("stroke-width", 0.5)
-      .style("stroke-dasharray", "2,2")
-      .style("pointer-events", "none")
-
-    // Horizontal grid lines
-    g.selectAll(".grid-line-y")
-      .data(yScale.ticks())
-      .enter()
-      .append("line")
-      .attr("class", "grid-line-y")
-      .attr("x1", 0)
-      .attr("x2", width)
-      .attr("y1", d => yScale(d))
-      .attr("y2", d => yScale(d))
-      .style("stroke", "#e0e0e0")
-      .style("stroke-width", 0.5)
-      .style("stroke-dasharray", "2,2")
-      .style("pointer-events", "none")
-  }
+  // Add grid lines based on LOD level
+  renderLODGrid(g, width, height, xScale, yScale, lodConfig)
 
   // Create a separate group for scatter points to ensure they're on top
   const scatterGroup = g.append("g")
@@ -209,9 +267,12 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
       fillColor: colorScale(seriesData[0].series),
       borderColor: colorScale(seriesData[0].series)
     }
+    
+    // Simplify data based on LOD
+    const simplifiedData = simplifyData(seriesData, lodConfig)
 
     const points = scatterGroup.selectAll(`.scatter-points-${seriesIndex}`)
-      .data(seriesData)
+      .data(lodConfig.showMarkers ? simplifiedData : [])
       .enter()
       .append("g")
       .attr("class", `scatter-points-${seriesIndex}`)
@@ -225,7 +286,7 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
           return xScale(scaledValue)
         })
         .attr("cy", d => yScale(d.y))
-        .attr("r", markerConfig.size || 4)
+        .attr("r", lodConfig.markerSize || markerConfig.size || 4)
         .style("fill", markerConfig.fillColor || colorScale(seriesData[0].series))
         .style("stroke", markerConfig.borderColor || colorScale(seriesData[0].series))
         .style("stroke-width", 1)
@@ -374,4 +435,11 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
       .style("font-size", "11px")
       .text(d => d)
   }
+  
+  // End performance tracking
+  performanceTracker.measure('scatter-plot-render', 'scatter-plot-render-start', undefined, {
+    dataPoints: data.length,
+    lodLevel: lodConfig.level,
+    renderMethod: renderMethod
+  })
 }

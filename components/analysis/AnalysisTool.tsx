@@ -11,6 +11,10 @@ import { useLayoutStore } from "@/stores/useLayoutStore"
 import { useUIStore } from "@/stores/useUIStore"
 import { useViewStore } from "@/stores/useViewStore"
 import { useCSVDataStore } from "@/stores/useCSVDataStore"
+import { PerformanceMonitor } from "../PerformanceMonitor"
+import { MemoryWarning } from "../MemoryWarning"
+import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor"
+import { optimizeMemory } from "@/utils/memoryOptimization"
 import type { FileNode } from "@/types"
 
 export default function AnalysisTool() {
@@ -21,6 +25,18 @@ export default function AnalysisTool() {
   const { setCurrentPage } = useUIStore()
   const { setActiveView, setSidebarOpen, sidebarOpen } = useViewStore()
   const { loadFromIndexedDB } = useCSVDataStore()
+  const { isVisible: isPerformanceMonitorVisible, setIsVisible: setPerformanceMonitorVisible } = usePerformanceMonitor()
+  
+  // Memory optimization handler
+  const handleMemoryOptimization = async () => {
+    const result = await optimizeMemory()
+    console.log('Memory optimization result:', result)
+    
+    // Show a toast or notification with the result
+    if (result.freedMemory > 0) {
+      console.log(`Freed ${result.freedMemory.toFixed(1)} MB of memory`)
+    }
+  }
   
   // Helper function to find a node in the file tree
   const findNodeInTree = (nodeId: string, nodes: FileNode[]): FileNode | undefined => {
@@ -172,6 +188,18 @@ export default function AnalysisTool() {
       
       {/* Chart Edit Modal */}
       <ChartEditModal />
+      
+      {/* Performance Monitor */}
+      <PerformanceMonitor 
+        isVisible={isPerformanceMonitorVisible} 
+        onClose={() => setPerformanceMonitorVisible(false)} 
+      />
+      
+      {/* Memory Warning */}
+      <MemoryWarning 
+        threshold={80} 
+        onOptimize={handleMemoryOptimization}
+      />
     </div>
   )
 }
