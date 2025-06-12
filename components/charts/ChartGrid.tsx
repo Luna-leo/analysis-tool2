@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { FileNode, ChartSizes } from "@/types"
 import { ChartCard } from "./ChartCard"
+import { VirtualizedChartGrid } from "./VirtualizedChartGrid"
 import { CSVImportPage } from "@/components/csv-import"
 import { EventMasterPage } from "@/components/event-master"
 import { InterlockMasterPageWrapper } from "@/components/interlock-master/InterlockMasterPageWrapper"
@@ -123,6 +124,14 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
   const totalItems = charts.length
   let totalPages = 1
   let currentCharts = charts
+
+  // Use virtualized grid for large datasets
+  const VIRTUALIZATION_THRESHOLD = 20
+  const shouldUseVirtualization = totalItems > VIRTUALIZATION_THRESHOLD && !currentSettings.pagination
+
+  if (shouldUseVirtualization) {
+    return <VirtualizedChartGrid file={file} />
+  }
 
   if (currentSettings.pagination) {
     const maxItemsPerPage = currentSettings.columns * currentSettings.rows

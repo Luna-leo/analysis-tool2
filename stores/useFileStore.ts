@@ -105,7 +105,15 @@ export const useFileStore = create<FileStore>()(
         }
       }),
 
-      setActiveTab: (tabId) => set({ activeTab: tabId }),
+      setActiveTab: (tabId) => {
+        // Clean up any tooltips when switching tabs
+        if (typeof window !== 'undefined') {
+          import('@/utils/chartTooltip').then(({ hideAllTooltips }) => {
+            hideAllTooltips()
+          })
+        }
+        set({ activeTab: tabId })
+      },
 
       toggleFolder: (folderId) => set((state) => {
         const newExpanded = new Set(state.expandedFolders)

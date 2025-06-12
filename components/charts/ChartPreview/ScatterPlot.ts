@@ -3,6 +3,7 @@ import { ChartComponent } from "@/types"
 import { formatXValue, getXValueForScale } from "@/utils/chartAxisUtils"
 import { calculateXAxisPosition } from "@/utils/chart/axisPositioning"
 import { calculateConsistentYDomain } from "@/utils/chart/scaleUtils"
+import { showTooltip, togglePinnedTooltip, hideAllTooltips } from "@/utils/chartTooltip"
 
 interface RenderScatterPlotProps {
   g: d3.Selection<SVGGElement, unknown, null, undefined>
@@ -30,6 +31,33 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
 
   if (data.length === 0) {
     return
+  }
+  
+  // Add event listener to close tooltips on wheel/drag
+  const svg = g.node()?.ownerSVGElement
+  if (svg) {
+    d3.select(svg)
+      .on("wheel.tooltip", () => hideAllTooltips())
+      .on("mousedown.tooltip", (event) => {
+        // Only hide if it's a drag (not a click)
+        const startX = event.clientX
+        const startY = event.clientY
+        
+        const handleMouseMove = (e: MouseEvent) => {
+          if (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5) {
+            hideAllTooltips()
+            window.removeEventListener("mousemove", handleMouseMove)
+          }
+        }
+        
+        const handleMouseUp = () => {
+          window.removeEventListener("mousemove", handleMouseMove)
+          window.removeEventListener("mouseup", handleMouseUp)
+        }
+        
+        window.addEventListener("mousemove", handleMouseMove)
+        window.addEventListener("mouseup", handleMouseUp)
+      })
   }
 
   // Create scales based on x-axis type
@@ -179,6 +207,31 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
         .style("stroke-width", 1)
         .style("opacity", 0.7)
         .style("cursor", "pointer")
+        .on("mouseover", function(event, d) {
+          d3.select(this)
+            .style("opacity", 1)
+            .style("stroke-width", 2)
+        })
+        .on("mouseout", function(event, d) {
+          d3.select(this)
+            .style("opacity", 0.7)
+            .style("stroke-width", 1)
+        })
+        .on("click", function(event, d) {
+          event.stopPropagation()
+          
+          const xDisplay = formatXValue(d.x, editingChart.xAxisType || 'parameter')
+          
+          const content = `
+            <div><strong>${d.series}</strong></div>
+            <div>X: ${xDisplay}</div>
+            <div>Y: ${d.y.toFixed(3)}</div>
+            <div>Time: ${new Date(d.timestamp).toLocaleString()}</div>
+            <div>Source: ${d.dataSourceLabel}</div>
+          `
+          
+          togglePinnedTooltip(event, content)
+        })
     } else if (markerConfig.type === 'square') {
       const size = (markerConfig.size || 4) * 2
       points.append("rect")
@@ -195,6 +248,31 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
         .style("stroke-width", 1)
         .style("opacity", 0.7)
         .style("cursor", "pointer")
+        .on("mouseover", function(event, d) {
+          d3.select(this)
+            .style("opacity", 1)
+            .style("stroke-width", 2)
+        })
+        .on("mouseout", function(event, d) {
+          d3.select(this)
+            .style("opacity", 0.7)
+            .style("stroke-width", 1)
+        })
+        .on("click", function(event, d) {
+          event.stopPropagation()
+          
+          const xDisplay = formatXValue(d.x, editingChart.xAxisType || 'parameter')
+          
+          const content = `
+            <div><strong>${d.series}</strong></div>
+            <div>X: ${xDisplay}</div>
+            <div>Y: ${d.y.toFixed(3)}</div>
+            <div>Time: ${new Date(d.timestamp).toLocaleString()}</div>
+            <div>Source: ${d.dataSourceLabel}</div>
+          `
+          
+          togglePinnedTooltip(event, content)
+        })
     } else {
       // Default to circle for other marker types
       points.append("circle")
@@ -209,51 +287,32 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
         .style("stroke-width", 1)
         .style("opacity", 0.7)
         .style("cursor", "pointer")
+        .on("mouseover", function(event, d) {
+          d3.select(this)
+            .style("opacity", 1)
+            .style("stroke-width", 2)
+        })
+        .on("mouseout", function(event, d) {
+          d3.select(this)
+            .style("opacity", 0.7)
+            .style("stroke-width", 1)
+        })
+        .on("click", function(event, d) {
+          event.stopPropagation()
+          
+          const xDisplay = formatXValue(d.x, editingChart.xAxisType || 'parameter')
+          
+          const content = `
+            <div><strong>${d.series}</strong></div>
+            <div>X: ${xDisplay}</div>
+            <div>Y: ${d.y.toFixed(3)}</div>
+            <div>Time: ${new Date(d.timestamp).toLocaleString()}</div>
+            <div>Source: ${d.dataSourceLabel}</div>
+          `
+          
+          togglePinnedTooltip(event, content)
+        })
     }
-
-    // Add hover effects and tooltips
-    points.on("mouseover", function(event, d) {
-      d3.select(this).select("circle, rect")
-        .style("opacity", 1)
-        .style("stroke-width", 2)
-
-      // Create tooltip
-      const tooltip = d3.select("body")
-        .append("div")
-        .attr("class", "chart-tooltip")
-        .style("position", "absolute")
-        .style("background", "rgba(0, 0, 0, 0.8)")
-        .style("color", "white")
-        .style("padding", "8px")
-        .style("border-radius", "4px")
-        .style("font-size", "12px")
-        .style("pointer-events", "none")
-        .style("z-index", 1000)
-
-      const xDisplay = formatXValue(d.x, editingChart.xAxisType || 'parameter')
-      
-      tooltip.html(`
-        <div><strong>${d.series}</strong></div>
-        <div>X: ${xDisplay}</div>
-        <div>Y: ${d.y.toFixed(3)}</div>
-        <div>Time: ${new Date(d.timestamp).toLocaleString()}</div>
-        <div>Source: ${d.dataSourceLabel}</div>
-      `)
-        .style("left", (event.pageX + 10) + "px")
-        .style("top", (event.pageY - 10) + "px")
-    })
-    .on("mousemove", function(event) {
-      d3.select(".chart-tooltip")
-        .style("left", (event.pageX + 10) + "px")
-        .style("top", (event.pageY - 10) + "px")
-    })
-    .on("mouseout", function() {
-      d3.select(this).select("circle, rect")
-        .style("opacity", 0.7)
-        .style("stroke-width", 1)
-
-      d3.select(".chart-tooltip").remove()
-    })
   })
 
   // Add grid lines if enabled

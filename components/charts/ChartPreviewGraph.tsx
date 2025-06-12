@@ -3,7 +3,6 @@
 import React, { useEffect, useRef } from "react"
 import * as d3 from "d3"
 import { ChartComponent, EventInfo } from "@/types"
-import { useCSVDataStore } from "@/stores/useCSVDataStore"
 import { 
   renderEmptyChart, 
   renderLineChart, 
@@ -11,30 +10,20 @@ import {
   ReferenceLines,
   generateMockData
 } from "./ChartPreview/index"
-import { convertToXValue } from "@/utils/chartAxisUtils"
-import { isValidYValue } from "@/types/chart-axis"
-
-interface ChartDataPoint {
-  x: number | string | Date;
-  y: number;
-  series: string;
-  seriesIndex: number;
-  timestamp: string;
-  dataSourceId: string;
-  dataSourceLabel: string;
-}
+import { useOptimizedChart } from "@/hooks/useOptimizedChart"
+import { hideAllTooltips } from "@/utils/chartTooltip"
 
 interface ChartPreviewGraphProps {
   editingChart: ChartComponent
   selectedDataSourceItems: EventInfo[]
   setEditingChart?: (chart: ChartComponent) => void
+  maxDataPoints?: number
 }
 
-export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart }: ChartPreviewGraphProps) => {
+export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints = 1000 }: ChartPreviewGraphProps) => {
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [dimensions, setDimensions] = React.useState({ width: 400, height: 300 })
-  const { getParameterData } = useCSVDataStore()
   
   // Store scales in refs to avoid recreation during drag
   const scalesRef = useRef<{
@@ -42,33 +31,12 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     yScale: d3.ScaleLinear<number, number> | null
   }>({ xScale: null, yScale: null })
   
-  // Memoize all parameters needed for the chart
-  const allParameters = React.useMemo(() => {
-    if (!editingChart.yAxisParams?.length) return []
-    
-    const params: string[] = []
-    // For datetime type, we don't need to fetch x parameter as we'll use timestamp
-    if (editingChart.xAxisType !== 'datetime' && editingChart.xParameter) {
-      // Clean parameter name by removing unit part
-      const cleanXParam = editingChart.xParameter.includes('|') 
-        ? editingChart.xParameter.split('|')[0] 
-        : editingChart.xParameter
-      params.push(cleanXParam)
-    }
-    
-    editingChart.yAxisParams.forEach(yParam => {
-      if (yParam.parameter) {
-        // Clean parameter name by removing unit part
-        const cleanParam = yParam.parameter.includes('|') 
-          ? yParam.parameter.split('|')[0] 
-          : yParam.parameter
-        if (!params.includes(cleanParam)) {
-          params.push(cleanParam)
-        }
-      }
-    })
-    return params
-  }, [editingChart.xAxisType, editingChart.xParameter, editingChart.yAxisParams])
+  // Use optimized data loading hook
+  const { data: chartData, isLoading: isLoadingData, error } = useOptimizedChart({
+    editingChart,
+    selectedDataSourceItems,
+    maxDataPoints
+  })
 
   // Create a memoized version of editingChart without referenceLines to prevent re-renders
   const chartConfigWithoutRefLines = React.useMemo(() => {
@@ -77,114 +45,37 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   }, [editingChart.title, editingChart.xAxisType, editingChart.xParameter, 
       editingChart.xLabel, editingChart.xAxisRange, editingChart.yAxisParams, editingChart.yAxisLabels])
 
-  // Handle resize
+  // Handle resize with debounce
   useEffect(() => {
     if (!containerRef.current) return
 
+    let timeoutId: NodeJS.Timeout
     const resizeObserver = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        const { width, height } = entry.contentRect
-        setDimensions({ 
-          width: Math.max(300, width), 
-          height: Math.max(250, height - 20) // Subtract some padding
-        })
-      }
+      clearTimeout(timeoutId)
+      timeoutId = setTimeout(() => {
+        for (const entry of entries) {
+          const { width, height } = entry.contentRect
+          setDimensions({ 
+            width: Math.max(300, width), 
+            height: Math.max(250, height - 20) // Subtract some padding
+          })
+        }
+      }, 100)
     })
 
     resizeObserver.observe(containerRef.current)
 
     return () => {
+      clearTimeout(timeoutId)
       resizeObserver.disconnect()
     }
   }, [])
-  
-  // Use state for async data loading
-  const [chartData, setChartData] = React.useState<ChartDataPoint[]>([])
-  const [isLoadingData, setIsLoadingData] = React.useState(false)
-  
-  // Load data when parameters change
-  React.useEffect(() => {
-    const loadData = async () => {
-      if (selectedDataSourceItems.length === 0 || (editingChart.xAxisType !== 'datetime' && allParameters.length === 0)) {
-        setChartData([])
-        return
-      }
-      
-      setIsLoadingData(true)
-      const data: ChartDataPoint[] = []
-      
-      try {
-        // Collect data from all selected data sources
-        for (const dataSource of selectedDataSourceItems) {
-          const csvData = await getParameterData(dataSource.id, allParameters)
-          
-          // Debug logging
-          if (!csvData || csvData.length === 0) {
-            console.warn('No CSV data found for:', {
-              dataSourceId: dataSource.id,
-              requestedParameters: allParameters,
-              dataSource: dataSource
-            })
-          }
-          
-          if (csvData && csvData.length > 0) {
-            csvData.forEach(point => {
-              // Create data point for scatter plot
-              // Clean x parameter name for data lookup
-              const cleanXParam = editingChart.xParameter?.includes('|') 
-                ? editingChart.xParameter.split('|')[0] 
-                : editingChart.xParameter
-              
-              const rawXValue = cleanXParam ? point[cleanXParam] : undefined
-              const xValue = convertToXValue(
-                rawXValue, 
-                editingChart.xAxisType || 'datetime',
-                point.timestamp
-              )
-              
-              
-              editingChart.yAxisParams?.forEach((yParam, index) => {
-                // Clean parameter name for data lookup
-                const cleanParam = yParam.parameter.includes('|') 
-                  ? yParam.parameter.split('|')[0] 
-                  : yParam.parameter
-                
-                let yValue = point[cleanParam]
-                
-                // Ensure y value is numeric
-                if (typeof yValue === 'string' && !isNaN(Number(yValue))) {
-                  yValue = Number(yValue)
-                }
-                
-                if (xValue !== undefined && isValidYValue(yValue)) {
-                  data.push({
-                    x: xValue,
-                    y: Number(yValue),
-                    series: yParam.parameter, // Keep original for display
-                    seriesIndex: index,
-                    timestamp: point.timestamp,
-                    dataSourceId: dataSource.id,
-                    dataSourceLabel: dataSource.label
-                  })
-                }
-              })
-            })
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching CSV data for chart:', error)
-      } finally {
-        setIsLoadingData(false)
-      }
-      
-      setChartData(data)
-    }
-    
-    loadData()
-  }, [selectedDataSourceItems, allParameters, editingChart.xParameter, editingChart.yAxisParams, getParameterData, editingChart.xAxisType])
 
   useEffect(() => {
     if (!svgRef.current) return
+
+    // Hide any existing tooltips when chart changes
+    hideAllTooltips()
 
     const svg = d3.select(svgRef.current)
     
@@ -215,11 +106,32 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
 
   }, [chartConfigWithoutRefLines, chartData, dimensions])
 
+  // Clean up tooltips on unmount
+  useEffect(() => {
+    return () => {
+      hideAllTooltips()
+    }
+  }, [])
+
   return (
-    <div ref={containerRef} className="w-full h-full relative">
+    <div 
+      ref={containerRef} 
+      className="w-full h-full relative"
+      onClick={(e) => {
+        // If clicked on empty space, close all tooltips
+        if (e.target === e.currentTarget || (e.target as any).tagName === 'svg') {
+          hideAllTooltips()
+        }
+      }}
+    >
       {isLoadingData && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
           <div className="text-sm text-muted-foreground">Loading data...</div>
+        </div>
+      )}
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
+          <div className="text-sm text-destructive">Error loading data</div>
         </div>
       )}
       <svg ref={svgRef} width={dimensions.width} height={dimensions.height} className="w-full h-full" />

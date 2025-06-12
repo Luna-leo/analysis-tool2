@@ -116,6 +116,7 @@ export const ChartCard = React.memo(({ chart, isCompactLayout, cardMinHeight, ch
         <ChartPreviewGraph 
           editingChart={chart} 
           selectedDataSourceItems={chart.selectedDataSources || []} 
+          maxDataPoints={isCompactLayout ? 500 : 1000}
         />
       </div>
 
