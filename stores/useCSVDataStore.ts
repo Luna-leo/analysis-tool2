@@ -128,8 +128,18 @@ export const useCSVDataStore = create<CSVDataStore>()(
         
         const dataset = datasets.get(periodId)
         if (!dataset) {
+          console.warn('No dataset found for periodId:', periodId)
           return undefined
         }
+
+        // Debug logging
+        console.log('getParameterData called:', {
+          periodId,
+          requestedParameters: parameters,
+          availableParameters: dataset.parameters,
+          dataLength: dataset.data.length,
+          sampleData: dataset.data[0]
+        })
 
         // Extract parameter data with cleaning
         const result = dataset.data.map(point => 

@@ -23,6 +23,8 @@ export function transformToDataPoints(
   })
 }
 
+let debugLogged = false
+
 export function extractParameterData(
   dataPoint: DataPoint,
   parameters: string[],
@@ -32,12 +34,27 @@ export function extractParameterData(
     timestamp: dataPoint.timestamp
   }
   
+  const missingParams: string[] = []
+  
   parameters.forEach(param => {
     const searchParam = cleanParams && param.includes('|') ? param.split('|')[0] : param
     if (dataPoint[searchParam] !== undefined) {
       result[param] = dataPoint[searchParam]
+    } else {
+      missingParams.push(searchParam)
     }
   })
+  
+  // Log only once per session if there are missing parameters
+  if (missingParams.length > 0 && !debugLogged) {
+    debugLogged = true
+    console.warn('Missing parameters in data point:', {
+      missingParams,
+      requestedParams: parameters,
+      availableKeys: Object.keys(dataPoint).filter(k => k !== 'timestamp'),
+      sampleDataPoint: dataPoint
+    })
+  }
   
   return result
 }

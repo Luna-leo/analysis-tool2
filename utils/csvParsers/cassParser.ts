@@ -36,11 +36,11 @@ export function parseCASSFormat(lines: string[], fileName: string): ParsedCSVDat
   const paramRow = parseCSVLine(lines[1])
   const unitRow = parseCSVLine(lines[2])
   
-  // Create headers from parameter names
+  // Create headers from parameter names (trim whitespace)
   const headers = ['Datetime']
   for (let i = 1; i < paramRow.length; i++) {
     if (paramRow[i]) {
-      headers.push(paramRow[i])
+      headers.push(paramRow[i].trim())
     }
   }
   
@@ -68,9 +68,9 @@ export function parseCASSFormat(lines: string[], fileName: string): ParsedCSVDat
       fileName,
       format: 'CASS',
       parameterInfo: {
-        ids: idRow.slice(1),
-        parameters: paramRow.slice(1),
-        units: unitRow.slice(1)
+        ids: idRow.slice(1).map(id => id.trim()),
+        parameters: paramRow.slice(1).map(param => param.trim()),
+        units: unitRow.slice(1).map(unit => unit.trim())
       }
     }
   }

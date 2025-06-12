@@ -188,9 +188,8 @@ function mapCASSFormatToStandardized(
 
   // Process each data row
   parsedData.rows.forEach((row, rowIndex) => {
-    // CASS format rows are objects with index as keys
-    const rowData = Object.values(row)
-    const timestamp = rowData[datetimeIndex]
+    // Get timestamp from row object (CASS format uses headers as keys)
+    const timestamp = row['Datetime']
     
     if (!timestamp) return
 
@@ -203,15 +202,14 @@ function mapCASSFormatToStandardized(
     }
 
     // Add all parameter values to the standardized data
-    parameterInfo.parameters.forEach((paramName: string, paramIndex: number) => {
-      const columnIndex = paramIndex + 1 // Skip datetime column (index 0)
-      if (columnIndex < rowData.length && rowData[columnIndex] !== null && rowData[columnIndex] !== undefined) {
-        // Convert to number if possible
-        const value = rowData[columnIndex]
+    // Use headers directly to get values from row object
+    parsedData.headers.forEach((header, headerIndex) => {
+      if (header !== 'Datetime' && row[header] !== null && row[header] !== undefined) {
+        const value = row[header]
         if (typeof value === 'string' && !isNaN(Number(value))) {
-          standardData[paramName] = Number(value)
+          standardData[header] = Number(value)
         } else {
-          standardData[paramName] = value
+          standardData[header] = value
         }
       }
     })

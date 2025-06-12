@@ -98,6 +98,15 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         selectedDataSourceItems.forEach(dataSource => {
           const csvData = getParameterData(dataSource.id, allParameters)
           
+          // Debug logging
+          if (!csvData || csvData.length === 0) {
+            console.warn('No CSV data found for:', {
+              dataSourceId: dataSource.id,
+              requestedParameters: allParameters,
+              dataSource: dataSource
+            })
+          }
+          
           if (csvData && csvData.length > 0) {
             csvData.forEach(point => {
               // Create data point for scatter plot
