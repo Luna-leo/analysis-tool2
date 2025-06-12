@@ -243,6 +243,7 @@ export const useCSVDataStore = create<CSVDataStore>()(
       storage: {
         getItem: (name) => {
           try {
+            if (typeof window === 'undefined') return null
             const str = localStorage.getItem(name)
             if (!str) return null
             
@@ -297,6 +298,7 @@ export const useCSVDataStore = create<CSVDataStore>()(
         },
         setItem: (name, value) => {
           try {
+            if (typeof window === 'undefined') return
             const serialized = {
               ...value,
               state: {
@@ -311,7 +313,10 @@ export const useCSVDataStore = create<CSVDataStore>()(
             console.warn('LocalStorage save failed (data is preserved in memory):', e)
           }
         },
-        removeItem: (name) => localStorage.removeItem(name)
+        removeItem: (name) => {
+          if (typeof window === 'undefined') return
+          localStorage.removeItem(name)
+        }
       }
     }
   )
