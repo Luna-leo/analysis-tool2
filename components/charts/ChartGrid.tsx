@@ -179,9 +179,9 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
   const charts = localCharts
   const totalItems = charts.length
 
-  // Use virtualized grid for large datasets
-  const VIRTUALIZATION_THRESHOLD = 4
-  const PROGRESSIVE_THRESHOLD = 8
+  // Use virtualized grid for large datasets - more aggressive for better performance
+  const VIRTUALIZATION_THRESHOLD = 3  // 仮想化をより早く開始
+  const PROGRESSIVE_THRESHOLD = 6
   const shouldUseVirtualization = totalItems > VIRTUALIZATION_THRESHOLD
   const shouldUseProgressive = totalItems > PROGRESSIVE_THRESHOLD && !shouldUseVirtualization
   

@@ -1,0 +1,57 @@
+/* Performance optimizations for charts */
+
+/* Use GPU acceleration for chart containers */
+.chart-container {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Optimize chart card rendering */
+.chart-card {
+  contain: layout style paint;
+  content-visibility: auto;
+}
+
+/* Reduce repaints during scroll */
+.virtualized-grid {
+  contain: strict;
+  overflow-anchor: none;
+}
+
+/* Optimize SVG rendering */
+svg {
+  shape-rendering: optimizeSpeed;
+}
+
+/* Fast hover states */
+.chart-card:hover {
+  transition: transform 0.1s ease-out;
+  transform: translateZ(0) scale(1.02);
+}
+
+/* Disable expensive effects in production */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Optimize grid layout */
+.grid {
+  contain: layout;
+}
+
+/* Reduce paint areas for tooltips */
+.tooltip {
+  contain: layout style;
+  will-change: transform, opacity;
+}
+
+/* Performance hints for browsers */
+.performance-critical {
+  contain: strict;
+  isolation: isolate;
+}

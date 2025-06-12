@@ -5,7 +5,7 @@ import { calculateXAxisPosition } from "@/utils/chart/axisPositioning"
 import { calculateConsistentYDomain } from "@/utils/chart/scaleUtils"
 import { showTooltip, updateTooltipPosition, hideTooltip } from "@/utils/chartTooltip"
 import { determineLODLevel, simplifyData, renderLODGrid, getRenderMethod } from "./LODRenderer"
-import { renderWithCanvas } from "./CanvasRenderer"
+import { renderWithOptimizedCanvas } from "./OptimizedCanvasRenderer"
 import { performanceTracker } from "@/utils/performanceTracking"
 
 interface RenderScatterPlotProps {
@@ -131,8 +131,8 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
   const yAxis = d3.axisLeft(yScale)
     .tickFormat(d3.format(".2f"))
   
-  // Use canvas rendering for high-density data
-  if (renderMethod === 'canvas' && data.length > 1000) {
+  // Use canvas rendering for high-density data - lowered threshold for better performance
+  if (renderMethod === 'canvas' && data.length > 300) {
     // Create canvas element
     const svg = g.node()?.ownerSVGElement
     if (!svg) return
@@ -147,9 +147,9 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
     // Add canvas to DOM temporarily for rendering
     document.body.appendChild(canvas)
     
-    // Render with canvas
+    // Render with optimized canvas
     const margin = { top: 0, right: 0, bottom: 0, left: 0 }
-    renderWithCanvas({
+    renderWithOptimizedCanvas({
       canvas,
       data,
       width,

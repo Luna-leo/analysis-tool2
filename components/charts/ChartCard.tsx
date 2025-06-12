@@ -115,15 +115,17 @@ const ChartCardComponent = ({
     >
       {/* Drag Handle */}
       <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
-        <GripVertical className="h-5 w-5 text-muted-foreground" />
+        <GripVertical className="h-5 w-5 text-muted-foreground" strokeWidth={2} />
       </div>
 
       {/* Edit, Duplicate and Delete Buttons - appear on hover */}
-      {isHovered && (
-        <div 
-          className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-          onMouseDown={(e) => e.stopPropagation()}
-        >
+      <div 
+        className={cn(
+          "absolute top-2 right-2 flex gap-1 transition-opacity z-10",
+          isHovered ? "opacity-100" : "opacity-0"
+        )}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
           <Button
             variant="secondary"
             size="icon"
@@ -132,7 +134,7 @@ const ChartCardComponent = ({
             title="編集"
             draggable={false}
           >
-            <Edit className="h-4 w-4" />
+            <Edit className="h-4 w-4" strokeWidth={2} />
           </Button>
           <Button
             variant="secondary"
@@ -142,7 +144,7 @@ const ChartCardComponent = ({
             title="複製"
             draggable={false}
           >
-            <Copy className="h-4 w-4" />
+            <Copy className="h-4 w-4" strokeWidth={2} />
           </Button>
           <Button
             variant="secondary"
@@ -152,10 +154,9 @@ const ChartCardComponent = ({
             title="削除"
             draggable={false}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-4 w-4" strokeWidth={2} />
           </Button>
         </div>
-      )}
 
       <div
         className="bg-white flex items-center justify-center flex-1 overflow-hidden min-h-0 pointer-events-none"
@@ -164,7 +165,7 @@ const ChartCardComponent = ({
         <ChartPreviewGraph 
           editingChart={chart} 
           selectedDataSourceItems={chart.selectedDataSources || []} 
-          maxDataPoints={isCompactLayout ? 300 : 500}
+          maxDataPoints={isCompactLayout ? 100 : 200}
         />
       </div>
 

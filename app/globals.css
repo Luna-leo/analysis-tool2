@@ -106,3 +106,53 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* Performance optimizations for production */
+@layer utilities {
+  /* GPU acceleration for chart containers */
+  .chart-container,
+  .chart-card,
+  .chart-preview-container {
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  
+  /* Optimize SVG rendering - but preserve quality for icons */
+  svg {
+    shape-rendering: auto; /* optimizeSpeedから変更 */
+  }
+  
+  /* High quality rendering for icons */
+  .lucide {
+    shape-rendering: geometricPrecision;
+    text-rendering: geometricPrecision;
+  }
+  
+  /* Reduce paint areas */
+  .chart-grid-item {
+    contain: layout style paint;
+  }
+  
+  /* Hardware acceleration for scrollable areas */
+  .overflow-auto,
+  .overflow-scroll {
+    -webkit-overflow-scrolling: touch;
+    transform: translateZ(0);
+  }
+  
+  /* Optimize chart animations */
+  .chart-transition {
+    transition: transform 0.2s ease-out;
+  }
+  
+  /* Disable expensive effects in production */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

@@ -112,8 +112,8 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     pagination: false, // Disable pagination for virtualized grid
   }
   
-  // Track visible charts
-  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 10 })
+  // Track visible charts - reduce initial load
+  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 6 })
   
   // Update local charts when file.charts changes
   useEffect(() => {
@@ -181,12 +181,12 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     const itemHeight = chartSizes.cardMinHeight + (chartSizes.isCompactLayout ? 12 : 24)
     const totalRows = Math.ceil((localCharts.length || 0) / currentSettings.columns)
     
-    // Calculate visible range with buffer
+    // Calculate visible range with smaller buffer for better performance
     const visibleStart = Math.floor(scrollTop / itemHeight) * currentSettings.columns
     const visibleEnd = Math.ceil((scrollTop + containerHeight) / itemHeight) * currentSettings.columns
     
-    // Add buffer for smoother scrolling
-    const bufferSize = currentSettings.columns * 2
+    // Reduce buffer size for better performance
+    const bufferSize = currentSettings.columns
     const start = Math.max(0, visibleStart - bufferSize)
     const end = Math.min(localCharts.length || 0, visibleEnd + bufferSize)
     
@@ -206,14 +206,28 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     })
   }, [currentSettings])
   
-  // Handle scroll with debounce
+  // Handle scroll with throttle for better performance
   useEffect(() => {
     if (!contentRef.current) return
     
-    let timeoutId: NodeJS.Timeout
+    let lastScrollTime = 0
+    let rafId: number | null = null
+    
     const handleScroll = () => {
-      clearTimeout(timeoutId)
-      timeoutId = setTimeout(updateVisibleRange, 100)
+      const now = Date.now()
+      const timeSinceLastScroll = now - lastScrollTime
+      
+      // Throttle to 30fps (33ms) for better performance
+      if (timeSinceLastScroll < 33) {
+        if (rafId) cancelAnimationFrame(rafId)
+        rafId = requestAnimationFrame(() => {
+          updateVisibleRange()
+          lastScrollTime = Date.now()
+        })
+      } else {
+        updateVisibleRange()
+        lastScrollTime = now
+      }
     }
     
     const container = contentRef.current
@@ -223,7 +237,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     updateVisibleRange()
     
     return () => {
-      clearTimeout(timeoutId)
+      if (rafId) cancelAnimationFrame(rafId)
       container.removeEventListener('scroll', handleScroll)
     }
   }, [updateVisibleRange])

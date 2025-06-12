@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useRef } from "react"
+import React, { useEffect, useRef, useMemo } from "react"
 import * as d3 from "d3"
 import { ChartComponent, EventInfo } from "@/types"
 import { 
@@ -12,6 +12,7 @@ import {
 } from "./ChartPreview/index"
 import { useOptimizedChart } from "@/hooks/useOptimizedChart"
 import { hideAllTooltips, hideTooltip } from "@/utils/chartTooltip"
+import { useThrottle } from "@/hooks/useDebounce"
 
 interface ChartPreviewGraphProps {
   editingChart: ChartComponent
@@ -23,6 +24,8 @@ interface ChartPreviewGraphProps {
 export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints = 500 }: ChartPreviewGraphProps) => {
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const renderingRef = useRef<boolean>(false)
+  const animationFrameRef = useRef<number | null>(null)
   const [dimensions, setDimensions] = React.useState({ width: 400, height: 300 })
   
   // Store scales in refs to avoid recreation during drag
@@ -45,66 +48,91 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   }, [editingChart.title, editingChart.xAxisType, editingChart.xParameter, 
       editingChart.xLabel, editingChart.xAxisRange, editingChart.yAxisParams, editingChart.yAxisLabels])
 
-  // Handle resize with debounce
+  // Throttled resize handler for better performance
+  const handleResize = useThrottle((entries: ResizeObserverEntry[]) => {
+    for (const entry of entries) {
+      const { width, height } = entry.contentRect
+      setDimensions({ 
+        width: Math.max(300, width), 
+        height: Math.max(250, height - 20) // Subtract some padding
+      })
+    }
+  }, 150)
+
+  // Handle resize with throttle
   useEffect(() => {
     if (!containerRef.current) return
 
-    let timeoutId: NodeJS.Timeout
-    const resizeObserver = new ResizeObserver(entries => {
-      clearTimeout(timeoutId)
-      timeoutId = setTimeout(() => {
-        for (const entry of entries) {
-          const { width, height } = entry.contentRect
-          setDimensions({ 
-            width: Math.max(300, width), 
-            height: Math.max(250, height - 20) // Subtract some padding
-          })
-        }
-      }, 100)
-    })
-
+    const resizeObserver = new ResizeObserver(handleResize)
     resizeObserver.observe(containerRef.current)
 
     return () => {
-      clearTimeout(timeoutId)
       resizeObserver.disconnect()
     }
-  }, [])
+  }, [handleResize])
+
+  // Use requestAnimationFrame for smooth rendering
+  const renderChart = useMemo(() => {
+    return () => {
+      if (!svgRef.current || isLoadingData || renderingRef.current) return
+      
+      renderingRef.current = true
+      
+      // Cancel any pending animation frame
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
+      
+      animationFrameRef.current = requestAnimationFrame(() => {
+        if (!svgRef.current) {
+          renderingRef.current = false
+          return
+        }
+
+        const svg = d3.select(svgRef.current)
+        
+        // Only clear the main chart group, preserve reference lines layer
+        let mainGroup = svg.select<SVGGElement>(".main-chart-group")
+        if (!mainGroup.empty()) {
+          mainGroup.remove()
+        }
+
+        const margin = { top: 20, right: 40, bottom: 60, left: 60 }
+        const width = dimensions.width - margin.left - margin.right
+        const height = dimensions.height - margin.top - margin.bottom
+
+        const g = svg.append("g")
+          .attr("class", "main-chart-group")
+          .attr("transform", `translate(${margin.left},${margin.top})`)
+        
+        if (chartData.length > 0) {
+          // Render scatter plot
+          renderScatterPlot({ g, data: chartData, width, height, editingChart, scalesRef })
+        } else {
+          // Render empty chart with axes
+          renderEmptyChart({ g, width, height, chartType: "scatter", editingChart, scalesRef })
+        }
+        
+        // Ensure proper layering: reference lines should not block interaction
+        const refLinesLayer = svg.select(".reference-lines-layer")
+        if (!refLinesLayer.empty()) {
+          refLinesLayer.style("pointer-events", "none")
+        }
+        
+        renderingRef.current = false
+      })
+    }
+  }, [chartData, dimensions, isLoadingData, editingChart])
 
   useEffect(() => {
-    if (!svgRef.current || isLoadingData) return
-
-    const svg = d3.select(svgRef.current)
+    renderChart()
     
-    // Only clear the main chart group, preserve reference lines layer
-    let mainGroup = svg.select<SVGGElement>(".main-chart-group")
-    if (!mainGroup.empty()) {
-      mainGroup.remove()
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+      }
     }
-
-    const margin = { top: 20, right: 40, bottom: 60, left: 60 }
-    const width = dimensions.width - margin.left - margin.right
-    const height = dimensions.height - margin.top - margin.bottom
-
-    const g = svg.append("g")
-      .attr("class", "main-chart-group")
-      .attr("transform", `translate(${margin.left},${margin.top})`)
-    
-    if (chartData.length > 0) {
-      // Render scatter plot
-      renderScatterPlot({ g, data: chartData, width, height, editingChart, scalesRef })
-    } else {
-      // Render empty chart with axes
-      renderEmptyChart({ g, width, height, chartType: "scatter", editingChart, scalesRef })
-    }
-    
-    // Ensure proper layering: reference lines should not block interaction
-    const refLinesLayer = svg.select(".reference-lines-layer")
-    if (!refLinesLayer.empty()) {
-      refLinesLayer.style("pointer-events", "none")
-    }
-
-  }, [chartConfigWithoutRefLines, chartData, dimensions, isLoadingData])
+  }, [renderChart])
 
   // Clean up tooltips on unmount
   useEffect(() => {

@@ -22,22 +22,22 @@ export function determineLODLevel(
   const effectiveDataPoints = dataPointCount / zoomLevel
   const pixelsPerPoint = (viewportSize.width * viewportSize.height) / effectiveDataPoints
   
-  if (pixelsPerPoint < 10 || effectiveDataPoints > 5000) {
+  if (pixelsPerPoint < 10 || effectiveDataPoints > 2000) {
     // Low detail for high density
     return {
       level: 'low',
-      maxPoints: 500,
+      maxPoints: 300,
       showGrid: false,
       showLabels: false,
       showMarkers: false,
       markerSize: 0,
       lineWidth: 1
     }
-  } else if (pixelsPerPoint < 50 || effectiveDataPoints > 1000) {
+  } else if (pixelsPerPoint < 50 || effectiveDataPoints > 500) {
     // Medium detail
     return {
       level: 'medium',
-      maxPoints: 1000,
+      maxPoints: 500,
       showGrid: true,
       showLabels: true,
       showMarkers: false,
@@ -48,7 +48,7 @@ export function determineLODLevel(
     // High detail for low density
     return {
       level: 'high',
-      maxPoints: 5000,
+      maxPoints: 1000,
       showGrid: true,
       showLabels: true,
       showMarkers: true,
@@ -237,6 +237,6 @@ export function getRenderMethod(
   const pixelCount = viewportSize.width * viewportSize.height
   const pointDensity = dataPointCount / pixelCount
   
-  // Use canvas for high density data
-  return pointDensity > 0.1 ? 'canvas' : 'svg'
+  // Use canvas more aggressively for better performance
+  return pointDensity > 0.05 || dataPointCount > 500 ? 'canvas' : 'svg'
 }
