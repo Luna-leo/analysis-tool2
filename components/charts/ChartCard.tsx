@@ -56,11 +56,8 @@ export const ChartCard = React.memo(({ chart, isCompactLayout, cardMinHeight, ch
   return (
     <div
       className={cn(
-        "bg-card border rounded-lg flex flex-col relative group overflow-hidden"
+        "bg-card border rounded-lg flex flex-col relative group overflow-hidden h-full"
       )}
-      style={{
-        minHeight: `${cardMinHeight}px`,
-      }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -98,10 +95,7 @@ export const ChartCard = React.memo(({ chart, isCompactLayout, cardMinHeight, ch
       )}
 
       <div
-        className="bg-white flex items-center justify-center flex-1 overflow-hidden"
-        style={{
-          minHeight: `${chartMinHeight}px`,
-        }}
+        className="bg-white flex items-center justify-center flex-1 overflow-hidden min-h-0"
       >
         <ChartPreviewGraph 
           editingChart={chart} 

@@ -61,7 +61,7 @@ export function LayoutSettings({ fileId }: LayoutSettingsProps) {
                   })
                 }}
               >
-                {[1, 2, 3, 4, 5, 6].map((n) => (
+                {[1, 2, 3, 4].map((n) => (
                   <option key={n} value={n}>
                     {n}
                   </option>
@@ -82,7 +82,7 @@ export function LayoutSettings({ fileId }: LayoutSettingsProps) {
                   })
                 }}
               >
-                {[1, 2, 3, 4, 5, 6].map((n) => (
+                {[1, 2, 3, 4].map((n) => (
                   <option key={n} value={n}>
                     {n}
                   </option>

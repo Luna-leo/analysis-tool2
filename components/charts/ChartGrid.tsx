@@ -3,7 +3,6 @@
 import React, { useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { FileNode, ChartSizes } from "@/types"
 import { ChartCard } from "./ChartCard"
 import { VirtualizedChartGrid } from "./VirtualizedChartGrid"
@@ -16,7 +15,6 @@ import { UnitConverterFormulaMasterPage } from "@/components/unit-converter-form
 import { SettingsPage } from "@/components/settings"
 import { useFileStore } from "@/stores/useFileStore"
 import { useLayoutStore } from "@/stores/useLayoutStore"
-import { useUIStore } from "@/stores/useUIStore"
 
 interface ChartGridProps {
   file: FileNode
@@ -32,7 +30,6 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
 
   const { activeTab } = useFileStore()
   const { layoutSettingsMap } = useLayoutStore()
-  const { currentPage, setCurrentPage } = useUIStore()
 
   const currentSettings = layoutSettingsMap[file.id] || {
     showFileName: true,
@@ -122,103 +119,53 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
 
   const charts = file.charts
   const totalItems = charts.length
-  let totalPages = 1
-  let currentCharts = charts
 
   // Use virtualized grid for large datasets
-  const VIRTUALIZATION_THRESHOLD = 20
-  const shouldUseVirtualization = totalItems > VIRTUALIZATION_THRESHOLD && !currentSettings.pagination
+  const VIRTUALIZATION_THRESHOLD = 10
+  const shouldUseVirtualization = totalItems > VIRTUALIZATION_THRESHOLD
 
   if (shouldUseVirtualization) {
     return <VirtualizedChartGrid file={file} />
   }
 
-  if (currentSettings.pagination) {
-    const maxItemsPerPage = currentSettings.columns * currentSettings.rows
-    totalPages = Math.ceil(totalItems / maxItemsPerPage)
-
-    const startIndex = (currentPage - 1) * maxItemsPerPage
-    const endIndex = startIndex + maxItemsPerPage
-    currentCharts = charts.slice(startIndex, endIndex)
-  }
-
   return (
-    <div className="h-full flex flex-col" ref={contentRef}>
-      <div className={cn("flex-1", currentSettings.pagination ? "overflow-hidden" : "overflow-auto")}>
-        <div className="p-6 h-full flex flex-col">
-          {/* Header */}
-          <div className="mb-6 flex-shrink-0">
-            {currentSettings.showFileName && <h2 className="text-2xl font-bold mb-2">{file.name}</h2>}
+    <div className="absolute inset-0 overflow-auto" ref={contentRef}>
+      <div className="p-6">
+        {/* Header */}
+        <div className="mb-6">
+          {currentSettings.showFileName && <h2 className="text-2xl font-bold mb-2">{file.name}</h2>}
 
-            {currentSettings.showDataSources && file.dataSources && file.dataSources.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {file.dataSources.map((source, index) => (
-                  <Badge key={index} variant="secondary" className="text-xs">
-                    {source}
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
+          {currentSettings.showDataSources && file.dataSources && file.dataSources.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {file.dataSources.map((source, index) => (
+                <Badge key={index} variant="secondary" className="text-xs">
+                  {source}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
 
-          {/* Grid */}
-          <div
-            className={cn("grid", currentSettings.pagination ? "flex-1" : "")}
-            style={{
-              gridTemplateColumns: `repeat(${currentSettings.columns}, 1fr)`,
-              ...(currentSettings.pagination && {
-                gridTemplateRows: `repeat(${currentSettings.rows}, 1fr)`,
-              }),
-              gap: chartSizes.isCompactLayout ? "12px" : "24px",
-            }}
-          >
-            {currentCharts.map((chart) => (
-              <ChartCard
-                key={chart.id}
-                chart={chart}
-                isCompactLayout={chartSizes.isCompactLayout}
-                cardMinHeight={chartSizes.cardMinHeight}
-                chartMinHeight={chartSizes.chartMinHeight}
-                fileId={file.id}
-              />
-            ))}
-          </div>
+        {/* Grid */}
+        <div
+          className="grid"
+          style={{
+            gridTemplateColumns: `repeat(${currentSettings.columns}, 1fr)`,
+            gap: chartSizes.isCompactLayout ? "12px" : "24px",
+          }}
+        >
+          {charts.map((chart) => (
+            <ChartCard
+              key={chart.id}
+              chart={chart}
+              isCompactLayout={chartSizes.isCompactLayout}
+              cardMinHeight={chartSizes.cardMinHeight}
+              chartMinHeight={chartSizes.chartMinHeight}
+              fileId={file.id}
+            />
+          ))}
         </div>
       </div>
-
-      {/* Pagination */}
-      {currentSettings.pagination && totalPages > 1 && (
-        <div className="border-t bg-background py-4 px-4 flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="text-sm">
-              Showing {(currentPage - 1) * (currentSettings.columns * currentSettings.rows) + 1} -{" "}
-              {Math.min(currentPage * (currentSettings.columns * currentSettings.rows), totalItems)} of {totalItems}{" "}
-              charts
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-              >
-                Previous
-              </Button>
-              <span className="flex items-center px-3 text-sm">
-                Page {currentPage} of {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 })

@@ -139,8 +139,8 @@ export default function AnalysisTool() {
   }, []) // Empty dependency array to run only once on mount
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
-      <div className="flex flex-1">
+    <div className="h-screen flex flex-col">
+      <div className="flex flex-1 min-h-0">
         {/* Sidebar - Always visible but width changes */}
         <div className={cn(
           "border-r transition-all duration-200",
@@ -150,8 +150,8 @@ export default function AnalysisTool() {
         </div>
 
         {/* Main Content Panel */}
-        <div className="flex-1">{/* Replace ResizablePanel with div */}
-          <div className="h-full flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">{/* Replace ResizablePanel with div */}
+          <div className="flex flex-col flex-1">
             <TabHeader openTabs={openTabs} activeTab={activeTab} />
 
             {activeTab && openTabs.find((tab) => tab.id === activeTab) && (
@@ -159,7 +159,7 @@ export default function AnalysisTool() {
             )}
 
             {/* Main Content */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 min-h-0 relative">
               {activeTab && openTabs.find((tab) => tab.id === activeTab) ? (
                 <ChartGrid file={openTabs.find((tab) => tab.id === activeTab)!} />
               ) : (
