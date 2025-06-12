@@ -74,7 +74,7 @@ function parseCSV(text: string, fileName: string): ParsedCSVData {
     
     // Override the format metadata to indicate this is CHINAMI data
     if (parsedData.metadata) {
-      parsedData.metadata.format = 'CHINAMI' as any
+      parsedData.metadata.format = 'CHINAMI'
     }
     
     return parsedData
@@ -95,7 +95,7 @@ export function validateCSVStructure(
 ): { valid: boolean; missingColumns?: string[] } {
   // For CASS format, validation is different
   if (dataSourceType === 'CASS' && metadata?.format === 'CASS') {
-    // CASS format should have Datetime column (case insensitive) and at least one parameter
+    // CASS format should have Datetime column and at least one parameter
     const hasDatetime = headers.some(h => h.toLowerCase() === 'datetime')
     const hasParameters = headers.length > 1
     
@@ -112,14 +112,18 @@ export function validateCSVStructure(
   
   // Special handling for CASS format when user selected CASS but file is not detected as CASS
   if (dataSourceType === 'CASS') {
-    // Allow any file with datetime column for CASS data source type
-    const hasDatetime = headers.some(h => h.toLowerCase().includes('datetime') || h.toLowerCase().includes('time'))
-    if (hasDatetime && headers.length > 1) {
+    // Allow any file with timestamp/datetime/time column for CASS data source type
+    const hasTimeColumn = headers.some(h => 
+      h.toLowerCase().includes('timestamp') || 
+      h.toLowerCase().includes('datetime') || 
+      h.toLowerCase().includes('time')
+    )
+    if (hasTimeColumn && headers.length > 1) {
       return { valid: true }
     }
     return { 
       valid: false, 
-      missingColumns: ['Datetime or time column'] 
+      missingColumns: ['timestamp or time column'] 
     }
   }
   
@@ -197,8 +201,8 @@ export function mapCSVDataToStandardFormat(
       
       // Include all other columns as data
       Object.entries(row).forEach(([key, value]) => {
-        if (key !== timeKey) {
-          standardData[key] = value
+        if (key !== timeKey && value !== null) {
+          standardData[key] = value as string | number | undefined
         }
       })
       
@@ -281,7 +285,7 @@ function mapCASSFormatToStandardized(
 
     // Add all parameter values to the standardized data
     // Use headers directly to get values from row object
-    parsedData.headers.forEach((header, headerIndex) => {
+    parsedData.headers.forEach((header) => {
       if (header !== 'Datetime' && row[header] !== null && row[header] !== undefined) {
         const value = row[header]
         if (typeof value === 'string' && !isNaN(Number(value))) {
