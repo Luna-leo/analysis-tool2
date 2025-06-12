@@ -44,10 +44,19 @@ interface CSVDataStore {
   // Clear all CSV data
   clearAllData: () => void
   
+  // Get total storage size
+  getStorageSize: () => number
+  
   // Get available parameters for a period
   getAvailableParameters: (periodId: string) => { name: string; unit: string }[]
 }
 
+
+// Maximum storage size in characters (roughly 2MB to be safe)
+const MAX_STORAGE_SIZE = 2 * 1024 * 1024
+
+// Store actual data in memory only (not persisted)
+const inMemoryDataStore = new Map<string, CSVDataPoint[]>()
 
 export const useCSVDataStore = create<CSVDataStore>()(
   persist(
@@ -93,6 +102,13 @@ export const useCSVDataStore = create<CSVDataStore>()(
         // Convert standardized data to CSVDataPoint format
         const dataPoints = transformToDataPoints(standardizedData, parameters, 'timestamp')
 
+        // Don't sample data - keep all points
+        const sampledDataPoints = dataPoints
+
+        // Store actual data in memory
+        inMemoryDataStore.set(periodId, sampledDataPoints)
+        
+        // Store only metadata in localStorage
         const dataset: CSVDataSet = {
           periodId,
           plant: first.plant,
@@ -100,7 +116,7 @@ export const useCSVDataStore = create<CSVDataStore>()(
           dataSourceType: first.sourceType,
           parameters,
           units,
-          data: dataPoints,
+          data: [], // Don't persist actual data
           lastUpdated: new Date().toISOString()
         }
 
@@ -110,8 +126,10 @@ export const useCSVDataStore = create<CSVDataStore>()(
           // Ensure datasets is a Map
           datasets = ensureMap<string, CSVDataSet>(datasets)
           
+          // Simply add the new dataset
           const newDatasets = new Map(datasets)
           newDatasets.set(periodId, dataset)
+          
           return { datasets: newDatasets }
         })
       },
@@ -139,18 +157,25 @@ export const useCSVDataStore = create<CSVDataStore>()(
           return undefined
         }
 
+        // Get actual data from memory
+        const memoryData = inMemoryDataStore.get(periodId)
+        if (!memoryData) {
+          console.warn('No in-memory data found for periodId:', periodId)
+          return undefined
+        }
+
         // Debug logging
         console.log('getParameterData called:', {
           periodId,
           requestedParameters: parameters,
           availableParameters: dataset.parameters,
-          dataLength: dataset.data.length,
-          sampleData: dataset.data[0],
-          actualDataKeys: dataset.data.length > 0 ? Object.keys(dataset.data[0]) : []
+          dataLength: memoryData.length,
+          sampleData: memoryData[0],
+          actualDataKeys: memoryData.length > 0 ? Object.keys(memoryData[0]) : []
         })
 
         // Extract parameter data with cleaning
-        const result = dataset.data.map(point => 
+        const result = memoryData.map(point => 
           extractParameterData(point as DataPoint, parameters, true) as CSVDataPoint
         )
         
@@ -174,6 +199,9 @@ export const useCSVDataStore = create<CSVDataStore>()(
       },
 
       removeCSVData: (periodId) => {
+        // Remove from memory
+        inMemoryDataStore.delete(periodId)
+        
         set(state => {
           let datasets = state.datasets
           
@@ -187,7 +215,25 @@ export const useCSVDataStore = create<CSVDataStore>()(
       },
 
       clearAllData: () => {
+        // Clear memory store
+        inMemoryDataStore.clear()
+        
         set({ datasets: new Map() })
+        // Also clear from localStorage
+        localStorage.removeItem('csv-data-storage')
+      },
+      
+      getStorageSize: () => {
+        const state = get()
+        let datasets = state.datasets
+        datasets = ensureMap<string, CSVDataSet>(datasets)
+        
+        try {
+          const data = JSON.stringify(Array.from(datasets.entries()))
+          return data.length
+        } catch (e) {
+          return 0
+        }
       }
     }),
     {
@@ -250,14 +296,20 @@ export const useCSVDataStore = create<CSVDataStore>()(
           }
         },
         setItem: (name, value) => {
-          const serialized = {
-            ...value,
-            state: {
-              ...value.state,
-              datasets: Array.from(value.state.datasets.entries())
+          try {
+            const serialized = {
+              ...value,
+              state: {
+                ...value.state,
+                datasets: Array.from(value.state.datasets.entries())
+              }
             }
+            localStorage.setItem(name, JSON.stringify(serialized))
+          } catch (e) {
+            // If localStorage is full, just log the error
+            // The actual data is in memory, so the app will continue to work
+            console.warn('LocalStorage save failed (data is preserved in memory):', e)
           }
-          localStorage.setItem(name, JSON.stringify(serialized))
         },
         removeItem: (name) => localStorage.removeItem(name)
       }
