@@ -60,8 +60,18 @@ function parseCSV(text: string, fileName: string): ParsedCSVData {
   const cleanText = removeBOM(text)
   const lines = cleanText.trim().split('\n')
   
+  console.log('parseCSV:', {
+    fileName,
+    lineCount: lines.length,
+    firstLinePreview: lines[0]?.substring(0, 100),
+    firstLineFirstChar: lines[0]?.charCodeAt(0)
+  })
+  
   // Check format and parse accordingly
-  if (isCASSFormat(lines)) {
+  const isCASSFmt = isCASSFormat(lines)
+  console.log(`File ${fileName} detected as: ${isCASSFmt ? 'CASS' : 'Standard'} format`)
+  
+  if (isCASSFmt) {
     return parseCASSFormat(lines, fileName)
   } else {
     return parseStandardFormat(lines, fileName)
@@ -188,8 +198,9 @@ function mapCASSFormatToStandardized(
 
   // Process each data row
   parsedData.rows.forEach((row, rowIndex) => {
-    // Get timestamp from row object (CASS format uses headers as keys)
-    const timestamp = row['Datetime']
+    // Get timestamp from row object (first header might be 'Datetime' or something else)
+    const timestampKey = parsedData.headers[0]
+    const timestamp = row[timestampKey]
     
     if (!timestamp) return
 
@@ -204,7 +215,8 @@ function mapCASSFormatToStandardized(
     // Add all parameter values to the standardized data
     // Use headers directly to get values from row object
     parsedData.headers.forEach((header, headerIndex) => {
-      if (header !== 'Datetime' && row[header] !== null && row[header] !== undefined) {
+      // Skip the timestamp column (first column)
+      if (headerIndex > 0 && row[header] !== null && row[header] !== undefined) {
         const value = row[header]
         if (typeof value === 'string' && !isNaN(Number(value))) {
           standardData[header] = Number(value)
