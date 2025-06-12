@@ -187,15 +187,25 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
       .attr("class", "y-axis")
       .call(yAxis)
     
+    // Add chart border (外枠) for canvas mode
+    g.append("rect")
+      .attr("x", 0)
+      .attr("y", 0)
+      .attr("width", width)
+      .attr("height", height)
+      .attr("fill", "none")
+      .attr("stroke", "#d1d5db")
+      .attr("stroke-width", 1)
+    
     // Add axis labels
-    if (editingChart.xLabel || editingChart.xParameter) {
+    if (editingChart.xLabel) {
       g.append("text")
         .attr("class", "x-axis-label")
         .attr("text-anchor", "middle")
         .attr("x", width / 2)
         .attr("y", height + 40)
         .style("font-size", "12px")
-        .text(editingChart.xLabel || editingChart.xParameter || "X Axis")
+        .text(editingChart.xLabel)
     }
 
     // Y axis label - use yAxisLabels for axis 1
@@ -235,14 +245,14 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
     .call(yAxis)
 
   // Add axis labels
-  if (editingChart.xLabel || editingChart.xParameter) {
+  if (editingChart.xLabel) {
     g.append("text")
       .attr("class", "x-axis-label")
       .attr("text-anchor", "middle")
       .attr("x", width / 2)
       .attr("y", height + 40)
       .style("font-size", "12px")
-      .text(editingChart.xLabel || editingChart.xParameter || "X Axis")
+      .text(editingChart.xLabel)
   }
 
   // Y axis label - use yAxisLabels for axis 1
@@ -267,6 +277,16 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
 
   // Add grid lines based on LOD level
   renderLODGrid(g, width, height, xScale, yScale, lodConfig)
+
+  // Add chart border (外枠)
+  g.append("rect")
+    .attr("x", 0)
+    .attr("y", 0)
+    .attr("width", width)
+    .attr("height", height)
+    .attr("fill", "none")
+    .attr("stroke", "#d1d5db")
+    .attr("stroke-width", 1)
 
   // Create a separate group for scatter points to ensure they're on top
   const scatterGroup = g.append("g")

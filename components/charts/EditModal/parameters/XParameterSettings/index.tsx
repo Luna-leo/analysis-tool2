@@ -13,6 +13,7 @@ import { DateTimeRangeSettings } from "./DateTimeRangeSettings"
 import { TimeRangeSettings } from "./TimeRangeSettings"
 import { ParameterRangeSettings } from "./ParameterRangeSettings"
 import { ParameterCombobox } from "@/components/search"
+import { parseParameterKey } from "@/utils/parameterUtils"
 
 interface XParameterSettingsProps {
   editingChart: ChartComponent
@@ -108,10 +109,22 @@ export function XParameterSettings({ editingChart, setEditingChart, selectedData
                   <ParameterCombobox
                     value={editingChart.xParameter || ""}
                     onChange={(value) => {
-                      setEditingChart({
+                      // Parse the parameter key to get name and unit
+                      const parsedParam = parseParameterKey(value)
+                      
+                      // Set X-axis label if it's empty
+                      const newChart = {
                         ...editingChart,
                         xParameter: value,
-                      })
+                      }
+                      
+                      if (parsedParam && !editingChart.xLabel) {
+                        newChart.xLabel = parsedParam.unit 
+                          ? `${parsedParam.name} [${parsedParam.unit}]`
+                          : parsedParam.name
+                      }
+                      
+                      setEditingChart(newChart)
                     }}
                     selectedDataSourceItems={selectedDataSourceItems}
                     className="h-8"

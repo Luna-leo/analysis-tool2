@@ -194,9 +194,10 @@ export function renderLODGrid(
     .attr('x2', d => xScale(d as any))
     .attr('y1', 0)
     .attr('y2', height)
-    .style('stroke', '#e0e0e0')
+    .style('stroke', '#9ca3af')
     .style('stroke-width', 0.5)
-    .style('opacity', lodConfig.level === 'low' ? 0.3 : 0.5)
+    .style('stroke-dasharray', '2,2')
+    .style('opacity', lodConfig.level === 'low' ? 0.5 : 0.7)
     
   // Y grid lines
   const yTicks = yScale.ticks(yTickCount)
@@ -209,9 +210,10 @@ export function renderLODGrid(
     .attr('x2', width)
     .attr('y1', d => yScale(d))
     .attr('y2', d => yScale(d))
-    .style('stroke', '#e0e0e0')
+    .style('stroke', '#9ca3af')
     .style('stroke-width', 0.5)
-    .style('opacity', lodConfig.level === 'low' ? 0.3 : 0.5)
+    .style('stroke-dasharray', '2,2')
+    .style('opacity', lodConfig.level === 'low' ? 0.5 : 0.7)
 }
 
 /**

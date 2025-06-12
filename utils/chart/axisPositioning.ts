@@ -16,12 +16,12 @@ export function calculateXAxisPosition(
 ): number {
   const [yMin, yMax] = yDomain
   
-  // If domain includes 0, place X-axis at y=0
-  if (yMin <= 0 && yMax >= 0) {
+  // If there are no negative values (yMin >= 0), place X-axis at y=0
+  if (yMin >= 0) {
     return yScale(0)
   }
   
-  // Otherwise, place at bottom
+  // If there are negative values, place X-axis at bottom
   return height
 }
 

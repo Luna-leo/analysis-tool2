@@ -95,13 +95,15 @@ export const renderEmptyChart = ({ g, width, height, chartType, editingChart, sc
       .style("font-size", "12px")
     
     // X axis label
-    g.append("text")
-      .attr("x", width / 2)
-      .attr("y", height + 35)
-      .attr("text-anchor", "middle")
-      .attr("fill", "#6b7280")
-      .style("font-size", "12px")
-      .text(editingChart.xLabel || "Time")
+    if (editingChart.xLabel) {
+      g.append("text")
+        .attr("x", width / 2)
+        .attr("y", height + 35)
+        .attr("text-anchor", "middle")
+        .attr("fill", "#6b7280")
+        .style("font-size", "12px")
+        .text(editingChart.xLabel)
+    }
     
     // Y axis label
     const yAxisLabels = editingChart.yAxisLabels || {}
@@ -120,6 +122,16 @@ export const renderEmptyChart = ({ g, width, height, chartType, editingChart, sc
       .style("font-size", "12px")
       .text(labelWithUnit)
     
+  // Add chart border (外枠)
+  g.append("rect")
+    .attr("x", 0)
+    .attr("y", 0)
+    .attr("width", width)
+    .attr("height", height)
+    .attr("fill", "none")
+    .attr("stroke", "#d1d5db")
+    .attr("stroke-width", 1)
+
   // Store scales for reference lines
   scalesRef.current = { xScale, yScale }
 }
