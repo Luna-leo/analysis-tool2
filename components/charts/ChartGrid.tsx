@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { FileNode, ChartSizes } from "@/types"
 import { ChartCard } from "./ChartCard"
 import { VirtualizedChartGrid } from "./VirtualizedChartGrid"
+import { ProgressiveChartGrid } from "./ProgressiveChartGrid"
 import { CSVImportPage } from "@/components/csv-import"
 import { EventMasterPage } from "@/components/event-master"
 import { InterlockMasterPageWrapper } from "@/components/interlock-master/InterlockMasterPageWrapper"
@@ -180,11 +181,17 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
 
   // Use virtualized grid for large datasets
   const VIRTUALIZATION_THRESHOLD = 4
+  const PROGRESSIVE_THRESHOLD = 8
   const shouldUseVirtualization = totalItems > VIRTUALIZATION_THRESHOLD
+  const shouldUseProgressive = totalItems > PROGRESSIVE_THRESHOLD && !shouldUseVirtualization
   
 
   if (shouldUseVirtualization) {
     return <VirtualizedChartGrid file={file} />
+  }
+  
+  if (shouldUseProgressive) {
+    return <ProgressiveChartGrid file={file} />
   }
 
   return (

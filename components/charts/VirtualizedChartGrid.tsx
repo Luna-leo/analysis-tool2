@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { FileNode, ChartSizes } from "@/types"
 import { ChartCard } from "./ChartCard"
+import { ChartSkeleton } from "./ChartSkeleton"
 import { useLayoutStore } from "@/stores/useLayoutStore"
 import { useUIStore } from "@/stores/useUIStore"
 import { useFileStore } from "@/stores/useFileStore"
@@ -77,25 +78,11 @@ const VirtualizedChartCard = React.memo(({
           dragOverIndex={dragOverIndex}
         />
       ) : (
-        <div 
-          className={cn(
-            "bg-card border rounded-lg flex flex-col relative",
-            isCompactLayout ? "p-3" : "p-4"
-          )}
-          style={{
-            minHeight: `${cardMinHeight}px`,
-          }}
-        >
-          <div>
-            <div className="h-6 bg-muted rounded w-3/4 mb-4"></div>
-            <div 
-              className="bg-muted rounded"
-              style={{
-                minHeight: `${chartMinHeight}px`,
-              }}
-            ></div>
-          </div>
-        </div>
+        <ChartSkeleton
+          isCompactLayout={isCompactLayout}
+          cardMinHeight={cardMinHeight}
+          chartMinHeight={chartMinHeight}
+        />
       )}
     </div>
   )

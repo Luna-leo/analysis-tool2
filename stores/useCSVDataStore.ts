@@ -46,6 +46,9 @@ interface CSVDataStore {
   // Get data points for specific parameters
   getParameterData: (periodId: string, parameters: string[]) => Promise<CSVDataPoint[] | undefined>
   
+  // Get paginated data points for specific parameters
+  getParameterDataPaginated: (periodId: string, parameters: string[], page: number, pageSize: number) => Promise<{ data: CSVDataPoint[]; total: number }>
+  
   // Remove CSV data for a period
   removeCSVData: (periodId: string) => Promise<void>
   
@@ -228,6 +231,30 @@ export const useCSVDataStore = create<CSVDataStore>()(
         )
         
         return result
+      },
+
+      getParameterDataPaginated: async (periodId, parameters, page, pageSize) => {
+        const { getPaginatedData } = await import('@/utils/indexedDB/paginatedQueries')
+        
+        try {
+          const result = await getPaginatedData(periodId, page, pageSize, parameters)
+          return {
+            data: result.data,
+            total: result.total
+          }
+        } catch (error) {
+          console.error('Failed to get paginated data:', error)
+          // Fallback to in-memory data
+          const allData = await get().getParameterData(periodId, parameters)
+          if (!allData) return { data: [], total: 0 }
+          
+          const start = (page - 1) * pageSize
+          const end = start + pageSize
+          return {
+            data: allData.slice(start, end),
+            total: allData.length
+          }
+        }
       },
 
       getAvailableParameters: (periodId) => {
