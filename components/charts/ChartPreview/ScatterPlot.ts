@@ -198,7 +198,11 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
         .text(editingChart.xLabel || editingChart.xParameter || "X Axis")
     }
 
-    if (editingChart.yLabel) {
+    // Y axis label - use yAxisLabels for axis 1
+    const yAxisLabels = editingChart.yAxisLabels || {}
+    const firstYAxisLabel = yAxisLabels[1] || Object.values(yAxisLabels)[0] || ""
+    
+    if (firstYAxisLabel) {
       g.append("text")
         .attr("class", "y-axis-label")
         .attr("text-anchor", "middle")
@@ -206,7 +210,7 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
         .attr("x", -height / 2)
         .attr("y", -40)
         .style("font-size", "12px")
-        .text(editingChart.yLabel)
+        .text(firstYAxisLabel)
     }
     
     return // Exit early for canvas rendering
@@ -236,7 +240,11 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
       .text(editingChart.xLabel || editingChart.xParameter || "X Axis")
   }
 
-  if (editingChart.yLabel) {
+  // Y axis label - use yAxisLabels for axis 1
+  const yAxisLabels = editingChart.yAxisLabels || {}
+  const firstYAxisLabel = yAxisLabels[1] || Object.values(yAxisLabels)[0] || ""
+  
+  if (firstYAxisLabel) {
     g.append("text")
       .attr("class", "y-axis-label")
       .attr("text-anchor", "middle")
@@ -244,7 +252,7 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
       .attr("x", -height / 2)
       .attr("y", -40)
       .style("font-size", "12px")
-      .text(editingChart.yLabel)
+      .text(firstYAxisLabel)
   }
 
   // Add grid lines based on LOD level

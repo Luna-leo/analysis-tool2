@@ -44,7 +44,22 @@ export function useYParameterHandlers({
       unit: undefined,  // Reset to formula's default unit
       unitConversionId: undefined  // Clear conversion
     }
-    setEditingChart({ ...editingChart, yAxisParams: newParams })
+    
+    // Set Y-axis label to formula name if label is empty
+    const axisNo = newParams[index].axisNo || 1
+    const currentLabel = editingChart.yAxisLabels?.[axisNo]
+    if (!currentLabel) {
+      setEditingChart({ 
+        ...editingChart, 
+        yAxisParams: newParams,
+        yAxisLabels: {
+          ...editingChart.yAxisLabels,
+          [axisNo]: formula.name
+        }
+      })
+    } else {
+      setEditingChart({ ...editingChart, yAxisParams: newParams })
+    }
     
     // Use the Formula Store instead of mockFormulaMaster
     const existingFormula = formulas.find(f => f.id === formula.id)
@@ -105,7 +120,22 @@ export function useYParameterHandlers({
         unit: undefined,  // Reset to interlock's default unit
         unitConversionId: undefined  // Clear conversion
       }
-      setEditingChart({ ...editingChart, yAxisParams: newParams })
+      
+      // Set Y-axis label to interlock name if label is empty
+      const axisNo = newParams[index].axisNo || 1
+      const currentLabel = editingChart.yAxisLabels?.[axisNo]
+      if (!currentLabel) {
+        setEditingChart({ 
+          ...editingChart, 
+          yAxisParams: newParams,
+          yAxisLabels: {
+            ...editingChart.yAxisLabels,
+            [axisNo]: interlockDefinition.name
+          }
+        })
+      } else {
+        setEditingChart({ ...editingChart, yAxisParams: newParams })
+      }
       setEditingInterlockIndex(null)
       return
     }
@@ -119,7 +149,22 @@ export function useYParameterHandlers({
       unit: undefined,  // Reset to interlock's default unit
       unitConversionId: undefined  // Clear conversion
     }
-    setEditingChart({ ...editingChart, yAxisParams: newParams })
+    
+    // Set Y-axis label to interlock name if label is empty
+    const axisNo = newParams[index].axisNo || 1
+    const currentLabel = editingChart.yAxisLabels?.[axisNo]
+    if (!currentLabel) {
+      setEditingChart({ 
+        ...editingChart, 
+        yAxisParams: newParams,
+        yAxisLabels: {
+          ...editingChart.yAxisLabels,
+          [axisNo]: interlockDefinition.name
+        }
+      })
+    } else {
+      setEditingChart({ ...editingChart, yAxisParams: newParams })
+    }
     setEditingInterlockIndex(null)
   }
 
@@ -179,7 +224,22 @@ export function useYParameterHandlers({
           unit: undefined,  // Reset to formula's default unit
           unitConversionId: undefined  // Clear conversion
         }
-        setEditingChart({ ...editingChart, yAxisParams: newParams })
+        
+        // Set Y-axis label to formula name if label is empty
+        const axisNo = newParams[index].axisNo || 1
+        const currentLabel = editingChart.yAxisLabels?.[axisNo]
+        if (!currentLabel) {
+          setEditingChart({ 
+            ...editingChart, 
+            yAxisParams: newParams,
+            yAxisLabels: {
+              ...editingChart.yAxisLabels,
+              [axisNo]: selectedFormula.name
+            }
+          })
+        } else {
+          setEditingChart({ ...editingChart, yAxisParams: newParams })
+        }
       }
     }
   }
@@ -239,7 +299,22 @@ export function useYParameterHandlers({
           unit: undefined,  // Reset to interlock's default unit
           unitConversionId: undefined  // Clear conversion
         }
-        setEditingChart({ ...editingChart, yAxisParams: newParams })
+        
+        // Set Y-axis label to interlock name if label is empty
+        const axisNo = newParams[index].axisNo || 1
+        const currentLabel = editingChart.yAxisLabels?.[axisNo]
+        if (!currentLabel) {
+          setEditingChart({ 
+            ...editingChart, 
+            yAxisParams: newParams,
+            yAxisLabels: {
+              ...editingChart.yAxisLabels,
+              [axisNo]: selectedMaster.name
+            }
+          })
+        } else {
+          setEditingChart({ ...editingChart, yAxisParams: newParams })
+        }
       }
     }
   }

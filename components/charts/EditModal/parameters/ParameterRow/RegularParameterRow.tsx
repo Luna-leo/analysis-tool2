@@ -111,6 +111,28 @@ export function RegularParameterRow({
       unit: undefined,  // Reset to default unit
       unitConversionId: undefined  // Clear any conversion
     }
+    
+    // Parse the parameter key to get the name
+    const parsedParam = parseParameterKey(paramKey)
+    if (parsedParam && newParams[index]) {
+      const axisNo = newParams[index].axisNo || 1
+      
+      // Set Y-axis label to parameter name if label is empty
+      const currentLabel = editingChart.yAxisLabels?.[axisNo]
+      if (!currentLabel) {
+        setEditingChart({ 
+          ...editingChart, 
+          yAxisParams: newParams,
+          yAxisLabels: {
+            ...editingChart.yAxisLabels,
+            [axisNo]: parsedParam.name
+          }
+        })
+        setOpen(false)
+        return
+      }
+    }
+    
     setEditingChart({ ...editingChart, yAxisParams: newParams })
     setOpen(false)
   }
