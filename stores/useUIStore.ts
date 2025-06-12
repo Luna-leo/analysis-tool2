@@ -1,6 +1,7 @@
 import { create } from 'zustand'
-import { devtools } from 'zustand/middleware'
+import { devtools, subscribeWithSelector } from 'zustand/middleware'
 import type { ChartComponent } from '@/types'
+import { useGraphStateStore } from './useGraphStateStore'
 
 interface UIState {
   currentPage: number
@@ -24,7 +25,7 @@ export type UIStore = UIState & UIActions
 
 export const useUIStore = create<UIStore>()(
   devtools(
-    (set) => ({
+    subscribeWithSelector((set) => ({
       // Initial State
       currentPage: 1,
       hoveredChart: null,
@@ -46,9 +47,36 @@ export const useUIStore = create<UIStore>()(
         searchConditionDialogOpen: false, 
         editingConditionId: null 
       }),
-    }),
+    })),
     {
       name: 'ui-store',
     }
   )
+)
+
+// Subscribe to currentPage changes and update localStorage
+const saveUIToStorage = () => {
+  const uiState = useUIStore.getState()
+  const fileState = useFileStore.getState()
+  const viewState = useViewStore.getState()
+  const graphStateStore = useGraphStateStore.getState()
+  
+  graphStateStore.saveState({
+    uiState: {
+      currentPage: uiState.currentPage,
+      sidebarOpen: viewState.sidebarOpen,
+      activeView: viewState.activeView,
+      expandedFolders: Array.from(fileState.expandedFolders)
+    }
+  })
+}
+
+// Import these stores to avoid circular dependency issues
+import { useFileStore } from './useFileStore'
+import { useViewStore } from './useViewStore'
+
+// Subscribe to currentPage changes
+useUIStore.subscribe(
+  (state) => state.currentPage,
+  saveUIToStorage
 )

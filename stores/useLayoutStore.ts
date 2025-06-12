@@ -1,6 +1,7 @@
 import { create } from 'zustand'
-import { devtools } from 'zustand/middleware'
+import { devtools, subscribeWithSelector } from 'zustand/middleware'
 import type { LayoutSettings, ChartSettings } from '@/types'
+import { useGraphStateStore } from './useGraphStateStore'
 
 interface LayoutState {
   layoutSettingsMap: Record<string, LayoutSettings>
@@ -32,7 +33,7 @@ const defaultChartSettings: ChartSettings = {
 
 export const useLayoutStore = create<LayoutStore>()(
   devtools(
-    (set) => ({
+    subscribeWithSelector((set) => ({
       // Initial State
       layoutSettingsMap: {},
       chartSettingsMap: {},
@@ -68,9 +69,25 @@ export const useLayoutStore = create<LayoutStore>()(
           [fileId]: state.chartSettingsMap[fileId] || { ...defaultChartSettings },
         },
       })),
-    }),
+    })),
     {
       name: 'layout-store',
     }
   )
+)
+
+// Subscribe to layout settings changes and save to localStorage
+const saveLayoutToStorage = () => {
+  const state = useLayoutStore.getState()
+  const graphStateStore = useGraphStateStore.getState()
+  
+  graphStateStore.saveState({
+    layoutSettings: state.layoutSettingsMap
+  })
+}
+
+// Subscribe to layout settings changes
+useLayoutStore.subscribe(
+  (state) => state.layoutSettingsMap,
+  saveLayoutToStorage
 )

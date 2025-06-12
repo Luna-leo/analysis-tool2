@@ -150,8 +150,8 @@ export function ConditionBuilderFullscreen({
                   <div>
                     <p className="text-xs font-medium mb-1.5">Numeric Operators</p>
                     <div className="grid grid-cols-4 gap-1 text-xs">
-                      <div className="px-2 py-1 bg-teal-50 rounded text-center">></div>
-                      <div className="px-2 py-1 bg-teal-50 rounded text-center">>=</div>
+                      <div className="px-2 py-1 bg-teal-50 rounded text-center">&gt;</div>
+                      <div className="px-2 py-1 bg-teal-50 rounded text-center">&gt;=</div>
                       <div className="px-2 py-1 bg-teal-50 rounded text-center">&lt;</div>
                       <div className="px-2 py-1 bg-teal-50 rounded text-center">&lt;=</div>
                       <div className="px-2 py-1 bg-teal-50 rounded text-center">=</div>

@@ -3,6 +3,14 @@ import { persist } from 'zustand/middleware'
 import { StandardizedCSVData } from '@/types/csv-data'
 import { ensureMap } from '@/utils/mapUtils'
 import { transformToDataPoints, extractParameterData, DataPoint } from '@/utils/dataTransformUtils'
+import { 
+  saveCSVDataToDB, 
+  getCSVDataFromDB, 
+  getAllCSVMetadataFromDB, 
+  deleteCSVDataFromDB,
+  clearAllCSVDataFromDB,
+  IndexedDBCSVData 
+} from '@/utils/indexedDBUtils'
 
 export interface CSVMetadata {
   parameterInfo?: {
@@ -30,25 +38,28 @@ interface CSVDataStore {
   datasets: Map<string, CSVDataSet>
   
   // Store CSV data for a period
-  saveCSVData: (periodId: string, standardizedData: StandardizedCSVData[], metadata?: CSVMetadata) => void
+  saveCSVData: (periodId: string, standardizedData: StandardizedCSVData[], metadata?: CSVMetadata) => Promise<void>
   
   // Get CSV data for a period
   getCSVData: (periodId: string) => CSVDataSet | undefined
   
   // Get data points for specific parameters
-  getParameterData: (periodId: string, parameters: string[]) => CSVDataPoint[] | undefined
+  getParameterData: (periodId: string, parameters: string[]) => Promise<CSVDataPoint[] | undefined>
   
   // Remove CSV data for a period
-  removeCSVData: (periodId: string) => void
+  removeCSVData: (periodId: string) => Promise<void>
   
   // Clear all CSV data
-  clearAllData: () => void
+  clearAllData: () => Promise<void>
   
   // Get total storage size
   getStorageSize: () => number
   
   // Get available parameters for a period
   getAvailableParameters: (periodId: string) => { name: string; unit: string }[]
+  
+  // Load all datasets from IndexedDB
+  loadFromIndexedDB: () => Promise<void>
 }
 
 
@@ -63,7 +74,7 @@ export const useCSVDataStore = create<CSVDataStore>()(
     (set, get) => ({
       datasets: new Map(),
 
-      saveCSVData: (periodId, standardizedData, metadata) => {
+      saveCSVData: async (periodId, standardizedData, metadata) => {
         if (standardizedData.length === 0) {
           return
         }
@@ -105,10 +116,31 @@ export const useCSVDataStore = create<CSVDataStore>()(
         // Don't sample data - keep all points
         const sampledDataPoints = dataPoints
 
-        // Store actual data in memory
+        // Store actual data in memory for quick access
         inMemoryDataStore.set(periodId, sampledDataPoints)
         
-        // Store only metadata in localStorage
+        // Store data in IndexedDB for persistence
+        const indexedDBData: IndexedDBCSVData = {
+          periodId,
+          data: sampledDataPoints,
+          metadata: {
+            plant: first.plant,
+            machineNo: first.machineNo,
+            dataSourceType: first.sourceType,
+            parameters,
+            units,
+            lastUpdated: new Date().toISOString()
+          }
+        }
+        
+        try {
+          await saveCSVDataToDB(indexedDBData)
+        } catch (error) {
+          console.error('Failed to save to IndexedDB:', error)
+          // Continue even if IndexedDB fails
+        }
+        
+        // Store metadata in zustand state
         const dataset: CSVDataSet = {
           periodId,
           plant: first.plant,
@@ -116,7 +148,7 @@ export const useCSVDataStore = create<CSVDataStore>()(
           dataSourceType: first.sourceType,
           parameters,
           units,
-          data: [], // Don't persist actual data
+          data: [], // Don't persist actual data in localStorage
           lastUpdated: new Date().toISOString()
         }
 
@@ -144,7 +176,7 @@ export const useCSVDataStore = create<CSVDataStore>()(
         return datasets.get(periodId)
       },
 
-      getParameterData: (periodId, parameters) => {
+      getParameterData: async (periodId, parameters) => {
         const state = get()
         let datasets = state.datasets
         
@@ -157,10 +189,26 @@ export const useCSVDataStore = create<CSVDataStore>()(
           return undefined
         }
 
-        // Get actual data from memory
-        const memoryData = inMemoryDataStore.get(periodId)
+        // First try to get data from memory
+        let memoryData = inMemoryDataStore.get(periodId)
+        
+        // If not in memory, try to load from IndexedDB
         if (!memoryData) {
-          console.warn('No in-memory data found for periodId:', periodId)
+          console.log('Loading data from IndexedDB for periodId:', periodId)
+          try {
+            const dbData = await getCSVDataFromDB(periodId)
+            if (dbData && dbData.data) {
+              // Store in memory for future access
+              inMemoryDataStore.set(periodId, dbData.data)
+              memoryData = dbData.data
+            }
+          } catch (error) {
+            console.error('Failed to load from IndexedDB:', error)
+          }
+        }
+        
+        if (!memoryData) {
+          console.warn('No data found in memory or IndexedDB for periodId:', periodId)
           return undefined
         }
 
@@ -198,9 +246,16 @@ export const useCSVDataStore = create<CSVDataStore>()(
         }))
       },
 
-      removeCSVData: (periodId) => {
+      removeCSVData: async (periodId) => {
         // Remove from memory
         inMemoryDataStore.delete(periodId)
+        
+        // Remove from IndexedDB
+        try {
+          await deleteCSVDataFromDB(periodId)
+        } catch (error) {
+          console.error('Failed to delete from IndexedDB:', error)
+        }
         
         set(state => {
           let datasets = state.datasets
@@ -214,9 +269,16 @@ export const useCSVDataStore = create<CSVDataStore>()(
         })
       },
 
-      clearAllData: () => {
+      clearAllData: async () => {
         // Clear memory store
         inMemoryDataStore.clear()
+        
+        // Clear IndexedDB
+        try {
+          await clearAllCSVDataFromDB()
+        } catch (error) {
+          console.error('Failed to clear IndexedDB:', error)
+        }
         
         set({ datasets: new Map() })
         // Also clear from localStorage
@@ -233,6 +295,35 @@ export const useCSVDataStore = create<CSVDataStore>()(
           return data.length
         } catch (e) {
           return 0
+        }
+      },
+      
+      loadFromIndexedDB: async () => {
+        try {
+          // Get all metadata from IndexedDB
+          const allData = await getAllCSVMetadataFromDB()
+          
+          if (allData.length > 0) {
+            const newDatasets = new Map<string, CSVDataSet>()
+            
+            for (const item of allData) {
+              const dataset: CSVDataSet = {
+                periodId: item.periodId,
+                plant: item.metadata.plant,
+                machineNo: item.metadata.machineNo,
+                dataSourceType: item.metadata.dataSourceType,
+                parameters: item.metadata.parameters,
+                units: item.metadata.units,
+                data: [], // Don't load actual data into state
+                lastUpdated: item.metadata.lastUpdated
+              }
+              newDatasets.set(item.periodId, dataset)
+            }
+            
+            set({ datasets: newDatasets })
+          }
+        } catch (error) {
+          console.error('Failed to load from IndexedDB:', error)
         }
       }
     }),

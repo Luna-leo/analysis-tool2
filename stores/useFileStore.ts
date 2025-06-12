@@ -1,7 +1,10 @@
 import { create } from 'zustand'
-import { devtools } from 'zustand/middleware'
+import { devtools, subscribeWithSelector } from 'zustand/middleware'
 import type { FileNode, ChartComponent } from '@/types'
 import { mockFileTree } from '@/data/mockData'
+import { useGraphStateStore } from './useGraphStateStore'
+import { traverseAndUpdate, findNodeById, removeNodeById, addNodeToParent } from '@/utils/treeUtils'
+import { ChartOperations } from '@/services/chartOperations'
 
 interface OpenTab extends FileNode {
   source?: 'explorer' | 'database' | 'calculator' | 'settings'
@@ -48,12 +51,12 @@ export type FileStore = FileState & FileActions
 
 export const useFileStore = create<FileStore>()(
   devtools(
-    (set) => ({
+    subscribeWithSelector((set) => ({
       // Initial State
       fileTree: mockFileTree,
       openTabs: [],
       activeTab: '',
-      expandedFolders: new Set(['1']),
+      expandedFolders: new Set(),
       renamingNode: null,
       creatingNodeType: null,
       creatingNodeParentId: null,
@@ -69,8 +72,19 @@ export const useFileStore = create<FileStore>()(
         if (exists) {
           return { activeTab: file.id }
         }
-
-        const openTab: OpenTab = { ...file, source }
+        
+        // Check if we have saved chart data for this file
+        const graphStateStore = useGraphStateStore.getState()
+        const savedState = graphStateStore.getSavedState()
+        const savedTab = savedState?.tabs?.find(tab => tab.id === file.id)
+        
+        // If we have saved charts for this file, use them
+        const openTab: OpenTab = { 
+          ...file, 
+          source,
+          charts: savedTab?.charts || file.charts
+        }
+        
         return {
           openTabs: [...state.openTabs, openTab],
           activeTab: file.id,
@@ -119,19 +133,10 @@ export const useFileStore = create<FileStore>()(
       setFileTree: (fileTree) => set({ fileTree }),
 
       renameNode: (nodeId, newName) => set((state) => {
-        const updateNode = (nodes: FileNode[]): FileNode[] => {
-          return nodes.map(node => {
-            if (node.id === nodeId) {
-              return { ...node, name: newName }
-            }
-            if (node.children) {
-              return { ...node, children: updateNode(node.children) }
-            }
-            return node
-          })
-        }
-
-        const newFileTree = updateNode(state.fileTree)
+        const newFileTree = traverseAndUpdate(state.fileTree, nodeId, (node) => ({
+          ...node,
+          name: newName
+        }))
         
         // Also update open tabs if the renamed node is open
         const newOpenTabs = state.openTabs.map(tab => 
@@ -162,18 +167,7 @@ export const useFileStore = create<FileStore>()(
 
         // Add to specific parent folder
         const addToParent = (nodes: FileNode[]): FileNode[] => {
-          return nodes.map(node => {
-            if (node.id === parentId && node.type === "folder") {
-              return {
-                ...node,
-                children: [...(node.children || []), newFolder]
-              }
-            }
-            if (node.children) {
-              return { ...node, children: addToParent(node.children) }
-            }
-            return node
-          })
+          return addNodeToParent(nodes, parentId, newFolder)
         }
 
         // Ensure parent folder is expanded
@@ -202,18 +196,7 @@ export const useFileStore = create<FileStore>()(
 
         // Add to specific parent folder
         const addToParent = (nodes: FileNode[]): FileNode[] => {
-          return nodes.map(node => {
-            if (node.id === parentId && node.type === "folder") {
-              return {
-                ...node,
-                children: [...(node.children || []), newFile]
-              }
-            }
-            if (node.children) {
-              return { ...node, children: addToParent(node.children) }
-            }
-            return node
-          })
+          return addNodeToParent(nodes, parentId, newFile)
         }
 
         // Ensure parent folder is expanded
@@ -326,17 +309,10 @@ export const useFileStore = create<FileStore>()(
 
       updateFileCharts: (fileId, charts) => set((state) => {
         // Update charts in fileTree
-        const updateChartsInTree = (nodes: FileNode[]): FileNode[] => {
-          return nodes.map(node => {
-            if (node.id === fileId) {
-              return { ...node, charts }
-            }
-            if (node.children) {
-              return { ...node, children: updateChartsInTree(node.children) }
-            }
-            return node
-          })
-        }
+        const newFileTree = traverseAndUpdate(state.fileTree, fileId, (node) => ({
+          ...node,
+          charts
+        }))
 
         // Update charts in openTabs
         const newOpenTabs = state.openTabs.map(tab => 
@@ -344,103 +320,106 @@ export const useFileStore = create<FileStore>()(
         )
 
         return {
-          fileTree: updateChartsInTree(state.fileTree),
+          fileTree: newFileTree,
           openTabs: newOpenTabs
         }
       }),
 
       duplicateChart: (fileId, chartId) => set((state) => {
-        // Find the chart to duplicate and its index
-        const findChartAndIndex = (nodes: FileNode[]): { chart: ChartComponent | undefined, index: number } => {
-          for (const node of nodes) {
-            if (node.id === fileId && node.charts) {
-              const index = node.charts.findIndex(c => c.id === chartId)
-              if (index !== -1) {
-                return { chart: node.charts[index], index }
-              }
-            }
-            if (node.children) {
-              const found = findChartAndIndex(node.children)
-              if (found.chart) return found
-            }
-          }
-          return { chart: undefined, index: -1 }
-        }
+        // Find the file node
+        const fileNode = findNodeById(state.fileTree, fileId)
+        if (!fileNode || !fileNode.charts) return state
 
-        const { chart: chartToDuplicate, index } = findChartAndIndex(state.fileTree)
+        // Find the chart to duplicate
+        const chartToDuplicate = ChartOperations.findById(fileNode.charts, chartId)
         if (!chartToDuplicate) return state
 
-        // Create a new chart with a unique ID
-        const newChart: ChartComponent = {
-          ...chartToDuplicate,
-          id: `chart_${Date.now()}`,
-          title: `${chartToDuplicate.title} (コピー)`
-        }
+        // Create a new chart
+        const newChart = ChartOperations.duplicate(chartToDuplicate)
 
-        // Update charts in fileTree - insert after the original chart
-        const updateChartsInTree = (nodes: FileNode[]): FileNode[] => {
-          return nodes.map(node => {
-            if (node.id === fileId && node.charts) {
-              const newCharts = [...node.charts]
-              newCharts.splice(index + 1, 0, newChart) // Insert after the original
-              return { ...node, charts: newCharts }
+        // Update charts in fileTree
+        const newFileTree = traverseAndUpdate(state.fileTree, fileId, (node) => {
+          if (node.charts) {
+            return { 
+              ...node, 
+              charts: ChartOperations.insertAfter(node.charts, chartId, newChart)
             }
-            if (node.children) {
-              return { ...node, children: updateChartsInTree(node.children) }
-            }
-            return node
-          })
-        }
+          }
+          return node
+        })
 
-        // Update charts in openTabs - insert after the original chart
+        // Update charts in openTabs
         const newOpenTabs = state.openTabs.map(tab => {
           if (tab.id === fileId && tab.charts) {
-            const newCharts = [...tab.charts]
-            const tabIndex = tab.charts.findIndex(c => c.id === chartId)
-            if (tabIndex !== -1) {
-              newCharts.splice(tabIndex + 1, 0, newChart) // Insert after the original
+            return { 
+              ...tab, 
+              charts: ChartOperations.insertAfter(tab.charts, chartId, newChart)
             }
-            return { ...tab, charts: newCharts }
           }
           return tab
         })
 
         return {
-          fileTree: updateChartsInTree(state.fileTree),
+          fileTree: newFileTree,
           openTabs: newOpenTabs
         }
       }),
 
       deleteChart: (fileId, chartId) => set((state) => {
         // Update charts in fileTree
-        const updateChartsInTree = (nodes: FileNode[]): FileNode[] => {
-          return nodes.map(node => {
-            if (node.id === fileId && node.charts) {
-              return { ...node, charts: node.charts.filter(c => c.id !== chartId) }
+        const newFileTree = traverseAndUpdate(state.fileTree, fileId, (node) => {
+          if (node.charts) {
+            return { 
+              ...node, 
+              charts: ChartOperations.remove(node.charts, chartId)
             }
-            if (node.children) {
-              return { ...node, children: updateChartsInTree(node.children) }
-            }
-            return node
-          })
-        }
+          }
+          return node
+        })
 
         // Update charts in openTabs
         const newOpenTabs = state.openTabs.map(tab => {
           if (tab.id === fileId && tab.charts) {
-            return { ...tab, charts: tab.charts.filter(c => c.id !== chartId) }
+            return { 
+              ...tab, 
+              charts: ChartOperations.remove(tab.charts, chartId)
+            }
           }
           return tab
         })
 
         return {
-          fileTree: updateChartsInTree(state.fileTree),
+          fileTree: newFileTree,
           openTabs: newOpenTabs
         }
       }),
-    }),
+    })),
     {
       name: 'file-store',
     }
   )
+)
+
+// Subscribe to state changes and save to localStorage
+const saveToStorage = () => {
+  const state = useFileStore.getState()
+  const graphStateStore = useGraphStateStore.getState()
+  
+  graphStateStore.saveState({
+    tabs: state.openTabs,
+    activeTab: state.activeTab,
+    fileTree: state.fileTree,
+    uiState: {
+      currentPage: 1, // This will be updated from UIStore
+      sidebarOpen: true, // This will be updated from ViewStore
+      activeView: 'explorer', // This will be updated from ViewStore
+      expandedFolders: Array.from(state.expandedFolders)
+    }
+  })
+}
+
+// Subscribe to specific state changes
+useFileStore.subscribe(
+  (state) => ({ openTabs: state.openTabs, activeTab: state.activeTab, expandedFolders: state.expandedFolders, fileTree: state.fileTree }),
+  saveToStorage
 )

@@ -2,6 +2,7 @@ import { CSVDataSourceType } from "@/types"
 import { StandardizedCSVData, ParsedCSVData } from "@/types/csv-data"
 import { getDataSourceConfig } from "@/data/dataSourceTypes"
 import { parseCASSFormat, parseStandardFormat, isCASSFormat, removeBOM } from "./csvParsers"
+import { isTestDataFile as checkTestDataFile } from "@/config/csvFormats"
 
 export interface CSVParseResult {
   success: boolean
@@ -61,10 +62,7 @@ function parseCSV(text: string, fileName: string): ParsedCSVData {
   const lines = cleanText.trim().split('\n')
   
   // Check if this is a test data file that should be treated as CHINAMI format
-  const isTestDataFile = fileName.includes('PlantA_GT-') || 
-                        fileName.includes('test_import') ||
-                        fileName.includes('test_ssac') ||
-                        fileName.includes('sample_parameters')
+  const isTestDataFile = checkTestDataFile(fileName)
   
   // If it's a test data file, parse it as standard format and mark it as CHINAMI
   if (isTestDataFile) {

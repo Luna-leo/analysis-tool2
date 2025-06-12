@@ -8,7 +8,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import { FileNode } from "@/types"
-import { mockFileTree } from "@/data/mockData"
+import { useFileStore } from "@/stores/useFileStore"
 import { LayoutSettings } from "./LayoutSettings"
 
 interface BreadcrumbNavigationProps {
@@ -39,12 +39,12 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
   activeTab,
   openTabs,
 }) => {
+  const { fileTree } = useFileStore()
   const currentFile = openTabs.find((tab) => tab.id === activeTab)
   if (!currentFile) return null
 
-  const filePath = getFilePath(currentFile.id, mockFileTree)
-  if (!filePath) return null
-
+  const filePath = getFilePath(currentFile.id, fileTree)
+  
   // Check if this is a graph page (has charts/dataSources)
   const isGraphPage = (currentFile as any).charts || (currentFile as any).dataSources
 
@@ -53,7 +53,8 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
       <div className="flex items-center justify-between">
         <Breadcrumb>
           <BreadcrumbList>
-            {filePath.map((pathItem, index) => (
+            {filePath ? (
+              filePath.map((pathItem, index) => (
               <React.Fragment key={index}>
                 {index === filePath.length - 1 ? (
                   <BreadcrumbItem>
@@ -70,7 +71,13 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
                   </>
                 )}
               </React.Fragment>
-            ))}
+            ))
+            ) : (
+              // If no file path found (e.g., for special tabs or reconstructed files)
+              <BreadcrumbItem>
+                <BreadcrumbPage>{currentFile.name}</BreadcrumbPage>
+              </BreadcrumbItem>
+            )}
           </BreadcrumbList>
         </Breadcrumb>
         

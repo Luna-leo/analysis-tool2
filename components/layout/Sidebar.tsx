@@ -90,7 +90,7 @@ const ACTIVITY_BAR_ITEMS: ActivityBarItem[] = [
 ]
 
 export function Sidebar() {
-  const { activeView, sidebarOpen, setActiveView, setSidebarOpen } = useViewStore()
+  const { activeView, sidebarOpen, setActiveView, toggleSidebar } = useViewStore()
   const { setCreatingNode, openFile } = useFileStore()
   const layoutStore = useLayoutStore()
   const uiStore = useUIStore()
@@ -99,7 +99,7 @@ export function Sidebar() {
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 1024 && sidebarOpen) { // 1024px = lg breakpoint
-        setSidebarOpen(false)
+        useViewStore.setState({ sidebarOpen: false })
       }
     }
 
@@ -109,14 +109,16 @@ export function Sidebar() {
     // Add resize listener
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
-  }, [sidebarOpen, setSidebarOpen])
+  }, [sidebarOpen])
 
   const handleViewClick = (view: ActiveView) => {
     if (activeView === view) {
-      setSidebarOpen(!sidebarOpen)
+      toggleSidebar()
     } else {
       setActiveView(view)
-      setSidebarOpen(true)
+      if (!sidebarOpen) {
+        toggleSidebar()
+      }
     }
   }
 

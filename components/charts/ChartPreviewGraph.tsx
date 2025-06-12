@@ -98,15 +98,25 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     }
   }, [])
   
-  // Memoize data collection to avoid recalculation
-  const chartData = React.useMemo(() => {
-    const data: ChartDataPoint[] = []
-    
-    if (selectedDataSourceItems.length > 0 && (editingChart.xAxisType === 'datetime' || allParameters.length > 0)) {
+  // Use state for async data loading
+  const [chartData, setChartData] = React.useState<ChartDataPoint[]>([])
+  const [isLoadingData, setIsLoadingData] = React.useState(false)
+  
+  // Load data when parameters change
+  React.useEffect(() => {
+    const loadData = async () => {
+      if (selectedDataSourceItems.length === 0 || (editingChart.xAxisType !== 'datetime' && allParameters.length === 0)) {
+        setChartData([])
+        return
+      }
+      
+      setIsLoadingData(true)
+      const data: ChartDataPoint[] = []
+      
       try {
         // Collect data from all selected data sources
-        selectedDataSourceItems.forEach(dataSource => {
-          const csvData = getParameterData(dataSource.id, allParameters)
+        for (const dataSource of selectedDataSourceItems) {
+          const csvData = await getParameterData(dataSource.id, allParameters)
           
           // Debug logging
           if (!csvData || csvData.length === 0) {
@@ -160,13 +170,17 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               })
             })
           }
-        })
+        }
       } catch (error) {
         console.error('Error fetching CSV data for chart:', error)
+      } finally {
+        setIsLoadingData(false)
       }
+      
+      setChartData(data)
     }
     
-    return data
+    loadData()
   }, [selectedDataSourceItems, allParameters, editingChart.xParameter, editingChart.yAxisParams, getParameterData, editingChart.xAxisType])
 
   useEffect(() => {
@@ -203,6 +217,11 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
 
   return (
     <div ref={containerRef} className="w-full h-full relative">
+      {isLoadingData && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
+          <div className="text-sm text-muted-foreground">Loading data...</div>
+        </div>
+      )}
       <svg ref={svgRef} width={dimensions.width} height={dimensions.height} className="w-full h-full" />
       <ReferenceLines
         svgRef={svgRef}
