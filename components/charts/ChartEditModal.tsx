@@ -35,10 +35,11 @@ export function ChartEditModal() {
   if (!editingChart) return null
 
   const handleSave = () => {
-    // Find the current file that contains this chart
-    const currentFile = openTabs.find(tab => tab.id === activeFileTab)
+    // Find the current file based on fileId from editingChart
+    const targetFileId = editingChart.fileId || activeFileTab
+    const currentFile = openTabs.find(tab => tab.id === targetFileId)
     
-    if (currentFile && currentFile.charts) {
+    if (currentFile) {
       // Update the chart with selected data sources
       // Note: editingChart already contains all properties including referenceLines,
       // which are updated by child components via setEditingChart
@@ -47,11 +48,23 @@ export function ChartEditModal() {
         selectedDataSources: selectedDataSourceItems
       }
       
+      const currentCharts = currentFile.charts || []
       
-      // Update the chart in the charts array
-      const updatedCharts = currentFile.charts.map(chart => 
-        chart.id === editingChart.id ? updatedChart : chart
+      // Check if this is an existing chart or a new one
+      const existingChartIndex = currentCharts.findIndex(chart => 
+        chart.id === editingChart.id
       )
+      
+      let updatedCharts
+      if (existingChartIndex >= 0) {
+        // Update existing chart
+        updatedCharts = currentCharts.map(chart => 
+          chart.id === editingChart.id ? updatedChart : chart
+        )
+      } else {
+        // Add new chart
+        updatedCharts = [...currentCharts, updatedChart]
+      }
       
       // Save to file store
       updateFileCharts(currentFile.id, updatedCharts)
