@@ -56,8 +56,7 @@ export const ChartCard = React.memo(({ chart, isCompactLayout, cardMinHeight, ch
   return (
     <div
       className={cn(
-        "bg-card border rounded-lg flex flex-col relative group",
-        isCompactLayout ? "p-3" : "p-4"
+        "bg-card border rounded-lg flex flex-col relative group overflow-hidden"
       )}
       style={{
         minHeight: `${cardMinHeight}px`,
@@ -72,19 +71,19 @@ export const ChartCard = React.memo(({ chart, isCompactLayout, cardMinHeight, ch
             variant="secondary"
             size="icon"
             className="h-8 w-8 rounded-full shadow-md"
-            onClick={handleDuplicate}
-            title="複製"
+            onClick={handleEdit}
+            title="編集"
           >
-            <Copy className="h-4 w-4" />
+            <Edit className="h-4 w-4" />
           </Button>
           <Button
             variant="secondary"
             size="icon"
             className="h-8 w-8 rounded-full shadow-md"
-            onClick={handleEdit}
-            title="編集"
+            onClick={handleDuplicate}
+            title="複製"
           >
-            <Edit className="h-4 w-4" />
+            <Copy className="h-4 w-4" />
           </Button>
           <Button
             variant="secondary"
@@ -98,17 +97,8 @@ export const ChartCard = React.memo(({ chart, isCompactLayout, cardMinHeight, ch
         </div>
       )}
 
-      <h3
-        className={cn(
-          "font-semibold flex items-center gap-2 flex-shrink-0",
-          isCompactLayout ? "text-sm mb-2" : "text-lg mb-4"
-        )}
-      >
-        <LineChart className={cn(isCompactLayout ? "h-4 w-4" : "h-5 w-5")} />
-        <span className="truncate">{chart.title}</span>
-      </h3>
       <div
-        className="bg-muted rounded flex items-center justify-center flex-1 overflow-hidden"
+        className="bg-white flex items-center justify-center flex-1 overflow-hidden"
         style={{
           minHeight: `${chartMinHeight}px`,
         }}
