@@ -11,13 +11,14 @@ export default function TestReferenceLines() {
     id: "test-chart",
     title: "Test Reference Lines",
     type: "scatter",
+    data: [],
     xAxisType: "parameter",
     xParameter: "param1",
     xLabel: "X Parameter",
     yAxisParams: [
       {
         parameter: "param2",
-        color: "#0000ff",
+        axisName: "Y Axis",
         marker: { type: "circle", size: 4, fillColor: "#0000ff", borderColor: "#0000ff" }
       }
     ],

@@ -269,7 +269,7 @@ export function DataSourceTab({
       addPeriod(collectedPeriod)
 
       // Save the actual CSV data
-      saveCSVData(collectedPeriod.id, allStandardizedData, combinedMetadata)
+      saveCSVData(collectedPeriod.id, allStandardizedData, combinedMetadata || undefined)
 
       // Create an EventInfo entry for the period pool
       const periodEvent: EventInfo = {
@@ -386,7 +386,13 @@ export function DataSourceTab({
         data={manualEntry.data}
         onClose={manualEntry.close}
         onUpdateData={manualEntry.updateData}
-        onSave={handleSaveManualEntry}
+        onSave={(data: any, editingItemId: string | null) => {
+          const input: ManualEntryInput = {
+            ...data,
+            legend: data.legend
+          }
+          handleSaveManualEntry(input, editingItemId)
+        }}
         isValid={manualEntry.isValid()}
       />
 

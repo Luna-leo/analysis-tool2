@@ -126,11 +126,11 @@ export function Sidebar() {
     const node: FileNode = {
       id: nodeConfig.id,
       name: nodeConfig.name,
-      type: nodeConfig.type,
+      type: nodeConfig.type as FileNode['type'],
       isSystemNode: true
     }
     
-    openFile(node, nodeConfig.viewType)
+    openFile(node, nodeConfig.viewType as any)
     
     // Special handling for CSV Import
     if (nodeConfig.id === 'csv-import') {

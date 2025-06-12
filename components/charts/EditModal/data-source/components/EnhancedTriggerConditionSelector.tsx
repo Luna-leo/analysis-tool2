@@ -58,7 +58,7 @@ export function EnhancedTriggerConditionSelector({
     e.stopPropagation();
     const newConditionId = duplicateCondition(conditionId);
     if (newConditionId) {
-      openSearchConditionDialog(newConditionId);
+      openSearchConditionDialog(newConditionId as unknown as string);
     }
     setOpen(false);
   };

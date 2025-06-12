@@ -52,5 +52,5 @@ export function useIntersectionObserver<T extends Element>(
     }
   }, [threshold, root, rootMargin, triggerOnce])
 
-  return [targetRef, isIntersecting]
+  return [targetRef as React.RefObject<T>, isIntersecting]
 }

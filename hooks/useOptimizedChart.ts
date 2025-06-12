@@ -30,7 +30,7 @@ interface ChartDataPoint {
 export function useOptimizedChart({
   editingChart,
   selectedDataSourceItems,
-  maxDataPoints = 1000
+  maxDataPoints = 500
 }: UseOptimizedChartProps): OptimizedChartData {
   const { getParameterData } = useCSVDataStore()
   const dataCache = useSharedDataCache()

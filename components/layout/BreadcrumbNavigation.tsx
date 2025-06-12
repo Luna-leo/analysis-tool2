@@ -98,11 +98,9 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
                 uiStore.setEditingChart({
                   id: `chart_${Date.now()}`,
                   title: "新しいチャート",
-                  dataSources: [],
-                  parameters: [],
+                  data: [],
+                  selectedDataSources: [],
                   referenceLines: [],
-                  thresholdPoints: [],
-                  searchConditions: [],
                   fileId: activeTab
                 })
                 uiStore.setEditModalOpen(true)

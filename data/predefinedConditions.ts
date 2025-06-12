@@ -58,8 +58,8 @@ export const predefinedConditions: PredefinedCondition[] = [
     description: 'Monitor pump switch and valve status',
     expression: 'pump_switch is ON AND valve_01_status is ON',
     conditions: [
-      { id: 'cond_pump_on', type: 'condition' as const, parameter: 'pump_switch', operator: 'isOn' as const, value: null },
-      { id: 'cond_valve_on', type: 'condition' as const, parameter: 'valve_01_status', operator: 'isOn' as const, value: null, logicalOperator: 'AND' as const }
+      { id: 'cond_pump_on', type: 'condition' as const, parameter: 'pump_switch', operator: 'isOn' as const, value: undefined },
+      { id: 'cond_valve_on', type: 'condition' as const, parameter: 'valve_01_status', operator: 'isOn' as const, value: undefined, logicalOperator: 'AND' as const }
     ]
   },
   {
@@ -72,8 +72,8 @@ export const predefinedConditions: PredefinedCondition[] = [
         id: 'cond_startup_group', 
         type: 'group' as const,
         conditions: [
-          { id: 'cond_motor_start', type: 'condition' as const, parameter: 'motor_01', operator: 'switchedOn' as const, value: null },
-          { id: 'cond_valve_open', type: 'condition' as const, parameter: 'valve_02_status', operator: 'switchedOn' as const, value: null, logicalOperator: 'OR' as const }
+          { id: 'cond_motor_start', type: 'condition' as const, parameter: 'motor_01', operator: 'switchedOn' as const, value: undefined },
+          { id: 'cond_valve_open', type: 'condition' as const, parameter: 'valve_02_status', operator: 'switchedOn' as const, value: undefined, logicalOperator: 'OR' as const }
         ]
       }
     ]

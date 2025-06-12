@@ -25,7 +25,7 @@ import { UnitConverterFormulaDialog } from "@/components/unit-converter-formula/
 
 interface UnitSelectorProps {
   index: number
-  param: ChartComponent["yAxisParams"][0]
+  param: NonNullable<ChartComponent["yAxisParams"]>[0]
   editingChart: ChartComponent
   setEditingChart: (chart: ChartComponent) => void
 }

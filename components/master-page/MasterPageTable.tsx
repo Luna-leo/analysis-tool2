@@ -195,10 +195,10 @@ export function MasterPageTable<T extends MasterItem>({
               <TableRow
                 key={item.id}
                 item={item}
-                columns={columns}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                onDuplicate={onDuplicate}
+                columns={columns as ColumnConfig<MasterItem>[]}
+                onEdit={onEdit as (item: MasterItem) => void}
+                onDelete={onDelete as (item: MasterItem) => void}
+                onDuplicate={onDuplicate as ((item: MasterItem) => void) | undefined}
                 enableDuplicate={enableDuplicate}
                 getStickyStyle={getStickyStyle}
               />

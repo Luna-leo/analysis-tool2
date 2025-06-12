@@ -89,11 +89,11 @@ export const useEventMasterStore = create<EventMasterStore>((set, get) => ({
     if (!query) return state.events
     
     return state.events.filter(event => 
-      event.name.toLowerCase().includes(query) ||
-      event.plant?.toLowerCase().includes(query) ||
-      event.unit?.toLowerCase().includes(query) ||
-      event.description?.toLowerCase().includes(query) ||
-      event.tag?.toLowerCase().includes(query)
+      event.name?.toString().toLowerCase().includes(query) ||
+      event.plant?.toString().toLowerCase().includes(query) ||
+      event.unit?.toString().toLowerCase().includes(query) ||
+      event.description?.toString().toLowerCase().includes(query) ||
+      event.tag?.toString().toLowerCase().includes(query)
     )
   }
 }))

@@ -6,7 +6,7 @@ export type ActiveView = "explorer" | "search" | "database" | "calculator" | "se
 
 export type ConditionMode = "predefined" | "manual"
 
-export type CSVDataSourceType = "CASS" | "ACS" | "CHINAMI"
+export type CSVDataSourceType = "CASS" | "ACS" | "CHINAMI" | "SSAC" | "standard"
 
 
 export type AxisType = "datetime" | "time" | "numeric" | "category" | "parameter"
@@ -138,6 +138,8 @@ export interface ChartComponent {
     unit?: string
     unitConversionId?: string
   }>
+  fileId?: string
+  type?: string
 }
 
 export interface FileNode {

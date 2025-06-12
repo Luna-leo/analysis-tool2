@@ -62,6 +62,36 @@ export const DATA_SOURCE_CONFIGS: Record<CSVDataSourceType, DataSourceConfig> = 
       value: 'data',
       quality: 'valid'
     }
+  },
+  SSAC: {
+    id: "SSAC",
+    name: "SSAC",
+    description: "SSAC data source format",
+    columns: {
+      required: ['Datetime'],
+      optional: []
+    },
+    columnMappings: {
+      timestamp: 'Datetime',
+      parameter: 'parameter',
+      value: 'value',
+      quality: 'quality'
+    }
+  },
+  standard: {
+    id: "standard",
+    name: "Standard",
+    description: "Standard CSV format",
+    columns: {
+      required: ['timestamp'],
+      optional: []
+    },
+    columnMappings: {
+      timestamp: 'timestamp',
+      parameter: 'parameter',
+      value: 'value',
+      quality: 'quality'
+    }
   }
 }
 

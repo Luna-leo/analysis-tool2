@@ -49,11 +49,12 @@ const ChartCardComponent = ({
   dragOverIndex
 }: ChartCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
-  const { hoveredChart, setHoveredChart, setEditingChart, setEditModalOpen } = useUIStore()
+  const [isHovered, setIsHovered] = useState(false)
+  const { setEditingChart, setEditModalOpen } = useUIStore()
   const { duplicateChart, deleteChart } = useFileStore()
   
-  const handleMouseEnter = useCallback(() => setHoveredChart(chart.id), [setHoveredChart, chart.id])
-  const handleMouseLeave = useCallback(() => setHoveredChart(null), [setHoveredChart])
+  const handleMouseEnter = useCallback(() => setIsHovered(true), [])
+  const handleMouseLeave = useCallback(() => setIsHovered(false), [])
   
   const handleEdit = useCallback(() => {
     setEditingChart(chart)
@@ -118,7 +119,7 @@ const ChartCardComponent = ({
       </div>
 
       {/* Edit, Duplicate and Delete Buttons - appear on hover */}
-      {hoveredChart === chart.id && (
+      {isHovered && (
         <div 
           className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
           onMouseDown={(e) => e.stopPropagation()}
@@ -163,7 +164,7 @@ const ChartCardComponent = ({
         <ChartPreviewGraph 
           editingChart={chart} 
           selectedDataSourceItems={chart.selectedDataSources || []} 
-          maxDataPoints={isCompactLayout ? 500 : 1000}
+          maxDataPoints={isCompactLayout ? 300 : 500}
         />
       </div>
 
@@ -188,4 +189,4 @@ const ChartCardComponent = ({
   )
 }
 
-export const ChartCard = ChartCardComponent
+export const ChartCard = React.memo(ChartCardComponent)

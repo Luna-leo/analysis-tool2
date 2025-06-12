@@ -20,7 +20,7 @@ interface ChartPreviewGraphProps {
   maxDataPoints?: number
 }
 
-export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints = 1000 }: ChartPreviewGraphProps) => {
+export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints = 500 }: ChartPreviewGraphProps) => {
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [dimensions, setDimensions] = React.useState({ width: 400, height: 300 })

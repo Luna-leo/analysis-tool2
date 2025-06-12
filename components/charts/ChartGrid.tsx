@@ -179,7 +179,7 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
   const totalItems = charts.length
 
   // Use virtualized grid for large datasets
-  const VIRTUALIZATION_THRESHOLD = 10
+  const VIRTUALIZATION_THRESHOLD = 4
   const shouldUseVirtualization = totalItems > VIRTUALIZATION_THRESHOLD
   
 

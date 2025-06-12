@@ -12,7 +12,7 @@ interface TabContentProps {
   editingChart: ChartComponent
   setEditingChart: (chart: ChartComponent) => void
   selectedDataSourceItems: EventInfo[]
-  setSelectedDataSourceItems: (items: EventInfo[]) => void
+  setSelectedDataSourceItems: React.Dispatch<React.SetStateAction<EventInfo[]>>
 }
 
 export function TabContent({

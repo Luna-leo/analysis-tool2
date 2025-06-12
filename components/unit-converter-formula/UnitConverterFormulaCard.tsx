@@ -196,7 +196,7 @@ export const UnitConverterFormulaCard = React.memo(({ formula }: UnitConverterFo
         )}
 
         {/* Usage count - at the bottom */}
-        {formula.usageCount > 0 && (
+        {formula.usageCount && formula.usageCount > 0 && (
           <div className="text-xs text-muted-foreground mt-2">
             Used {formula.usageCount} times
           </div>

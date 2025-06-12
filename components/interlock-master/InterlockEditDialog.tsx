@@ -39,10 +39,6 @@ export function InterlockEditDialog({
     category: 'Safety',
     plant_name: '',
     machine_no: '',
-    description: '',
-    x_parameter: '',
-    y_unit: '',
-    threshold_count: 0,
     definition: {
       id: '',
       name: '',

@@ -7,8 +7,8 @@ export function validateAxisUnits(
   axisNo: number,
   paramIndexes: number[],
   chartParams: ChartComponent["yAxisParams"],
-  formulas: ReturnType<typeof useFormulaMasterStore>["formulas"],
-  unitConverterFormulas: ReturnType<typeof useUnitConverterFormulaStore>["formulas"]
+  formulas: any[],
+  unitConverterFormulas: any[]
 ): UnitValidationResult {
   if (!chartParams || paramIndexes.length <= 1) {
     return {
@@ -32,7 +32,7 @@ export function validateAxisUnits(
       const parsed = parseParameterKey(param.parameter)
       return parsed?.unit || ""
     } else if (param.parameterType === "Formula") {
-      const formula = formulas.find(f => f.id === param.formulaId)
+      const formula = formulas.find((f: any) => f.id === param.formulaId)
       return formula?.unit || ""
     } else if (param.parameterType === "Interlock") {
       return param.interlockDefinition?.yUnit || ""
@@ -71,7 +71,7 @@ export function validateAxisUnits(
 
 function checkUnitsCanBeConverted(
   units: string[],
-  unitConverterFormulas: ReturnType<typeof useUnitConverterFormulaStore>["formulas"]
+  unitConverterFormulas: any[]
 ): boolean {
   if (units.length < 2) return false
 
@@ -82,7 +82,7 @@ function checkUnitsCanBeConverted(
       const unit2 = units[j]
       
       // Check if there's a direct conversion between these units
-      const hasConversion = unitConverterFormulas.some(formula => {
+      const hasConversion = unitConverterFormulas.some((formula: any) => {
         const fromUnitMatches = formula.fromUnit.primarySymbol === unit1 || 
                                formula.fromUnit.aliases.includes(unit1)
         const toUnitMatches = formula.toUnit.primarySymbol === unit2 || 
@@ -105,7 +105,7 @@ function checkUnitsCanBeConverted(
 
 function findSuggestedUnit(
   units: string[],
-  unitConverterFormulas: ReturnType<typeof useUnitConverterFormulaStore>["formulas"]
+  unitConverterFormulas: any[]
 ): string | undefined {
   // Count frequency of each unit
   const unitFrequency = units.reduce((acc, unit) => {

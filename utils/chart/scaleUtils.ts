@@ -1,5 +1,14 @@
 import { ChartComponent } from "@/types"
-import { ChartDataPoint } from "@/components/charts/ChartPreview/utils"
+// Define ChartDataPoint interface here to avoid circular dependency
+interface ChartDataPoint {
+  x: number | string | Date
+  y: number
+  series: string
+  seriesIndex: number
+  timestamp: string
+  dataSourceId: string
+  dataSourceLabel: string
+}
 
 /**
  * Calculate consistent Y domain that includes both data and reference lines

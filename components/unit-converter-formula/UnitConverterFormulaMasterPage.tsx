@@ -20,9 +20,6 @@ export const UnitConverterFormulaMasterPage: React.FC = () => {
   const renderFormulaCard = (formula: ExtendedUnitConverterFormula) => (
     <UnitConverterFormulaCard
       formula={formula as UnitConverterFormula}
-      onEdit={() => {}} // Will be handled by MasterPageTemplate
-      onDuplicate={() => {}} // Will be handled by MasterPageTemplate
-      onDelete={() => {}} // Will be handled by MasterPageTemplate
     />
   );
 
@@ -54,8 +51,8 @@ export const UnitConverterFormulaMasterPage: React.FC = () => {
           updateItem: (item: ExtendedUnitConverterFormula) => store.updateFormula(item.id, item),
           deleteItem: store.deleteFormula,
           setSearchQuery: store.setSearchQuery || (() => {}),
-          setSelectedCategory: store.setSelectedCategory,
-          getCategories: store.getCategories
+          setSelectedCategory: (category: string) => store.setSelectedCategory(category as any),
+          getCategories: () => store.categories
         }}
       />
       <UnitConverterFormulaDialog />

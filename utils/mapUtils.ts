@@ -2,7 +2,7 @@ export function ensureMap<K, V>(data: unknown): Map<K, V> {
   try {
     if (data instanceof Map) return data
     if (Array.isArray(data)) return new Map(data)
-    if (data && typeof data === 'object') return new Map(Object.entries(data))
+    if (data && typeof data === 'object') return new Map(Object.entries(data)) as Map<K, V>
   } catch (error) {
     console.error('Error converting to Map:', error)
   }

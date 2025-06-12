@@ -3,12 +3,14 @@
 import React from 'react'
 import { Gauge } from 'lucide-react'
 import { useInterlockMasterStore } from '@/stores/useInterlockMasterStore'
-import { MasterPageTemplate, ColumnConfig } from '@/components/master-page'
+import { MasterPageTemplate, ColumnConfig, DialogProps } from '@/components/master-page'
+import { ComponentType } from 'react'
 import { InterlockEditDialog } from './InterlockEditDialog'
 import { InterlockMaster } from '@/types'
 
+
 // Column configuration
-const columns: ColumnConfig<InterlockMaster>[] = [
+const columns: ColumnConfig<ExtendedInterlockMaster>[] = [
   {
     key: 'plant_name',
     label: 'Plant',
@@ -78,7 +80,7 @@ export function InterlockMasterPageRefactored() {
         itemName: 'interlock',
         viewType: 'table',
         columns: columns as ColumnConfig<ExtendedInterlockMaster>[],
-        DialogComponent: InterlockEditDialog,
+        DialogComponent: InterlockEditDialog as unknown as ComponentType<DialogProps<ExtendedInterlockMaster>>,
         enableDuplicate: true,
         enableResize: true,
         searchPlaceholder: 'Search interlocks...'

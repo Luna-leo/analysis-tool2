@@ -64,7 +64,7 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
       
       
     xAxis = d3.axisBottom(xScale)
-      .tickFormat(d3.timeFormat("%Y-%m-%d %H:%M"))
+      .tickFormat((d) => d3.timeFormat("%Y-%m-%d %H:%M")(d as Date))
   } else if (editingChart.xAxisType === 'time') {
     // For elapsed time (already converted to minutes)
     
@@ -163,12 +163,12 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
       : (xScale as d3.ScaleLinear<number, number>).ticks()
       
     g.selectAll(".grid-line-x")
-      .data(xTicks)
+      .data(xTicks as any[])
       .enter()
       .append("line")
       .attr("class", "grid-line-x")
-      .attr("x1", d => xScale(d))
-      .attr("x2", d => xScale(d))
+      .attr("x1", d => xScale(d as any))
+      .attr("x2", d => xScale(d as any))
       .attr("y1", 0)
       .attr("y2", height)
       .style("stroke", "#e0e0e0")
