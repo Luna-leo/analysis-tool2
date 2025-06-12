@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useCallback, useState } from "react"
-import { LineChart, Edit, Copy, Trash2 } from "lucide-react"
+import { LineChart, Edit, Copy, Trash2, GripVertical } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -25,9 +25,29 @@ interface ChartCardProps {
   cardMinHeight: number
   chartMinHeight: number
   fileId: string
+  index: number
+  onDragStart?: (index: number) => void
+  onDragOver?: (e: React.DragEvent, index: number) => void
+  onDrop?: (e: React.DragEvent, index: number) => void
+  onDragEnd?: () => void
+  isDragging?: boolean
+  dragOverIndex?: number | null
 }
 
-export const ChartCard = React.memo(({ chart, isCompactLayout, cardMinHeight, chartMinHeight, fileId }: ChartCardProps) => {
+const ChartCardComponent = ({ 
+  chart, 
+  isCompactLayout, 
+  cardMinHeight, 
+  chartMinHeight, 
+  fileId,
+  index,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+  isDragging,
+  dragOverIndex
+}: ChartCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const { hoveredChart, setHoveredChart, setEditingChart, setEditModalOpen } = useUIStore()
   const { duplicateChart, deleteChart } = useFileStore()
@@ -53,23 +73,63 @@ export const ChartCard = React.memo(({ chart, isCompactLayout, cardMinHeight, ch
     setShowDeleteDialog(false)
   }, [deleteChart, fileId, chart.id])
 
+  const handleDragStart = useCallback((e: React.DragEvent) => {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', String(index))
+    if (onDragStart) {
+      onDragStart(index)
+    }
+  }, [index, onDragStart])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    onDragOver?.(e, index)
+  }, [index, onDragOver])
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    onDrop?.(e, index)
+  }, [index, onDrop])
+
+  const isDropTarget = dragOverIndex === index
+
   return (
     <div
       className={cn(
-        "bg-card border rounded-lg flex flex-col relative group overflow-hidden h-full"
+        "bg-card border rounded-lg flex flex-col relative group overflow-hidden h-full transition-all duration-200 cursor-move select-none",
+        isDragging && "opacity-50 scale-105",
+        isDropTarget && "ring-2 ring-primary ring-offset-2 bg-primary/5"
       )}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      draggable={true}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      onDragEnd={(e) => {
+        e.preventDefault()
+        onDragEnd?.()
+      }}
     >
+      {/* Drag Handle */}
+      <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+        <GripVertical className="h-5 w-5 text-muted-foreground" />
+      </div>
+
       {/* Edit, Duplicate and Delete Buttons - appear on hover */}
       {hoveredChart === chart.id && (
-        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+        <div 
+          className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+          onMouseDown={(e) => e.stopPropagation()}
+        >
           <Button
             variant="secondary"
             size="icon"
             className="h-8 w-8 rounded-full shadow-md"
             onClick={handleEdit}
             title="編集"
+            draggable={false}
           >
             <Edit className="h-4 w-4" />
           </Button>
@@ -79,6 +139,7 @@ export const ChartCard = React.memo(({ chart, isCompactLayout, cardMinHeight, ch
             className="h-8 w-8 rounded-full shadow-md"
             onClick={handleDuplicate}
             title="複製"
+            draggable={false}
           >
             <Copy className="h-4 w-4" />
           </Button>
@@ -88,6 +149,7 @@ export const ChartCard = React.memo(({ chart, isCompactLayout, cardMinHeight, ch
             className="h-8 w-8 rounded-full shadow-md hover:bg-destructive hover:text-destructive-foreground"
             onClick={handleDelete}
             title="削除"
+            draggable={false}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -95,7 +157,8 @@ export const ChartCard = React.memo(({ chart, isCompactLayout, cardMinHeight, ch
       )}
 
       <div
-        className="bg-white flex items-center justify-center flex-1 overflow-hidden min-h-0"
+        className="bg-white flex items-center justify-center flex-1 overflow-hidden min-h-0 pointer-events-none"
+        draggable={false}
       >
         <ChartPreviewGraph 
           editingChart={chart} 
@@ -123,4 +186,6 @@ export const ChartCard = React.memo(({ chart, isCompactLayout, cardMinHeight, ch
       </AlertDialog>
     </div>
   )
-})
+}
+
+export const ChartCard = ChartCardComponent

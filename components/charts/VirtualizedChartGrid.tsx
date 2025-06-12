@@ -7,6 +7,7 @@ import { FileNode, ChartSizes } from "@/types"
 import { ChartCard } from "./ChartCard"
 import { useLayoutStore } from "@/stores/useLayoutStore"
 import { useUIStore } from "@/stores/useUIStore"
+import { useFileStore } from "@/stores/useFileStore"
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver"
 
 interface VirtualizedChartGridProps {
@@ -21,6 +22,12 @@ interface VirtualizedChartCardProps {
   fileId: string
   index: number
   isVisible: boolean
+  onDragStart?: (index: number) => void
+  onDragOver?: (e: React.DragEvent, index: number) => void
+  onDrop?: (e: React.DragEvent, index: number) => void
+  onDragEnd?: () => void
+  isDragging?: boolean
+  dragOverIndex?: number | null
 }
 
 const VirtualizedChartCard = React.memo(({ 
@@ -30,7 +37,13 @@ const VirtualizedChartCard = React.memo(({
   chartMinHeight, 
   fileId,
   index,
-  isVisible
+  isVisible,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+  isDragging,
+  dragOverIndex
 }: VirtualizedChartCardProps) => {
   const ref = useRef<HTMLDivElement>(null)
   const [shouldRender, setShouldRender] = useState(false)
@@ -55,6 +68,13 @@ const VirtualizedChartCard = React.memo(({
           cardMinHeight={cardMinHeight}
           chartMinHeight={chartMinHeight}
           fileId={fileId}
+          index={index}
+          onDragStart={onDragStart}
+          onDragOver={onDragOver}
+          onDrop={onDrop}
+          onDragEnd={onDragEnd}
+          isDragging={isDragging}
+          dragOverIndex={dragOverIndex}
         />
       ) : (
         <div 
@@ -91,8 +111,12 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     chartMinHeight: 80,
     isCompactLayout: false,
   })
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+  const [localCharts, setLocalCharts] = useState(file.charts || [])
   
   const { layoutSettingsMap } = useLayoutStore()
+  const { updateFileCharts } = useFileStore()
   const currentSettings = layoutSettingsMap[file.id] || {
     showFileName: true,
     showDataSources: true,
@@ -104,6 +128,61 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
   // Track visible charts
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 10 })
   
+  // Update local charts when file.charts changes
+  useEffect(() => {
+    setLocalCharts(file.charts || [])
+  }, [file.charts])
+
+  // Drag and drop handlers
+  const handleDragStart = useCallback((index: number) => {
+    setDraggedIndex(index)
+  }, [])
+
+  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
+    e.preventDefault()
+    setDragOverIndex(prevIndex => {
+      if (draggedIndex !== null && draggedIndex !== index) {
+        return index
+      }
+      return prevIndex
+    })
+  }, [draggedIndex])
+
+  const handleDrop = useCallback((e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault()
+    
+    try {
+      if (draggedIndex === null || draggedIndex === dropIndex) {
+        return
+      }
+
+      const newCharts = [...localCharts]
+      const draggedChart = newCharts[draggedIndex]
+      
+      // Remove dragged item
+      newCharts.splice(draggedIndex, 1)
+      
+      // Insert at new position
+      const insertIndex = draggedIndex < dropIndex ? dropIndex - 1 : dropIndex
+      newCharts.splice(insertIndex, 0, draggedChart)
+      
+      // Update both local state and store
+      setLocalCharts(newCharts)
+      updateFileCharts(file.id, newCharts)
+    } catch (error) {
+      console.error('Error during drop operation:', error)
+    } finally {
+      // Always reset drag state
+      setDraggedIndex(null)
+      setDragOverIndex(null)
+    }
+  }, [draggedIndex, localCharts, file.id, updateFileCharts])
+
+  const handleDragEnd = useCallback(() => {
+    setDraggedIndex(null)
+    setDragOverIndex(null)
+  }, [])
+
   const updateVisibleRange = useCallback(() => {
     if (!gridRef.current || !contentRef.current) return
     
@@ -113,7 +192,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     
     // Calculate rough item height based on chart sizes
     const itemHeight = chartSizes.cardMinHeight + (chartSizes.isCompactLayout ? 12 : 24)
-    const totalRows = Math.ceil((file.charts?.length || 0) / currentSettings.columns)
+    const totalRows = Math.ceil((localCharts.length || 0) / currentSettings.columns)
     
     // Calculate visible range with buffer
     const visibleStart = Math.floor(scrollTop / itemHeight) * currentSettings.columns
@@ -122,10 +201,10 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     // Add buffer for smoother scrolling
     const bufferSize = currentSettings.columns * 2
     const start = Math.max(0, visibleStart - bufferSize)
-    const end = Math.min(file.charts?.length || 0, visibleEnd + bufferSize)
+    const end = Math.min(localCharts.length || 0, visibleEnd + bufferSize)
     
     setVisibleRange({ start, end })
-  }, [file.charts?.length, currentSettings.columns, chartSizes])
+  }, [localCharts.length, currentSettings.columns, chartSizes])
   
   // Update chart sizes
   useEffect(() => {
@@ -175,7 +254,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     )
   }
   
-  const charts = file.charts
+  const charts = localCharts
   const totalRows = Math.ceil(charts.length / currentSettings.columns)
   const estimatedTotalHeight = totalRows * (chartSizes.cardMinHeight + (chartSizes.isCompactLayout ? 12 : 24))
   
@@ -228,18 +307,27 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
                 gridTemplateColumns: `repeat(${currentSettings.columns}, 1fr)`,
                 gap: chartSizes.isCompactLayout ? "12px" : "24px",
               }}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => e.preventDefault()}
+              onDragEnd={handleDragEnd}
             >
               {visibleCharts.map(({ chart, index, isVisible }) => (
-                <VirtualizedChartCard
-                  key={chart.id}
-                  chart={chart}
-                  isCompactLayout={chartSizes.isCompactLayout}
-                  cardMinHeight={chartSizes.cardMinHeight}
-                  chartMinHeight={chartSizes.chartMinHeight}
-                  fileId={file.id}
-                  index={index}
-                  isVisible={isVisible}
-                />
+                  <VirtualizedChartCard
+                    key={chart.id}
+                    chart={chart}
+                    isCompactLayout={chartSizes.isCompactLayout}
+                    cardMinHeight={chartSizes.cardMinHeight}
+                    chartMinHeight={chartSizes.chartMinHeight}
+                    fileId={file.id}
+                    index={index}
+                    isVisible={isVisible}
+                    onDragStart={handleDragStart}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    onDragEnd={handleDragEnd}
+                    isDragging={draggedIndex === index}
+                    dragOverIndex={dragOverIndex}
+                  />
               ))}
             </div>
           </div>

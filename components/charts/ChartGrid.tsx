@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useRef, useState } from "react"
+import React, { useEffect, useRef, useState, useCallback } from "react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { FileNode, ChartSizes } from "@/types"
@@ -27,8 +27,11 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
     chartMinHeight: 80,
     isCompactLayout: false,
   })
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
+  const [localCharts, setLocalCharts] = useState(file.charts || [])
 
-  const { activeTab } = useFileStore()
+  const { activeTab, updateFileCharts } = useFileStore()
   const { layoutSettingsMap } = useLayoutStore()
 
   const currentSettings = layoutSettingsMap[file.id] || {
@@ -68,6 +71,61 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
       }
     }
   }, [layoutSettingsMap, activeTab, file.id, currentSettings])
+
+  // Update local charts when file.charts changes
+  useEffect(() => {
+    setLocalCharts(file.charts || [])
+  }, [file.charts])
+
+  // Drag and drop handlers
+  const handleDragStart = useCallback((index: number) => {
+    setDraggedIndex(index)
+  }, [])
+
+  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
+    e.preventDefault()
+    setDragOverIndex(prevIndex => {
+      if (draggedIndex !== null && draggedIndex !== index) {
+        return index
+      }
+      return prevIndex
+    })
+  }, [draggedIndex])
+
+  const handleDrop = useCallback((e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault()
+    
+    try {
+      if (draggedIndex === null || draggedIndex === dropIndex) {
+        return
+      }
+
+      const newCharts = [...localCharts]
+      const draggedChart = newCharts[draggedIndex]
+      
+      // Remove dragged item
+      newCharts.splice(draggedIndex, 1)
+      
+      // Insert at new position
+      const insertIndex = draggedIndex < dropIndex ? dropIndex - 1 : dropIndex
+      newCharts.splice(insertIndex, 0, draggedChart)
+      
+      // Update both local state and store
+      setLocalCharts(newCharts)
+      updateFileCharts(file.id, newCharts)
+    } catch (error) {
+      console.error('Error during drop operation:', error)
+    } finally {
+      // Always reset drag state
+      setDraggedIndex(null)
+      setDragOverIndex(null)
+    }
+  }, [draggedIndex, localCharts, file.id, updateFileCharts])
+
+  const handleDragEnd = useCallback(() => {
+    setDraggedIndex(null)
+    setDragOverIndex(null)
+  }, [])
 
   // Check if this is a CSV Import tab
   if (file.id === 'csv-import') {
@@ -117,12 +175,13 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
     )
   }
 
-  const charts = file.charts
+  const charts = localCharts
   const totalItems = charts.length
 
   // Use virtualized grid for large datasets
   const VIRTUALIZATION_THRESHOLD = 10
   const shouldUseVirtualization = totalItems > VIRTUALIZATION_THRESHOLD
+  
 
   if (shouldUseVirtualization) {
     return <VirtualizedChartGrid file={file} />
@@ -157,16 +216,26 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
             gridTemplateColumns: `repeat(${currentSettings.columns}, 1fr)`,
             gap: chartSizes.isCompactLayout ? "12px" : "24px",
           }}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => e.preventDefault()}
+          onDragEnd={handleDragEnd}
         >
-          {charts.map((chart) => (
-            <ChartCard
-              key={chart.id}
-              chart={chart}
-              isCompactLayout={chartSizes.isCompactLayout}
-              cardMinHeight={chartSizes.cardMinHeight}
-              chartMinHeight={chartSizes.chartMinHeight}
-              fileId={file.id}
-            />
+          {charts.map((chart, index) => (
+              <ChartCard
+                key={chart.id}
+                chart={chart}
+                index={index}
+                isCompactLayout={chartSizes.isCompactLayout}
+                cardMinHeight={chartSizes.cardMinHeight}
+                chartMinHeight={chartSizes.chartMinHeight}
+                fileId={file.id}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                onDragEnd={handleDragEnd}
+                isDragging={draggedIndex === index}
+                dragOverIndex={dragOverIndex}
+              />
           ))}
         </div>
       </div>
