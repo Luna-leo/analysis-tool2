@@ -72,7 +72,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   }, [])
 
   useEffect(() => {
-    if (!svgRef.current) return
+    if (!svgRef.current || isLoadingData) return
 
     const svg = d3.select(svgRef.current)
     
@@ -104,7 +104,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       refLinesLayer.style("pointer-events", "none")
     }
 
-  }, [chartConfigWithoutRefLines, chartData, dimensions])
+  }, [chartConfigWithoutRefLines, chartData, dimensions, isLoadingData])
 
   // Clean up tooltips on unmount
   useEffect(() => {
@@ -116,26 +116,28 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   return (
     <div 
       ref={containerRef} 
-      className="w-full h-full relative"
+      className="w-full h-full relative overflow-hidden"
     >
       {isLoadingData && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
+        <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
           <div className="text-sm text-muted-foreground">Loading data...</div>
         </div>
       )}
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
+        <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
           <div className="text-sm text-destructive">Error loading data</div>
         </div>
       )}
-      <svg ref={svgRef} width={dimensions.width} height={dimensions.height} className="w-full h-full" />
-      <ReferenceLines
-        svgRef={svgRef}
-        editingChart={editingChart}
-        setEditingChart={setEditingChart}
-        scalesRef={scalesRef}
-        dimensions={dimensions}
-      />
+      <svg ref={svgRef} width={dimensions.width} height={dimensions.height} className="w-full h-full" style={{ display: isLoadingData ? 'none' : 'block' }} />
+      {!isLoadingData && (
+        <ReferenceLines
+          svgRef={svgRef}
+          editingChart={editingChart}
+          setEditingChart={setEditingChart}
+          scalesRef={scalesRef}
+          dimensions={dimensions}
+        />
+      )}
     </div>
   )
 })

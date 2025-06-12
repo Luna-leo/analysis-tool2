@@ -37,14 +37,9 @@ const VirtualizedChartCard = React.memo(({
   
   useEffect(() => {
     if (isVisible && !shouldRender) {
-      // Delay rendering to avoid blocking the main thread
-      const timeout = setTimeout(() => {
-        setShouldRender(true)
-      }, index * 50) // Stagger rendering
-      
-      return () => clearTimeout(timeout)
+      setShouldRender(true)
     }
-  }, [isVisible, shouldRender, index])
+  }, [isVisible, shouldRender])
   
   return (
     <div 
@@ -71,7 +66,7 @@ const VirtualizedChartCard = React.memo(({
             minHeight: `${cardMinHeight}px`,
           }}
         >
-          <div className="animate-pulse">
+          <div>
             <div className="h-6 bg-muted rounded w-3/4 mb-4"></div>
             <div 
               className="bg-muted rounded"
