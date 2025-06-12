@@ -10,6 +10,9 @@ import {
 import { FileNode } from "@/types"
 import { useFileStore } from "@/stores/useFileStore"
 import { LayoutSettings } from "./LayoutSettings"
+import { Plus } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { useUIStore } from "@/stores/useUIStore"
 
 interface BreadcrumbNavigationProps {
   activeTab: string
@@ -81,9 +84,31 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
           </BreadcrumbList>
         </Breadcrumb>
         
-        {/* Layout Settings - show only for graph pages */}
+        {/* Layout Settings and New Chart button - show only for graph pages */}
         {isGraphPage && (
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                const uiStore = useUIStore.getState()
+                uiStore.setEditingChart({
+                  id: `chart_${Date.now()}`,
+                  title: "新しいチャート",
+                  dataSources: [],
+                  parameters: [],
+                  referenceLines: [],
+                  thresholdPoints: [],
+                  searchConditions: [],
+                  fileId: activeTab
+                })
+                uiStore.setEditModalOpen(true)
+              }}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              新規チャート
+            </Button>
             <LayoutSettings fileId={activeTab} />
           </div>
         )}

@@ -3,7 +3,7 @@ import { devtools, subscribeWithSelector } from 'zustand/middleware'
 import type { FileNode, ChartComponent } from '@/types'
 import { mockFileTree } from '@/data/mockData'
 import { useGraphStateStore } from './useGraphStateStore'
-import { traverseAndUpdate, findNodeById, removeNodeById, addNodeToParent } from '@/utils/treeUtils'
+import { traverseAndUpdate, findNodeById, addNodeToParent } from '@/utils/treeUtils'
 import { ChartOperations } from '@/services/chartOperations'
 
 interface OpenTab extends FileNode {
