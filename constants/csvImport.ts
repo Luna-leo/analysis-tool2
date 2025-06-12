@@ -65,11 +65,11 @@ export const CSV_COLUMN_REQUIREMENTS = {
     required: ['timestamp', 'tag_name', 'value', 'quality'],
     optional: ['unit', 'description'],
   },
-  ASC: {
+  ACS: {
     required: ['datetime', 'parameter', 'measurement', 'status'],
     optional: ['remarks'],
   },
-  TOMONI: {
+  CHINAMI: {
     required: ['time', 'signal_id', 'data', 'valid'],
     optional: ['notes'],
   },

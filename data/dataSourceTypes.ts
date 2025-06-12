@@ -33,9 +33,9 @@ export const DATA_SOURCE_CONFIGS: Record<CSVDataSourceType, DataSourceConfig> = 
       quality: 'quality'
     }
   },
-  ASC: {
-    id: "ASC",
-    name: "ASC",
+  ACS: {
+    id: "ACS",
+    name: "ACS",
     description: "System Control Application data source",
     columns: {
       required: ['datetime', 'parameter', 'measurement', 'status'],
@@ -48,9 +48,9 @@ export const DATA_SOURCE_CONFIGS: Record<CSVDataSourceType, DataSourceConfig> = 
       quality: 'status'
     }
   },
-  TOMONI: {
-    id: "TOMONI",
-    name: "TOMONI",
+  CHINAMI: {
+    id: "CHINAMI",
+    name: "CHINAMI",
     description: "Industrial Motion data source",
     columns: {
       required: ['time', 'signal_id', 'data', 'valid'],
