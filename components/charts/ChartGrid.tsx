@@ -133,17 +133,21 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
       <div className="p-6">
         {/* Header */}
         <div className="mb-6">
-          {currentSettings.showFileName && <h2 className="text-2xl font-bold mb-2">{file.name}</h2>}
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              {currentSettings.showFileName && <h2 className="text-2xl font-bold mb-2">{file.name}</h2>}
 
-          {currentSettings.showDataSources && file.dataSources && file.dataSources.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {file.dataSources.map((source, index) => (
-                <Badge key={index} variant="secondary" className="text-xs">
-                  {source}
-                </Badge>
-              ))}
+              {currentSettings.showDataSources && file.dataSources && file.dataSources.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {file.dataSources.map((source, index) => (
+                    <Badge key={index} variant="secondary" className="text-xs">
+                      {source}
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
 
         {/* Grid */}

@@ -199,17 +199,21 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
         <div className="p-6">
           {/* Header */}
           <div className="mb-6 flex-shrink-0">
-            {currentSettings.showFileName && <h2 className="text-2xl font-bold mb-2">{file.name}</h2>}
-            
-            {currentSettings.showDataSources && file.dataSources && file.dataSources.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {file.dataSources.map((source, index) => (
-                  <Badge key={index} variant="secondary" className="text-xs">
-                    {source}
-                  </Badge>
-                ))}
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                {currentSettings.showFileName && <h2 className="text-2xl font-bold mb-2">{file.name}</h2>}
+                
+                {currentSettings.showDataSources && file.dataSources && file.dataSources.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {file.dataSources.map((source, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {source}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
+            </div>
           </div>
           
           {/* Virtualized Grid */}

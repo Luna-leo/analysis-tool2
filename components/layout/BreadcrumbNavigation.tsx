@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useState } from "react"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -10,9 +10,10 @@ import {
 import { FileNode } from "@/types"
 import { useFileStore } from "@/stores/useFileStore"
 import { LayoutSettings } from "./LayoutSettings"
-import { Plus } from "lucide-react"
+import { Plus, Settings2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useUIStore } from "@/stores/useUIStore"
+import { BulkSettingsDrawer } from "@/components/charts/BulkSettingsDrawer"
 
 interface BreadcrumbNavigationProps {
   activeTab: string
@@ -44,6 +45,8 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
 }) => {
   const { fileTree } = useFileStore()
   const currentFile = openTabs.find((tab) => tab.id === activeTab)
+  const [isBulkSettingsOpen, setIsBulkSettingsOpen] = useState(false)
+  
   if (!currentFile) return null
 
   const filePath = getFilePath(currentFile.id, fileTree)
@@ -110,9 +113,26 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
               新規チャート
             </Button>
             <LayoutSettings fileId={activeTab} />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsBulkSettingsOpen(true)}
+              title="一括設定"
+            >
+              <Settings2 className="h-4 w-4" />
+            </Button>
           </div>
         )}
       </div>
+      
+      {/* Bulk Settings Drawer */}
+      {isGraphPage && currentFile && (
+        <BulkSettingsDrawer
+          open={isBulkSettingsOpen}
+          onOpenChange={setIsBulkSettingsOpen}
+          file={currentFile as FileNode}
+        />
+      )}
     </div>
   )
 }
