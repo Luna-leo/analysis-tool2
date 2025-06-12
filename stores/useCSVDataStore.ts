@@ -196,16 +196,53 @@ export const useCSVDataStore = create<CSVDataStore>()(
       // Custom storage for Map serialization
       storage: {
         getItem: (name) => {
-          const str = localStorage.getItem(name)
-          if (!str) return null
-          
           try {
+            const str = localStorage.getItem(name)
+            if (!str) return null
+            
             const parsed = JSON.parse(str)
+            
+            // Handle different data structures
+            let datasets: Map<string, CSVDataSet>
+            
+            // Direct state structure (new Zustand format)
+            if (parsed.datasets !== undefined) {
+              if (Array.isArray(parsed.datasets)) {
+                datasets = new Map(parsed.datasets)
+              } else {
+                datasets = new Map()
+              }
+              
+              return {
+                state: {
+                  datasets
+                },
+                version: parsed.version || 0
+              }
+            }
+            
+            // Nested state structure (old format)
+            if (parsed.state?.datasets !== undefined) {
+              if (Array.isArray(parsed.state.datasets)) {
+                datasets = new Map(parsed.state.datasets)
+              } else {
+                datasets = new Map()
+              }
+              
+              return {
+                state: {
+                  datasets
+                },
+                version: parsed.version || 0
+              }
+            }
+            
+            // Fallback
             return {
               state: {
-                ...parsed.state,
-                datasets: new Map(parsed.state.datasets || [])
-              }
+                datasets: new Map()
+              },
+              version: 0
             }
           } catch (error) {
             console.error('Error loading CSV data store:', error)
