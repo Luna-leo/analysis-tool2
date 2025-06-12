@@ -75,6 +75,9 @@ interface AnalysisActions {
   setEditModalOpen: (open: boolean) => void
   setDraggedTab: (tabId: string | null) => void
   setDragOverTab: (tabId: string | null) => void
+
+  // Chart Actions
+  duplicateChart: (fileId: string, chartId: string) => void
 }
 
 export type AnalysisStore = AnalysisState & AnalysisActions
@@ -156,5 +159,8 @@ export const useAnalysisStore = (): AnalysisStore => {
     setHoveredChart: uiStore.setHoveredChart,
     setEditingChart: uiStore.setEditingChart,
     setEditModalOpen: uiStore.setEditModalOpen,
+
+    // Chart Actions
+    duplicateChart: fileStore.duplicateChart,
   }
 }

@@ -40,6 +40,8 @@ interface FileActions {
   setDraggedTab: (tabId: string | null) => void
   setDragOverTab: (tabId: string | null) => void
   updateFileCharts: (fileId: string, charts: ChartComponent[]) => void
+  duplicateChart: (fileId: string, chartId: string) => void
+  deleteChart: (fileId: string, chartId: string) => void
 }
 
 export type FileStore = FileState & FileActions
@@ -340,6 +342,96 @@ export const useFileStore = create<FileStore>()(
         const newOpenTabs = state.openTabs.map(tab => 
           tab.id === fileId ? { ...tab, charts } : tab
         )
+
+        return {
+          fileTree: updateChartsInTree(state.fileTree),
+          openTabs: newOpenTabs
+        }
+      }),
+
+      duplicateChart: (fileId, chartId) => set((state) => {
+        // Find the chart to duplicate and its index
+        const findChartAndIndex = (nodes: FileNode[]): { chart: ChartComponent | undefined, index: number } => {
+          for (const node of nodes) {
+            if (node.id === fileId && node.charts) {
+              const index = node.charts.findIndex(c => c.id === chartId)
+              if (index !== -1) {
+                return { chart: node.charts[index], index }
+              }
+            }
+            if (node.children) {
+              const found = findChartAndIndex(node.children)
+              if (found.chart) return found
+            }
+          }
+          return { chart: undefined, index: -1 }
+        }
+
+        const { chart: chartToDuplicate, index } = findChartAndIndex(state.fileTree)
+        if (!chartToDuplicate) return state
+
+        // Create a new chart with a unique ID
+        const newChart: ChartComponent = {
+          ...chartToDuplicate,
+          id: `chart_${Date.now()}`,
+          title: `${chartToDuplicate.title} (コピー)`
+        }
+
+        // Update charts in fileTree - insert after the original chart
+        const updateChartsInTree = (nodes: FileNode[]): FileNode[] => {
+          return nodes.map(node => {
+            if (node.id === fileId && node.charts) {
+              const newCharts = [...node.charts]
+              newCharts.splice(index + 1, 0, newChart) // Insert after the original
+              return { ...node, charts: newCharts }
+            }
+            if (node.children) {
+              return { ...node, children: updateChartsInTree(node.children) }
+            }
+            return node
+          })
+        }
+
+        // Update charts in openTabs - insert after the original chart
+        const newOpenTabs = state.openTabs.map(tab => {
+          if (tab.id === fileId && tab.charts) {
+            const newCharts = [...tab.charts]
+            const tabIndex = tab.charts.findIndex(c => c.id === chartId)
+            if (tabIndex !== -1) {
+              newCharts.splice(tabIndex + 1, 0, newChart) // Insert after the original
+            }
+            return { ...tab, charts: newCharts }
+          }
+          return tab
+        })
+
+        return {
+          fileTree: updateChartsInTree(state.fileTree),
+          openTabs: newOpenTabs
+        }
+      }),
+
+      deleteChart: (fileId, chartId) => set((state) => {
+        // Update charts in fileTree
+        const updateChartsInTree = (nodes: FileNode[]): FileNode[] => {
+          return nodes.map(node => {
+            if (node.id === fileId && node.charts) {
+              return { ...node, charts: node.charts.filter(c => c.id !== chartId) }
+            }
+            if (node.children) {
+              return { ...node, children: updateChartsInTree(node.children) }
+            }
+            return node
+          })
+        }
+
+        // Update charts in openTabs
+        const newOpenTabs = state.openTabs.map(tab => {
+          if (tab.id === fileId && tab.charts) {
+            return { ...tab, charts: tab.charts.filter(c => c.id !== chartId) }
+          }
+          return tab
+        })
 
         return {
           fileTree: updateChartsInTree(state.fileTree),

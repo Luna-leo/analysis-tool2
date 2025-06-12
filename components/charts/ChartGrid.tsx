@@ -170,6 +170,7 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
                 isCompactLayout={chartSizes.isCompactLayout}
                 cardMinHeight={chartSizes.cardMinHeight}
                 chartMinHeight={chartSizes.chartMinHeight}
+                fileId={file.id}
               />
             ))}
           </div>

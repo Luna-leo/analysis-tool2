@@ -140,7 +140,7 @@ export const mockFileTree: FileNode[] = [
         name: "Speed Up",
         type: "file",
         dataSources: ["Turbine Control System", "SCADA", "Vibration Monitor"],
-        charts: generateTurbineCharts("speedup", 60),
+        charts: generateTurbineCharts("speedup", 16),
       },
       {
         id: "3",
