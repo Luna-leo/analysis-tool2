@@ -2,7 +2,6 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { StandardizedCSVData } from '@/types/csv-data'
 import { ensureMap } from '@/utils/mapUtils'
-import { cleanParameterNames } from '@/utils/parameterUtils'
 import { transformToDataPoints, extractParameterData, DataPoint } from '@/utils/dataTransformUtils'
 
 export interface CSVMetadata {
@@ -49,8 +48,6 @@ interface CSVDataStore {
   getAvailableParameters: (periodId: string) => { name: string; unit: string }[]
 }
 
-// Type alias for better type safety
-type DatasetsMap = Map<string, CSVDataSet>
 
 export const useCSVDataStore = create<CSVDataStore>()(
   persist(
@@ -86,8 +83,8 @@ export const useCSVDataStore = create<CSVDataStore>()(
           const headers = Object.keys(first).filter(k => !excludedKeys.includes(k))
           headers.forEach((header) => {
             // Find matching parameter in metadata
-            const paramIndex = metadata.parameterInfo.parameters.findIndex((p: string) => p === header)
-            if (paramIndex !== -1 && metadata.parameterInfo.units[paramIndex]) {
+            const paramIndex = metadata.parameterInfo?.parameters.findIndex((p: string) => p === header) ?? -1
+            if (paramIndex !== -1 && metadata.parameterInfo?.units?.[paramIndex]) {
               units[header] = metadata.parameterInfo.units[paramIndex]
             }
           })
@@ -196,25 +193,36 @@ export const useCSVDataStore = create<CSVDataStore>()(
     {
       name: 'csv-data-storage',
       version: 1,
-      // Custom serialization for Map
-      serialize: (state) => JSON.stringify({
-        ...state,
-        datasets: Array.from(state.datasets.entries())
-      }),
-      deserialize: (str) => {
-        try {
-          const parsed = JSON.parse(str)
-          const datasets = new Map(parsed.datasets || [])
-          return {
-            ...parsed,
-            datasets
+      // Custom storage for Map serialization
+      storage: {
+        getItem: (name) => {
+          const str = localStorage.getItem(name)
+          if (!str) return null
+          
+          try {
+            const parsed = JSON.parse(str)
+            return {
+              state: {
+                ...parsed.state,
+                datasets: new Map(parsed.state.datasets || [])
+              }
+            }
+          } catch (error) {
+            console.error('Error loading CSV data store:', error)
+            return null
           }
-        } catch (error) {
-          console.error('Error deserializing CSV data store:', error)
-          return {
-            datasets: new Map()
+        },
+        setItem: (name, value) => {
+          const serialized = {
+            ...value,
+            state: {
+              ...value.state,
+              datasets: Array.from(value.state.datasets.entries())
+            }
           }
-        }
+          localStorage.setItem(name, JSON.stringify(serialized))
+        },
+        removeItem: (name) => localStorage.removeItem(name)
       }
     }
   )

@@ -49,12 +49,22 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     const params: string[] = []
     // For datetime type, we don't need to fetch x parameter as we'll use timestamp
     if (editingChart.xAxisType !== 'datetime' && editingChart.xParameter) {
-      params.push(editingChart.xParameter)
+      // Clean parameter name by removing unit part
+      const cleanXParam = editingChart.xParameter.includes('|') 
+        ? editingChart.xParameter.split('|')[0] 
+        : editingChart.xParameter
+      params.push(cleanXParam)
     }
     
     editingChart.yAxisParams.forEach(yParam => {
-      if (yParam.parameter && !params.includes(yParam.parameter)) {
-        params.push(yParam.parameter)
+      if (yParam.parameter) {
+        // Clean parameter name by removing unit part
+        const cleanParam = yParam.parameter.includes('|') 
+          ? yParam.parameter.split('|')[0] 
+          : yParam.parameter
+        if (!params.includes(cleanParam)) {
+          params.push(cleanParam)
+        }
       }
     })
     return params
@@ -110,7 +120,12 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           if (csvData && csvData.length > 0) {
             csvData.forEach(point => {
               // Create data point for scatter plot
-              const rawXValue = point[editingChart.xParameter!]
+              // Clean x parameter name for data lookup
+              const cleanXParam = editingChart.xParameter?.includes('|') 
+                ? editingChart.xParameter.split('|')[0] 
+                : editingChart.xParameter
+              
+              const rawXValue = cleanXParam ? point[cleanXParam] : undefined
               const xValue = convertToXValue(
                 rawXValue, 
                 editingChart.xAxisType || 'datetime',
@@ -119,7 +134,12 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               
               
               editingChart.yAxisParams?.forEach((yParam, index) => {
-                let yValue = point[yParam.parameter]
+                // Clean parameter name for data lookup
+                const cleanParam = yParam.parameter.includes('|') 
+                  ? yParam.parameter.split('|')[0] 
+                  : yParam.parameter
+                
+                let yValue = point[cleanParam]
                 
                 // Ensure y value is numeric
                 if (typeof yValue === 'string' && !isNaN(Number(yValue))) {
@@ -130,7 +150,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
                   data.push({
                     x: xValue,
                     y: Number(yValue),
-                    series: yParam.parameter,
+                    series: yParam.parameter, // Keep original for display
                     seriesIndex: index,
                     timestamp: point.timestamp,
                     dataSourceId: dataSource.id,
