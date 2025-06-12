@@ -11,7 +11,7 @@ import {
   generateMockData
 } from "./ChartPreview/index"
 import { useOptimizedChart } from "@/hooks/useOptimizedChart"
-import { hideAllTooltips } from "@/utils/chartTooltip"
+import { hideAllTooltips, hideTooltip } from "@/utils/chartTooltip"
 
 interface ChartPreviewGraphProps {
   editingChart: ChartComponent
@@ -74,9 +74,6 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   useEffect(() => {
     if (!svgRef.current) return
 
-    // Hide any existing tooltips when chart changes
-    hideAllTooltips()
-
     const svg = d3.select(svgRef.current)
     
     // Only clear the main chart group, preserve reference lines layer
@@ -101,8 +98,11 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       renderEmptyChart({ g, width, height, chartType: "scatter", editingChart, scalesRef })
     }
     
-    // Ensure reference lines layer is always on top
-    svg.select(".reference-lines-layer").raise()
+    // Ensure proper layering: reference lines should not block interaction
+    const refLinesLayer = svg.select(".reference-lines-layer")
+    if (!refLinesLayer.empty()) {
+      refLinesLayer.style("pointer-events", "none")
+    }
 
   }, [chartConfigWithoutRefLines, chartData, dimensions])
 
@@ -117,12 +117,6 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     <div 
       ref={containerRef} 
       className="w-full h-full relative"
-      onClick={(e) => {
-        // If clicked on empty space, close all tooltips
-        if (e.target === e.currentTarget || (e.target as any).tagName === 'svg') {
-          hideAllTooltips()
-        }
-      }}
     >
       {isLoadingData && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">

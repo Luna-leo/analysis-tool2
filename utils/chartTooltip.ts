@@ -9,6 +9,7 @@ export function showTooltip(
   content: string,
   isPinned = false
 ): d3.Selection<HTMLDivElement, unknown, HTMLElement, any> {
+  
   // If not pinned, remove any existing non-pinned tooltip
   if (!isPinned && currentTooltip) {
     currentTooltip.remove()
@@ -19,17 +20,18 @@ export function showTooltip(
   const tooltip = d3.select("body")
     .append("div")
     .attr("class", isPinned ? "chart-tooltip-pinned" : "chart-tooltip")
-    .style("position", "absolute")
+    .style("position", "fixed")
     .style("background", "rgba(0, 0, 0, 0.9)")
     .style("color", "white")
     .style("padding", "10px")
     .style("border-radius", "4px")
     .style("font-size", "12px")
-    .style("pointer-events", isPinned ? "auto" : "none")
-    .style("z-index", isPinned ? 1001 : 1000)
-    .style("opacity", 0)
+    .style("pointer-events", "none")
+    .style("z-index", 10000)
     .style("box-shadow", "0 2px 8px rgba(0,0,0,0.3)")
-    .style("border", isPinned ? "1px solid #666" : "none")
+    .style("border", "1px solid #333")
+    .style("min-width", "200px")
+    .style("max-width", "300px")
     
   // Add close button for pinned tooltip
   if (isPinned) {
@@ -49,12 +51,16 @@ export function showTooltip(
   }
     
   // Position and show
+  // Use clientX/clientY for fixed positioning
+  // Position tooltip to the right and below cursor to avoid interference
+  const x = event.clientX + 15
+  const y = event.clientY + 15
+  
   tooltip
-    .style("left", (event.pageX + 10) + "px")
-    .style("top", (event.pageY - 10) + "px")
-    .transition()
-    .duration(200)
-    .style("opacity", 1)
+    .style("left", x + "px")
+    .style("top", y + "px")
+    .style("display", "block")
+    .style("opacity", "1")
   
   if (isPinned) {
     pinnedTooltip = tooltip
@@ -80,10 +86,10 @@ export function togglePinnedTooltip(event: MouseEvent, content: string): void {
 }
 
 export function updateTooltipPosition(event: MouseEvent): void {
-  if (currentTooltip && !pinnedTooltip) {
+  if (currentTooltip) {
     currentTooltip
-      .style("left", (event.pageX + 10) + "px")
-      .style("top", (event.pageY - 10) + "px")
+      .style("left", (event.clientX + 15) + "px")
+      .style("top", (event.clientY + 15) + "px")
   }
 }
 

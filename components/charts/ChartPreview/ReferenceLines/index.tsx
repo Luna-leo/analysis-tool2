@@ -58,6 +58,7 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
         .append<SVGGElement>("g")
         .attr("class", "reference-lines-layer")
         .attr("transform", `translate(${margin.left},${margin.top})`)
+        .style("pointer-events", "none")
     }
     
     // Always bring reference lines layer to front

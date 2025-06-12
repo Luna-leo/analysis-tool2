@@ -3,7 +3,7 @@ import { ChartComponent } from "@/types"
 import { formatXValue, getXValueForScale } from "@/utils/chartAxisUtils"
 import { calculateXAxisPosition } from "@/utils/chart/axisPositioning"
 import { calculateConsistentYDomain } from "@/utils/chart/scaleUtils"
-import { showTooltip, togglePinnedTooltip, hideAllTooltips } from "@/utils/chartTooltip"
+import { showTooltip, updateTooltipPosition, hideTooltip, hideAllTooltips } from "@/utils/chartTooltip"
 
 interface RenderScatterPlotProps {
   g: d3.Selection<SVGGElement, unknown, null, undefined>
@@ -37,26 +37,8 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
   const svg = g.node()?.ownerSVGElement
   if (svg) {
     d3.select(svg)
-      .on("wheel.tooltip", () => hideAllTooltips())
-      .on("mousedown.tooltip", (event) => {
-        // Only hide if it's a drag (not a click)
-        const startX = event.clientX
-        const startY = event.clientY
-        
-        const handleMouseMove = (e: MouseEvent) => {
-          if (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5) {
-            hideAllTooltips()
-            window.removeEventListener("mousemove", handleMouseMove)
-          }
-        }
-        
-        const handleMouseUp = () => {
-          window.removeEventListener("mousemove", handleMouseMove)
-          window.removeEventListener("mouseup", handleMouseUp)
-        }
-        
-        window.addEventListener("mousemove", handleMouseMove)
-        window.addEventListener("mouseup", handleMouseUp)
+      .on("wheel.tooltip", () => {
+        hideTooltip()
       })
   }
 
@@ -173,6 +155,48 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
       .text(editingChart.yLabel)
   }
 
+  // Add grid lines if enabled
+  if (editingChart.yAxisParams?.some(param => true)) { // Assuming grid is enabled by default
+    // Vertical grid lines
+    const xTicks = editingChart.xAxisType === 'datetime' 
+      ? (xScale as d3.ScaleTime<number, number>).ticks()
+      : (xScale as d3.ScaleLinear<number, number>).ticks()
+      
+    g.selectAll(".grid-line-x")
+      .data(xTicks)
+      .enter()
+      .append("line")
+      .attr("class", "grid-line-x")
+      .attr("x1", d => xScale(d))
+      .attr("x2", d => xScale(d))
+      .attr("y1", 0)
+      .attr("y2", height)
+      .style("stroke", "#e0e0e0")
+      .style("stroke-width", 0.5)
+      .style("stroke-dasharray", "2,2")
+      .style("pointer-events", "none")
+
+    // Horizontal grid lines
+    g.selectAll(".grid-line-y")
+      .data(yScale.ticks())
+      .enter()
+      .append("line")
+      .attr("class", "grid-line-y")
+      .attr("x1", 0)
+      .attr("x2", width)
+      .attr("y1", d => yScale(d))
+      .attr("y2", d => yScale(d))
+      .style("stroke", "#e0e0e0")
+      .style("stroke-width", 0.5)
+      .style("stroke-dasharray", "2,2")
+      .style("pointer-events", "none")
+  }
+
+  // Create a separate group for scatter points to ensure they're on top
+  const scatterGroup = g.append("g")
+    .attr("class", "scatter-points-container")
+    .style("pointer-events", "all")
+
   // Group data by series for consistent styling
   const dataBySeriesIndex = d3.group(data, d => d.seriesIndex)
 
@@ -186,7 +210,7 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
       borderColor: colorScale(seriesData[0].series)
     }
 
-    const points = g.selectAll(`.scatter-points-${seriesIndex}`)
+    const points = scatterGroup.selectAll(`.scatter-points-${seriesIndex}`)
       .data(seriesData)
       .enter()
       .append("g")
@@ -207,18 +231,11 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
         .style("stroke-width", 1)
         .style("opacity", 0.7)
         .style("cursor", "pointer")
+        .style("pointer-events", "all")
         .on("mouseover", function(event, d) {
           d3.select(this)
             .style("opacity", 1)
             .style("stroke-width", 2)
-        })
-        .on("mouseout", function(event, d) {
-          d3.select(this)
-            .style("opacity", 0.7)
-            .style("stroke-width", 1)
-        })
-        .on("click", function(event, d) {
-          event.stopPropagation()
           
           const xDisplay = formatXValue(d.x, editingChart.xAxisType || 'parameter')
           
@@ -230,7 +247,17 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
             <div>Source: ${d.dataSourceLabel}</div>
           `
           
-          togglePinnedTooltip(event, content)
+          showTooltip(event, content)
+        })
+        .on("mousemove", function(event, d) {
+          updateTooltipPosition(event)
+        })
+        .on("mouseout", function(event, d) {
+          d3.select(this)
+            .style("opacity", 0.7)
+            .style("stroke-width", 1)
+          
+          hideTooltip()
         })
     } else if (markerConfig.type === 'square') {
       const size = (markerConfig.size || 4) * 2
@@ -248,18 +275,11 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
         .style("stroke-width", 1)
         .style("opacity", 0.7)
         .style("cursor", "pointer")
+        .style("pointer-events", "all")
         .on("mouseover", function(event, d) {
           d3.select(this)
             .style("opacity", 1)
             .style("stroke-width", 2)
-        })
-        .on("mouseout", function(event, d) {
-          d3.select(this)
-            .style("opacity", 0.7)
-            .style("stroke-width", 1)
-        })
-        .on("click", function(event, d) {
-          event.stopPropagation()
           
           const xDisplay = formatXValue(d.x, editingChart.xAxisType || 'parameter')
           
@@ -271,7 +291,17 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
             <div>Source: ${d.dataSourceLabel}</div>
           `
           
-          togglePinnedTooltip(event, content)
+          showTooltip(event, content)
+        })
+        .on("mousemove", function(event, d) {
+          updateTooltipPosition(event)
+        })
+        .on("mouseout", function(event, d) {
+          d3.select(this)
+            .style("opacity", 0.7)
+            .style("stroke-width", 1)
+          
+          hideTooltip()
         })
     } else {
       // Default to circle for other marker types
@@ -287,18 +317,11 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
         .style("stroke-width", 1)
         .style("opacity", 0.7)
         .style("cursor", "pointer")
+        .style("pointer-events", "all")
         .on("mouseover", function(event, d) {
           d3.select(this)
             .style("opacity", 1)
             .style("stroke-width", 2)
-        })
-        .on("mouseout", function(event, d) {
-          d3.select(this)
-            .style("opacity", 0.7)
-            .style("stroke-width", 1)
-        })
-        .on("click", function(event, d) {
-          event.stopPropagation()
           
           const xDisplay = formatXValue(d.x, editingChart.xAxisType || 'parameter')
           
@@ -310,45 +333,20 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
             <div>Source: ${d.dataSourceLabel}</div>
           `
           
-          togglePinnedTooltip(event, content)
+          showTooltip(event, content)
+        })
+        .on("mousemove", function(event, d) {
+          updateTooltipPosition(event)
+        })
+        .on("mouseout", function(event, d) {
+          d3.select(this)
+            .style("opacity", 0.7)
+            .style("stroke-width", 1)
+          
+          hideTooltip()
         })
     }
   })
-
-  // Add grid lines if enabled
-  if (editingChart.yAxisParams?.some(param => true)) { // Assuming grid is enabled by default
-    // Vertical grid lines
-    const xTicks = editingChart.xAxisType === 'datetime' 
-      ? (xScale as d3.ScaleTime<number, number>).ticks()
-      : (xScale as d3.ScaleLinear<number, number>).ticks()
-      
-    g.selectAll(".grid-line-x")
-      .data(xTicks)
-      .enter()
-      .append("line")
-      .attr("class", "grid-line-x")
-      .attr("x1", d => xScale(d))
-      .attr("x2", d => xScale(d))
-      .attr("y1", 0)
-      .attr("y2", height)
-      .style("stroke", "#e0e0e0")
-      .style("stroke-width", 0.5)
-      .style("stroke-dasharray", "2,2")
-
-    // Horizontal grid lines
-    g.selectAll(".grid-line-y")
-      .data(yScale.ticks())
-      .enter()
-      .append("line")
-      .attr("class", "grid-line-y")
-      .attr("x1", 0)
-      .attr("x2", width)
-      .attr("y1", d => yScale(d))
-      .attr("y2", d => yScale(d))
-      .style("stroke", "#e0e0e0")
-      .style("stroke-width", 0.5)
-      .style("stroke-dasharray", "2,2")
-  }
 
   // Add legend if multiple series
   if (seriesNames.length > 1) {

@@ -134,6 +134,7 @@ export function HorizontalReferenceLine({
           .attr("stroke", "transparent")
           .attr("stroke-width", 10)
           .style("cursor", "ns-resize")
+          .style("pointer-events", "stroke")
       }
       
       // Re-apply drag behavior (D3 will automatically replace existing drag)

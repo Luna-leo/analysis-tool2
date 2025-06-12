@@ -170,6 +170,7 @@ export function VerticalReferenceLine({
           .attr("stroke", "transparent")
           .attr("stroke-width", 10)
           .style("cursor", "ew-resize")
+          .style("pointer-events", "stroke")
       }
       
       // Re-apply drag behavior (D3 will automatically replace existing drag)
