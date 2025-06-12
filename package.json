@@ -4,9 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "NODE_ENV=production next build",
-    "build:analyze": "ANALYZE=true next build",
-    "start": "NODE_ENV=production next start",
+    "build": "cross-env NODE_ENV=production next build",
+    "build:analyze": "cross-env ANALYZE=true next build",
+    "start": "cross-env NODE_ENV=production next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit"
   },
@@ -73,6 +73,7 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cross-env": "^7.0.3",
     "postcss": "^8",
     "tailwindcss": "^3.4.17",
     "typescript": "^5"
