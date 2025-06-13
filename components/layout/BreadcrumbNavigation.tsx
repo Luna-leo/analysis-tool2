@@ -62,7 +62,7 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
 
   return (
     <div className="border-b bg-background">
-      <div className="px-4 py-2">
+      <div className="px-4 py-1">
         <div className="flex items-center justify-between">
         <Breadcrumb>
           <BreadcrumbList>
@@ -112,7 +112,7 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
                 })
                 uiStore.setEditModalOpen(true)
               }}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 h-7"
             >
               <Plus className="h-4 w-4" />
               新規チャート
@@ -121,7 +121,7 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
               variant="ghost"
               size="sm"
               onClick={() => setDataSourceModalOpen(true)}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 h-7"
               title="Data Source Settings"
             >
               <Settings className="h-4 w-4" />
@@ -133,6 +133,7 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
               size="icon"
               onClick={() => setIsBulkSettingsOpen(true)}
               title="一括設定"
+              className="h-7 w-7"
             >
               <Settings2 className="h-4 w-4" />
             </Button>

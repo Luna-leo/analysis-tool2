@@ -185,7 +185,7 @@ export default function AnalysisTool() {
               
               if (isGraphPage && selectedDataSources.length > 0) {
                 return (
-                  <div className="px-6 py-2 bg-muted/30">
+                  <div className="px-6 py-1.5 bg-muted/30">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm text-muted-foreground">Data Sources:</span>
                       {selectedDataSources.map((source: any) => (
