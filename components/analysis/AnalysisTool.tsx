@@ -194,7 +194,7 @@ export default function AnalysisTool() {
               
               if (isGraphPage && selectedDataSources.length > 0) {
                 return (
-                  <div className="px-6 py-1 bg-muted/30">
+                  <div className="px-6 py-1 bg-muted/90">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 flex-wrap">
                         <button
@@ -217,13 +217,13 @@ export default function AnalysisTool() {
                             <path d="M4 6v6c0 1.657 3.582 3 8 3s8-1.343 8-3V6" />
                             <path d="M4 12v6c0 1.657 3.582 3 8 3s8-1.343 8-3v-6" />
                           </svg>
-                          <span className="text-base font-semibold text-foreground">Data</span>
+                          <span className="text-base font-semibold text-foreground">Data:</span>
                         </button>
                         {selectedDataSources.map((source: any, index: number) => (
                         <Badge 
                           key={source.id} 
                           variant="secondary" 
-                          className="text-sm cursor-pointer hover:bg-secondary/80 transition-colors"
+                          className="text-sm cursor-pointer bg-white hover:bg-gray-100 transition-colors"
                           onClick={() => {
                             setSelectedDataSource(source)
                             setStyleDrawerOpen(true)
