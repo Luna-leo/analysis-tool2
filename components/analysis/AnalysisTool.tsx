@@ -9,7 +9,8 @@ import { ChartGrid, ChartEditModal } from "../charts"
 import { DataSourceStyleDrawer } from "../charts/DataSourceStyleDrawer"
 import { DataSourceBadgePreview } from "../charts/DataSourceBadgePreview"
 import { DataSourceModal } from "../charts/DataSourceModal"
-import { LineChart, DatabaseIcon } from "lucide-react"
+import { BulkSettingsDrawer } from "../charts/BulkSettingsDrawer"
+import { LineChart, DatabaseIcon, Settings2 } from "lucide-react"
 import { useFileStore } from "@/stores/useFileStore"
 import { useParameterStore } from "@/stores/useParameterStore"
 import { useGraphStateStore } from "@/stores/useGraphStateStore"
@@ -36,6 +37,7 @@ export default function AnalysisTool() {
   })
   const [styleDrawerOpen, setStyleDrawerOpen] = React.useState(false)
   const [dataSourceModalOpen, setDataSourceModalOpen] = React.useState(false)
+  const [bulkSettingsOpen, setBulkSettingsOpen] = React.useState(false)
   
   const { openTabs, activeTab, openFile, fileTree, setActiveTab, toggleFolder, setFileTree } = useFileStore()
   const { loadParameters } = useParameterStore()
@@ -210,7 +212,7 @@ export default function AnalysisTool() {
                         size="sm"
                         onClick={() => setDataSourceModalOpen(true)}
                         title="Data Source Settings"
-                        className="h-8 w-20 flex items-center justify-center gap-1.5 rounded-md border border-gray-400 relative"
+                        className="h-9 w-24 flex items-center justify-center gap-1.5 rounded-md border border-gray-400 relative"
                       >
                         <DatabaseIcon className="h-4 w-4" />
                         <span className="text-sm font-medium">Data</span>
@@ -235,7 +237,7 @@ export default function AnalysisTool() {
                           })
                           uiStore.setEditModalOpen(true)
                         }}
-                        className="h-8 w-20 flex items-center justify-center gap-1.5 rounded-md border border-gray-400 relative"
+                        className="h-9 w-24 flex items-center justify-center gap-1.5 rounded-md border border-gray-400 relative"
                       >
                         <LineChart className="h-4 w-4" />
                         <span className="text-sm font-medium">Chart</span>
@@ -247,6 +249,16 @@ export default function AnalysisTool() {
                         )}
                       </Button>
                       <LayoutSettings fileId={activeTab} />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setBulkSettingsOpen(true)}
+                        title="一括設定"
+                        className="h-9 w-24 flex items-center justify-center gap-1.5 rounded-md border border-gray-400"
+                      >
+                        <Settings2 className="h-4 w-4" />
+                        <span className="text-sm font-medium">Bulk</span>
+                      </Button>
                     </div>
                     {selectedDataSources.length > 0 ? (
                       <div className="flex items-center gap-2 flex-wrap">
@@ -336,6 +348,21 @@ export default function AnalysisTool() {
               open={dataSourceModalOpen}
               onOpenChange={setDataSourceModalOpen}
               file={currentFile}
+            />
+          )
+        }
+        return null
+      })()}
+      
+      {/* Bulk Settings Drawer */}
+      {activeTab && (() => {
+        const currentFile = openTabs.find((tab) => tab.id === activeTab)
+        if (currentFile && ((currentFile as any).charts || (currentFile as any).dataSources)) {
+          return (
+            <BulkSettingsDrawer
+              open={bulkSettingsOpen}
+              onOpenChange={setBulkSettingsOpen}
+              file={currentFile as FileNode}
             />
           )
         }

@@ -38,7 +38,7 @@ export function LayoutSettings({ fileId }: LayoutSettingsProps) {
         <Button 
           variant="outline" 
           size="sm" 
-          className="h-8 w-24 flex items-center justify-center gap-1.5 rounded-md border border-gray-400"
+          className="h-9 w-24 flex items-center justify-center gap-1.5 rounded-md border border-gray-400"
         >
           <LayoutGrid className="h-4 w-4" />
           <span className="text-sm font-medium">Layout</span>

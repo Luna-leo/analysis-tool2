@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React from "react"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -9,9 +9,6 @@ import {
 } from "@/components/ui/breadcrumb"
 import { FileNode } from "@/types"
 import { useFileStore } from "@/stores/useFileStore"
-import { Settings2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { BulkSettingsDrawer } from "@/components/charts/BulkSettingsDrawer"
 
 interface BreadcrumbNavigationProps {
   activeTab: string
@@ -43,19 +40,14 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
 }) => {
   const { fileTree } = useFileStore()
   const currentFile = openTabs.find((tab) => tab.id === activeTab)
-  const [isBulkSettingsOpen, setIsBulkSettingsOpen] = useState(false)
   
   if (!currentFile) return null
 
   const filePath = getFilePath(currentFile.id, fileTree)
-  
-  // Check if this is a graph page (has charts/dataSources)
-  const isGraphPage = (currentFile as any).charts || (currentFile as any).dataSources
 
   return (
     <div className="border-b bg-background">
       <div className="px-4 py-1">
-        <div className="flex items-center justify-between">
         <Breadcrumb>
           <BreadcrumbList>
             {filePath ? (
@@ -83,32 +75,9 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
                 <BreadcrumbPage>{currentFile.name}</BreadcrumbPage>
               </BreadcrumbItem>
             )}
-            </BreadcrumbList>
-          </Breadcrumb>
-        
-        {/* Bulk Settings - show only for graph pages */}
-        {isGraphPage && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsBulkSettingsOpen(true)}
-            title="一括設定"
-            className="h-7 w-7"
-          >
-            <Settings2 className="h-4 w-4" />
-          </Button>
-        )}
-        </div>
+          </BreadcrumbList>
+        </Breadcrumb>
       </div>
-      
-      {/* Bulk Settings Drawer */}
-      {isGraphPage && currentFile && (
-        <BulkSettingsDrawer
-          open={isBulkSettingsOpen}
-          onOpenChange={setIsBulkSettingsOpen}
-          file={currentFile as FileNode}
-        />
-      )}
     </div>
   )
 }
