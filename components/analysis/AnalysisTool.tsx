@@ -195,16 +195,27 @@ export default function AnalysisTool() {
                 return (
                   <div className="px-6 py-1.5 bg-muted/30">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <div className="flex items-center gap-1.5">
                         <button
-                          className="inline-flex items-center justify-center"
+                          className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-secondary/60 transition-colors focus:outline-none"
                           onClick={() => setDataSourceModalOpen(true)}
                           title="Data Source Settings"
+                          type="button"
                         >
-                          <Settings className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+                          {/* Use Database icon instead of Settings */}
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                          >
+                            <ellipse cx="12" cy="6" rx="8" ry="3" />
+                            <path d="M4 6v6c0 1.657 3.582 3 8 3s8-1.343 8-3V6" />
+                            <path d="M4 12v6c0 1.657 3.582 3 8 3s8-1.343 8-3v-6" />
+                          </svg>
+                          <span className="text-base font-semibold text-foreground">Data Sources</span>
                         </button>
-                        <span className="text-base text-muted-foreground">Data Sources:</span>
-                      </div>
                       {selectedDataSources.map((source: any, index: number) => (
                         <Badge 
                           key={source.id} 
