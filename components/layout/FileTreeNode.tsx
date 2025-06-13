@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from "react"
-import { ChartLine, Folder, ChevronRight, ChevronDown, MoreVertical, Edit2, FilePlus, FolderPlus } from "lucide-react"
+import { ChartLine, Folder, ChevronRight, ChevronDown, MoreVertical, Edit2, FilePlus, FolderPlus, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { FileNode } from "@/types"
 import { useFileStore } from "@/stores/useFileStore"
@@ -11,7 +11,18 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface FileTreeNodeProps {
   node: FileNode
@@ -37,9 +48,11 @@ export function FileTreeNode({ node, depth = 0 }: FileTreeNodeProps) {
     setDraggedNode,
     setDragOverNode,
     moveNode,
+    deleteNode,
   } = useFileStore()
 
   const [tempName, setTempName] = useState("")
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -143,7 +156,8 @@ export function FileTreeNode({ node, depth = 0 }: FileTreeNodeProps) {
   }
 
   return (
-    <div>
+    <>
+      <div>
       <div
         className={cn("h-1 transition-all", getDropIndicatorClass("before"))}
         onDragOver={(e) => handleDragOver(e, "before")}
@@ -261,6 +275,17 @@ export function FileTreeNode({ node, depth = 0 }: FileTreeNodeProps) {
                 </DropdownMenuItem>
               </>
             )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation()
+                setShowDeleteDialog(true)
+              }}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -307,6 +332,31 @@ export function FileTreeNode({ node, depth = 0 }: FileTreeNodeProps) {
         onDrop={(e) => handleDrop(e, "after")}
       />
     </div>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {node.type === "folder" ? "folder" : "file"}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{node.name}"?
+              {node.type === "folder" && node.children && node.children.length > 0 && (
+                <> This folder contains {node.children.length} item{node.children.length !== 1 ? "s" : ""} that will also be deleted.</>
+              )}
+              {" "}This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteNode(node.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
 

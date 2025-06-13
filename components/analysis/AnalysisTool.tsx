@@ -201,10 +201,16 @@ export default function AnalysisTool() {
                         size="sm"
                         onClick={() => setDataSourceModalOpen(true)}
                         title="Data Source Settings"
-                        className="h-8 w-20 flex items-center justify-center gap-1.5 rounded-md border border-gray-400"
+                        className="h-8 w-20 flex items-center justify-center gap-1.5 rounded-md border border-gray-400 relative"
                       >
                         <DatabaseIcon className="h-4 w-4" />
                         <span className="text-sm font-medium">Data</span>
+                        {selectedDataSources.length === 0 && (
+                          <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                          </span>
+                        )}
                       </Button>
                       <Button
                         variant="outline"
@@ -220,10 +226,16 @@ export default function AnalysisTool() {
                           })
                           uiStore.setEditModalOpen(true)
                         }}
-                        className="h-8 w-20 flex items-center justify-center gap-1.5 rounded-md border border-gray-400"
+                        className="h-8 w-20 flex items-center justify-center gap-1.5 rounded-md border border-gray-400 relative"
                       >
                         <LineChart className="h-4 w-4" />
                         <span className="text-sm font-medium">Chart</span>
+                        {(!currentFile.charts || currentFile.charts.length === 0) && (
+                          <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+                          </span>
+                        )}
                       </Button>
                     </div>
                     {selectedDataSources.length > 0 ? (

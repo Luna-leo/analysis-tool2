@@ -47,6 +47,7 @@ interface FileActions {
   updateDataSourceStyle: (fileId: string, dataSourceId: string, style: DataSourceStyle) => void
   duplicateChart: (fileId: string, chartId: string) => void
   deleteChart: (fileId: string, chartId: string) => void
+  deleteNode: (nodeId: string) => void
 }
 
 export type FileStore = FileState & FileActions
@@ -448,6 +449,37 @@ export const useFileStore = create<FileStore>()(
         return {
           fileTree: newFileTree,
           openTabs: newOpenTabs
+        }
+      }),
+
+      deleteNode: (nodeId) => set((state) => {
+        // Remove the node from the tree
+        const removeNode = (nodes: FileNode[]): FileNode[] => {
+          return nodes.reduce<FileNode[]>((acc, node) => {
+            if (node.id === nodeId) {
+              // Skip this node (delete it)
+              return acc
+            }
+            const children = node.children ? removeNode(node.children) : undefined
+            acc.push(children ? { ...node, children } : node)
+            return acc
+          }, [])
+        }
+
+        const newFileTree = removeNode(state.fileTree)
+
+        // Also close the tab if it's open
+        const newOpenTabs = state.openTabs.filter(tab => tab.id !== nodeId)
+        const newActiveTab = state.activeTab === nodeId && newOpenTabs.length > 0
+          ? newOpenTabs[newOpenTabs.length - 1].id
+          : state.activeTab === nodeId
+          ? ''
+          : state.activeTab
+
+        return {
+          fileTree: newFileTree,
+          openTabs: newOpenTabs,
+          activeTab: newActiveTab
         }
       }),
     })),
