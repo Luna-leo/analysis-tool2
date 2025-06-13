@@ -108,22 +108,22 @@ export function TabBar({ openTabs }: TabBarProps) {
         "absolute left-0 top-0 bottom-0 z-10 flex items-center",
         showLeftButton ? "opacity-100" : "opacity-0 pointer-events-none"
       )}>
-        <div className="h-full w-16 bg-gradient-to-r from-muted/50 to-transparent" />
+        <div className="h-full w-12 bg-gradient-to-r from-background/95 to-transparent" />
         <button
-          className="absolute left-2 h-8 w-8 rounded-full bg-background/90 backdrop-blur border shadow-sm hover:bg-muted/90 transition-all duration-200 flex items-center justify-center"
+          className="absolute left-1 h-7 w-7 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 shadow-sm hover:bg-background hover:border-border transition-all duration-200 flex items-center justify-center"
           onClick={() => scroll('left')}
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-3.5 w-3.5" />
         </button>
       </div>
 
       {/* Tabs container */}
       <div 
         ref={scrollContainerRef}
-        className="flex gap-1 overflow-x-auto scrollbar-hide pl-2 pr-12 scroll-smooth h-full items-center flex-1"
+        className="flex gap-0.5 overflow-x-auto scrollbar-hide pl-2 pr-12 scroll-smooth h-full items-center flex-1"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {openTabs.map((tab) => (
+        {openTabs.map((tab, index) => (
           <div
             key={tab.id}
             data-tab-id={tab.id}
@@ -134,12 +134,12 @@ export function TabBar({ openTabs }: TabBarProps) {
             onDrop={(e) => handleDrop(e, tab.id)}
             onDragEnd={handleDragEnd}
             className={cn(
-            "flex items-center gap-2 px-4 py-2 rounded-t-md cursor-pointer select-none transition-all flex-shrink-0 min-w-[120px]",
+            "flex items-center gap-2 px-4 py-2 cursor-pointer select-none transition-all flex-shrink-0 min-w-[120px] relative group",
             activeTab === tab.id
-              ? "bg-background border-t border-l border-r"
-              : "bg-muted hover:bg-muted/70",
+              ? "text-foreground"
+              : "text-muted-foreground hover:text-foreground",
             draggedTab === tab.id && "opacity-50",
-            dragOverTab === tab.id && "bg-accent"
+            dragOverTab === tab.id && "bg-accent/20"
           )}
           onClick={() => setActiveTab(tab.id)}
         >
@@ -185,16 +185,29 @@ export function TabBar({ openTabs }: TabBarProps) {
               )}
             </>
           )}
-          <span className="text-base truncate max-w-[150px]">{tab.name}</span>
+          <span className="text-sm font-medium truncate max-w-[150px]">{tab.name}</span>
           <button
             onClick={(e) => {
               e.stopPropagation()
               closeTab(tab.id)
             }}
-            className="hover:bg-accent rounded p-1"
+            className="opacity-0 group-hover:opacity-100 hover:bg-accent rounded p-1 transition-opacity"
           >
             <X className="h-3.5 w-3.5" />
           </button>
+          
+          {/* Modern underline indicator */}
+          <div className={cn(
+            "absolute bottom-0 left-0 right-0 h-0.5 transition-all",
+            activeTab === tab.id
+              ? "bg-primary"
+              : "bg-transparent group-hover:bg-border"
+          )} />
+          
+          {/* Separator */}
+          {index < openTabs.length - 1 && (
+            <div className="absolute right-0 top-1/4 bottom-1/4 w-px bg-border/50" />
+          )}
           </div>
         ))}
       </div>
@@ -204,12 +217,12 @@ export function TabBar({ openTabs }: TabBarProps) {
         "absolute right-0 top-0 bottom-0 z-10 flex items-center",
         showRightButton ? "opacity-100" : "opacity-0 pointer-events-none"
       )}>
-        <div className="h-full w-16 bg-gradient-to-l from-muted/50 to-transparent" />
+        <div className="h-full w-12 bg-gradient-to-l from-background/95 to-transparent" />
         <button
-          className="absolute right-2 h-8 w-8 rounded-full bg-background/90 backdrop-blur border shadow-sm hover:bg-muted/90 transition-all duration-200 flex items-center justify-center"
+          className="absolute right-1 h-7 w-7 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 shadow-sm hover:bg-background hover:border-border transition-all duration-200 flex items-center justify-center"
           onClick={() => scroll('right')}
         >
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-3.5 w-3.5" />
         </button>
       </div>
     </div>

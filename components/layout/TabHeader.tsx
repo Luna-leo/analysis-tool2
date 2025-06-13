@@ -15,7 +15,7 @@ export const TabHeader: React.FC<TabHeaderProps> = ({
   if (openTabs.length === 0) return null
 
   return (
-    <div className="border-b bg-muted/50 h-11">
+    <div className="border-b bg-background/95 backdrop-blur-sm h-11">
       <TabBar openTabs={openTabs} />
     </div>
   )
