@@ -25,7 +25,6 @@ const defaultLayoutSettings: LayoutSettings = {
 }
 
 const defaultChartSettings: ChartSettings = {
-  showLegend: true,
   showXAxis: true,
   showYAxis: true,
   showGrid: true,
