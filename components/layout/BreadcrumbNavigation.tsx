@@ -10,9 +10,8 @@ import {
 import { FileNode } from "@/types"
 import { useFileStore } from "@/stores/useFileStore"
 import { LayoutSettings } from "./LayoutSettings"
-import { Settings2, LineChart } from "lucide-react"
+import { Settings2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useUIStore } from "@/stores/useUIStore"
 import { BulkSettingsDrawer } from "@/components/charts/BulkSettingsDrawer"
 
 interface BreadcrumbNavigationProps {
@@ -58,31 +57,8 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
     <div className="border-b bg-background">
       <div className="px-4 py-1">
         <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          {/* New Chart Button - show only for graph pages */}
-          {isGraphPage && (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                const uiStore = useUIStore.getState()
-                uiStore.setEditingChart({
-                  id: `chart_${Date.now()}`,
-                  title: "新しいチャート",
-                  data: [],
-                  referenceLines: [],
-                  fileId: activeTab
-                })
-                uiStore.setEditModalOpen(true)
-              }}
-              className="h-7 w-7"
-              title="新規チャート"
-            >
-              <LineChart className="h-4 w-4" />
-            </Button>
-          )}
-          <Breadcrumb>
-            <BreadcrumbList>
+        <Breadcrumb>
+          <BreadcrumbList>
             {filePath ? (
               filePath.map((pathItem, index) => (
               <React.Fragment key={index}>
@@ -110,7 +86,6 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
             )}
             </BreadcrumbList>
           </Breadcrumb>
-        </div>
         
         {/* Layout Settings - show only for graph pages */}
         {isGraphPage && (

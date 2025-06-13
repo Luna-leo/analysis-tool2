@@ -4,11 +4,12 @@ import React, { useEffect } from "react"
 import { Sidebar, TabHeader, BreadcrumbNavigation, WelcomeMessage } from "../layout"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { ChartGrid, ChartEditModal } from "../charts"
 import { DataSourceStyleDrawer } from "../charts/DataSourceStyleDrawer"
 import { DataSourceBadgePreview } from "../charts/DataSourceBadgePreview"
 import { DataSourceModal } from "../charts/DataSourceModal"
-import { Settings } from "lucide-react"
+import { Settings, LineChart } from "lucide-react"
 import { useFileStore } from "@/stores/useFileStore"
 import { useParameterStore } from "@/stores/useParameterStore"
 import { useGraphStateStore } from "@/stores/useGraphStateStore"
@@ -193,30 +194,32 @@ export default function AnalysisTool() {
               
               if (isGraphPage && selectedDataSources.length > 0) {
                 return (
-                  <div className="px-6 py-1.5 bg-muted/30">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <button
-                        className="flex items-center gap-1.5 px-2 py-1 rounded hover:bg-secondary/60 transition-colors focus:outline-none"
-                        onClick={() => setDataSourceModalOpen(true)}
-                        title="Data Source Settings"
-                        type="button"
-                      >
-                        {/* Use Database icon instead of Settings */}
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
+                  <div className="px-6 py-1 bg-muted/30">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <button
+                          className="flex items-center gap-1.5 px-2 py-0.5 rounded hover:bg-secondary/60 transition-colors focus:outline-none"
+                          onClick={() => setDataSourceModalOpen(true)}
+                          title="Data Source Settings"
+                          type="button"
                         >
-                          <ellipse cx="12" cy="6" rx="8" ry="3" />
-                          <path d="M4 6v6c0 1.657 3.582 3 8 3s8-1.343 8-3V6" />
-                          <path d="M4 12v6c0 1.657 3.582 3 8 3s8-1.343 8-3v-6" />
-                        </svg>
-                        <span className="text-base font-semibold text-foreground">Data Sources</span>
-                      </button>
-                      {selectedDataSources.map((source: any, index: number) => (
+                          {/* Use Database icon instead of Settings */}
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            style={{ width: '22px', height: '22px' }}
+                            className="text-foreground"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                          >
+                            <ellipse cx="12" cy="6" rx="8" ry="3" />
+                            <path d="M4 6v6c0 1.657 3.582 3 8 3s8-1.343 8-3V6" />
+                            <path d="M4 12v6c0 1.657 3.582 3 8 3s8-1.343 8-3v-6" />
+                          </svg>
+                          <span className="text-base font-semibold text-foreground">Data</span>
+                        </button>
+                        {selectedDataSources.map((source: any, index: number) => (
                         <Badge 
                           key={source.id} 
                           variant="secondary" 
@@ -235,12 +238,37 @@ export default function AnalysisTool() {
                           </div>
                         </Badge>
                       ))}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const uiStore = useUIStore.getState()
+                          uiStore.setEditingChart({
+                            id: `chart_${Date.now()}`,
+                            title: "新しいチャート",
+                            data: [],
+                            referenceLines: [],
+                            fileId: activeTab
+                          })
+                          uiStore.setEditModalOpen(true)
+                        }}
+                        className="h-8 px-3 flex items-center gap-2"
+                      >
+                        <LineChart 
+                          style={{ width: '22px', height: '22px' }} 
+                          strokeWidth={2}
+                          className="text-foreground"
+                        />
+                        <span className="text-sm font-medium">ADD</span>
+                      </Button>
                     </div>
                   </div>
                 )
               }
               return null
             })()}
+
 
             {/* Main Content */}
             <div className="flex-1 min-h-0 relative">
