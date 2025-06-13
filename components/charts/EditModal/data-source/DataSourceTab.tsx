@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useCollectedPeriodStore } from "@/stores/useCollectedPeriodStore"
 import { useCSVDataStore } from "@/stores/useCSVDataStore"
 import { extractDateRangeFromCSV } from "@/utils/csvDateRangeUtils"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   TimeOffsetSettings,
   SelectedDataSourceTable,
@@ -29,11 +30,19 @@ import {
 interface DataSourceTabProps {
   selectedDataSourceItems: EventInfo[]
   setSelectedDataSourceItems: React.Dispatch<React.SetStateAction<EventInfo[]>>
+  file?: any
+  onOpenStyleDrawer?: (dataSource: EventInfo) => void
+  useDataSourceStyle?: boolean
+  setUseDataSourceStyle?: React.Dispatch<React.SetStateAction<boolean>>
 }
 
 export function DataSourceTab({
   selectedDataSourceItems,
   setSelectedDataSourceItems,
+  file,
+  onOpenStyleDrawer,
+  useDataSourceStyle,
+  setUseDataSourceStyle,
 }: DataSourceTabProps) {
   const dataSource = useDataSourceManagement()
   const timeOffset = useTimeOffset()
@@ -347,6 +356,21 @@ export function DataSourceTab({
         <div className="border rounded-lg p-3 bg-muted/30">
           <div className="flex justify-between items-center mb-2">
             <h4 className="text-sm font-medium">Selected Data Sources</h4>
+            {setUseDataSourceStyle && selectedDataSourceItems.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="use-data-source-style"
+                  checked={useDataSourceStyle}
+                  onCheckedChange={(checked) => setUseDataSourceStyle(checked as boolean)}
+                />
+                <label
+                  htmlFor="use-data-source-style"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Style by Data Source
+                </label>
+              </div>
+            )}
           </div>
 
           {selectedDataSourceItems.length > 0 ? (
@@ -357,6 +381,9 @@ export function DataSourceTab({
                   manualEntry.openForEdit(item)
                 }}
                 onReturnItem={handleReturnItem}
+                onOpenStyleDrawer={onOpenStyleDrawer}
+                file={file}
+                useDataSourceStyle={useDataSourceStyle}
               />
 
               <TimeOffsetSettings

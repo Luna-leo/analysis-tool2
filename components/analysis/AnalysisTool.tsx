@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { ChartGrid, ChartEditModal } from "../charts"
 import { DataSourceStyleDrawer } from "../charts/DataSourceStyleDrawer"
 import { DataSourceBadgePreview } from "../charts/DataSourceBadgePreview"
+import { DataSourceModal } from "../charts/DataSourceModal"
+import { Settings } from "lucide-react"
 import { useFileStore } from "@/stores/useFileStore"
 import { useParameterStore } from "@/stores/useParameterStore"
 import { useGraphStateStore } from "@/stores/useGraphStateStore"
@@ -23,6 +25,7 @@ import type { FileNode } from "@/types"
 export default function AnalysisTool() {
   const [selectedDataSource, setSelectedDataSource] = React.useState<any>(null)
   const [styleDrawerOpen, setStyleDrawerOpen] = React.useState(false)
+  const [dataSourceModalOpen, setDataSourceModalOpen] = React.useState(false)
   
   const { openTabs, activeTab, openFile, fileTree, setActiveTab, toggleFolder, setFileTree } = useFileStore()
   const { loadParameters } = useParameterStore()
@@ -192,12 +195,21 @@ export default function AnalysisTool() {
                 return (
                   <div className="px-6 py-1.5 bg-muted/30">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm text-muted-foreground">Data Sources:</span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          className="inline-flex items-center justify-center"
+                          onClick={() => setDataSourceModalOpen(true)}
+                          title="Data Source Settings"
+                        >
+                          <Settings className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+                        </button>
+                        <span className="text-base text-muted-foreground">Data Sources:</span>
+                      </div>
                       {selectedDataSources.map((source: any, index: number) => (
                         <Badge 
                           key={source.id} 
                           variant="secondary" 
-                          className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors"
+                          className="text-sm cursor-pointer hover:bg-secondary/80 transition-colors"
                           onClick={() => {
                             setSelectedDataSource(source)
                             setStyleDrawerOpen(true)
@@ -257,6 +269,21 @@ export default function AnalysisTool() {
               dataSource={selectedDataSource}
               fileId={activeTab}
               currentStyle={(currentFile as any).dataSourceStyles?.[selectedDataSource.id]}
+            />
+          )
+        }
+        return null
+      })()}
+      
+      {/* Data Source Modal */}
+      {activeTab && (() => {
+        const currentFile = openTabs.find((tab) => tab.id === activeTab)
+        if (currentFile && ((currentFile as any).charts || (currentFile as any).dataSources)) {
+          return (
+            <DataSourceModal
+              open={dataSourceModalOpen}
+              onOpenChange={setDataSourceModalOpen}
+              file={currentFile}
             />
           )
         }

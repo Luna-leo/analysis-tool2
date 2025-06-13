@@ -7,9 +7,6 @@ import { EventInfo, FileNode } from "@/types"
 import { DataSourceTab } from "./EditModal/data-source/DataSourceTab"
 import { useFileStore } from "@/stores/useFileStore"
 import { DataSourceStyleDrawer } from "./DataSourceStyleDrawer"
-import { Badge } from "@/components/ui/badge"
-import { DataSourceBadgePreview } from "./DataSourceBadgePreview"
-import { Palette } from "lucide-react"
 
 interface DataSourceModalProps {
   open: boolean
@@ -22,13 +19,18 @@ export function DataSourceModal({ open, onOpenChange, file }: DataSourceModalPro
   const [selectedDataSourceItems, setSelectedDataSourceItems] = useState<EventInfo[]>([])
   const [selectedDataSource, setSelectedDataSource] = useState<EventInfo | null>(null)
   const [styleDrawerOpen, setStyleDrawerOpen] = useState(false)
+  const [useDataSourceStyle, setUseDataSourceStyle] = useState(false)
 
   // Initialize with current file's data sources
   useEffect(() => {
     if (open && file.selectedDataSources) {
       setSelectedDataSourceItems(file.selectedDataSources)
+      
+      // Initialize based on whether any data source has custom styles
+      const hasCustomStyles = file.selectedDataSources.some((ds) => !!file.dataSourceStyles?.[ds.id])
+      setUseDataSourceStyle(hasCustomStyles)
     }
-  }, [open, file.selectedDataSources])
+  }, [open, file.selectedDataSources, file.dataSourceStyles])
 
   const handleSave = () => {
     updateFileDataSources(file.id, selectedDataSourceItems)
@@ -46,42 +48,18 @@ export function DataSourceModal({ open, onOpenChange, file }: DataSourceModalPro
           <DialogTitle>Select Data Sources for {file.name}</DialogTitle>
         </DialogHeader>
         
-        <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-y-auto">
           <DataSourceTab
             selectedDataSourceItems={selectedDataSourceItems}
             setSelectedDataSourceItems={setSelectedDataSourceItems}
+            file={file}
+            onOpenStyleDrawer={(dataSource) => {
+              setSelectedDataSource(dataSource)
+              setStyleDrawerOpen(true)
+            }}
+            useDataSourceStyle={useDataSourceStyle}
+            setUseDataSourceStyle={setUseDataSourceStyle}
           />
-          
-          {/* Selected Data Sources with Style Settings */}
-          {selectedDataSourceItems.length > 0 && (
-            <div className="border-t pt-4 px-4">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium">Selected Data Sources - Click to customize appearance</h3>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {selectedDataSourceItems.map((source, index) => (
-                  <Badge
-                    key={source.id}
-                    variant="secondary"
-                    className="cursor-pointer hover:bg-secondary/80 transition-colors"
-                    onClick={() => {
-                      setSelectedDataSource(source)
-                      setStyleDrawerOpen(true)
-                    }}
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <DataSourceBadgePreview
-                        dataSourceStyle={file.dataSourceStyles?.[source.id]}
-                        defaultColor={getDefaultColor(source.id, index)}
-                      />
-                      <span>{source.label}</span>
-                      <Palette className="h-3 w-3 ml-1 opacity-50" />
-                    </div>
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
         <DialogFooter>
@@ -106,21 +84,4 @@ export function DataSourceModal({ open, onOpenChange, file }: DataSourceModalPro
       )}
     </Dialog>
   )
-}
-
-// Helper function to get default color for data source
-const defaultColors = [
-  "#3b82f6", // blue
-  "#ef4444", // red
-  "#10b981", // green
-  "#f59e0b", // yellow
-  "#8b5cf6", // purple
-  "#06b6d4", // cyan
-  "#f97316", // orange
-  "#ec4899", // pink
-]
-
-const getDefaultColor = (dataSourceId: string, index: number) => {
-  // Use index for consistent color
-  return defaultColors[index % defaultColors.length]
 }
