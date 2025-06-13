@@ -3,6 +3,7 @@
 import React, { useEffect } from "react"
 import { Sidebar, TabHeader, BreadcrumbNavigation, WelcomeMessage } from "../layout"
 import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge"
 import { ChartGrid, ChartEditModal } from "../charts"
 import { useFileStore } from "@/stores/useFileStore"
 import { useParameterStore } from "@/stores/useParameterStore"
@@ -173,6 +174,31 @@ export default function AnalysisTool() {
             {activeTab && openTabs.find((tab) => tab.id === activeTab) && (
               <BreadcrumbNavigation activeTab={activeTab} openTabs={openTabs} />
             )}
+            
+            {/* Data Sources Legend */}
+            {activeTab && (() => {
+              const currentFile = openTabs.find((tab) => tab.id === activeTab)
+              if (!currentFile) return null
+              
+              const isGraphPage = (currentFile as any).charts || (currentFile as any).dataSources
+              const selectedDataSources = (currentFile as any).selectedDataSources || []
+              
+              if (isGraphPage && selectedDataSources.length > 0) {
+                return (
+                  <div className="px-6 py-2 bg-muted/30">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm text-muted-foreground">Data Sources:</span>
+                      {selectedDataSources.map((source: any) => (
+                        <Badge key={source.id} variant="secondary" className="text-xs">
+                          {source.label}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )
+              }
+              return null
+            })()}
 
             {/* Main Content */}
             <div className="flex-1 min-h-0 relative">

@@ -12,6 +12,7 @@ import { useFileStore } from "@/stores/useFileStore"
 import { LayoutSettings } from "./LayoutSettings"
 import { Plus, Settings2, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { useUIStore } from "@/stores/useUIStore"
 import { BulkSettingsDrawer } from "@/components/charts/BulkSettingsDrawer"
 import { DataSourceModal } from "@/components/charts/DataSourceModal"
@@ -55,10 +56,14 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
   
   // Check if this is a graph page (has charts/dataSources)
   const isGraphPage = (currentFile as any).charts || (currentFile as any).dataSources
+  
+  // Get selected data sources from FileNode
+  const selectedDataSources = (currentFile as FileNode).selectedDataSources || []
 
   return (
-    <div className="border-b bg-background px-4 py-2">
-      <div className="flex items-center justify-between">
+    <div className="border-b bg-background">
+      <div className="px-4 py-2">
+        <div className="flex items-center justify-between">
         <Breadcrumb>
           <BreadcrumbList>
             {filePath ? (
@@ -117,10 +122,10 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
               size="sm"
               onClick={() => setDataSourceModalOpen(true)}
               className="flex items-center gap-2"
-              title="データソース設定"
+              title="Data Source Settings"
             >
               <Settings className="h-4 w-4" />
-              データソース
+              Data Sources
             </Button>
             <LayoutSettings fileId={activeTab} />
             <Button
@@ -133,6 +138,7 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
             </Button>
           </div>
         )}
+        </div>
       </div>
       
       {/* Bulk Settings Drawer */}
