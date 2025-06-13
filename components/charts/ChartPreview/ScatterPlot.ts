@@ -695,39 +695,131 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
     }
   })
 
-  // Add legend if multiple series
-  if (seriesNames.length > 1) {
+  // Add legend if enabled and multiple series
+  if (editingChart.legend !== false && seriesNames.length > 1) {
+    const legendStyle = editingChart.legendStyle || {}
+    const position = legendStyle.position || 'right'
+    const layout = legendStyle.layout || 'vertical'
+    const fontSize = legendStyle.fontSize || 11
+    const fontColor = legendStyle.fontColor || '#374151'
+    const backgroundColor = legendStyle.backgroundColor || 'transparent'
+    const borderColor = legendStyle.borderColor || 'transparent'
+    const borderWidth = legendStyle.borderWidth || 0
+    const padding = legendStyle.padding || 8
+    const itemSpacing = legendStyle.itemSpacing || 4
+
+    // Calculate legend position based on position setting
+    let legendTransform = ''
+    let maxLegendWidth = width
+    let maxLegendHeight = height
+    
+    switch (position) {
+      case 'top':
+        legendTransform = `translate(${width / 2}, -20)`
+        break
+      case 'right':
+        legendTransform = `translate(${width + 20}, ${height / 2})`
+        maxLegendWidth = 150
+        break
+      case 'bottom':
+        legendTransform = `translate(${width / 2}, ${height + 35})`
+        break
+      case 'left':
+        legendTransform = `translate(-20, ${height / 2})`
+        maxLegendWidth = 150
+        break
+    }
+
     const legend = g.append("g")
       .attr("class", "legend")
-      .attr("transform", `translate(${width - 120}, 20)`)
+      .attr("transform", legendTransform)
 
-    const legendItems = legend.selectAll(".legend-item")
-      .data(seriesNames)
-      .enter()
-      .append("g")
-      .attr("class", "legend-item")
-      .attr("transform", (d, i) => `translate(0, ${i * 20})`)
+    // Create background rect
+    const bgRect = legend.append("rect")
+      .attr("fill", backgroundColor)
+      .attr("stroke", borderColor)
+      .attr("stroke-width", borderWidth)
+      .attr("rx", 4)
+      .attr("ry", 4)
 
-    legendItems.append("circle")
-      .attr("cx", 6)
-      .attr("cy", 6)
-      .attr("r", 5)
-      .style("fill", d => {
-        // Find the first data point for this series to get the dataSourceId
-        const seriesData = data.find(point => point.series === d)
-        if (seriesData) {
-          const dataSourceStyle = dataSourceStyles[seriesData.dataSourceId] || {}
-          return dataSourceStyle.markerColor || dataSourceStyle.lineColor || colorScale(d)
+    // Create content group with padding
+    const contentGroup = legend.append("g")
+      .attr("transform", `translate(${padding}, ${padding})`)
+
+    let currentX = 0
+    let currentY = 0
+    let maxWidth = 0
+    let maxHeight = 0
+
+    seriesNames.forEach((seriesName, index) => {
+      const legendItem = contentGroup.append("g")
+        .attr("transform", `translate(${currentX}, ${currentY})`)
+
+      // Draw marker
+      const markerRadius = fontSize * 0.4
+      legendItem.append("circle")
+        .attr("cx", markerRadius)
+        .attr("cy", fontSize / 2)
+        .attr("r", markerRadius)
+        .style("fill", () => {
+          const seriesData = data.find(point => point.series === seriesName)
+          if (seriesData) {
+            const dataSourceStyle = dataSourceStyles[seriesData.dataSourceId] || {}
+            return dataSourceStyle.markerColor || dataSourceStyle.lineColor || colorScale(seriesName)
+          }
+          return colorScale(seriesName)
+        })
+
+      // Add text
+      const text = legendItem.append("text")
+        .attr("x", markerRadius * 2 + 5)
+        .attr("y", fontSize / 2)
+        .attr("dy", "0.35em")
+        .style("font-size", `${fontSize}px`)
+        .style("fill", fontColor)
+        .text(seriesName)
+
+      // Calculate dimensions
+      const bbox = (text.node() as SVGTextElement).getBBox()
+      const itemWidth = markerRadius * 2 + 5 + bbox.width
+      const itemHeight = Math.max(fontSize, bbox.height)
+
+      if (layout === 'horizontal') {
+        // Check if we need to wrap to next line
+        if (currentX + itemWidth > maxLegendWidth && index > 0) {
+          currentX = 0
+          currentY += itemHeight + itemSpacing
+          legendItem.attr("transform", `translate(${currentX}, ${currentY})`)
         }
-        return colorScale(d)
-      })
+        currentX += itemWidth + itemSpacing * 2
+        maxWidth = Math.max(maxWidth, currentX)
+        maxHeight = currentY + itemHeight
+      } else {
+        // Vertical layout
+        currentY += itemHeight + itemSpacing
+        maxWidth = Math.max(maxWidth, itemWidth)
+        maxHeight = currentY - itemSpacing
+      }
+    })
 
-    legendItems.append("text")
-      .attr("x", 16)
-      .attr("y", 6)
-      .attr("dy", "0.35em")
-      .style("font-size", "11px")
-      .text(d => d)
+    // Update background rect size
+    bgRect
+      .attr("x", -padding)
+      .attr("y", -padding)
+      .attr("width", maxWidth + padding * 2)
+      .attr("height", maxHeight + padding * 2)
+
+    // Adjust legend position to center it
+    switch (position) {
+      case 'top':
+      case 'bottom':
+        legend.attr("transform", `${legendTransform} translate(${-(maxWidth + padding * 2) / 2}, 0)`)
+        break
+      case 'left':
+      case 'right':
+        legend.attr("transform", `${legendTransform} translate(0, ${-(maxHeight + padding * 2) / 2})`)
+        break
+    }
   }
   
   // End performance tracking

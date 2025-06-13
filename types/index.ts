@@ -97,12 +97,25 @@ export interface DataSourceStyle {
   interpolation?: 'linear' | 'smooth' | 'step' | 'stepAfter' | 'stepBefore'
 }
 
+export interface LegendStyle {
+  position?: 'top' | 'right' | 'bottom' | 'left'
+  layout?: 'horizontal' | 'vertical'
+  backgroundColor?: string
+  borderColor?: string
+  borderWidth?: number
+  fontSize?: number
+  fontColor?: string
+  padding?: number
+  itemSpacing?: number
+}
+
 export interface ChartComponent {
   id: string
   title: string
   showTitle?: boolean
   data: Array<{ name: string; value: number }>
   legend?: boolean
+  legendStyle?: LegendStyle
   xLabel?: string
   yLabel?: string
   yAxisLabels?: Record<number, string>
