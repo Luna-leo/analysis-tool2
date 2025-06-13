@@ -47,13 +47,19 @@ const VirtualizedChartCard = React.memo(({
   dragOverIndex
 }: VirtualizedChartCardProps) => {
   const ref = useRef<HTMLDivElement>(null)
-  const [shouldRender, setShouldRender] = useState(false)
+  const [shouldRender, setShouldRender] = useState(isVisible)
+  const hasRenderedRef = useRef(false)
   
   useEffect(() => {
-    if (isVisible && !shouldRender) {
-      setShouldRender(true)
+    if (isVisible && !hasRenderedRef.current) {
+      hasRenderedRef.current = true
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        setShouldRender(true)
+      }, 10)
+      return () => clearTimeout(timer)
     }
-  }, [isVisible, shouldRender])
+  }, [isVisible])
   
   return (
     <div 
@@ -112,8 +118,12 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     pagination: false, // Disable pagination for virtualized grid
   }
   
-  // Track visible charts - reduce initial load
-  const [visibleRange, setVisibleRange] = useState({ start: 0, end: 6 })
+  // Track visible charts - calculate initial range based on viewport
+  const [visibleRange, setVisibleRange] = useState(() => {
+    const itemsPerRow = currentSettings.columns
+    const rowsInViewport = Math.ceil(600 / (currentSettings.rows >= 3 ? 140 : 180)) // Estimate based on typical viewport
+    return { start: 0, end: Math.min(itemsPerRow * rowsInViewport, 12) } // Cap at 12 items initially
+  })
   
   // Update local charts when file.charts changes
   useEffect(() => {
@@ -185,8 +195,8 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     const visibleStart = Math.floor(scrollTop / itemHeight) * currentSettings.columns
     const visibleEnd = Math.ceil((scrollTop + containerHeight) / itemHeight) * currentSettings.columns
     
-    // Reduce buffer size for better performance
-    const bufferSize = currentSettings.columns
+    // Increase buffer size for smoother scrolling
+    const bufferSize = currentSettings.columns * 2
     const start = Math.max(0, visibleStart - bufferSize)
     const end = Math.min(localCharts.length || 0, visibleEnd + bufferSize)
     
@@ -217,8 +227,8 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
       const now = Date.now()
       const timeSinceLastScroll = now - lastScrollTime
       
-      // Throttle to 30fps (33ms) for better performance
-      if (timeSinceLastScroll < 33) {
+      // Throttle to 60fps (16ms) for smoother scrolling
+      if (timeSinceLastScroll < 16) {
         if (rafId) cancelAnimationFrame(rafId)
         rafId = requestAnimationFrame(() => {
           updateVisibleRange()
@@ -233,8 +243,10 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     const container = contentRef.current
     container.addEventListener('scroll', handleScroll, { passive: true })
     
-    // Initial range calculation
-    updateVisibleRange()
+    // Initial range calculation with small delay to ensure DOM is ready
+    requestAnimationFrame(() => {
+      updateVisibleRange()
+    })
     
     return () => {
       if (rafId) cancelAnimationFrame(rafId)

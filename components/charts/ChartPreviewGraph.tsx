@@ -26,6 +26,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   const containerRef = useRef<HTMLDivElement>(null)
   const renderingRef = useRef<boolean>(false)
   const animationFrameRef = useRef<number | null>(null)
+  const cleanupRef = useRef<(() => void) | null>(null)
   const [dimensions, setDimensions] = React.useState({ width: 400, height: 300 })
   
   // Store scales in refs to avoid recreation during drag
@@ -74,14 +75,24 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   // Use requestAnimationFrame for smooth rendering
   const renderChart = useMemo(() => {
     return () => {
-      if (!svgRef.current || isLoadingData || renderingRef.current) return
-      
-      renderingRef.current = true
+      if (!svgRef.current || renderingRef.current) return
       
       // Cancel any pending animation frame
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current)
+        animationFrameRef.current = null
       }
+      
+      // Clean up any previous rendering
+      if (cleanupRef.current) {
+        cleanupRef.current()
+        cleanupRef.current = null
+      }
+      
+      // Skip rendering if loading
+      if (isLoadingData) return
+      
+      renderingRef.current = true
       
       animationFrameRef.current = requestAnimationFrame(() => {
         if (!svgRef.current) {
@@ -89,37 +100,47 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           return
         }
 
-        const svg = d3.select(svgRef.current)
-        
-        // Only clear the main chart group, preserve reference lines layer
-        let mainGroup = svg.select<SVGGElement>(".main-chart-group")
-        if (!mainGroup.empty()) {
-          mainGroup.remove()
-        }
+        try {
+          const svg = d3.select(svgRef.current)
+          
+          // Only clear the main chart group, preserve reference lines layer
+          let mainGroup = svg.select<SVGGElement>(".main-chart-group")
+          if (!mainGroup.empty()) {
+            mainGroup.remove()
+          }
 
-        const margin = { top: 20, right: 40, bottom: 60, left: 60 }
-        const width = dimensions.width - margin.left - margin.right
-        const height = dimensions.height - margin.top - margin.bottom
+          const margin = { top: 20, right: 40, bottom: 60, left: 60 }
+          const width = dimensions.width - margin.left - margin.right
+          const height = dimensions.height - margin.top - margin.bottom
 
-        const g = svg.append("g")
-          .attr("class", "main-chart-group")
-          .attr("transform", `translate(${margin.left},${margin.top})`)
-        
-        if (chartData.length > 0) {
-          // Render scatter plot
-          renderScatterPlot({ g, data: chartData, width, height, editingChart, scalesRef })
-        } else {
-          // Render empty chart with axes
-          renderEmptyChart({ g, width, height, chartType: "scatter", editingChart, scalesRef })
+          const g = svg.append("g")
+            .attr("class", "main-chart-group")
+            .attr("transform", `translate(${margin.left},${margin.top})`)
+          
+          if (chartData.length > 0) {
+            // Render scatter plot
+            renderScatterPlot({ g, data: chartData, width, height, editingChart, scalesRef })
+          } else {
+            // Render empty chart with axes
+            renderEmptyChart({ g, width, height, chartType: "scatter", editingChart, scalesRef })
+          }
+          
+          // Ensure proper layering: reference lines should not block interaction
+          const refLinesLayer = svg.select(".reference-lines-layer")
+          if (!refLinesLayer.empty()) {
+            refLinesLayer.style("pointer-events", "none")
+          }
+          
+          // Store cleanup function
+          cleanupRef.current = () => {
+            hideAllTooltips()
+          }
+        } catch (error) {
+          console.error('Error rendering chart:', error)
+        } finally {
+          renderingRef.current = false
+          animationFrameRef.current = null
         }
-        
-        // Ensure proper layering: reference lines should not block interaction
-        const refLinesLayer = svg.select(".reference-lines-layer")
-        if (!refLinesLayer.empty()) {
-          refLinesLayer.style("pointer-events", "none")
-        }
-        
-        renderingRef.current = false
       })
     }
   }, [chartData, dimensions, isLoadingData, editingChart])
@@ -130,7 +151,13 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current)
+        animationFrameRef.current = null
       }
+      if (cleanupRef.current) {
+        cleanupRef.current()
+        cleanupRef.current = null
+      }
+      renderingRef.current = false
     }
   }, [renderChart])
 
@@ -156,7 +183,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           <div className="text-sm text-destructive">Error loading data</div>
         </div>
       )}
-      <svg ref={svgRef} width={dimensions.width} height={dimensions.height} className="w-full h-full" style={{ display: isLoadingData ? 'none' : 'block' }} />
+      <svg ref={svgRef} width={dimensions.width} height={dimensions.height} className="w-full h-full" style={{ visibility: isLoadingData ? 'hidden' : 'visible' }} />
       {!isLoadingData && (
         <ReferenceLines
           svgRef={svgRef}

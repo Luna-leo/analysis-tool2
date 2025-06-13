@@ -45,13 +45,18 @@ export const OptimizedChartPreview = React.memo(({
 
   // Intersection observer for lazy rendering
   const [isVisible, setIsVisible] = React.useState(false)
+  const [hasBeenVisible, setHasBeenVisible] = React.useState(false)
   
   useEffect(() => {
     if (!containerRef.current) return
     
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setIsVisible(entry.isIntersecting)
+        const isIntersecting = entry.isIntersecting
+        setIsVisible(isIntersecting)
+        if (isIntersecting && !hasBeenVisible) {
+          setHasBeenVisible(true)
+        }
       },
       { 
         threshold: 0.1,
@@ -64,7 +69,7 @@ export const OptimizedChartPreview = React.memo(({
     return () => {
       observer.disconnect()
     }
-  }, [])
+  }, [hasBeenVisible])
 
   // Optimized resize handler
   useEffect(() => {
@@ -91,7 +96,7 @@ export const OptimizedChartPreview = React.memo(({
 
   // Render chart with optimizations
   const renderChart = useCallback(() => {
-    if (!svgRef.current || !isVisible || isLoadingData || renderingRef.current || !canRender) return
+    if (!svgRef.current || !hasBeenVisible || isLoadingData || renderingRef.current || !canRender) return
     
     renderingRef.current = true
     
@@ -151,7 +156,7 @@ export const OptimizedChartPreview = React.memo(({
     } else {
       requestIdleCallback(renderFunc, { timeout: 100 })
     }
-  }, [chartData, dimensions, isLoadingData, isVisible, editingChart, canRender, priority])
+  }, [chartData, dimensions, isLoadingData, hasBeenVisible, editingChart, canRender, priority])
 
   useEffect(() => {
     renderChart()
@@ -193,11 +198,11 @@ export const OptimizedChartPreview = React.memo(({
         height={dimensions.height} 
         className="w-full h-full" 
         style={{ 
-          display: isLoadingData ? 'none' : 'block',
+          visibility: isLoadingData ? 'hidden' : 'visible',
           opacity: isVisible ? 1 : 0.1 
         }} 
       />
-      {!isLoadingData && isVisible && (
+      {!isLoadingData && hasBeenVisible && (
         <ReferenceLines
           svgRef={svgRef}
           editingChart={editingChart}

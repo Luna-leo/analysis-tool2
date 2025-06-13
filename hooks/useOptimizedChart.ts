@@ -34,10 +34,10 @@ export function useOptimizedChart({
 }: UseOptimizedChartProps): OptimizedChartData {
   const { getParameterData } = useCSVDataStore()
   const dataCache = useSharedDataCache()
+  const [isLoading, setIsLoading] = React.useState(false)
+  const [error, setError] = React.useState<Error | null>(null)
+  const [data, setData] = React.useState<ChartDataPoint[]>([])
   const loadingRef = useRef(false)
-  const errorRef = useRef<Error | null>(null)
-  const dataRef = useRef<ChartDataPoint[]>([])
-  const [version, setVersion] = React.useState(0)
 
   // Memoize parameters
   const allParameters = useMemo(() => {
@@ -69,15 +69,20 @@ export function useOptimizedChart({
     () => debounce(async () => {
       if (selectedDataSourceItems.length === 0 || 
           (editingChart.xAxisType !== 'datetime' && allParameters.length === 0)) {
-        dataRef.current = []
+        setData([])
+        setIsLoading(false)
         loadingRef.current = false
-        setVersion(v => v + 1)
+        return
+      }
+      
+      // Prevent concurrent loads
+      if (loadingRef.current) {
         return
       }
       
       loadingRef.current = true
-      errorRef.current = null
-      setVersion(v => v + 1)
+      setIsLoading(true)
+      setError(null)
       
       const allData: ChartDataPoint[] = []
       
@@ -165,13 +170,13 @@ export function useOptimizedChart({
           })
         }
         
-        dataRef.current = sampledData
+        setData(sampledData)
       } catch (error) {
         console.error('Error loading chart data:', error)
-        errorRef.current = error as Error
+        setError(error as Error)
       } finally {
         loadingRef.current = false
-        setVersion(v => v + 1)
+        setIsLoading(false)
       }
     }, 300),
     [selectedDataSourceItems, allParameters, editingChart, getParameterData, dataCache, maxDataPoints]
@@ -186,8 +191,8 @@ export function useOptimizedChart({
   }, [loadData])
 
   return {
-    data: dataRef.current,
-    isLoading: loadingRef.current,
-    error: errorRef.current
+    data,
+    isLoading,
+    error
   }
 }

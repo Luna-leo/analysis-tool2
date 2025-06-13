@@ -133,46 +133,64 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
   
   // Use canvas rendering for high-density data - lowered threshold for better performance
   if (renderMethod === 'canvas' && data.length > 300) {
-    // Create canvas element
-    const svg = g.node()?.ownerSVGElement
-    if (!svg) return
+    try {
+      // Create canvas element
+      const svg = g.node()?.ownerSVGElement
+      if (!svg) {
+        console.warn('SVG element not found for canvas rendering')
+        renderMethod = 'svg' // Fallback to SVG
+      } else {
+        const svgRect = svg.getBoundingClientRect()
+        const canvas = document.createElement('canvas')
+        canvas.style.position = 'absolute'
+        canvas.style.left = `${svgRect.left}px`
+        canvas.style.top = `${svgRect.top}px`
+        canvas.style.pointerEvents = 'none'
+        
+        // Add canvas to DOM temporarily for rendering
+        document.body.appendChild(canvas)
+        
+        try {
+          // Render with optimized canvas
+          const margin = { top: 0, right: 0, bottom: 0, left: 0 }
+          renderWithOptimizedCanvas({
+            canvas,
+            data,
+            width,
+            height,
+            margin,
+            xScale,
+            yScale,
+            editingChart,
+            colorScale: (series: string) => colorScale(series) as string
+          })
+          
+          // Convert canvas to image and embed in SVG
+          const dataURL = canvas.toDataURL()
+          g.append("image")
+            .attr("xlink:href", dataURL)
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", width)
+            .attr("height", height)
+            .attr("preserveAspectRatio", "none")
+        } catch (canvasError) {
+          console.error('Canvas rendering failed:', canvasError)
+          renderMethod = 'svg' // Fallback to SVG
+        } finally {
+          // Always remove canvas from DOM
+          if (canvas.parentNode) {
+            document.body.removeChild(canvas)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Canvas setup failed:', error)
+      renderMethod = 'svg' // Fallback to SVG
+    }
     
-    const svgRect = svg.getBoundingClientRect()
-    const canvas = document.createElement('canvas')
-    canvas.style.position = 'absolute'
-    canvas.style.left = `${svgRect.left}px`
-    canvas.style.top = `${svgRect.top}px`
-    canvas.style.pointerEvents = 'none'
-    
-    // Add canvas to DOM temporarily for rendering
-    document.body.appendChild(canvas)
-    
-    // Render with optimized canvas
-    const margin = { top: 0, right: 0, bottom: 0, left: 0 }
-    renderWithOptimizedCanvas({
-      canvas,
-      data,
-      width,
-      height,
-      margin,
-      xScale,
-      yScale,
-      editingChart,
-      colorScale: (series: string) => colorScale(series) as string
-    })
-    
-    // Convert canvas to image and embed in SVG
-    const dataURL = canvas.toDataURL()
-    g.append("image")
-      .attr("xlink:href", dataURL)
-      .attr("x", 0)
-      .attr("y", 0)
-      .attr("width", width)
-      .attr("height", height)
-      .attr("preserveAspectRatio", "none")
-    
-    // Remove canvas from DOM
-    document.body.removeChild(canvas)
+    // If canvas rendering succeeded, add axes and labels
+    if (renderMethod === 'canvas') {
     
     // Add axes and labels over the canvas image
     const yScaleDomain = yScale.domain()
@@ -227,8 +245,9 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
         .style("font-size", "12px")
         .text(labelWithUnit)
     }
-    
-    return // Exit early for canvas rendering
+      
+      return // Exit early for canvas rendering
+    }
   }
 
   // Add axes
