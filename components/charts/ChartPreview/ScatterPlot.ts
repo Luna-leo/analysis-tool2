@@ -699,7 +699,15 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
       .attr("cx", 6)
       .attr("cy", 6)
       .attr("r", 5)
-      .style("fill", d => colorScale(d))
+      .style("fill", d => {
+        // Find the first data point for this series to get the dataSourceId
+        const seriesData = data.find(point => point.series === d)
+        if (seriesData) {
+          const dataSourceStyle = dataSourceStyles[seriesData.dataSourceId] || {}
+          return dataSourceStyle.markerColor || dataSourceStyle.lineColor || colorScale(d)
+        }
+        return colorScale(d)
+      })
 
     legendItems.append("text")
       .attr("x", 16)
