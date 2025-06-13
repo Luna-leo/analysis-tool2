@@ -12,18 +12,24 @@ import { TabContent } from "./EditModal/TabContent"
 
 export function ChartEditModal() {
   const { editingChart, editModalOpen, setEditingChart, setEditModalOpen } = useUIStore()
-  const { openTabs, activeTab: activeFileTab, updateFileCharts } = useFileStore()
+  const { openTabs, activeTab: activeFileTab, updateFileCharts, updateFileDataSources } = useFileStore()
   const [activeTab, setActiveTab] = useState<TabType>("datasource")
   const [selectedDataSourceItems, setSelectedDataSourceItems] = useState<EventInfo[]>([])
 
-  // Initialize selectedDataSourceItems when modal opens
+  // Initialize selectedDataSourceItems from FileNode when modal opens
   React.useEffect(() => {
-    if (editModalOpen && editingChart?.selectedDataSources) {
-      setSelectedDataSourceItems(editingChart.selectedDataSources)
-    } else if (editModalOpen) {
-      setSelectedDataSourceItems([])
+    if (editModalOpen && editingChart) {
+      const targetFileId = editingChart.fileId || activeFileTab
+      const currentFile = openTabs.find(tab => tab.id === targetFileId)
+      
+      // Use FileNode's selectedDataSources as the source of truth
+      if (currentFile?.selectedDataSources) {
+        setSelectedDataSourceItems(currentFile.selectedDataSources)
+      } else {
+        setSelectedDataSourceItems([])
+      }
     }
-  }, [editModalOpen, editingChart?.id])
+  }, [editModalOpen, editingChart?.id, openTabs, activeFileTab])
   
   // Reset to datasource tab when modal opens
   React.useEffect(() => {
@@ -40,12 +46,11 @@ export function ChartEditModal() {
     const currentFile = openTabs.find(tab => tab.id === targetFileId)
     
     if (currentFile) {
-      // Update the chart with selected data sources
+      // Update the chart (remove selectedDataSources as it's now managed at FileNode level)
       // Note: editingChart already contains all properties including referenceLines,
       // which are updated by child components via setEditingChart
       const updatedChart = {
-        ...editingChart,
-        selectedDataSources: selectedDataSourceItems
+        ...editingChart
       }
       
       const currentCharts = currentFile.charts || []
@@ -68,6 +73,9 @@ export function ChartEditModal() {
       
       // Save to file store
       updateFileCharts(currentFile.id, updatedCharts)
+      
+      // Also update the file's data sources
+      updateFileDataSources(currentFile.id, selectedDataSourceItems)
     }
     
     setEditModalOpen(false)
@@ -80,13 +88,6 @@ export function ChartEditModal() {
   const handleTabChange = (newTab: TabType) => {
     // Save current state before switching tabs
     // The editingChart already contains all updated properties including referenceLines
-    // We only need to update selectedDataSources since it's managed separately
-    if (editingChart) {
-      setEditingChart({
-        ...editingChart,
-        selectedDataSources: selectedDataSourceItems
-      })
-    }
     setActiveTab(newTab)
   }
 
