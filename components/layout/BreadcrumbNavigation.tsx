@@ -10,10 +10,11 @@ import {
 import { FileNode } from "@/types"
 import { useFileStore } from "@/stores/useFileStore"
 import { LayoutSettings } from "./LayoutSettings"
-import { Plus, Settings2 } from "lucide-react"
+import { Plus, Settings2, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useUIStore } from "@/stores/useUIStore"
 import { BulkSettingsDrawer } from "@/components/charts/BulkSettingsDrawer"
+import { DataSourceModal } from "@/components/charts/DataSourceModal"
 
 interface BreadcrumbNavigationProps {
   activeTab: string
@@ -46,6 +47,7 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
   const { fileTree } = useFileStore()
   const currentFile = openTabs.find((tab) => tab.id === activeTab)
   const [isBulkSettingsOpen, setIsBulkSettingsOpen] = useState(false)
+  const [dataSourceModalOpen, setDataSourceModalOpen] = useState(false)
   
   if (!currentFile) return null
 
@@ -110,6 +112,16 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
               <Plus className="h-4 w-4" />
               新規チャート
             </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDataSourceModalOpen(true)}
+              className="flex items-center gap-2"
+              title="データソース設定"
+            >
+              <Settings className="h-4 w-4" />
+              データソース
+            </Button>
             <LayoutSettings fileId={activeTab} />
             <Button
               variant="ghost"
@@ -128,6 +140,15 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
         <BulkSettingsDrawer
           open={isBulkSettingsOpen}
           onOpenChange={setIsBulkSettingsOpen}
+          file={currentFile as FileNode}
+        />
+      )}
+      
+      {/* Data Source Modal */}
+      {isGraphPage && currentFile && (
+        <DataSourceModal
+          open={dataSourceModalOpen}
+          onOpenChange={setDataSourceModalOpen}
           file={currentFile as FileNode}
         />
       )}

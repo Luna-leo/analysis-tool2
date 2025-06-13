@@ -3,11 +3,8 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Settings } from "lucide-react"
 import { FileNode, ChartSizes } from "@/types"
 import { ChartCard } from "./ChartCard"
-import { DataSourceModal } from "./DataSourceModal"
 import { ChartSkeleton } from "./ChartSkeleton"
 import { useLayoutStore } from "@/stores/useLayoutStore"
 import { useFileStore } from "@/stores/useFileStore"
@@ -31,7 +28,6 @@ export const ProgressiveChartGrid = React.memo(function ProgressiveChartGrid({
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
   const [localCharts, setLocalCharts] = useState(file.charts || [])
-  const [dataSourceModalOpen, setDataSourceModalOpen] = useState(false)
   
   const { layoutSettingsMap } = useLayoutStore()
   const { updateFileCharts } = useFileStore()
@@ -173,16 +169,6 @@ export const ProgressiveChartGrid = React.memo(function ProgressiveChartGrid({
                 </div>
               )}
             </div>
-            <div className="flex-shrink-0">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setDataSourceModalOpen(true)}
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                Data Sources
-              </Button>
-            </div>
           </div>
         </div>
         
@@ -233,12 +219,6 @@ export const ProgressiveChartGrid = React.memo(function ProgressiveChartGrid({
           </div>
         )}
       </div>
-      
-      <DataSourceModal
-        open={dataSourceModalOpen}
-        onOpenChange={setDataSourceModalOpen}
-        file={file}
-      />
     </div>
   )
 })

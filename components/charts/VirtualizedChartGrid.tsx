@@ -3,12 +3,9 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Settings } from "lucide-react"
 import { FileNode, ChartSizes, EventInfo } from "@/types"
 import { ChartCard } from "./ChartCard"
 import { ChartSkeleton } from "./ChartSkeleton"
-import { DataSourceModal } from "./DataSourceModal"
 import { useLayoutStore } from "@/stores/useLayoutStore"
 import { useUIStore } from "@/stores/useUIStore"
 import { useFileStore } from "@/stores/useFileStore"
@@ -113,7 +110,6 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
   const [localCharts, setLocalCharts] = useState(file.charts || [])
-  const [dataSourceModalOpen, setDataSourceModalOpen] = useState(false)
   
   const { layoutSettingsMap } = useLayoutStore()
   const { updateFileCharts } = useFileStore()
@@ -312,16 +308,6 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
                   </div>
                 )}
               </div>
-              <div className="flex-shrink-0">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setDataSourceModalOpen(true)}
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Data Sources
-                </Button>
-              </div>
             </div>
           </div>
           
@@ -364,12 +350,6 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
           </div>
         </div>
       </div>
-      
-      <DataSourceModal
-        open={dataSourceModalOpen}
-        onOpenChange={setDataSourceModalOpen}
-        file={file}
-      />
     </div>
   )
 })
