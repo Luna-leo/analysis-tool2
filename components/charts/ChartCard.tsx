@@ -102,7 +102,7 @@ const ChartCardComponent = ({
   return (
     <div
       className={cn(
-        "bg-card border rounded-lg flex flex-col relative group overflow-hidden h-full transition-all duration-200 cursor-move select-none",
+        "bg-card border border-gray-400 rounded-sm flex flex-col relative group overflow-hidden h-full transition-all duration-200 cursor-move select-none",
         isDragging && "opacity-50 scale-105",
         isDropTarget && "ring-2 ring-primary ring-offset-2 bg-primary/5"
       )}

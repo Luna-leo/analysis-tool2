@@ -194,7 +194,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     const containerHeight = container.clientHeight
     
     // Calculate rough item height based on chart sizes
-    const itemHeight = chartSizes.cardMinHeight + (chartSizes.isCompactLayout ? 12 : 24)
+    const itemHeight = chartSizes.cardMinHeight + (chartSizes.isCompactLayout ? 2 : 4)
     const totalRows = Math.ceil((localCharts.length || 0) / currentSettings.columns)
     
     // Calculate visible range with smaller buffer for better performance
@@ -275,7 +275,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
   
   const charts = localCharts
   const totalRows = Math.ceil(charts.length / currentSettings.columns)
-  const estimatedTotalHeight = totalRows * (chartSizes.cardMinHeight + (chartSizes.isCompactLayout ? 12 : 24))
+  const estimatedTotalHeight = totalRows * (chartSizes.cardMinHeight + (chartSizes.isCompactLayout ? 2 : 4))
   
   // Create placeholder array for virtualization
   const visibleCharts = useMemo(() => {
@@ -294,25 +294,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
   return (
     <div className="h-full flex flex-col" ref={contentRef}>
       <div className="flex-1 overflow-auto">
-        <div className="p-6">
-          {/* Header */}
-          <div className="mb-6 flex-shrink-0">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                {currentSettings.showFileName && <h2 className="text-2xl font-bold mb-2">{file.name}</h2>}
-                
-                {currentSettings.showDataSources && file.dataSources && file.dataSources.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {file.dataSources.map((source, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
-                        {source}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+        <div className="px-6 pt-1 pb-6">
           
           {/* Virtualized Grid */}
           <div 
@@ -324,7 +306,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
               className="grid"
               style={{
                 gridTemplateColumns: `repeat(${currentSettings.columns}, 1fr)`,
-                gap: chartSizes.isCompactLayout ? "12px" : "24px",
+                gap: chartSizes.isCompactLayout ? "2px" : "4px",
               }}
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => e.preventDefault()}

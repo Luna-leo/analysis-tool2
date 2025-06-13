@@ -150,34 +150,14 @@ export const ProgressiveChartGrid = React.memo(function ProgressiveChartGrid({
   
   return (
     <div className="absolute inset-0 overflow-auto">
-      <div className="p-6">
-        {/* Header */}
-        <div className="mb-6">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              {currentSettings.showFileName && (
-                <h2 className="text-2xl font-bold mb-2">{file.name}</h2>
-              )}
-              
-              {currentSettings.showDataSources && file.selectedDataSources && file.selectedDataSources.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {file.selectedDataSources.map((source) => (
-                    <Badge key={source.id} variant="secondary" className="text-xs">
-                      {source.label}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+      <div className="px-6 pt-1 pb-6">
         
         {/* Grid with progressive rendering */}
         <div
           className="grid"
           style={{
             gridTemplateColumns: `repeat(${currentSettings.columns}, 1fr)`,
-            gap: chartSizes.isCompactLayout ? "12px" : "24px",
+            gap: chartSizes.isCompactLayout ? "2px" : "4px",
           }}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => e.preventDefault()}

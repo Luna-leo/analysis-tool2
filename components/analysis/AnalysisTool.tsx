@@ -194,7 +194,7 @@ export default function AnalysisTool() {
               
               if (isGraphPage) {
                 return (
-                  <div className="px-6 py-2 space-y-2">
+                  <div className="px-6 py-2 space-y-1">
                     <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
