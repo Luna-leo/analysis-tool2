@@ -9,15 +9,17 @@ interface ChartPreviewProps {
   editingChart: ChartComponent
   selectedDataSourceItems: EventInfo[]
   setEditingChart?: (chart: ChartComponent) => void
+  dataSourceStyles?: { [dataSourceId: string]: any }
 }
 
-export const ChartPreview = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart }: ChartPreviewProps) => {
+export const ChartPreview = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, dataSourceStyles }: ChartPreviewProps) => {
   return (
     <div className="w-full h-full flex flex-col">
       <ChartPreviewGraph
         editingChart={editingChart}
         selectedDataSourceItems={selectedDataSourceItems}
         setEditingChart={setEditingChart}
+        dataSourceStyles={dataSourceStyles}
       />
       <ChartPreviewInfo
         editingChart={editingChart}

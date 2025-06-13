@@ -14,7 +14,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { ChartComponent, EventInfo } from "@/types"
+import { ChartComponent, EventInfo, DataSourceStyle } from "@/types"
 import { useUIStore } from "@/stores/useUIStore"
 import { useFileStore } from "@/stores/useFileStore"
 import { ChartPreviewGraph } from "./ChartPreviewGraph"
@@ -33,6 +33,7 @@ interface ChartCardProps {
   isDragging?: boolean
   dragOverIndex?: number | null
   selectedDataSources?: EventInfo[] // Grid-level data sources
+  dataSourceStyles?: { [dataSourceId: string]: DataSourceStyle } // Grid-level styles
 }
 
 const ChartCardComponent = ({ 
@@ -48,7 +49,8 @@ const ChartCardComponent = ({
   onDragEnd,
   isDragging,
   dragOverIndex,
-  selectedDataSources = []
+  selectedDataSources = [],
+  dataSourceStyles = {}
 }: ChartCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
@@ -168,6 +170,7 @@ const ChartCardComponent = ({
           editingChart={chart} 
           selectedDataSourceItems={selectedDataSources} 
           maxDataPoints={isCompactLayout ? 100 : 200}
+          dataSourceStyles={dataSourceStyles}
         />
       </div>
 

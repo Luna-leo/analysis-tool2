@@ -77,6 +77,25 @@ export interface ReferenceLine {
   selectedThresholds?: string[]
 }
 
+export interface DataSourceStyle {
+  // Line settings
+  lineColor?: string
+  lineWidth?: number
+  lineStyle?: 'solid' | 'dashed' | 'dotted' | 'dashdot'
+  lineOpacity?: number
+  
+  // Marker settings
+  markerEnabled?: boolean
+  markerShape?: 'circle' | 'square' | 'triangle' | 'diamond' | 'cross' | 'star'
+  markerSize?: number
+  markerColor?: string
+  markerOpacity?: number
+  
+  // Other settings
+  showDataLabels?: boolean
+  interpolation?: 'linear' | 'smooth' | 'step' | 'stepAfter' | 'stepBefore'
+}
+
 export interface ChartComponent {
   id: string
   title: string
@@ -148,6 +167,7 @@ export interface FileNode {
   children?: FileNode[]
   dataSources?: string[]
   selectedDataSources?: EventInfo[] // Common data sources for all charts in this grid
+  dataSourceStyles?: { [dataSourceId: string]: DataSourceStyle } // Styles for each data source
   charts?: ChartComponent[]
   isSystemNode?: boolean // For non-removable nodes like CSV Import
 }

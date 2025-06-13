@@ -86,10 +86,15 @@ export function useOptimizedChart({
       
       const allData: ChartDataPoint[] = []
       
+      // Get valid Y parameters
+      const validYParams = editingChart.yAxisParams?.filter(
+        param => param.parameter && param.parameter.trim() !== ''
+      ) || []
+      
       try {
         // Fetch data with caching
         await Promise.all(
-          selectedDataSourceItems.map(async (dataSource) => {
+          selectedDataSourceItems.map(async (dataSource, dataSourceIndex) => {
             const csvData = await dataCache.get(
               dataSource.id,
               allParameters,
@@ -111,7 +116,7 @@ export function useOptimizedChart({
                   xValue = Number(rawXValue)
                 }
                 
-                editingChart.yAxisParams?.forEach((yParam, index) => {
+                validYParams.forEach((yParam, index) => {
                   const cleanParam = yParam.parameter.includes('|') 
                     ? yParam.parameter.split('|')[0] 
                     : yParam.parameter
@@ -123,11 +128,14 @@ export function useOptimizedChart({
                   }
                   
                   if (xValue !== undefined && typeof yValue === 'number' && !isNaN(yValue)) {
+                    // Create unique seriesIndex based on both dataSource and yParam
+                    const uniqueSeriesIndex = dataSourceIndex * validYParams.length + index
+                    
                     allData.push({
                       x: xValue,
                       y: yValue,
-                      series: yParam.parameter,
-                      seriesIndex: index,
+                      series: `${dataSource.label} - ${yParam.parameter}`,  // Include dataSource in series name
+                      seriesIndex: uniqueSeriesIndex,
                       timestamp: point.timestamp,
                       dataSourceId: dataSource.id,
                       dataSourceLabel: dataSource.label

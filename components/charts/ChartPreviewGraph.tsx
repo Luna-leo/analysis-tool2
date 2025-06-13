@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useMemo } from "react"
 import * as d3 from "d3"
-import { ChartComponent, EventInfo } from "@/types"
+import { ChartComponent, EventInfo, DataSourceStyle } from "@/types"
 import { 
   renderEmptyChart, 
   renderLineChart, 
@@ -19,9 +19,10 @@ interface ChartPreviewGraphProps {
   selectedDataSourceItems: EventInfo[]
   setEditingChart?: (chart: ChartComponent) => void
   maxDataPoints?: number
+  dataSourceStyles?: { [dataSourceId: string]: DataSourceStyle }
 }
 
-export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints = 500 }: ChartPreviewGraphProps) => {
+export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints = 500, dataSourceStyles }: ChartPreviewGraphProps) => {
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const renderingRef = useRef<boolean>(false)
@@ -119,7 +120,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           
           if (chartData.length > 0) {
             // Render scatter plot
-            renderScatterPlot({ g, data: chartData, width, height, editingChart, scalesRef })
+            renderScatterPlot({ g, data: chartData, width, height, editingChart, scalesRef, dataSourceStyles })
           } else {
             // Render empty chart with axes
             renderEmptyChart({ g, width, height, chartType: "scatter", editingChart, scalesRef })
@@ -143,7 +144,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         }
       })
     }
-  }, [chartData, dimensions, isLoadingData, editingChart])
+  }, [chartData, dimensions, isLoadingData, editingChart, dataSourceStyles])
 
   useEffect(() => {
     renderChart()

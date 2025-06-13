@@ -15,8 +15,9 @@ export function ChartEditModal() {
   const { openTabs, activeTab: activeFileTab, updateFileCharts, updateFileDataSources } = useFileStore()
   const [activeTab, setActiveTab] = useState<TabType>("datasource")
   const [selectedDataSourceItems, setSelectedDataSourceItems] = useState<EventInfo[]>([])
+  const [dataSourceStyles, setDataSourceStyles] = useState<{ [dataSourceId: string]: any }>({})
 
-  // Initialize selectedDataSourceItems from FileNode when modal opens
+  // Initialize selectedDataSourceItems and dataSourceStyles from FileNode when modal opens
   React.useEffect(() => {
     if (editModalOpen && editingChart) {
       const targetFileId = editingChart.fileId || activeFileTab
@@ -27,6 +28,13 @@ export function ChartEditModal() {
         setSelectedDataSourceItems(currentFile.selectedDataSources)
       } else {
         setSelectedDataSourceItems([])
+      }
+      
+      // Also get dataSourceStyles
+      if (currentFile?.dataSourceStyles) {
+        setDataSourceStyles(currentFile.dataSourceStyles)
+      } else {
+        setDataSourceStyles({})
       }
     }
   }, [editModalOpen, editingChart?.id, openTabs, activeFileTab])
@@ -125,6 +133,7 @@ export function ChartEditModal() {
                 editingChart={editingChart}
                 selectedDataSourceItems={selectedDataSourceItems}
                 setEditingChart={setEditingChart}
+                dataSourceStyles={dataSourceStyles}
               />
             </div>
           </div>

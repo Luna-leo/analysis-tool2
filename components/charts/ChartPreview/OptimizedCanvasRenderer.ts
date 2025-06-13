@@ -1,4 +1,4 @@
-import { ChartComponent } from "@/types"
+import { ChartComponent, DataSourceStyle } from "@/types"
 import { getXValueForScale } from "@/utils/chartAxisUtils"
 
 interface OptimizedCanvasRendererProps {
@@ -8,6 +8,7 @@ interface OptimizedCanvasRendererProps {
     y: number
     series: string
     seriesIndex: number
+    dataSourceId?: string
   }>
   width: number
   height: number
@@ -16,6 +17,7 @@ interface OptimizedCanvasRendererProps {
   yScale: d3.ScaleLinear<number, number>
   editingChart: ChartComponent
   colorScale: (series: string) => string
+  dataSourceStyles?: { [dataSourceId: string]: DataSourceStyle }
 }
 
 // Canvas rendering pool to reuse canvases
@@ -52,7 +54,8 @@ export function renderWithOptimizedCanvas({
   xScale,
   yScale,
   editingChart,
-  colorScale
+  colorScale,
+  dataSourceStyles = {}
 }: OptimizedCanvasRendererProps): void {
   const ctx = canvas.getContext('2d', { alpha: false })
   if (!ctx) return
@@ -97,10 +100,16 @@ export function renderWithOptimizedCanvas({
   
   // Render each series with optimizations
   dataBySeriesIndex.forEach((seriesData, seriesIndex) => {
-    const yParam = editingChart.yAxisParams?.[seriesIndex]
-    const color = yParam?.marker?.fillColor || colorScale(seriesData[0].series)
+    const firstDataPoint = seriesData[0]
+    const dataSourceStyle = firstDataPoint.dataSourceId ? dataSourceStyles[firstDataPoint.dataSourceId] : undefined
     
-    drawOptimizedSeries(ctx, seriesData, xScale, yScale, color, editingChart, yParam, width, height)
+    // Apply DataSource styles with priority
+    const defaultColor = colorScale(firstDataPoint.series)
+    const color = dataSourceStyle?.markerColor || dataSourceStyle?.lineColor || defaultColor
+    const opacity = dataSourceStyle?.markerOpacity !== undefined ? dataSourceStyle.markerOpacity : 0.7
+    const markerSize = dataSourceStyle?.markerSize || 2
+    
+    drawOptimizedSeries(ctx, seriesData, xScale, yScale, color, editingChart, null, width, height, opacity, markerSize)
   })
   
   ctx.restore()
@@ -205,7 +214,9 @@ function drawOptimizedSeries(
   editingChart: ChartComponent,
   yParam: any,
   width: number,
-  height: number
+  height: number,
+  opacity: number = 0.7,
+  markerSize: number = 2
 ): void {
   ctx.save()
   
@@ -221,7 +232,7 @@ function drawOptimizedSeries(
   } 
   // For low density, render individual points
   else {
-    renderAsPoints(ctx, data, xScale, yScale, color, editingChart, yParam)
+    renderAsPoints(ctx, data, xScale, yScale, color, editingChart, yParam, opacity, markerSize)
   }
   
   ctx.restore()
@@ -311,12 +322,14 @@ function renderAsPoints(
   yScale: any,
   color: string,
   editingChart: ChartComponent,
-  yParam: any
+  yParam: any,
+  opacity: number = 0.7,
+  markerSizeParam: number = 2
 ): void {
   ctx.fillStyle = color
-  ctx.globalAlpha = 0.7
+  ctx.globalAlpha = opacity
   
-  const markerSize = yParam?.marker?.size || 2
+  const markerSize = markerSizeParam
   
   // Batch render all points
   ctx.beginPath()

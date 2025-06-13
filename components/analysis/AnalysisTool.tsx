@@ -5,6 +5,8 @@ import { Sidebar, TabHeader, BreadcrumbNavigation, WelcomeMessage } from "../lay
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { ChartGrid, ChartEditModal } from "../charts"
+import { DataSourceStyleDrawer } from "../charts/DataSourceStyleDrawer"
+import { DataSourceBadgePreview } from "../charts/DataSourceBadgePreview"
 import { useFileStore } from "@/stores/useFileStore"
 import { useParameterStore } from "@/stores/useParameterStore"
 import { useGraphStateStore } from "@/stores/useGraphStateStore"
@@ -19,6 +21,9 @@ import { optimizeMemory } from "@/utils/memoryOptimization"
 import type { FileNode } from "@/types"
 
 export default function AnalysisTool() {
+  const [selectedDataSource, setSelectedDataSource] = React.useState<any>(null)
+  const [styleDrawerOpen, setStyleDrawerOpen] = React.useState(false)
+  
   const { openTabs, activeTab, openFile, fileTree, setActiveTab, toggleFolder, setFileTree } = useFileStore()
   const { loadParameters } = useParameterStore()
   const { loadState } = useGraphStateStore()
@@ -188,9 +193,23 @@ export default function AnalysisTool() {
                   <div className="px-6 py-1.5 bg-muted/30">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm text-muted-foreground">Data Sources:</span>
-                      {selectedDataSources.map((source: any) => (
-                        <Badge key={source.id} variant="secondary" className="text-xs">
-                          {source.label}
+                      {selectedDataSources.map((source: any, index: number) => (
+                        <Badge 
+                          key={source.id} 
+                          variant="secondary" 
+                          className="text-xs cursor-pointer hover:bg-secondary/80 transition-colors"
+                          onClick={() => {
+                            setSelectedDataSource(source)
+                            setStyleDrawerOpen(true)
+                          }}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <DataSourceBadgePreview
+                              dataSourceStyle={(currentFile as any).dataSourceStyles?.[source.id]}
+                              defaultColor={getDefaultColor(source.id, index)}
+                            />
+                            {source.label}
+                          </div>
                         </Badge>
                       ))}
                     </div>
@@ -226,6 +245,40 @@ export default function AnalysisTool() {
         threshold={80} 
         onOptimize={handleMemoryOptimization}
       />
+      
+      {/* Data Source Style Drawer */}
+      {activeTab && (() => {
+        const currentFile = openTabs.find((tab) => tab.id === activeTab)
+        if (currentFile && selectedDataSource) {
+          return (
+            <DataSourceStyleDrawer
+              open={styleDrawerOpen}
+              onOpenChange={setStyleDrawerOpen}
+              dataSource={selectedDataSource}
+              fileId={activeTab}
+              currentStyle={(currentFile as any).dataSourceStyles?.[selectedDataSource.id]}
+            />
+          )
+        }
+        return null
+      })()}
     </div>
   )
+}
+
+// Helper function to get default color for data source
+const defaultColors = [
+  "#3b82f6", // blue
+  "#ef4444", // red
+  "#10b981", // green
+  "#f59e0b", // yellow
+  "#8b5cf6", // purple
+  "#06b6d4", // cyan
+  "#f97316", // orange
+  "#ec4899", // pink
+]
+
+const getDefaultColor = (dataSourceId: string, index: number) => {
+  // Use index for consistent color
+  return defaultColors[index % defaultColors.length]
 }

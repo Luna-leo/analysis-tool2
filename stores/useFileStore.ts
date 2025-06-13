@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { devtools, subscribeWithSelector } from 'zustand/middleware'
-import type { FileNode, ChartComponent, EventInfo } from '@/types'
+import type { FileNode, ChartComponent, EventInfo, DataSourceStyle } from '@/types'
 import { mockFileTree } from '@/data/mockData'
 import { useGraphStateStore } from './useGraphStateStore'
 import { traverseAndUpdate, findNodeById, addNodeToParent } from '@/utils/treeUtils'
@@ -44,6 +44,7 @@ interface FileActions {
   setDragOverTab: (tabId: string | null) => void
   updateFileCharts: (fileId: string, charts: ChartComponent[]) => void
   updateFileDataSources: (fileId: string, dataSources: EventInfo[]) => void
+  updateDataSourceStyle: (fileId: string, dataSourceId: string, style: DataSourceStyle) => void
   duplicateChart: (fileId: string, chartId: string) => void
   deleteChart: (fileId: string, chartId: string) => void
 }
@@ -344,6 +345,35 @@ export const useFileStore = create<FileStore>()(
         // Update dataSources in openTabs
         const newOpenTabs = state.openTabs.map(tab => 
           tab.id === fileId ? { ...tab, selectedDataSources: dataSources } : tab
+        )
+
+        return {
+          fileTree: newFileTree,
+          openTabs: newOpenTabs
+        }
+      }),
+
+      updateDataSourceStyle: (fileId, dataSourceId, style) => set((state) => {
+        // Update dataSourceStyles in fileTree
+        const newFileTree = traverseAndUpdate(state.fileTree, fileId, (node) => ({
+          ...node,
+          dataSourceStyles: {
+            ...node.dataSourceStyles,
+            [dataSourceId]: style
+          }
+        }))
+
+        // Update dataSourceStyles in openTabs
+        const newOpenTabs = state.openTabs.map(tab => 
+          tab.id === fileId 
+            ? { 
+                ...tab, 
+                dataSourceStyles: {
+                  ...(tab as FileNode).dataSourceStyles,
+                  [dataSourceId]: style
+                }
+              } 
+            : tab
         )
 
         return {

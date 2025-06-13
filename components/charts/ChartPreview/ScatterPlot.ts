@@ -1,5 +1,5 @@
 import * as d3 from "d3"
-import { ChartComponent } from "@/types"
+import { ChartComponent, DataSourceStyle } from "@/types"
 import { formatXValue, getXValueForScale } from "@/utils/chartAxisUtils"
 import { calculateXAxisPosition } from "@/utils/chart/axisPositioning"
 import { calculateConsistentYDomain } from "@/utils/chart/scaleUtils"
@@ -26,9 +26,10 @@ interface RenderScatterPlotProps {
     xScale: d3.ScaleTime<number, number> | d3.ScaleLinear<number, number> | null
     yScale: d3.ScaleLinear<number, number> | null
   }>
+  dataSourceStyles?: { [dataSourceId: string]: DataSourceStyle }
 }
 
-export function renderScatterPlot({ g, data, width, height, editingChart, scalesRef }: RenderScatterPlotProps) {
+export function renderScatterPlot({ g, data, width, height, editingChart, scalesRef, dataSourceStyles = {} }: RenderScatterPlotProps) {
   // Start performance tracking
   performanceTracker.mark('scatter-plot-render-start')
   
@@ -42,7 +43,7 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
   // Determine LOD level and render method
   const viewportSize = { width, height }
   const lodConfig = determineLODLevel(data.length, 1, viewportSize)
-  const renderMethod = getRenderMethod(data.length, viewportSize)
+  let renderMethod = getRenderMethod(data.length, viewportSize)
   
   // Add event listener to close tooltips on wheel/drag
   const svg = g.node()?.ownerSVGElement
@@ -162,7 +163,8 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
             xScale,
             yScale,
             editingChart,
-            colorScale: (series: string) => colorScale(series) as string
+            colorScale: (series: string) => colorScale(series) as string,
+            dataSourceStyles
           })
           
           // Convert canvas to image and embed in SVG
@@ -317,17 +319,28 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
 
   // Render scatter points for each series
   dataBySeriesIndex.forEach((seriesData, seriesIndex) => {
-    const yParam = editingChart.yAxisParams?.[seriesIndex]
-    const markerConfig = yParam?.marker || {
-      type: 'circle',
-      size: 4,
-      fillColor: colorScale(seriesData[0].series),
-      borderColor: colorScale(seriesData[0].series)
+    const firstDataPoint = seriesData[0]
+    const dataSourceStyle = dataSourceStyles[firstDataPoint.dataSourceId] || {}
+    
+    // Apply DataSource styles with priority over yParam marker config
+    const defaultColor = colorScale(firstDataPoint.series)
+    const markerConfig = {
+      type: dataSourceStyle.markerShape || 'circle',
+      size: dataSourceStyle.markerSize || 4,
+      fillColor: dataSourceStyle.markerColor || dataSourceStyle.lineColor || defaultColor,
+      borderColor: dataSourceStyle.markerColor || dataSourceStyle.lineColor || defaultColor,
+      opacity: dataSourceStyle.markerOpacity !== undefined ? dataSourceStyle.markerOpacity : 0.7,
+      enabled: dataSourceStyle.markerEnabled !== undefined ? dataSourceStyle.markerEnabled : true
     }
     
     // Simplify data based on LOD
     const simplifiedData = simplifyData(seriesData, lodConfig)
 
+    // Skip rendering if markers are disabled
+    if (!markerConfig.enabled) {
+      return
+    }
+    
     const points = scatterGroup.selectAll(`.scatter-points-${seriesIndex}`)
       .data(lodConfig.showMarkers ? simplifiedData : [])
       .enter()
@@ -347,7 +360,7 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
         .style("fill", markerConfig.fillColor || colorScale(seriesData[0].series))
         .style("stroke", markerConfig.borderColor || colorScale(seriesData[0].series))
         .style("stroke-width", 1)
-        .style("opacity", 0.7)
+        .style("opacity", markerConfig.opacity)
         .style("cursor", "pointer")
         .style("pointer-events", "all")
         .on("mouseover", function(event, d) {
@@ -372,7 +385,7 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
         })
         .on("mouseout", function(event, d) {
           d3.select(this)
-            .style("opacity", 0.7)
+            .style("opacity", markerConfig.opacity)
             .style("stroke-width", 1)
           
           hideTooltip()
@@ -391,7 +404,7 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
         .style("fill", markerConfig.fillColor || colorScale(seriesData[0].series))
         .style("stroke", markerConfig.borderColor || colorScale(seriesData[0].series))
         .style("stroke-width", 1)
-        .style("opacity", 0.7)
+        .style("opacity", markerConfig.opacity)
         .style("cursor", "pointer")
         .style("pointer-events", "all")
         .on("mouseover", function(event, d) {
@@ -416,13 +429,185 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
         })
         .on("mouseout", function(event, d) {
           d3.select(this)
-            .style("opacity", 0.7)
+            .style("opacity", markerConfig.opacity)
+            .style("stroke-width", 1)
+          
+          hideTooltip()
+        })
+    } else if (markerConfig.type === 'triangle') {
+      const size = markerConfig.size || 4
+      const trianglePath = d3.symbol().type(d3.symbolTriangle).size(size * size * 2)
+      
+      points.append("path")
+        .attr("d", trianglePath)
+        .attr("transform", d => {
+          const scaledValue = getXValueForScale(d.x, editingChart.xAxisType || 'parameter')
+          return `translate(${xScale(scaledValue)},${yScale(d.y)})`
+        })
+        .style("fill", markerConfig.fillColor || colorScale(seriesData[0].series))
+        .style("stroke", markerConfig.borderColor || colorScale(seriesData[0].series))
+        .style("stroke-width", 1)
+        .style("opacity", markerConfig.opacity)
+        .style("cursor", "pointer")
+        .style("pointer-events", "all")
+        .on("mouseover", function(event, d) {
+          d3.select(this)
+            .style("opacity", 1)
+            .style("stroke-width", 2)
+          
+          const xDisplay = formatXValue(d.x, editingChart.xAxisType || 'parameter')
+          
+          const content = `
+            <div><strong>${d.series}</strong></div>
+            <div>X: ${xDisplay}</div>
+            <div>Y: ${d.y.toFixed(3)}</div>
+            <div>Time: ${new Date(d.timestamp).toLocaleString()}</div>
+            <div>Source: ${d.dataSourceLabel}</div>
+          `
+          
+          showTooltip(event, content)
+        })
+        .on("mousemove", function(event, d) {
+          updateTooltipPosition(event)
+        })
+        .on("mouseout", function(event, d) {
+          d3.select(this)
+            .style("opacity", markerConfig.opacity)
+            .style("stroke-width", 1)
+          
+          hideTooltip()
+        })
+    } else if (markerConfig.type === 'diamond') {
+      const size = markerConfig.size || 4
+      const diamondPath = d3.symbol().type(d3.symbolDiamond).size(size * size * 2.5)
+      
+      points.append("path")
+        .attr("d", diamondPath)
+        .attr("transform", d => {
+          const scaledValue = getXValueForScale(d.x, editingChart.xAxisType || 'parameter')
+          return `translate(${xScale(scaledValue)},${yScale(d.y)})`
+        })
+        .style("fill", markerConfig.fillColor || colorScale(seriesData[0].series))
+        .style("stroke", markerConfig.borderColor || colorScale(seriesData[0].series))
+        .style("stroke-width", 1)
+        .style("opacity", markerConfig.opacity)
+        .style("cursor", "pointer")
+        .style("pointer-events", "all")
+        .on("mouseover", function(event, d) {
+          d3.select(this)
+            .style("opacity", 1)
+            .style("stroke-width", 2)
+          
+          const xDisplay = formatXValue(d.x, editingChart.xAxisType || 'parameter')
+          
+          const content = `
+            <div><strong>${d.series}</strong></div>
+            <div>X: ${xDisplay}</div>
+            <div>Y: ${d.y.toFixed(3)}</div>
+            <div>Time: ${new Date(d.timestamp).toLocaleString()}</div>
+            <div>Source: ${d.dataSourceLabel}</div>
+          `
+          
+          showTooltip(event, content)
+        })
+        .on("mousemove", function(event, d) {
+          updateTooltipPosition(event)
+        })
+        .on("mouseout", function(event, d) {
+          d3.select(this)
+            .style("opacity", markerConfig.opacity)
+            .style("stroke-width", 1)
+          
+          hideTooltip()
+        })
+    } else if (markerConfig.type === 'cross') {
+      const size = markerConfig.size || 4
+      const crossPath = d3.symbol().type(d3.symbolCross).size(size * size * 2)
+      
+      points.append("path")
+        .attr("d", crossPath)
+        .attr("transform", d => {
+          const scaledValue = getXValueForScale(d.x, editingChart.xAxisType || 'parameter')
+          return `translate(${xScale(scaledValue)},${yScale(d.y)})`
+        })
+        .style("fill", markerConfig.fillColor || colorScale(seriesData[0].series))
+        .style("stroke", markerConfig.borderColor || colorScale(seriesData[0].series))
+        .style("stroke-width", 1)
+        .style("opacity", markerConfig.opacity)
+        .style("cursor", "pointer")
+        .style("pointer-events", "all")
+        .on("mouseover", function(event, d) {
+          d3.select(this)
+            .style("opacity", 1)
+            .style("stroke-width", 2)
+          
+          const xDisplay = formatXValue(d.x, editingChart.xAxisType || 'parameter')
+          
+          const content = `
+            <div><strong>${d.series}</strong></div>
+            <div>X: ${xDisplay}</div>
+            <div>Y: ${d.y.toFixed(3)}</div>
+            <div>Time: ${new Date(d.timestamp).toLocaleString()}</div>
+            <div>Source: ${d.dataSourceLabel}</div>
+          `
+          
+          showTooltip(event, content)
+        })
+        .on("mousemove", function(event, d) {
+          updateTooltipPosition(event)
+        })
+        .on("mouseout", function(event, d) {
+          d3.select(this)
+            .style("opacity", markerConfig.opacity)
+            .style("stroke-width", 1)
+          
+          hideTooltip()
+        })
+    } else if (markerConfig.type === 'star') {
+      const size = markerConfig.size || 4
+      const starPath = d3.symbol().type(d3.symbolStar).size(size * size * 2)
+      
+      points.append("path")
+        .attr("d", starPath)
+        .attr("transform", d => {
+          const scaledValue = getXValueForScale(d.x, editingChart.xAxisType || 'parameter')
+          return `translate(${xScale(scaledValue)},${yScale(d.y)})`
+        })
+        .style("fill", markerConfig.fillColor || colorScale(seriesData[0].series))
+        .style("stroke", markerConfig.borderColor || colorScale(seriesData[0].series))
+        .style("stroke-width", 1)
+        .style("opacity", markerConfig.opacity)
+        .style("cursor", "pointer")
+        .style("pointer-events", "all")
+        .on("mouseover", function(event, d) {
+          d3.select(this)
+            .style("opacity", 1)
+            .style("stroke-width", 2)
+          
+          const xDisplay = formatXValue(d.x, editingChart.xAxisType || 'parameter')
+          
+          const content = `
+            <div><strong>${d.series}</strong></div>
+            <div>X: ${xDisplay}</div>
+            <div>Y: ${d.y.toFixed(3)}</div>
+            <div>Time: ${new Date(d.timestamp).toLocaleString()}</div>
+            <div>Source: ${d.dataSourceLabel}</div>
+          `
+          
+          showTooltip(event, content)
+        })
+        .on("mousemove", function(event, d) {
+          updateTooltipPosition(event)
+        })
+        .on("mouseout", function(event, d) {
+          d3.select(this)
+            .style("opacity", markerConfig.opacity)
             .style("stroke-width", 1)
           
           hideTooltip()
         })
     } else {
-      // Default to circle for other marker types
+      // Default to circle for unknown marker types
       points.append("circle")
         .attr("cx", d => {
           const scaledValue = getXValueForScale(d.x, editingChart.xAxisType || 'parameter')
@@ -433,7 +618,7 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
         .style("fill", markerConfig.fillColor || colorScale(seriesData[0].series))
         .style("stroke", markerConfig.borderColor || colorScale(seriesData[0].series))
         .style("stroke-width", 1)
-        .style("opacity", 0.7)
+        .style("opacity", markerConfig.opacity)
         .style("cursor", "pointer")
         .style("pointer-events", "all")
         .on("mouseover", function(event, d) {
@@ -458,7 +643,7 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
         })
         .on("mouseout", function(event, d) {
           d3.select(this)
-            .style("opacity", 0.7)
+            .style("opacity", markerConfig.opacity)
             .style("stroke-width", 1)
           
           hideTooltip()

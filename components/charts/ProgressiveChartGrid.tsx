@@ -200,6 +200,7 @@ export const ProgressiveChartGrid = React.memo(function ProgressiveChartGrid({
                   isDragging={draggedIndex === index}
                   dragOverIndex={dragOverIndex}
                   selectedDataSources={file.selectedDataSources}
+                  dataSourceStyles={file.dataSourceStyles}
                 />
               ) : (
                 <ChartSkeleton

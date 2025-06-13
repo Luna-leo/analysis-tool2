@@ -82,7 +82,7 @@ export function DataSourceTab({
       }
     } else {
       const newEntry: EventInfo = {
-        id: `manual_${Date.now()}`,
+        id: `manual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         plant: '',
         machineNo: '',
         event: '',
@@ -252,7 +252,7 @@ export function DataSourceTab({
 
       // Create a CollectedPeriod entry
       const collectedPeriod = {
-        id: `collected_${Date.now()}`,
+        id: `collected_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         plant: data.plant,
         machineNo: data.machineNo,
         dataSourceType: data.dataSourceType,

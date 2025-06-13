@@ -243,6 +243,7 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
                 isDragging={draggedIndex === index}
                 dragOverIndex={dragOverIndex}
                 selectedDataSources={file.selectedDataSources}
+                dataSourceStyles={file.dataSourceStyles}
               />
           ))}
         </div>
