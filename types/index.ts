@@ -79,6 +79,7 @@ export interface ReferenceLine {
 
 export interface DataSourceStyle {
   // Line settings
+  lineEnabled?: boolean  // Whether to show lines connecting points
   lineColor?: string
   lineWidth?: number
   lineStyle?: 'solid' | 'dashed' | 'dotted' | 'dashdot'

@@ -317,7 +317,7 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
   // Group data by series for consistent styling
   const dataBySeriesIndex = d3.group(data, d => d.seriesIndex)
 
-  // Render scatter points for each series
+  // Render lines and scatter points for each series
   dataBySeriesIndex.forEach((seriesData, seriesIndex) => {
     const firstDataPoint = seriesData[0]
     const dataSourceStyle = dataSourceStyles[firstDataPoint.dataSourceId] || {}
@@ -331,6 +331,37 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
       borderColor: dataSourceStyle.markerColor || dataSourceStyle.lineColor || defaultColor,
       opacity: dataSourceStyle.markerOpacity !== undefined ? dataSourceStyle.markerOpacity : 0.7,
       enabled: dataSourceStyle.markerEnabled !== undefined ? dataSourceStyle.markerEnabled : true
+    }
+    
+    // Draw line if enabled
+    if (dataSourceStyle.lineEnabled) {
+      const line = d3.line<typeof seriesData[0]>()
+        .x(d => {
+          const scaledValue = getXValueForScale(d.x, editingChart.xAxisType || 'parameter')
+          return xScale(scaledValue)
+        })
+        .y(d => yScale(d.y))
+        .curve(
+          dataSourceStyle.interpolation === 'smooth' ? d3.curveCardinal :
+          dataSourceStyle.interpolation === 'step' ? d3.curveStep :
+          dataSourceStyle.interpolation === 'stepAfter' ? d3.curveStepAfter :
+          dataSourceStyle.interpolation === 'stepBefore' ? d3.curveStepBefore :
+          d3.curveLinear
+        )
+      
+      scatterGroup.append("path")
+        .datum(seriesData)
+        .attr("fill", "none")
+        .attr("stroke", dataSourceStyle.lineColor || defaultColor)
+        .attr("stroke-width", dataSourceStyle.lineWidth || 2)
+        .attr("stroke-dasharray",
+          dataSourceStyle.lineStyle === 'dashed' ? '5,5' :
+          dataSourceStyle.lineStyle === 'dotted' ? '2,2' :
+          dataSourceStyle.lineStyle === 'dashdot' ? '5,2,2,2' :
+          'none'
+        )
+        .attr("opacity", dataSourceStyle.lineOpacity || 1)
+        .attr("d", line)
     }
     
     // Simplify data based on LOD

@@ -9,12 +9,14 @@ interface DataSourceBadgePreviewProps {
 }
 
 export function DataSourceBadgePreview({ dataSourceStyle, defaultColor }: DataSourceBadgePreviewProps) {
+  const lineEnabled = dataSourceStyle?.lineEnabled || false
   const lineColor = dataSourceStyle?.lineColor || defaultColor
   const lineStyle = dataSourceStyle?.lineStyle || 'solid'
   const lineWidth = dataSourceStyle?.lineWidth || 2
-  const markerEnabled = dataSourceStyle?.markerEnabled !== false
+  const markerEnabled = dataSourceStyle?.markerEnabled !== undefined ? dataSourceStyle.markerEnabled : true
   const markerShape = dataSourceStyle?.markerShape || 'circle'
   const markerSize = Math.min(dataSourceStyle?.markerSize || 4, 5) // Cap size for badge
+  const markerColor = dataSourceStyle?.markerColor || lineColor
 
   // Create line style pattern
   const getLinePattern = () => {
@@ -32,89 +34,98 @@ export function DataSourceBadgePreview({ dataSourceStyle, defaultColor }: DataSo
 
   return (
     <div className="flex items-center gap-1" style={{ width: '24px', height: '12px', position: 'relative' }}>
-      {/* Line */}
-      <svg width="14" height="12" style={{ position: 'absolute', left: 0 }}>
-        <line
-          x1="0"
-          y1="6"
-          x2="14"
-          y2="6"
-          stroke={lineColor}
-          strokeWidth={Math.min(lineWidth, 2)}
-          strokeDasharray={getLinePattern()}
-        />
+      <svg width="24" height="12" style={{ position: 'absolute', left: 0 }}>
+        {/* Line if enabled */}
+        {lineEnabled && (
+          <line
+            x1="0"
+            y1="6"
+            x2="24"
+            y2="6"
+            stroke={lineColor}
+            strokeWidth={Math.min(lineWidth, 2)}
+            strokeDasharray={getLinePattern()}
+          />
+        )}
+        
+        {/* Marker - position at center or end of line */}
+        {markerEnabled && (
+          <>
+            {markerShape === 'circle' && (
+              <circle
+                cx={lineEnabled ? "12" : "12"}
+                cy="6"
+                r={markerSize}
+                fill={markerColor}
+                stroke={markerColor}
+                strokeWidth="0.5"
+              />
+            )}
+            {markerShape === 'square' && (
+              <rect
+                x={12 - markerSize}
+                y={6 - markerSize}
+                width={markerSize * 2}
+                height={markerSize * 2}
+                fill={markerColor}
+                stroke={markerColor}
+                strokeWidth="0.5"
+              />
+            )}
+            {markerShape === 'triangle' && (
+              <polygon
+                points={`12,${6 - markerSize} ${12 - markerSize},${6 + markerSize} ${12 + markerSize},${6 + markerSize}`}
+                fill={markerColor}
+                stroke={markerColor}
+                strokeWidth="0.5"
+              />
+            )}
+            {markerShape === 'diamond' && (
+              <polygon
+                points={`12,${6 - markerSize} ${12 + markerSize},6 12,${6 + markerSize} ${12 - markerSize},6`}
+                fill={markerColor}
+                stroke={markerColor}
+                strokeWidth="0.5"
+              />
+            )}
+            {markerShape === 'cross' && (
+              <g>
+                <line
+                  x1={12 - markerSize}
+                  y1="6"
+                  x2={12 + markerSize}
+                  y2="6"
+                  stroke={markerColor}
+                  strokeWidth="1"
+                />
+                <line
+                  x1="12"
+                  y1={6 - markerSize}
+                  x2="12"
+                  y2={6 + markerSize}
+                  stroke={markerColor}
+                  strokeWidth="1"
+                />
+              </g>
+            )}
+            {markerShape === 'star' && (
+              <polygon
+                points={generateStarPoints(12, 6, markerSize, markerSize * 0.5)}
+                fill={markerColor}
+                stroke={markerColor}
+                strokeWidth="0.5"
+              />
+            )}
+          </>
+        )}
+        
+        {/* Show dash if nothing is enabled */}
+        {!markerEnabled && !lineEnabled && (
+          <text x="12" y="9" textAnchor="middle" className="text-xs fill-muted-foreground">
+            —
+          </text>
+        )}
       </svg>
-      
-      {/* Marker */}
-      {markerEnabled && (
-        <svg width="10" height="12" style={{ position: 'absolute', right: 0 }}>
-          {markerShape === 'circle' && (
-            <circle
-              cx="5"
-              cy="6"
-              r={markerSize}
-              fill={lineColor}
-              stroke={lineColor}
-              strokeWidth="0.5"
-            />
-          )}
-          {markerShape === 'square' && (
-            <rect
-              x={5 - markerSize}
-              y={6 - markerSize}
-              width={markerSize * 2}
-              height={markerSize * 2}
-              fill={lineColor}
-              stroke={lineColor}
-              strokeWidth="0.5"
-            />
-          )}
-          {markerShape === 'triangle' && (
-            <polygon
-              points={`5,${6 - markerSize} ${5 - markerSize},${6 + markerSize} ${5 + markerSize},${6 + markerSize}`}
-              fill={lineColor}
-              stroke={lineColor}
-              strokeWidth="0.5"
-            />
-          )}
-          {markerShape === 'diamond' && (
-            <polygon
-              points={`5,${6 - markerSize} ${5 + markerSize},6 5,${6 + markerSize} ${5 - markerSize},6`}
-              fill={lineColor}
-              stroke={lineColor}
-              strokeWidth="0.5"
-            />
-          )}
-          {markerShape === 'cross' && (
-            <g>
-              <line
-                x1={5 - markerSize}
-                y1="6"
-                x2={5 + markerSize}
-                y2="6"
-                stroke={lineColor}
-                strokeWidth="1"
-              />
-              <line
-                x1="5"
-                y1={6 - markerSize}
-                x2="5"
-                y2={6 + markerSize}
-                stroke={lineColor}
-                strokeWidth="1"
-              />
-            </g>
-          )}
-          {markerShape === 'star' && (
-            <polygon
-              points={generateStarPoints(5, 6, markerSize, markerSize * 0.5)}
-              fill={lineColor}
-              stroke={lineColor}
-              strokeWidth="0.5"
-            />
-          )}
-        </svg>
-      )}
     </div>
   )
 }

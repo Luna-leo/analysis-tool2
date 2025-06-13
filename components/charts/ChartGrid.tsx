@@ -198,20 +198,10 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
     <div className="absolute inset-0 overflow-auto" ref={contentRef}>
       <div className="p-6">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-1">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               {currentSettings.showFileName && <h2 className="text-2xl font-bold mb-2">{file.name}</h2>}
-
-              {currentSettings.showDataSources && file.selectedDataSources && file.selectedDataSources.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {file.selectedDataSources.map((source) => (
-                    <Badge key={source.id} variant="secondary" className="text-xs">
-                      {source.label}
-                    </Badge>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         </div>

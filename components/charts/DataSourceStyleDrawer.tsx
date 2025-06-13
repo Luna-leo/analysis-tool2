@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { EventInfo, DataSourceStyle } from "@/types"
 import { useFileStore } from "@/stores/useFileStore"
+import { toast } from "@/components/ui/use-toast"
 
 interface DataSourceStyleDrawerProps {
   open: boolean
@@ -103,11 +104,12 @@ export function DataSourceStyleDrawer({
   const { updateDataSourceStyle } = useFileStore()
   
   const [style, setStyle] = useState<DataSourceStyle>({
+    lineEnabled: currentStyle?.lineEnabled || false,
     lineColor: currentStyle?.lineColor || (dataSource ? getDefaultColor(dataSource.id) : defaultColors[0]),
     lineWidth: currentStyle?.lineWidth || 2,
     lineStyle: currentStyle?.lineStyle || 'solid',
     lineOpacity: currentStyle?.lineOpacity || 1,
-    markerEnabled: currentStyle?.markerEnabled || false,
+    markerEnabled: currentStyle?.markerEnabled !== undefined ? currentStyle.markerEnabled : true,
     markerShape: currentStyle?.markerShape || 'circle',
     markerSize: currentStyle?.markerSize || 6,
     markerColor: currentStyle?.markerColor || currentStyle?.lineColor || (dataSource ? getDefaultColor(dataSource.id) : defaultColors[0]),
@@ -119,11 +121,12 @@ export function DataSourceStyleDrawer({
   useEffect(() => {
     if (dataSource && open) {
       setStyle({
+        lineEnabled: currentStyle?.lineEnabled || false,
         lineColor: currentStyle?.lineColor || getDefaultColor(dataSource.id),
         lineWidth: currentStyle?.lineWidth || 2,
         lineStyle: currentStyle?.lineStyle || 'solid',
         lineOpacity: currentStyle?.lineOpacity || 1,
-        markerEnabled: currentStyle?.markerEnabled || false,
+        markerEnabled: currentStyle?.markerEnabled !== undefined ? currentStyle.markerEnabled : true,
         markerShape: currentStyle?.markerShape || 'circle',
         markerSize: currentStyle?.markerSize || 6,
         markerColor: currentStyle?.markerColor || currentStyle?.lineColor || getDefaultColor(dataSource.id),
@@ -144,11 +147,12 @@ export function DataSourceStyleDrawer({
   const handleReset = () => {
     if (dataSource) {
       const defaultStyle: DataSourceStyle = {
+        lineEnabled: false,
         lineColor: getDefaultColor(dataSource.id),
         lineWidth: 2,
         lineStyle: 'solid',
         lineOpacity: 1,
-        markerEnabled: false,
+        markerEnabled: true,
         markerShape: 'circle',
         markerSize: 6,
         markerColor: getDefaultColor(dataSource.id),
@@ -181,32 +185,61 @@ export function DataSourceStyleDrawer({
           {/* Preview */}
           <div className="border rounded-lg p-4 bg-muted/30 h-24 flex items-center justify-center">
             <svg width="300" height="60">
-              <line
-                x1="10"
-                y1="30"
-                x2="290"
-                y2="30"
-                stroke={style.lineColor}
-                strokeWidth={style.lineWidth}
-                strokeDasharray={
-                  style.lineStyle === 'dashed' ? '5,5' :
-                  style.lineStyle === 'dotted' ? '2,2' :
-                  style.lineStyle === 'dashdot' ? '5,2,2,2' :
-                  'none'
-                }
-                opacity={style.lineOpacity}
-              />
+              {/* Show line if enabled */}
+              {style.lineEnabled && (
+                <line
+                  x1="50"
+                  y1="30"
+                  x2="250"
+                  y2="30"
+                  stroke={style.lineColor}
+                  strokeWidth={style.lineWidth}
+                  strokeDasharray={
+                    style.lineStyle === 'dashed' ? '5,5' :
+                    style.lineStyle === 'dotted' ? '2,2' :
+                    style.lineStyle === 'dashdot' ? '5,2,2,2' :
+                    'none'
+                  }
+                  opacity={style.lineOpacity}
+                />
+              )}
+              {/* Show markers if enabled */}
               {style.markerEnabled && [50, 100, 150, 200, 250].map(x => (
                 <g key={x}>
                   {renderMarkerShape(x, 30, style.markerShape || 'circle', style.markerSize || 4, style.markerColor || style.lineColor || '#3b82f6', style.markerOpacity || 1)}
                 </g>
               ))}
+              {!style.markerEnabled && !style.lineEnabled && (
+                <text x="150" y="35" textAnchor="middle" className="text-sm fill-muted-foreground">
+                  No visible elements
+                </text>
+              )}
             </svg>
           </div>
           
           {/* Line Settings */}
           <div className="space-y-4">
-            <h3 className="font-medium text-sm">Line Settings</h3>
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Line</Label>
+              <Switch
+                checked={style.lineEnabled}
+                onCheckedChange={(checked) => {
+                  if (!checked && !style.markerEnabled) {
+                    toast({
+                      title: "Cannot disable line",
+                      description: "At least one visual element (line or marker) must be enabled.",
+                      variant: "destructive",
+                    })
+                    return
+                  }
+                  setStyle({ ...style, lineEnabled: checked })
+                }}
+              />
+            </div>
+            
+            {style.lineEnabled && (
+              <div className="space-y-4 pl-4 border-l-2 border-muted">
+                <h3 className="font-medium text-sm">Line Settings</h3>
             
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -275,20 +308,33 @@ export function DataSourceStyleDrawer({
                 <span className="text-xs w-8 text-right">{Math.round((style.lineOpacity || 1) * 100)}%</span>
               </div>
             </div>
+              </div>
+            )}
           </div>
           
           {/* Marker Settings */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="font-medium text-sm">Marker Settings</h3>
+              <Label className="text-sm font-medium">Marker</Label>
               <Switch
                 checked={style.markerEnabled}
-                onCheckedChange={(checked) => setStyle({ ...style, markerEnabled: checked })}
+                onCheckedChange={(checked) => {
+                  if (!checked && !style.lineEnabled) {
+                    toast({
+                      title: "Cannot disable marker",
+                      description: "At least one visual element (line or marker) must be enabled.",
+                      variant: "destructive",
+                    })
+                    return
+                  }
+                  setStyle({ ...style, markerEnabled: checked })
+                }}
               />
             </div>
             
             {style.markerEnabled && (
-              <>
+              <div className="space-y-4 pl-4 border-l-2 border-muted">
+                <h3 className="font-medium text-sm">Marker Settings</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label className="text-xs">Shape</Label>
@@ -343,11 +389,12 @@ export function DataSourceStyleDrawer({
                     />
                   </div>
                 </div>
-              </>
+              </div>
             )}
           </div>
           
-          {/* Other Settings */}
+          {/* Other Settings - Show when lines are enabled */}
+          {style.lineEnabled && (
           <div className="space-y-4">
             <h3 className="font-medium text-sm">Other Settings</h3>
             
@@ -378,6 +425,7 @@ export function DataSourceStyleDrawer({
               />
             </div>
           </div>
+          )}
           
           {/* Action Buttons */}
           <div className="flex gap-2 pt-4">
