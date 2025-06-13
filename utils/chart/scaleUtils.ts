@@ -60,8 +60,15 @@ export function calculateConsistentYDomain(
   const max = Math.max(...values)
   const range = max - min || 1
   
+  // If min is non-negative and would become negative with padding,
+  // use 0 as the minimum instead
+  let paddedMin = min - range * padding
+  if (min >= 0 && paddedMin < 0) {
+    paddedMin = 0
+  }
+  
   return [
-    min - range * padding,
+    paddedMin,
     max + range * padding
   ]
 }
