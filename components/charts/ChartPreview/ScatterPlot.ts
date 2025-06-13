@@ -742,9 +742,8 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
       .attr("rx", 4)
       .attr("ry", 4)
 
-    // Create content group with padding
+    // Create content group without initial padding transform
     const contentGroup = legend.append("g")
-      .attr("transform", `translate(${padding}, ${padding})`)
 
     let currentX = 0
     let currentY = 0
@@ -792,22 +791,28 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
           legendItem.attr("transform", `translate(${currentX}, ${currentY})`)
         }
         currentX += itemWidth + itemSpacing * 2
-        maxWidth = Math.max(maxWidth, currentX)
+        maxWidth = Math.max(maxWidth, currentX - itemSpacing * 2)
         maxHeight = currentY + itemHeight
       } else {
         // Vertical layout
-        currentY += itemHeight + itemSpacing
+        if (index > 0) {
+          currentY += itemHeight + itemSpacing
+          legendItem.attr("transform", `translate(${currentX}, ${currentY})`)
+        }
         maxWidth = Math.max(maxWidth, itemWidth)
-        maxHeight = currentY - itemSpacing
+        maxHeight = currentY + itemHeight
       }
     })
 
-    // Update background rect size
+    // Update background rect size and position content group
     bgRect
-      .attr("x", -padding)
-      .attr("y", -padding)
+      .attr("x", 0)
+      .attr("y", 0)
       .attr("width", maxWidth + padding * 2)
       .attr("height", maxHeight + padding * 2)
+    
+    // Center the content within the padded background
+    contentGroup.attr("transform", `translate(${padding}, ${padding})`)
 
     // Adjust legend position to center it
     switch (position) {
