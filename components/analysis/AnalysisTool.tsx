@@ -9,7 +9,7 @@ import { ChartGrid, ChartEditModal } from "../charts"
 import { DataSourceStyleDrawer } from "../charts/DataSourceStyleDrawer"
 import { DataSourceBadgePreview } from "../charts/DataSourceBadgePreview"
 import { DataSourceModal } from "../charts/DataSourceModal"
-import { LineChart, Plus } from "lucide-react"
+import { LineChart, Plus, DatabaseIcon } from "lucide-react"
 import { useFileStore } from "@/stores/useFileStore"
 import { useParameterStore } from "@/stores/useParameterStore"
 import { useGraphStateStore } from "@/stores/useGraphStateStore"
@@ -192,53 +192,20 @@ export default function AnalysisTool() {
               const isGraphPage = (currentFile as any).charts || (currentFile as any).dataSources
               const selectedDataSources = (currentFile as any).selectedDataSources || []
               
-              if (isGraphPage && selectedDataSources.length > 0) {
+              if (isGraphPage) {
                 return (
-                  <div className="px-6 py-1 bg-muted/90">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <button
-                          className="flex items-center gap-1.5 px-2 py-0.5 rounded hover:bg-secondary/60 transition-colors focus:outline-none"
-                          onClick={() => setDataSourceModalOpen(true)}
-                          title="Data Source Settings"
-                          type="button"
-                        >
-                          {/* Use Database icon instead of Settings */}
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            style={{ width: '22px', height: '22px' }}
-                            className="text-foreground"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={2}
-                          >
-                            <ellipse cx="12" cy="6" rx="8" ry="3" />
-                            <path d="M4 6v6c0 1.657 3.582 3 8 3s8-1.343 8-3V6" />
-                            <path d="M4 12v6c0 1.657 3.582 3 8 3s8-1.343 8-3v-6" />
-                          </svg>
-                          <span className="text-base font-semibold text-foreground">Data:</span>
-                        </button>
-                        {selectedDataSources.map((source: any, index: number) => (
-                        <Badge 
-                          key={source.id} 
-                          variant="secondary" 
-                          className="text-sm cursor-pointer bg-white hover:bg-gray-100 transition-colors"
-                          onClick={() => {
-                            setSelectedDataSource(source)
-                            setStyleDrawerOpen(true)
-                          }}
-                        >
-                          <div className="flex items-center gap-1.5">
-                            <DataSourceBadgePreview
-                              dataSourceStyle={(currentFile as any).dataSourceStyles?.[source.id]}
-                              defaultColor={getDefaultColor(source.id, index)}
-                            />
-                            {source.label}
-                          </div>
-                        </Badge>
-                      ))}
-                      </div>
+                  <div className="px-6 py-2 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setDataSourceModalOpen(true)}
+                        title="Data Source Settings"
+                        className="h-8 w-20 flex items-center justify-center gap-1.5 rounded-md border-2"
+                      >
+                        <DatabaseIcon className="h-4 w-4" />
+                        <span className="text-sm font-medium">Data</span>
+                      </Button>
                       <Button
                         variant="outline"
                         size="sm"
@@ -253,16 +220,44 @@ export default function AnalysisTool() {
                           })
                           uiStore.setEditModalOpen(true)
                         }}
-                        className="h-8 px-3 flex items-center gap-1 rounded-full"
+                        className="h-8 w-20 flex items-center justify-center gap-1.5 rounded-md border-2"
                       >
-                        <LineChart 
-                          style={{ width: '18px', height: '18px' }} 
-                          strokeWidth={2}
-                        />
+                        <LineChart className="h-4 w-4" />
                         <span className="text-sm font-medium">Chart</span>
-                        {/* <Plus className="h-4 w-4" /> */}
                       </Button>
                     </div>
+                    {selectedDataSources.length > 0 ? (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {selectedDataSources.map((source: any, index: number) => (
+                          <Badge 
+                            key={source.id} 
+                            variant="outline" 
+                            className="text-xs cursor-pointer hover:opacity-80 transition-all px-2 py-1 rounded-full"
+                            style={{
+                              backgroundColor: `${(currentFile as any).dataSourceStyles?.[source.id]?.color || getDefaultColor(source.id, index)}20`,
+                              borderColor: (currentFile as any).dataSourceStyles?.[source.id]?.color || getDefaultColor(source.id, index),
+                              color: (currentFile as any).dataSourceStyles?.[source.id]?.color || getDefaultColor(source.id, index)
+                            }}
+                            onClick={() => {
+                              setSelectedDataSource(source)
+                              setStyleDrawerOpen(true)
+                            }}
+                          >
+                            <div className="flex items-center gap-1">
+                              <DataSourceBadgePreview
+                                dataSourceStyle={(currentFile as any).dataSourceStyles?.[source.id]}
+                                defaultColor={getDefaultColor(source.id, index)}
+                              />
+                              <span className="font-medium">{source.label}</span>
+                            </div>
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-muted-foreground italic">
+                        データソースを追加してください
+                      </div>
+                    )}
                   </div>
                 )
               }
@@ -344,7 +339,7 @@ const defaultColors = [
   "#ec4899", // pink
 ]
 
-const getDefaultColor = (dataSourceId: string, index: number) => {
+const getDefaultColor = (_dataSourceId: string, index: number) => {
   // Use index for consistent color
   return defaultColors[index % defaultColors.length]
 }
