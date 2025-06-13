@@ -9,7 +9,7 @@ import { ChartGrid, ChartEditModal } from "../charts"
 import { DataSourceStyleDrawer } from "../charts/DataSourceStyleDrawer"
 import { DataSourceBadgePreview } from "../charts/DataSourceBadgePreview"
 import { DataSourceModal } from "../charts/DataSourceModal"
-import { LineChart, Plus, DatabaseIcon } from "lucide-react"
+import { LineChart, DatabaseIcon } from "lucide-react"
 import { useFileStore } from "@/stores/useFileStore"
 import { useParameterStore } from "@/stores/useParameterStore"
 import { useGraphStateStore } from "@/stores/useGraphStateStore"
@@ -201,7 +201,7 @@ export default function AnalysisTool() {
                         size="sm"
                         onClick={() => setDataSourceModalOpen(true)}
                         title="Data Source Settings"
-                        className="h-8 w-20 flex items-center justify-center gap-1.5 rounded-md border-2"
+                        className="h-8 w-20 flex items-center justify-center gap-1.5 rounded-md border border-gray-400"
                       >
                         <DatabaseIcon className="h-4 w-4" />
                         <span className="text-sm font-medium">Data</span>
@@ -220,7 +220,7 @@ export default function AnalysisTool() {
                           })
                           uiStore.setEditModalOpen(true)
                         }}
-                        className="h-8 w-20 flex items-center justify-center gap-1.5 rounded-md border-2"
+                        className="h-8 w-20 flex items-center justify-center gap-1.5 rounded-md border border-gray-400"
                       >
                         <LineChart className="h-4 w-4" />
                         <span className="text-sm font-medium">Chart</span>
@@ -231,13 +231,8 @@ export default function AnalysisTool() {
                         {selectedDataSources.map((source: any, index: number) => (
                           <Badge 
                             key={source.id} 
-                            variant="outline" 
-                            className="text-xs cursor-pointer hover:opacity-80 transition-all px-2 py-1 rounded-full"
-                            style={{
-                              backgroundColor: `${(currentFile as any).dataSourceStyles?.[source.id]?.color || getDefaultColor(source.id, index)}20`,
-                              borderColor: (currentFile as any).dataSourceStyles?.[source.id]?.color || getDefaultColor(source.id, index),
-                              color: (currentFile as any).dataSourceStyles?.[source.id]?.color || getDefaultColor(source.id, index)
-                            }}
+                            variant="secondary" 
+                            className="text-xs cursor-pointer bg-white hover:bg-gray-50 transition-all pl-2 pr-3 py-1 rounded-full border border-gray-400"
                             onClick={() => {
                               setSelectedDataSource(source)
                               setStyleDrawerOpen(true)
@@ -248,7 +243,9 @@ export default function AnalysisTool() {
                                 dataSourceStyle={(currentFile as any).dataSourceStyles?.[source.id]}
                                 defaultColor={getDefaultColor(source.id, index)}
                               />
-                              <span className="font-medium">{source.label}</span>
+                              <span className="font-medium" style={{
+                                color: (currentFile as any).dataSourceStyles?.[source.id]?.color || getDefaultColor(source.id, index)
+                              }}>{source.label}</span>
                             </div>
                           </Badge>
                         ))}
