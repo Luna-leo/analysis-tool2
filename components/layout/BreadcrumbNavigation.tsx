@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/breadcrumb"
 import { FileNode } from "@/types"
 import { useFileStore } from "@/stores/useFileStore"
-import { LayoutSettings } from "./LayoutSettings"
 import { Settings2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { BulkSettingsDrawer } from "@/components/charts/BulkSettingsDrawer"
@@ -87,20 +86,17 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
             </BreadcrumbList>
           </Breadcrumb>
         
-        {/* Layout Settings - show only for graph pages */}
+        {/* Bulk Settings - show only for graph pages */}
         {isGraphPage && (
-          <div className="flex items-center gap-2">
-            <LayoutSettings fileId={activeTab} />
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsBulkSettingsOpen(true)}
-              title="一括設定"
-              className="h-7 w-7"
-            >
-              <Settings2 className="h-4 w-4" />
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsBulkSettingsOpen(true)}
+            title="一括設定"
+            className="h-7 w-7"
+          >
+            <Settings2 className="h-4 w-4" />
+          </Button>
         )}
         </div>
       </div>

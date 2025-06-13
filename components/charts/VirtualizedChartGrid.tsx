@@ -31,6 +31,8 @@ interface VirtualizedChartCardProps {
   dragOverIndex?: number | null
   selectedDataSources?: EventInfo[]
   dataSourceStyles?: { [dataSourceId: string]: any }
+  width?: number
+  height?: number
 }
 
 const VirtualizedChartCard = React.memo(({ 
@@ -48,7 +50,9 @@ const VirtualizedChartCard = React.memo(({
   isDragging,
   dragOverIndex,
   selectedDataSources,
-  dataSourceStyles
+  dataSourceStyles,
+  width,
+  height
 }: VirtualizedChartCardProps) => {
   const ref = useRef<HTMLDivElement>(null)
   const [shouldRender, setShouldRender] = useState(isVisible)
@@ -88,6 +92,8 @@ const VirtualizedChartCard = React.memo(({
           dragOverIndex={dragOverIndex}
           selectedDataSources={selectedDataSources}
           dataSourceStyles={dataSourceStyles}
+          width={width}
+          height={height}
         />
       ) : (
         <ChartSkeleton
@@ -330,6 +336,8 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
                     dragOverIndex={dragOverIndex}
                     selectedDataSources={file.selectedDataSources}
                     dataSourceStyles={file.dataSourceStyles}
+                    width={currentSettings.width}
+                    height={currentSettings.height}
                   />
               ))}
             </div>

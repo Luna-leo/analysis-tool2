@@ -179,6 +179,8 @@ export interface LayoutSettings {
   columns: number
   rows: number
   pagination: boolean
+  width?: number
+  height?: number
 }
 
 export interface ChartSettings {

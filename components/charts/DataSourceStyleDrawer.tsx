@@ -12,35 +12,17 @@ import { Input } from "@/components/ui/input"
 import { EventInfo, DataSourceStyle } from "@/types"
 import { useFileStore } from "@/stores/useFileStore"
 import { toast } from "@/components/ui/use-toast"
+import { getDefaultColor } from "@/utils/chartColors"
 
 interface DataSourceStyleDrawerProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   dataSource: EventInfo | null
+  dataSourceIndex?: number
   fileId: string
   currentStyle?: DataSourceStyle
 }
 
-const defaultColors = [
-  "#3b82f6", // blue
-  "#ef4444", // red
-  "#10b981", // green
-  "#f59e0b", // yellow
-  "#8b5cf6", // purple
-  "#06b6d4", // cyan
-  "#f97316", // orange
-  "#ec4899", // pink
-]
-
-const getDefaultColor = (dataSourceId: string) => {
-  // Simple hash function to get consistent color
-  let hash = 0
-  for (let i = 0; i < dataSourceId.length; i++) {
-    hash = ((hash << 5) - hash) + dataSourceId.charCodeAt(i)
-    hash = hash & hash
-  }
-  return defaultColors[Math.abs(hash) % defaultColors.length]
-}
 
 // Helper function to render different marker shapes
 const renderMarkerShape = (x: number, y: number, shape: string, size: number, color: string, opacity: number) => {
@@ -98,6 +80,7 @@ export function DataSourceStyleDrawer({
   open, 
   onOpenChange, 
   dataSource, 
+  dataSourceIndex = 0,
   fileId,
   currentStyle 
 }: DataSourceStyleDrawerProps) {
@@ -105,14 +88,14 @@ export function DataSourceStyleDrawer({
   
   const [style, setStyle] = useState<DataSourceStyle>({
     lineEnabled: currentStyle?.lineEnabled || false,
-    lineColor: currentStyle?.lineColor || (dataSource ? getDefaultColor(dataSource.id) : defaultColors[0]),
+    lineColor: currentStyle?.lineColor || getDefaultColor(dataSourceIndex),
     lineWidth: currentStyle?.lineWidth || 2,
     lineStyle: currentStyle?.lineStyle || 'solid',
     lineOpacity: currentStyle?.lineOpacity || 1,
     markerEnabled: currentStyle?.markerEnabled !== undefined ? currentStyle.markerEnabled : true,
     markerShape: currentStyle?.markerShape || 'circle',
     markerSize: currentStyle?.markerSize || 6,
-    markerColor: currentStyle?.markerColor || currentStyle?.lineColor || (dataSource ? getDefaultColor(dataSource.id) : defaultColors[0]),
+    markerColor: currentStyle?.markerColor || currentStyle?.lineColor || getDefaultColor(dataSourceIndex),
     markerOpacity: currentStyle?.markerOpacity || 1,
     showDataLabels: currentStyle?.showDataLabels || false,
     interpolation: currentStyle?.interpolation || 'linear'
@@ -122,14 +105,14 @@ export function DataSourceStyleDrawer({
     if (dataSource && open) {
       setStyle({
         lineEnabled: currentStyle?.lineEnabled || false,
-        lineColor: currentStyle?.lineColor || getDefaultColor(dataSource.id),
+        lineColor: currentStyle?.lineColor || getDefaultColor(dataSourceIndex),
         lineWidth: currentStyle?.lineWidth || 2,
         lineStyle: currentStyle?.lineStyle || 'solid',
         lineOpacity: currentStyle?.lineOpacity || 1,
         markerEnabled: currentStyle?.markerEnabled !== undefined ? currentStyle.markerEnabled : true,
         markerShape: currentStyle?.markerShape || 'circle',
         markerSize: currentStyle?.markerSize || 6,
-        markerColor: currentStyle?.markerColor || currentStyle?.lineColor || getDefaultColor(dataSource.id),
+        markerColor: currentStyle?.markerColor || currentStyle?.lineColor || getDefaultColor(dataSourceIndex),
         markerOpacity: currentStyle?.markerOpacity || 1,
         showDataLabels: currentStyle?.showDataLabels || false,
         interpolation: currentStyle?.interpolation || 'linear'
@@ -148,14 +131,14 @@ export function DataSourceStyleDrawer({
     if (dataSource) {
       const defaultStyle: DataSourceStyle = {
         lineEnabled: false,
-        lineColor: getDefaultColor(dataSource.id),
+        lineColor: getDefaultColor(dataSourceIndex),
         lineWidth: 2,
         lineStyle: 'solid',
         lineOpacity: 1,
         markerEnabled: true,
         markerShape: 'circle',
         markerSize: 6,
-        markerColor: getDefaultColor(dataSource.id),
+        markerColor: getDefaultColor(dataSourceIndex),
         markerOpacity: 1,
         showDataLabels: false,
         interpolation: 'linear'

@@ -17,7 +17,10 @@ interface DataSourceModalProps {
 export function DataSourceModal({ open, onOpenChange, file }: DataSourceModalProps) {
   const { updateFileDataSources } = useFileStore()
   const [selectedDataSourceItems, setSelectedDataSourceItems] = useState<EventInfo[]>([])
-  const [selectedDataSource, setSelectedDataSource] = useState<EventInfo | null>(null)
+  const [selectedDataSourceInfo, setSelectedDataSourceInfo] = useState<{
+    dataSource: EventInfo | null
+    index: number
+  }>({ dataSource: null, index: 0 })
   const [styleDrawerOpen, setStyleDrawerOpen] = useState(false)
   const [useDataSourceStyle, setUseDataSourceStyle] = useState(false)
 
@@ -53,8 +56,8 @@ export function DataSourceModal({ open, onOpenChange, file }: DataSourceModalPro
             selectedDataSourceItems={selectedDataSourceItems}
             setSelectedDataSourceItems={setSelectedDataSourceItems}
             file={file}
-            onOpenStyleDrawer={(dataSource) => {
-              setSelectedDataSource(dataSource)
+            onOpenStyleDrawer={(dataSource, index) => {
+              setSelectedDataSourceInfo({ dataSource, index: index || 0 })
               setStyleDrawerOpen(true)
             }}
             useDataSourceStyle={useDataSourceStyle}
@@ -73,13 +76,14 @@ export function DataSourceModal({ open, onOpenChange, file }: DataSourceModalPro
       </DialogContent>
       
       {/* Data Source Style Drawer */}
-      {selectedDataSource && (
+      {selectedDataSourceInfo.dataSource && (
         <DataSourceStyleDrawer
           open={styleDrawerOpen}
           onOpenChange={setStyleDrawerOpen}
-          dataSource={selectedDataSource}
+          dataSource={selectedDataSourceInfo.dataSource}
+          dataSourceIndex={selectedDataSourceInfo.index}
           fileId={file.id}
-          currentStyle={file.dataSourceStyles?.[selectedDataSource.id]}
+          currentStyle={file.dataSourceStyles?.[selectedDataSourceInfo.dataSource.id]}
         />
       )}
     </Dialog>

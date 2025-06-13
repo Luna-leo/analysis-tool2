@@ -181,6 +181,8 @@ export const ProgressiveChartGrid = React.memo(function ProgressiveChartGrid({
                   dragOverIndex={dragOverIndex}
                   selectedDataSources={file.selectedDataSources}
                   dataSourceStyles={file.dataSourceStyles}
+                  width={currentSettings.width}
+                  height={currentSettings.height}
                 />
               ) : (
                 <ChartSkeleton

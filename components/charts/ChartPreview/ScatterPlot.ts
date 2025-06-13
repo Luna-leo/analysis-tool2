@@ -7,6 +7,7 @@ import { showTooltip, updateTooltipPosition, hideTooltip } from "@/utils/chartTo
 import { determineLODLevel, simplifyData, renderLODGrid, getRenderMethod } from "./LODRenderer"
 import { renderWithOptimizedCanvas } from "./OptimizedCanvasRenderer"
 import { performanceTracker } from "@/utils/performanceTracking"
+import { defaultChartColors } from "@/utils/chartColors"
 
 interface RenderScatterPlotProps {
   g: d3.Selection<SVGGElement, unknown, null, undefined>
@@ -18,6 +19,7 @@ interface RenderScatterPlotProps {
     timestamp: string
     dataSourceId: string
     dataSourceLabel: string
+    dataSourceIndex?: number
   }>
   width: number
   height: number
@@ -123,10 +125,21 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
   // Store scales in ref
   scalesRef.current = { xScale, yScale }
 
-  // Create color scale for different series
+  // Create color scale for different series using our default colors
   const seriesNames = Array.from(new Set(data.map(d => d.series)))
-  const colorScale = d3.scaleOrdinal(d3.schemeCategory10)
-    .domain(seriesNames)
+  
+  // Create a mapping of series to color based on dataSourceIndex
+  const seriesColorMap = new Map<string, string>()
+  data.forEach(dataPoint => {
+    if (!seriesColorMap.has(dataPoint.series)) {
+      const index = dataPoint.dataSourceIndex ?? dataPoint.seriesIndex ?? 0
+      seriesColorMap.set(dataPoint.series, defaultChartColors[index % defaultChartColors.length])
+    }
+  })
+  
+  const colorScale = (series: string): string => {
+    return seriesColorMap.get(series) || defaultChartColors[0]
+  }
   
   // Create y-axis
   const yAxis = d3.axisLeft(yScale)
@@ -163,7 +176,7 @@ export function renderScatterPlot({ g, data, width, height, editingChart, scales
             xScale,
             yScale,
             editingChart,
-            colorScale: (series: string) => colorScale(series) as string,
+            colorScale: (series: string) => colorScale(series),
             dataSourceStyles
           })
           

@@ -25,6 +25,7 @@ interface ChartDataPoint {
   timestamp: string
   dataSourceId: string
   dataSourceLabel: string
+  dataSourceIndex?: number
 }
 
 export function useOptimizedChart({
@@ -138,7 +139,8 @@ export function useOptimizedChart({
                       seriesIndex: uniqueSeriesIndex,
                       timestamp: point.timestamp,
                       dataSourceId: dataSource.id,
-                      dataSourceLabel: dataSource.label
+                      dataSourceLabel: dataSource.label,
+                      dataSourceIndex: dataSourceIndex  // Add dataSourceIndex for consistent coloring
                     })
                   }
                 })

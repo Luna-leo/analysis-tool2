@@ -15,12 +15,13 @@ import {
 import { EventInfo } from "@/types"
 import { formatDateTimeForDisplay } from "@/utils/dateUtils"
 import { DataSourceBadgePreview } from "../../../DataSourceBadgePreview"
+import { getDefaultColor } from "@/utils/chartColors"
 
 interface SelectedDataSourceTableProps {
   selectedDataSourceItems: EventInfo[]
   onEditItem: (item: EventInfo) => void
   onReturnItem: (item: EventInfo) => void
-  onOpenStyleDrawer?: (item: EventInfo) => void
+  onOpenStyleDrawer?: (item: EventInfo, index?: number) => void
   file?: any
   useDataSourceStyle?: boolean
 }
@@ -79,12 +80,12 @@ export function SelectedDataSourceTable({
                   <Badge
                     variant="secondary"
                     className="cursor-pointer hover:bg-secondary/80 transition-colors text-xs py-0.5 px-2"
-                    onClick={() => onOpenStyleDrawer(item)}
+                    onClick={() => onOpenStyleDrawer(item, index)}
                   >
                     <div className="flex items-center gap-1.5">
                       <DataSourceBadgePreview
                         dataSourceStyle={file.dataSourceStyles?.[item.id]}
-                        defaultColor={getDefaultColor(item.id, index)}
+                        defaultColor={getDefaultColor(index)}
                       />
                       <Palette className="h-3 w-3" />
                     </div>

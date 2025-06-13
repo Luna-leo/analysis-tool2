@@ -34,6 +34,8 @@ interface ChartCardProps {
   dragOverIndex?: number | null
   selectedDataSources?: EventInfo[] // Grid-level data sources
   dataSourceStyles?: { [dataSourceId: string]: DataSourceStyle } // Grid-level styles
+  width?: number
+  height?: number
 }
 
 const ChartCardComponent = ({ 
@@ -50,7 +52,9 @@ const ChartCardComponent = ({
   isDragging,
   dragOverIndex,
   selectedDataSources = [],
-  dataSourceStyles = {}
+  dataSourceStyles = {},
+  width,
+  height
 }: ChartCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
@@ -106,6 +110,11 @@ const ChartCardComponent = ({
         isDragging && "opacity-50 scale-105",
         isDropTarget && "ring-2 ring-primary ring-offset-2 bg-primary/5"
       )}
+      style={{
+        width: width ? `${width}px` : undefined,
+        height: height ? `${height}px` : undefined,
+        minHeight: height ? undefined : `${cardMinHeight}px`
+      }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       draggable={true}

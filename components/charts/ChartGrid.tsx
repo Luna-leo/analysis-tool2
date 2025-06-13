@@ -226,6 +226,8 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
                 dragOverIndex={dragOverIndex}
                 selectedDataSources={file.selectedDataSources}
                 dataSourceStyles={file.dataSourceStyles}
+                width={currentSettings.width}
+                height={currentSettings.height}
               />
           ))}
         </div>

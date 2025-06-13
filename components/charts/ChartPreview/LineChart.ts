@@ -4,6 +4,7 @@ import { ChartDataPoint } from "@/types/chart-data"
 import { getTimeFormat } from "./utils"
 import { calculateXAxisPosition } from "@/utils/chart/axisPositioning"
 import { calculateConsistentYDomain } from "@/utils/chart/scaleUtils"
+import { defaultChartColors } from "@/utils/chartColors"
 
 interface ChartDataItem {
   timestamp: Date | number
@@ -268,7 +269,7 @@ export const renderLineChart = ({ g, data, width, height, editingChart, scalesRe
       return
     }
     
-    const lineColor = param.line?.color || d3.schemeCategory10[index % 10]
+    const lineColor = param.line?.color || defaultChartColors[index % defaultChartColors.length]
     const showLine = param.line?.width !== undefined && param.line.width > 0
     const showMarker = param.marker !== undefined
     
@@ -321,7 +322,7 @@ export const renderLineChart = ({ g, data, width, height, editingChart, scalesRe
 
     let currentX = 0
     legendParams.forEach((param, index) => {
-      const lineColor = param.line?.color || d3.schemeCategory10[index % 10]
+      const lineColor = param.line?.color || defaultChartColors[index % defaultChartColors.length]
       const showLine = param.line?.width !== undefined && param.line.width > 0
       const showMarker = param.marker !== undefined
       

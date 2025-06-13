@@ -31,7 +31,7 @@ interface DataSourceTabProps {
   selectedDataSourceItems: EventInfo[]
   setSelectedDataSourceItems: React.Dispatch<React.SetStateAction<EventInfo[]>>
   file?: any
-  onOpenStyleDrawer?: (dataSource: EventInfo) => void
+  onOpenStyleDrawer?: (dataSource: EventInfo, index?: number) => void
   useDataSourceStyle?: boolean
   setUseDataSourceStyle?: React.Dispatch<React.SetStateAction<boolean>>
 }

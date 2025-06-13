@@ -35,8 +35,13 @@ export function LayoutSettings({ fileId }: LayoutSettingsProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="h-8 w-24 flex items-center justify-center gap-1.5 rounded-md border border-gray-400"
+        >
           <LayoutGrid className="h-4 w-4" />
+          <span className="text-sm font-medium">Layout</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
@@ -88,6 +93,51 @@ export function LayoutSettings({ fileId }: LayoutSettingsProps) {
                   </option>
                 ))}
               </select>
+            </div>
+          </div>
+        </div>
+
+        <DropdownMenuSeparator />
+
+        {/* Chart Size Settings */}
+        <div className="p-3">
+          <h4 className="text-sm font-medium mb-3">Chart Size</h4>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="width" className="text-xs text-muted-foreground">
+                Width (px)
+              </label>
+              <input
+                id="width"
+                type="number"
+                className="w-full h-8 px-2 text-sm border rounded"
+                value={currentSettings.width || ''}
+                placeholder="Auto"
+                onChange={(e) => {
+                  const value = e.target.value ? parseInt(e.target.value) : undefined
+                  updateLayoutSettings(fileId, {
+                    width: value,
+                  })
+                }}
+              />
+            </div>
+            <div>
+              <label htmlFor="height" className="text-xs text-muted-foreground">
+                Height (px)
+              </label>
+              <input
+                id="height"
+                type="number"
+                className="w-full h-8 px-2 text-sm border rounded"
+                value={currentSettings.height || ''}
+                placeholder="Auto"
+                onChange={(e) => {
+                  const value = e.target.value ? parseInt(e.target.value) : undefined
+                  updateLayoutSettings(fileId, {
+                    height: value,
+                  })
+                }}
+              />
             </div>
           </div>
         </div>

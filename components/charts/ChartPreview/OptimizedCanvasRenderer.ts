@@ -9,6 +9,7 @@ interface OptimizedCanvasRendererProps {
     series: string
     seriesIndex: number
     dataSourceId?: string
+    dataSourceIndex?: number
   }>
   width: number
   height: number

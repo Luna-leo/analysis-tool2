@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect } from "react"
-import { Sidebar, TabHeader, BreadcrumbNavigation, WelcomeMessage } from "../layout"
+import { Sidebar, TabHeader, BreadcrumbNavigation, WelcomeMessage, LayoutSettings } from "../layout"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -21,10 +21,19 @@ import { PerformanceMonitor } from "../PerformanceMonitor"
 import { MemoryWarning } from "../MemoryWarning"
 import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor"
 import { optimizeMemory } from "@/utils/memoryOptimization"
-import type { FileNode } from "@/types"
+import { getDefaultColor } from "@/utils/chartColors"
+import type { FileNode, EventInfo } from "@/types"
+
+interface SelectedDataSourceInfo {
+  dataSource: EventInfo | null
+  index: number
+}
 
 export default function AnalysisTool() {
-  const [selectedDataSource, setSelectedDataSource] = React.useState<any>(null)
+  const [selectedDataSourceInfo, setSelectedDataSourceInfo] = React.useState<SelectedDataSourceInfo>({
+    dataSource: null,
+    index: 0
+  })
   const [styleDrawerOpen, setStyleDrawerOpen] = React.useState(false)
   const [dataSourceModalOpen, setDataSourceModalOpen] = React.useState(false)
   
@@ -237,6 +246,7 @@ export default function AnalysisTool() {
                           </span>
                         )}
                       </Button>
+                      <LayoutSettings fileId={activeTab} />
                     </div>
                     {selectedDataSources.length > 0 ? (
                       <div className="flex items-center gap-2 flex-wrap">
@@ -246,14 +256,14 @@ export default function AnalysisTool() {
                             variant="secondary" 
                             className="text-xs cursor-pointer bg-white hover:bg-gray-50 transition-all pl-2 pr-3 py-1 rounded-full border border-gray-400"
                             onClick={() => {
-                              setSelectedDataSource(source)
+                              setSelectedDataSourceInfo({ dataSource: source, index })
                               setStyleDrawerOpen(true)
                             }}
                           >
                             <div className="flex items-center gap-1">
                               <DataSourceBadgePreview
                                 dataSourceStyle={(currentFile as any).dataSourceStyles?.[source.id]}
-                                defaultColor={getDefaultColor(source.id, index)}
+                                defaultColor={getDefaultColor(index)}
                               />
                               <span className="font-medium text-black">{source.label}</span>
                             </div>
@@ -302,14 +312,15 @@ export default function AnalysisTool() {
       {/* Data Source Style Drawer */}
       {activeTab && (() => {
         const currentFile = openTabs.find((tab) => tab.id === activeTab)
-        if (currentFile && selectedDataSource) {
+        if (currentFile && selectedDataSourceInfo.dataSource) {
           return (
             <DataSourceStyleDrawer
               open={styleDrawerOpen}
               onOpenChange={setStyleDrawerOpen}
-              dataSource={selectedDataSource}
+              dataSource={selectedDataSourceInfo.dataSource}
+              dataSourceIndex={selectedDataSourceInfo.index}
               fileId={activeTab}
-              currentStyle={(currentFile as any).dataSourceStyles?.[selectedDataSource.id]}
+              currentStyle={(currentFile as any).dataSourceStyles?.[selectedDataSourceInfo.dataSource.id]}
             />
           )
         }
@@ -332,21 +343,4 @@ export default function AnalysisTool() {
       })()}
     </div>
   )
-}
-
-// Helper function to get default color for data source
-const defaultColors = [
-  "#3b82f6", // blue
-  "#ef4444", // red
-  "#10b981", // green
-  "#f59e0b", // yellow
-  "#8b5cf6", // purple
-  "#06b6d4", // cyan
-  "#f97316", // orange
-  "#ec4899", // pink
-]
-
-const getDefaultColor = (_dataSourceId: string, index: number) => {
-  // Use index for consistent color
-  return defaultColors[index % defaultColors.length]
 }
