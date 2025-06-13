@@ -9,7 +9,7 @@ import { ChartGrid, ChartEditModal } from "../charts"
 import { DataSourceStyleDrawer } from "../charts/DataSourceStyleDrawer"
 import { DataSourceBadgePreview } from "../charts/DataSourceBadgePreview"
 import { DataSourceModal } from "../charts/DataSourceModal"
-import { Settings, LineChart } from "lucide-react"
+import { LineChart, Plus } from "lucide-react"
 import { useFileStore } from "@/stores/useFileStore"
 import { useParameterStore } from "@/stores/useParameterStore"
 import { useGraphStateStore } from "@/stores/useGraphStateStore"
@@ -240,7 +240,7 @@ export default function AnalysisTool() {
                       ))}
                       </div>
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
                         onClick={() => {
                           const uiStore = useUIStore.getState()
@@ -253,14 +253,14 @@ export default function AnalysisTool() {
                           })
                           uiStore.setEditModalOpen(true)
                         }}
-                        className="h-8 px-3 flex items-center gap-2"
+                        className="h-8 px-3 flex items-center gap-1 rounded-full"
                       >
                         <LineChart 
-                          style={{ width: '22px', height: '22px' }} 
+                          style={{ width: '18px', height: '18px' }} 
                           strokeWidth={2}
-                          className="text-foreground"
                         />
-                        <span className="text-sm font-medium">ADD</span>
+                        <span className="text-sm font-medium">Chart</span>
+                        {/* <Plus className="h-4 w-4" /> */}
                       </Button>
                     </div>
                   </div>
