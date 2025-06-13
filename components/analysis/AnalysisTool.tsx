@@ -243,9 +243,7 @@ export default function AnalysisTool() {
                                 dataSourceStyle={(currentFile as any).dataSourceStyles?.[source.id]}
                                 defaultColor={getDefaultColor(source.id, index)}
                               />
-                              <span className="font-medium" style={{
-                                color: (currentFile as any).dataSourceStyles?.[source.id]?.color || getDefaultColor(source.id, index)
-                              }}>{source.label}</span>
+                              <span className="font-medium text-black">{source.label}</span>
                             </div>
                           </Badge>
                         ))}
