@@ -1,5 +1,4 @@
 export { renderEmptyChart } from './EmptyChart'
-export { renderLineChart } from './LineChart'
 export { renderScatterPlot } from './ScatterPlot'
 export { ReferenceLines } from './ReferenceLines/index'
 export { generateMockData, getTimeFormat } from './utils'

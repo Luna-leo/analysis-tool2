@@ -82,19 +82,24 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
       })
     }
     
-    // Get all unique series/data sources
-    const uniqueSeries = Array.from(new Set(this.data.map(d => d.dataSourceId)))
-    const seriesColorMap = this.createSeriesColorMap(uniqueSeries)
-    
     // Apply LOD simplification if needed
     let dataToRender = this.data
     if (lodConfig.level !== 'high') {
       dataToRender = simplifyData(this.data, lodConfig)
     }
     
-    // Always use SVG rendering for now
-    // TODO: Implement proper canvas rendering with BaseChart architecture
-    this.renderWithSVG(dataToRender, seriesColorMap)
+    // Render based on chart type
+    if (this.editingChart.type === 'line') {
+      this.renderLineChart(dataToRender)
+    } else {
+      // Get all unique series/data sources
+      const uniqueSeries = Array.from(new Set(this.data.map(d => d.dataSourceId)))
+      const seriesColorMap = this.createSeriesColorMap(uniqueSeries)
+      
+      // Always use SVG rendering for now
+      // TODO: Implement proper canvas rendering with BaseChart architecture
+      this.renderWithSVG(dataToRender, seriesColorMap)
+    }
     
     // End performance tracking
     performanceTracker.measure('scatter-plot-render', 'scatter-plot-render-start', undefined, {
@@ -168,6 +173,134 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
         )
       }
     })
+  }
+
+  /**
+   * Render line chart with markers
+   */
+  private renderLineChart(data: ScatterDataPoint[]): void {
+    const yParams = this.editingChart.yAxisParams || []
+    
+    // Transform scatter data to line chart format
+    const dataByX = new Map<string, any>()
+    
+    data.forEach(point => {
+      const xKey = String(point.x)
+      if (!dataByX.has(xKey)) {
+        dataByX.set(xKey, {
+          x: point.x,
+          timestamp: point.timestamp
+        })
+      }
+      
+      // Extract parameter name from series
+      const paramName = point.series.split(' - ').pop()
+      if (paramName) {
+        dataByX.get(xKey)[paramName] = point.y
+      }
+    })
+    
+    // Convert to array and sort
+    const lineData = Array.from(dataByX.values()).sort((a, b) => {
+      const aVal = a.x
+      const bVal = b.x
+      if (aVal instanceof Date && bVal instanceof Date) {
+        return aVal.getTime() - bVal.getTime()
+      }
+      return Number(aVal) - Number(bVal)
+    })
+    
+    yParams.forEach((param, index) => {
+      // Skip parameters with empty names
+      if (!param.parameter || param.parameter.trim() === '') {
+        return
+      }
+      
+      const lineColor = param.line?.color || defaultChartColors[index % defaultChartColors.length]
+      const showLine = param.line?.width !== undefined && param.line.width > 0
+      const showMarker = param.marker !== undefined
+      
+      // Draw line if enabled
+      if (showLine) {
+        this.renderLine(lineData, param, lineColor)
+      }
+      
+      // Draw markers if enabled
+      if (showMarker && param.marker) {
+        this.renderMarkers(lineData, param, lineColor)
+      }
+    })
+  }
+
+  /**
+   * Render line for a parameter
+   */
+  private renderLine(data: any[], param: any, lineColor: string): void {
+    const line = d3.line<any>()
+      .x(d => this.scales.xScale(d.x as any))
+      .y(d => this.scales.yScale(d[param.parameter] as number || 0))
+      .curve(d3.curveMonotoneX)
+    
+    this.g.append("path")
+      .datum(data)
+      .attr("fill", "none")
+      .attr("stroke", lineColor)
+      .attr("stroke-width", param.line?.width || 2)
+      .attr("stroke-dasharray", this.getLineDashArray(param.line?.style))
+      .attr("d", line)
+  }
+
+  /**
+   * Render markers for a parameter
+   */
+  private renderMarkers(data: any[], param: any, lineColor: string): void {
+    const markers: MarkerConfig[] = data.map(d => ({
+      x: this.scales.xScale(d.x as any),
+      y: this.scales.yScale(d[param.parameter] as number || 0),
+      type: param.marker!.type,
+      size: param.marker!.size || 6,
+      fillColor: param.marker!.fillColor || lineColor,
+      borderColor: param.marker!.borderColor || lineColor,
+      opacity: 1,
+      data: {
+        parameter: param.parameter,
+        value: d[param.parameter] || 0,
+        timestamp: d.x,
+        unit: param.unit
+      }
+    }))
+    
+    const tooltipHandlers = ChartTooltipManager.createHandlers({
+      xAxisType: 'datetime',
+      showTimestamp: false,
+      showDataSource: false,
+      customContent: (data) => ChartTooltipManager.createLineChartTooltip(
+        data.parameter!,
+        data.y,
+        data.x as Date,
+        data.unit
+      )
+    })
+    
+    MarkerRenderer.render({
+      container: this.g,
+      markers,
+      ...tooltipHandlers
+    })
+  }
+
+  /**
+   * Get line dash array based on style
+   */
+  private getLineDashArray(style?: string): string {
+    switch (style) {
+      case "dashed":
+        return "5,5"
+      case "dotted":
+        return "2,2"
+      default:
+        return "none"
+    }
   }
 
 }
