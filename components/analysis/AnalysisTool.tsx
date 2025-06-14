@@ -231,6 +231,7 @@ export default function AnalysisTool() {
                           uiStore.setEditingChart({
                             id: `chart_${Date.now()}`,
                             title: "新しいチャート",
+                            type: "line",
                             data: [],
                             referenceLines: [],
                             fileId: activeTab

@@ -112,7 +112,8 @@ export function useOptimizedChart({
                 let xValue: number | string | Date | undefined
                 
                 if (editingChart.xAxisType === 'datetime') {
-                  xValue = point.timestamp
+                  // Ensure timestamp is a Date object
+                  xValue = point.timestamp instanceof Date ? point.timestamp : new Date(point.timestamp)
                 } else if (rawXValue !== undefined) {
                   xValue = Number(rawXValue)
                 }

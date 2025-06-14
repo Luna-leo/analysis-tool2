@@ -22,6 +22,37 @@ interface ChartPreviewGraphProps {
   dataSourceStyles?: { [dataSourceId: string]: DataSourceStyle }
 }
 
+// Transform scatter plot data to line chart format
+const transformToLineChartData = (scatterData: any[], xParameter: string = 'timestamp') => {
+  // Group data by x value
+  const dataByX = new Map<string, any>()
+  
+  scatterData.forEach(point => {
+    const xKey = String(point.x)
+    if (!dataByX.has(xKey)) {
+      dataByX.set(xKey, {
+        [xParameter]: point.x instanceof Date ? point.x : new Date(point.x),
+      })
+    }
+    
+    // Extract parameter name from series (format: "DataSource - Parameter")
+    const paramName = point.series.split(' - ').pop()
+    if (paramName) {
+      dataByX.get(xKey)[paramName] = point.y
+    }
+  })
+  
+  // Convert to array and sort by x value
+  return Array.from(dataByX.values()).sort((a, b) => {
+    const aVal = a[xParameter]
+    const bVal = b[xParameter]
+    if (aVal instanceof Date && bVal instanceof Date) {
+      return aVal.getTime() - bVal.getTime()
+    }
+    return Number(aVal) - Number(bVal)
+  })
+}
+
 export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints = 500, dataSourceStyles }: ChartPreviewGraphProps) => {
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -119,11 +150,19 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
             .attr("transform", `translate(${margin.left},${margin.top})`)
           
           if (chartData.length > 0) {
-            // Render scatter plot
-            renderScatterPlot({ g, data: chartData, width, height, editingChart, scalesRef, dataSourceStyles })
+            // Render chart based on type
+            if (editingChart.type === "line") {
+              // Transform scatter data to line chart format
+              const xParameter = editingChart.xParameter || 'timestamp'
+              const lineChartData = transformToLineChartData(chartData, xParameter)
+              renderLineChart({ g, data: lineChartData, width, height, editingChart, scalesRef })
+            } else {
+              // Default to scatter plot
+              renderScatterPlot({ g, data: chartData, width, height, editingChart, scalesRef, dataSourceStyles })
+            }
           } else {
             // Render empty chart with axes
-            renderEmptyChart({ g, width, height, chartType: "scatter", editingChart, scalesRef })
+            renderEmptyChart({ g, width, height, chartType: editingChart.type || "scatter", editingChart, scalesRef })
           }
           
           // Ensure proper layering: reference lines should not block interaction

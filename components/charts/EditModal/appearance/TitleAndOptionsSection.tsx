@@ -2,6 +2,7 @@
 
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ChartComponent } from "@/types"
 
 interface TitleAndOptionsSectionProps {
@@ -12,6 +13,28 @@ interface TitleAndOptionsSectionProps {
 export function TitleAndOptionsSection({ editingChart, setEditingChart }: TitleAndOptionsSectionProps) {
   return (
     <div className="space-y-4">
+      {/* Chart Type Selection */}
+      <div className="space-y-2">
+        <Label htmlFor="chart-type" className="text-sm">Chart Type</Label>
+        <Select
+          value={editingChart.type || "scatter"}
+          onValueChange={(value) => {
+            setEditingChart({
+              ...editingChart,
+              type: value,
+            })
+          }}
+        >
+          <SelectTrigger id="chart-type" className="h-8 text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="line">Line Chart</SelectItem>
+            <SelectItem value="scatter">Scatter Plot</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      
       <Label htmlFor="chart-title" className="text-sm">Title</Label>
       <div className="flex items-center gap-2">
         <Input

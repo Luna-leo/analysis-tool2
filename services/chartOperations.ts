@@ -5,7 +5,8 @@ export class ChartOperations {
     return {
       ...chart,
       id: `chart_${Date.now()}`,
-      title: `${chart.title} (コピー)`
+      title: `${chart.title} (コピー)`,
+      type: chart.type || "scatter"
     }
   }
   
