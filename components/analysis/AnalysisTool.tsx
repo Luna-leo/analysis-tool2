@@ -231,7 +231,9 @@ export default function AnalysisTool() {
                           uiStore.setEditingChart({
                             id: `chart_${Date.now()}`,
                             title: "新しいチャート",
-                            type: "line",
+                            type: "scatter",
+                            xAxisType: "datetime",
+                            xParameter: "timestamp",
                             data: [],
                             referenceLines: [],
                             fileId: activeTab

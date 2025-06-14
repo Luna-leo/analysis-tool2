@@ -1,5 +1,4 @@
 import * as d3 from "d3"
-import { ChartComponent } from "@/types"
 import { BaseChart, BaseChartConfig } from "./core/BaseChart"
 import { MarkerRenderer, MarkerConfig } from "@/utils/chart/markerRenderer"
 import { ChartTooltipManager } from "@/utils/chart/chartTooltipManager"
@@ -29,12 +28,16 @@ class LineChart extends BaseChart<ChartDataItem> {
     // Ensure x values are Date objects for datetime axis
     const xParameter = this.editingChart.xParameter || 'timestamp'
     
-    if (this.editingChart.xAxisType === 'datetime' && this.data.length > 0) {
+    if ((this.editingChart.xAxisType || 'datetime') === 'datetime' && this.data.length > 0) {
       this.data = this.data.map(d => {
-        const xValue = d[xParameter]
+        // For datetime, always ensure timestamp field exists
+        const timestampValue = d.timestamp || d[xParameter]
+        const xValue = timestampValue instanceof Date ? timestampValue : new Date(timestampValue as string | number)
+        
         return {
           ...d,
-          [xParameter]: xValue instanceof Date ? xValue : new Date(xValue as string | number)
+          [xParameter]: xValue,
+          timestamp: xValue // Ensure timestamp field always exists
         }
       })
     }
@@ -66,7 +69,7 @@ class LineChart extends BaseChart<ChartDataItem> {
       
       // Draw markers if enabled
       if (showMarker && param.marker) {
-        this.renderMarkers(param, lineColor, index)
+        this.renderMarkers(param, lineColor)
       }
     })
   }
@@ -77,8 +80,8 @@ class LineChart extends BaseChart<ChartDataItem> {
   private renderLine(param: any, lineColor: string): void {
     const xParameter = this.editingChart.xParameter || 'timestamp'
     const line = d3.line<ChartDataItem>()
-      .x(d => this.scales.xScale(d[xParameter]))
-      .y(d => this.scales.yScale(d[param.parameter] || 0))
+      .x(d => this.scales.xScale(d[xParameter] as any))
+      .y(d => this.scales.yScale(d[param.parameter] as number || 0))
       .curve(d3.curveMonotoneX)
     
     this.g.append("path")
@@ -93,11 +96,11 @@ class LineChart extends BaseChart<ChartDataItem> {
   /**
    * Render markers for a parameter
    */
-  private renderMarkers(param: any, lineColor: string, index: number): void {
+  private renderMarkers(param: any, lineColor: string): void {
     const xParameter = this.editingChart.xParameter || 'timestamp'
     const markers: MarkerConfig[] = this.data.map(d => ({
-      x: this.scales.xScale(d[xParameter]),
-      y: this.scales.yScale(d[param.parameter] || 0),
+      x: this.scales.xScale(d[xParameter] as any),
+      y: this.scales.yScale(d[param.parameter] as number || 0),
       type: param.marker!.type,
       size: param.marker!.size || 6,
       fillColor: param.marker!.fillColor || lineColor,

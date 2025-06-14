@@ -6,7 +6,9 @@ export class ChartOperations {
       ...chart,
       id: `chart_${Date.now()}`,
       title: `${chart.title} (コピー)`,
-      type: chart.type || "scatter"
+      type: chart.type || "scatter",
+      xAxisType: chart.xAxisType || "datetime",
+      xParameter: chart.xParameter || (chart.xAxisType || "datetime") === "datetime" ? "timestamp" : chart.xParameter
     }
   }
   

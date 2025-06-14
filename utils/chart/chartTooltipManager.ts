@@ -32,6 +32,8 @@ export class ChartTooltipManager {
     showTimestamp: true,
     showDataSource: true
   }
+  
+  private static hideTimeout: NodeJS.Timeout | null = null
 
   /**
    * Create tooltip event handlers for chart elements
@@ -41,6 +43,12 @@ export class ChartTooltipManager {
     
     return {
       onMouseOver: (event: MouseEvent, data: TooltipData) => {
+        // Clear any pending hide timeout
+        if (this.hideTimeout) {
+          clearTimeout(this.hideTimeout)
+          this.hideTimeout = null
+        }
+        
         const content = this.generateTooltipContent(data, mergedConfig)
         showTooltip(event, content)
       },
@@ -48,7 +56,11 @@ export class ChartTooltipManager {
         updateTooltipPosition(event)
       },
       onMouseOut: () => {
-        hideTooltip()
+        // Add a longer delay before hiding to prevent flickering
+        this.hideTimeout = setTimeout(() => {
+          hideTooltip()
+          this.hideTimeout = null
+        }, 200) // 200ms delay for better stability
       }
     }
   }
@@ -154,6 +166,10 @@ export class ChartTooltipManager {
    * Clean up all tooltips
    */
   static cleanup() {
+    if (this.hideTimeout) {
+      clearTimeout(this.hideTimeout)
+      this.hideTimeout = null
+    }
     hideTooltip()
   }
 }

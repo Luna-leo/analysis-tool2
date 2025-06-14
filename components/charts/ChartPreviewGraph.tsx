@@ -30,8 +30,11 @@ const transformToLineChartData = (scatterData: any[], xParameter: string = 'time
   scatterData.forEach(point => {
     const xKey = String(point.x)
     if (!dataByX.has(xKey)) {
+      const xValue = point.x instanceof Date ? point.x : new Date(point.x)
       dataByX.set(xKey, {
-        [xParameter]: point.x instanceof Date ? point.x : new Date(point.x),
+        [xParameter]: xValue,
+        // Always include timestamp field for datetime axis
+        timestamp: xValue
       })
     }
     
@@ -153,7 +156,9 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
             // Render chart based on type
             if (editingChart.type === "line") {
               // Transform scatter data to line chart format
-              const xParameter = editingChart.xParameter || 'timestamp'
+              // Use timestamp as default for datetime axis type
+              const xParameter = editingChart.xParameter || 
+                ((editingChart.xAxisType || 'datetime') === 'datetime' ? 'timestamp' : 'timestamp')
               const lineChartData = transformToLineChartData(chartData, xParameter)
               renderLineChart({ g, data: lineChartData, width, height, editingChart, scalesRef })
             } else {

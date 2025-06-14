@@ -27,7 +27,7 @@ export function showTooltip(
     .style("border-radius", "4px")
     .style("font-size", "12px")
     .style("pointer-events", "none")
-    .style("z-index", 10000)
+    .style("z-index", 99999) // Increased z-index to ensure tooltip is always on top
     .style("box-shadow", "0 2px 8px rgba(0,0,0,0.3)")
     .style("border", "1px solid #333")
     .style("min-width", "200px")
@@ -52,14 +52,48 @@ export function showTooltip(
     
   // Position and show
   // Use clientX/clientY for fixed positioning
-  // Position tooltip to the right and below cursor to avoid interference
-  const x = event.clientX + 15
-  const y = event.clientY + 15
+  // Calculate position to avoid tooltip appearing under cursor
+  const tooltipNode = tooltip.node()
+  if (!tooltipNode) return tooltip
+  
+  // First, show tooltip off-screen to measure dimensions
+  tooltip
+    .style("left", "-9999px")
+    .style("top", "-9999px")
+    .style("display", "block")
+    .style("opacity", "0")
+  
+  // Get tooltip dimensions
+  const tooltipRect = tooltipNode.getBoundingClientRect()
+  const tooltipWidth = tooltipRect.width
+  const tooltipHeight = tooltipRect.height
+  
+  // Calculate optimal position
+  // Default: position to the right and below cursor to avoid overlap
+  let x = event.clientX + 15 // Offset to the right
+  let y = event.clientY + 15 // Offset below cursor for better stability
+  
+  // Adjust if tooltip would go off-screen
+  const viewportWidth = window.innerWidth
+  const viewportHeight = window.innerHeight
+  
+  // If tooltip would go off right edge, position to the left of cursor
+  if (x + tooltipWidth > viewportWidth - 10) {
+    x = event.clientX - tooltipWidth - 20
+  }
+  
+  // If tooltip would go off bottom edge, position above cursor
+  if (y + tooltipHeight > viewportHeight - 10) {
+    y = event.clientY - tooltipHeight - 10
+  }
+  
+  // Ensure tooltip doesn't go off top or left edges
+  x = Math.max(10, x)
+  y = Math.max(10, y)
   
   tooltip
     .style("left", x + "px")
     .style("top", y + "px")
-    .style("display", "block")
     .style("opacity", "1")
   
   if (isPinned) {
@@ -87,9 +121,34 @@ export function togglePinnedTooltip(event: MouseEvent, content: string): void {
 
 export function updateTooltipPosition(event: MouseEvent): void {
   if (currentTooltip) {
+    const tooltipNode = currentTooltip.node()
+    if (!tooltipNode) return
+    
+    const tooltipRect = tooltipNode.getBoundingClientRect()
+    const tooltipWidth = tooltipRect.width
+    const tooltipHeight = tooltipRect.height
+    
+    // Calculate optimal position with same logic as showTooltip
+    let x = event.clientX + 15
+    let y = event.clientY + 15
+    
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+    
+    if (x + tooltipWidth > viewportWidth - 10) {
+      x = event.clientX - tooltipWidth - 20
+    }
+    
+    if (y + tooltipHeight > viewportHeight - 10) {
+      y = event.clientY - tooltipHeight - 10
+    }
+    
+    x = Math.max(10, x)
+    y = Math.max(10, y)
+    
     currentTooltip
-      .style("left", (event.clientX + 15) + "px")
-      .style("top", (event.clientY + 15) + "px")
+      .style("left", x + "px")
+      .style("top", y + "px")
   }
 }
 

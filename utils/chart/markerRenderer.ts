@@ -79,16 +79,28 @@ export class MarkerRenderer {
       .attr("class", "markers")
     
     markers.forEach((marker, index) => {
+      // Create a larger invisible hit area for better hover stability
+      const hitAreaSize = Math.max(marker.size * 2, 20) // At least 20px hit area
+      const hitArea = markerGroup.append("rect")
+        .attr("x", marker.x - hitAreaSize / 2)
+        .attr("y", marker.y - hitAreaSize / 2)
+        .attr("width", hitAreaSize)
+        .attr("height", hitAreaSize)
+        .style("fill", "transparent")
+        .style("pointer-events", "all")
+        .style("cursor", "pointer")
+      
       const element = this.createSVGMarker(markerGroup, marker, index)
       
       if (element && (options.onMouseOver || options.onMouseMove || options.onMouseOut)) {
         element
-          .style("cursor", "pointer")
-          .style("pointer-events", "all")
+          .style("pointer-events", "none") // Disable pointer events on visual element
         
+        // Apply events to hit area instead of visual element
         if (options.onMouseOver) {
-          element.on("mouseover", function(event) {
-            d3.select(this)
+          hitArea.on("mouseenter", function(event) {
+            event.stopPropagation() // Prevent event bubbling
+            element
               .style("opacity", 1)
               .style("stroke-width", 2)
             options.onMouseOver!(event, marker)
@@ -96,12 +108,16 @@ export class MarkerRenderer {
         }
         
         if (options.onMouseMove) {
-          element.on("mousemove", (event) => options.onMouseMove!(event, marker))
+          hitArea.on("mousemove", (event) => {
+            event.stopPropagation()
+            options.onMouseMove!(event, marker)
+          })
         }
         
         if (options.onMouseOut) {
-          element.on("mouseout", function(event) {
-            d3.select(this)
+          hitArea.on("mouseleave", function(event) {
+            event.stopPropagation()
+            element
               .style("opacity", marker.opacity || 0.7)
               .style("stroke-width", 1)
             options.onMouseOut!(event, marker)

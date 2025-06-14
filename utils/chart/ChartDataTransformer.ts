@@ -72,8 +72,22 @@ export class ChartDataTransformer {
       const newItem = { ...item } as any
       
       if (xAxisType === 'datetime') {
-        // Ensure timestamps are Date objects
-        if (typeof newItem[xParameter] === 'string') {
+        // For datetime axis, ensure we have a timestamp field
+        const timestampField = 'timestamp'
+        
+        // First, ensure the timestamp field is a Date object
+        if (item[timestampField] && !(item[timestampField] instanceof Date)) {
+          newItem[timestampField] = new Date(item[timestampField])
+        }
+        
+        // If xParameter is different from timestamp (or empty for datetime), 
+        // copy the timestamp value to xParameter field
+        if (xParameter && xParameter !== timestampField && newItem[timestampField]) {
+          newItem[xParameter] = newItem[timestampField]
+        }
+        
+        // Also handle the case where xParameter has a value but it's not a Date
+        if (xParameter && newItem[xParameter] && !(newItem[xParameter] instanceof Date)) {
           newItem[xParameter] = new Date(newItem[xParameter])
         }
       } else if (xAxisType === 'time') {

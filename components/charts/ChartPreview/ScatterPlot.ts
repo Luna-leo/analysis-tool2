@@ -43,12 +43,16 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
   protected setupScalesAndAxes(): void {
     // For scatter plots, we need to handle data transformation before creating scales
     // Transform data based on x-axis type
-    if (this.editingChart.xAxisType === 'datetime' && this.data.length > 0) {
-      // Ensure x values are Date objects
-      this.data = this.data.map(d => ({
-        ...d,
-        x: d.x instanceof Date ? d.x : new Date(d.x as string)
-      }))
+    if ((this.editingChart.xAxisType || 'datetime') === 'datetime' && this.data.length > 0) {
+      // Ensure x values are Date objects and timestamp field exists
+      this.data = this.data.map(d => {
+        const xValue = d.x instanceof Date ? d.x : new Date(d.x as string)
+        return {
+          ...d,
+          x: xValue,
+          timestamp: d.timestamp || xValue // Ensure timestamp field exists
+        }
+      })
     }
     
     // Call parent implementation
@@ -74,7 +78,7 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
     const svg = this.g.node()?.ownerSVGElement
     if (svg) {
       d3.select(svg).on("wheel.tooltip", () => {
-        hideTooltip()
+        ChartTooltipManager.cleanup()
       })
     }
     

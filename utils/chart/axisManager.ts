@@ -61,10 +61,12 @@ export class AxisManager {
       if (editingChart.xAxisRange?.auto === false && editingChart.xAxisRange.min && editingChart.xAxisRange.max) {
         xDomain = [new Date(editingChart.xAxisRange.min), new Date(editingChart.xAxisRange.max)]
       } else if (data && data.length > 0) {
-        // Extract datetime values from data using xParameter
+        // Extract datetime values from data
+        // For datetime axis, prioritize timestamp field
         const xParameter = editingChart.xParameter || 'timestamp'
         const dateValues = data.map(d => {
-          const val = d[xParameter] || d.x || d.timestamp
+          // Try multiple fields: timestamp first, then xParameter, then x
+          const val = d.timestamp || d[xParameter] || d.x
           return val instanceof Date ? val : new Date(val)
         }).filter(d => !isNaN(d.getTime()))
         
