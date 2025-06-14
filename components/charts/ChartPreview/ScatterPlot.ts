@@ -187,9 +187,13 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
     data.forEach(point => {
       const xKey = String(point.x)
       if (!dataByX.has(xKey)) {
+        // Ensure we have the correct timestamp
+        const timestampValue = point.timestamp ? 
+          (typeof point.timestamp === 'string' ? new Date(point.timestamp) : point.timestamp) : 
+          point.x
         dataByX.set(xKey, {
           x: point.x,
-          timestamp: point.timestamp
+          timestamp: timestampValue
         })
       }
       
@@ -265,19 +269,19 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
       data: {
         parameter: param.parameter,
         value: d[param.parameter] || 0,
-        timestamp: d.x,
+        timestamp: d.timestamp || d.x,
         unit: param.unit
       }
     }))
     
     const tooltipHandlers = ChartTooltipManager.createHandlers({
-      xAxisType: 'datetime',
+      xAxisType: this.editingChart.xAxisType || 'datetime',
       showTimestamp: false,
       showDataSource: false,
       customContent: (data) => ChartTooltipManager.createLineChartTooltip(
         data.parameter!,
-        data.y,
-        data.x as Date,
+        data.value,
+        data.timestamp as Date,
         data.unit
       )
     })
