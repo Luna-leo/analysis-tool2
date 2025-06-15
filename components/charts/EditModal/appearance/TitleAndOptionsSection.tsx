@@ -64,6 +64,21 @@ export function TitleAndOptionsSection({ editingChart, setEditingChart }: TitleA
             />
             <Label htmlFor="show-title" className="text-sm whitespace-nowrap">Show Title</Label>
           </div>
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="show-legend"
+              checked={editingChart.showLegend ?? true}
+              onChange={(e) => {
+                setEditingChart({
+                  ...editingChart,
+                  showLegend: e.target.checked,
+                })
+              }}
+              className="rounded"
+            />
+            <Label htmlFor="show-legend" className="text-sm whitespace-nowrap">Show Legend</Label>
+          </div>
         </div>
       </div>
     </div>
