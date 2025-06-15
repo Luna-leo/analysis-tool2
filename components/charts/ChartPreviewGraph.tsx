@@ -35,6 +35,11 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   const [legendPos, setLegendPos] = React.useState<{ x: number; y: number } | null>(
     editingChart.legendPosition ?? null
   )
+  const legendPosRef = useRef<{ x: number; y: number } | null>(legendPos)
+
+  useEffect(() => {
+    legendPosRef.current = legendPos
+  }, [legendPos])
   
   // Store scales in refs to avoid recreation during drag
   const scalesRef = useRef<{
@@ -128,8 +133,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     const handleUp = () => {
       window.removeEventListener('pointermove', handleMove)
       window.removeEventListener('pointerup', handleUp)
-      if (legendPos) {
-        setEditingChart?.({ ...editingChart, legendPosition: legendPos })
+      if (legendPosRef.current) {
+        setEditingChart?.({ ...editingChart, legendPosition: legendPosRef.current })
       }
     }
 
