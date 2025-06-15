@@ -15,9 +15,9 @@ export interface MarkerConfig {
 export interface MarkerRenderOptions {
   container: d3.Selection<SVGGElement, unknown, null, undefined> | CanvasRenderingContext2D
   markers: MarkerConfig[]
-  onMouseOver?: (event: MouseEvent, marker: MarkerConfig) => void
-  onMouseMove?: (event: MouseEvent, marker: MarkerConfig) => void
-  onMouseOut?: (event: MouseEvent, marker: MarkerConfig) => void
+  onMouseOver?: (event: MouseEvent, data: any) => void
+  onMouseMove?: (event: MouseEvent, data: any) => void
+  onMouseOut?: (event: MouseEvent, data: any) => void
 }
 
 /**
@@ -103,14 +103,14 @@ export class MarkerRenderer {
             element
               .style("opacity", 1)
               .style("stroke-width", 2)
-            options.onMouseOver!(event, marker)
+            options.onMouseOver!(event, marker.data ?? marker)
           })
         }
         
         if (options.onMouseMove) {
           hitArea.on("mousemove", (event) => {
             event.stopPropagation()
-            options.onMouseMove!(event, marker)
+            options.onMouseMove!(event, marker.data ?? marker)
           })
         }
         
@@ -120,7 +120,7 @@ export class MarkerRenderer {
             element
               .style("opacity", marker.opacity || 0.7)
               .style("stroke-width", 1)
-            options.onMouseOut!(event, marker)
+            options.onMouseOut!(event, marker.data ?? marker)
           })
         }
       }
