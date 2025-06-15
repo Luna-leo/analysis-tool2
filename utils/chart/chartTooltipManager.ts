@@ -55,13 +55,7 @@ export class ChartTooltipManager {
       onMouseMove: (event: MouseEvent) => {
         updateTooltipPosition(event)
       },
-      onMouseOut: (event: MouseEvent) => {
-        // If moving to another marker within the chart, skip hiding
-        const related = event.relatedTarget as HTMLElement | null
-        if (related && related.closest(".markers")) {
-          return
-        }
-
+      onMouseOut: () => {
         // Add a longer delay before hiding to prevent flickering
         this.hideTimeout = setTimeout(() => {
           hideTooltip()
