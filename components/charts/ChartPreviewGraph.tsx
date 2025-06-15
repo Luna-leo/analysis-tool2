@@ -8,6 +8,7 @@ import {
   renderScatterPlot,
   ReferenceLines
 } from "./ChartPreview/index"
+import { ChartLegend } from "./ChartLegend"
 import { getRenderMethod } from "./ChartPreview/LODRenderer"
 import { useOptimizedChart } from "@/hooks/useOptimizedChart"
 import { hideAllTooltips } from "@/utils/chartTooltip"
@@ -201,6 +202,13 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         </div>
       )}
       <svg ref={svgRef} width={dimensions.width} height={dimensions.height} className="w-full h-full" style={{ visibility: isLoadingData ? 'hidden' : 'visible' }} />
+      {!isLoadingData && selectedDataSourceItems.length > 0 && (
+        <ChartLegend
+          className="absolute top-1 right-1"
+          dataSources={selectedDataSourceItems}
+          dataSourceStyles={dataSourceStyles}
+        />
+      )}
       {!isLoadingData && (
         <ReferenceLines
           svgRef={svgRef}
