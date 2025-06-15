@@ -254,7 +254,7 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
       this.renderLine(paramData, param, lineColor)
       
       // Render markers if requested
-      if (showMarkers && param.marker) {
+      if (showMarkers) {
         this.renderMarkers(paramData, param, lineColor)
       }
     })
@@ -266,8 +266,9 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
    */
   private renderLine(data: any[], param: any, lineColor: string): void {
     const line = d3.line<any>()
+      .defined(d => d[param.parameter] !== undefined)
       .x(d => this.scales.xScale(d.x as any))
-      .y(d => this.scales.yScale(d[param.parameter] as number || 0))
+      .y(d => this.scales.yScale(d[param.parameter] as number))
       .curve(d3.curveMonotoneX)
     
     this.g.append("path")
@@ -283,21 +284,23 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
    * Render markers for a parameter
    */
   private renderMarkers(data: any[], param: any, lineColor: string): void {
-    const markers: MarkerConfig[] = data.map(d => ({
-      x: this.scales.xScale(d.x as any),
-      y: this.scales.yScale(d[param.parameter] as number || 0),
-      type: param.marker!.type,
-      size: param.marker!.size || 6,
-      fillColor: param.marker!.fillColor || lineColor,
-      borderColor: param.marker!.borderColor || lineColor,
-      opacity: 1,
-      data: {
-        parameter: param.parameter,
-        value: d[param.parameter] || 0,
-        timestamp: d.timestamp || d.x,
-        unit: param.unit
-      }
-    }))
+    const markers: MarkerConfig[] = data
+      .filter(d => d[param.parameter] !== undefined)
+      .map(d => ({
+        x: this.scales.xScale(d.x as any),
+        y: this.scales.yScale(d[param.parameter] as number),
+        type: param.marker?.type || 'circle',
+        size: param.marker?.size || 6,
+        fillColor: param.marker?.fillColor || lineColor,
+        borderColor: param.marker?.borderColor || lineColor,
+        opacity: 1,
+        data: {
+          parameter: param.parameter,
+          value: d[param.parameter] as number,
+          timestamp: d.timestamp || d.x,
+          unit: param.unit
+        }
+      }))
     
       const tooltipHandlers = ChartTooltipManager.createHandlers({
         xAxisType: this.editingChart.xAxisType || 'datetime',
