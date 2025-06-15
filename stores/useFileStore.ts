@@ -45,6 +45,7 @@ interface FileActions {
   updateFileCharts: (fileId: string, charts: ChartComponent[]) => void
   updateFileDataSources: (fileId: string, dataSources: EventInfo[]) => void
   updateDataSourceStyle: (fileId: string, dataSourceId: string, style: DataSourceStyle) => void
+  applyBulkSettings: (fileId: string, settings: Partial<ChartComponent>) => void
   duplicateChart: (fileId: string, chartId: string) => void
   deleteChart: (fileId: string, chartId: string) => void
   deleteNode: (nodeId: string) => void
@@ -374,6 +375,26 @@ export const useFileStore = create<FileStore>()(
                   [dataSourceId]: style
                 }
               } 
+            : tab
+        )
+
+        return {
+          fileTree: newFileTree,
+          openTabs: newOpenTabs
+        }
+      }),
+
+      applyBulkSettings: (fileId, settings) => set((state) => {
+        const merge = (chart: ChartComponent) => ({ ...chart, ...settings })
+
+        const newFileTree = traverseAndUpdate(state.fileTree, fileId, (node) => ({
+          ...node,
+          charts: node.charts?.map(merge)
+        }))
+
+        const newOpenTabs = state.openTabs.map(tab =>
+          tab.id === fileId && tab.charts
+            ? { ...tab, charts: tab.charts.map(merge) }
             : tab
         )
 
