@@ -9,7 +9,7 @@ import { ChartGrid, ChartEditModal } from "../charts"
 import { DataSourceStyleDrawer } from "../charts/DataSourceStyleDrawer"
 import { DataSourceBadgePreview } from "../charts/DataSourceBadgePreview"
 import { DataSourceModal } from "../charts/DataSourceModal"
-import { BulkSettingsDrawer } from "../charts/BulkSettingsDrawer"
+import { BulkChartEditModal } from "../charts/BulkChartEditModal"
 import { LineChart, DatabaseIcon, Settings2 } from "lucide-react"
 import { useFileStore } from "@/stores/useFileStore"
 import { useParameterStore } from "@/stores/useParameterStore"
@@ -357,12 +357,12 @@ export default function AnalysisTool() {
         return null
       })()}
       
-      {/* Bulk Settings Drawer */}
+      {/* Bulk Chart Edit Modal */}
       {activeTab && (() => {
         const currentFile = openTabs.find((tab) => tab.id === activeTab)
         if (currentFile && ((currentFile as any).charts || (currentFile as any).dataSources)) {
           return (
-            <BulkSettingsDrawer
+            <BulkChartEditModal
               open={bulkSettingsOpen}
               onOpenChange={setBulkSettingsOpen}
               file={currentFile as FileNode}
