@@ -165,17 +165,33 @@ export function useOptimizedChart({
           const pointsPerSeries = Math.floor(maxDataPoints / seriesMap.size)
           
           seriesMap.forEach((seriesData) => {
+            // Filter out invalid data points
+            const validData = seriesData.filter(p => p && p.x !== undefined && p.y !== undefined)
+            
+            if (validData.length === 0) return
+            
             // Sort by x value for proper sampling
-            seriesData.sort((a, b) => {
+            validData.sort((a, b) => {
               if (a.x < b.x) return -1
               if (a.x > b.x) return 1
               return 0
             })
             
             const sampled = adaptiveSample(
-              seriesData.map(p => ({ ...p, x: Number(new Date(p.x)), y: p.y })),
+              validData.map(p => ({ 
+                ...p, 
+                x: editingChart.xAxisType === 'datetime' && p.x instanceof Date 
+                  ? Number(p.x) 
+                  : Number(p.x), 
+                y: p.y 
+              })),
               pointsPerSeries
-            ).map(p => ({ ...p, x: seriesData[0].x instanceof Date ? new Date(p.x) : p.x }))
+            ).map(p => ({ 
+              ...p, 
+              x: editingChart.xAxisType === 'datetime' && validData[0]?.x instanceof Date 
+                ? new Date(p.x) 
+                : p.x 
+            }))
             
             sampledData.push(...sampled as ChartDataPoint[])
           })

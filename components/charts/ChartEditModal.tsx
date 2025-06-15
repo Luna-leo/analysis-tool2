@@ -8,11 +8,12 @@ import { ChartPreview } from "./ChartPreview"
 import { ModalHeader } from "./EditModal/ModalHeader"
 import { TabNavigation, TabType } from "./EditModal/TabNavigation"
 import { TabContent } from "./EditModal/TabContent"
+import type { EventInfo } from "@/types"
 
 export function ChartEditModal() {
   const { editingChart, editModalOpen, setEditingChart, setEditModalOpen } = useUIStore()
-  const { openTabs, activeTab: activeFileTab, updateFileCharts } = useFileStore()
-  const [activeTab, setActiveTab] = useState<TabType>("parameters")
+  const { openTabs, activeTab: activeFileTab, updateFileCharts, updateFileDataSources } = useFileStore()
+  const [activeTab, setActiveTab] = useState<TabType>("datasource")
   const [dataSourceStyles, setDataSourceStyles] = useState<{ [dataSourceId: string]: any }>({})
 
   // Initialize dataSourceStyles from FileNode when modal opens
@@ -29,10 +30,10 @@ export function ChartEditModal() {
     }
   }, [editModalOpen, editingChart?.id, openTabs, activeFileTab])
   
-  // Reset to parameters tab when modal opens
+  // Reset to datasource tab when modal opens
   React.useEffect(() => {
     if (editModalOpen) {
-      setActiveTab("parameters")
+      setActiveTab("datasource")
     }
   }, [editModalOpen])
 
@@ -90,6 +91,15 @@ export function ChartEditModal() {
   const currentFile = openTabs.find(tab => tab.id === targetFileId)
   const selectedDataSourceItems = currentFile?.selectedDataSources || []
 
+  const handleSetSelectedDataSourceItems = (items: React.SetStateAction<EventInfo[]>) => {
+    if (typeof items === 'function') {
+      const newItems = items(selectedDataSourceItems)
+      updateFileDataSources(targetFileId, newItems)
+    } else {
+      updateFileDataSources(targetFileId, items)
+    }
+  }
+
   return (
     <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
       <DialogContent className="max-w-7xl w-[90vw] h-[90vh] flex flex-col overflow-hidden" hideCloseButton>
@@ -104,7 +114,7 @@ export function ChartEditModal() {
 
         <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
           <div className="border rounded-lg p-4 overflow-hidden h-full flex flex-col">
-            <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} includeDataSourceTab={false} />
+            <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} includeDataSourceTab={true} />
             
             <div className="flex-1 min-h-0">
               <TabContent
@@ -112,7 +122,8 @@ export function ChartEditModal() {
                 editingChart={editingChart}
                 setEditingChart={setEditingChart}
                 selectedDataSourceItems={selectedDataSourceItems}
-                includeDataSourceTab={false}
+                setSelectedDataSourceItems={handleSetSelectedDataSourceItems}
+                includeDataSourceTab={true}
               />
             </div>
           </div>
