@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription } from "@/components/ui/dialog
 import { ModalHeader } from "./EditModal/ModalHeader"
 import { TabNavigation, TabType } from "./EditModal/TabNavigation"
 import { TabContent } from "./EditModal/TabContent"
-import { FileNode, ChartComponent, EventInfo } from "@/types"
+import { FileNode, ChartComponent } from "@/types"
 import { useFileStore } from "@/stores/useFileStore"
 
 interface BulkChartEditModalProps {
@@ -17,7 +17,7 @@ interface BulkChartEditModalProps {
 export function BulkChartEditModal({ open, onOpenChange, file }: BulkChartEditModalProps) {
   const { applyBulkSettings } = useFileStore()
 
-  const [activeTab, setActiveTab] = useState<TabType>("datasource")
+  const [activeTab, setActiveTab] = useState<TabType>("parameters")
   const [bulkSettings, setBulkSettings] = useState<ChartComponent>(() => ({
     id: "bulk",
     title: "",
@@ -25,7 +25,6 @@ export function BulkChartEditModal({ open, onOpenChange, file }: BulkChartEditMo
     referenceLines: [],
     fileId: file.id
   } as unknown as ChartComponent))
-  const [selectedDataSourceItems, setSelectedDataSourceItems] = useState<EventInfo[]>([])
 
   useEffect(() => {
     if (open) {
@@ -33,8 +32,7 @@ export function BulkChartEditModal({ open, onOpenChange, file }: BulkChartEditMo
         ? { ...file.charts[0] }
         : { id: "bulk", title: "", data: [], referenceLines: [], fileId: file.id } as ChartComponent
       setBulkSettings(chart)
-      setSelectedDataSourceItems(file.selectedDataSources || [])
-      setActiveTab("datasource")
+      setActiveTab("parameters")
     }
   }, [open, file])
 
@@ -48,20 +46,22 @@ export function BulkChartEditModal({ open, onOpenChange, file }: BulkChartEditMo
     onOpenChange(false)
   }
 
+  const selectedDataSourceItems = file.selectedDataSources || []
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-7xl w-[90vw] h-[90vh] flex flex-col overflow-hidden" hideCloseButton>
         <DialogDescription className="sr-only">Bulk edit chart settings</DialogDescription>
         <ModalHeader title={`${file.name} Bulk Edit`} onCancel={handleCancel} onSave={handleSave} />
         <div className="flex-1 min-h-0 flex flex-col">
-          <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+          <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} includeDataSourceTab={false} />
           <div className="flex-1 min-h-0 overflow-y-auto">
             <TabContent
               activeTab={activeTab}
               editingChart={bulkSettings}
               setEditingChart={setBulkSettings}
               selectedDataSourceItems={selectedDataSourceItems}
-              setSelectedDataSourceItems={setSelectedDataSourceItems}
+              includeDataSourceTab={false}
             />
           </div>
         </div>

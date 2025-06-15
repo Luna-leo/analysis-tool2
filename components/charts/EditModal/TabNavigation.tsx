@@ -8,15 +8,19 @@ export type TabType = "datasource" | "parameters" | "appearance"
 interface TabNavigationProps {
   activeTab: TabType
   onTabChange: (tab: TabType) => void
+  includeDataSourceTab?: boolean
 }
 
-const tabs: { value: TabType; label: string }[] = [
+const allTabs: { value: TabType; label: string }[] = [
   { value: "datasource", label: "DataSource" },
   { value: "parameters", label: "Parameters" },
   { value: "appearance", label: "Appearance" }
 ]
 
-export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
+export function TabNavigation({ activeTab, onTabChange, includeDataSourceTab = true }: TabNavigationProps) {
+  const tabs = includeDataSourceTab
+    ? allTabs
+    : allTabs.filter((t) => t.value !== "datasource")
   return (
     <div className="flex gap-2 mb-4">
       {tabs.map((tab) => (

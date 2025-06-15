@@ -11,19 +11,22 @@ interface TabContentProps {
   activeTab: TabType
   editingChart: ChartComponent
   setEditingChart: (chart: ChartComponent) => void
-  selectedDataSourceItems: EventInfo[]
-  setSelectedDataSourceItems: React.Dispatch<React.SetStateAction<EventInfo[]>>
+  selectedDataSourceItems?: EventInfo[]
+  setSelectedDataSourceItems?: React.Dispatch<React.SetStateAction<EventInfo[]>>
+  includeDataSourceTab?: boolean
 }
 
 export function TabContent({
   activeTab,
   editingChart,
   setEditingChart,
-  selectedDataSourceItems,
-  setSelectedDataSourceItems
+  selectedDataSourceItems = [],
+  setSelectedDataSourceItems,
+  includeDataSourceTab = true
 }: TabContentProps) {
   switch (activeTab) {
     case "datasource":
+      if (!includeDataSourceTab || !setSelectedDataSourceItems) return null
       return (
         <div className="h-full overflow-y-auto">
           <DataSourceTab
