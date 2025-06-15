@@ -1,17 +1,12 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { UserSettings, SettingsStore, ParameterSource } from '@/types/settings'
-
-const defaultSettings: UserSettings = {
-  toolDefaults: {
-    parameterSource: 'master'
-  }
-}
+import { SettingsStore, ParameterSource } from '@/types/settings'
+import { DEFAULT_SETTINGS } from '@/constants/settings'
 
 export const useSettingsStore = create<SettingsStore>()(
   persist(
     (set, get) => ({
-      settings: defaultSettings,
+      settings: DEFAULT_SETTINGS,
       isLoading: false,
 
       updateParameterSource: (source: ParameterSource) => {
