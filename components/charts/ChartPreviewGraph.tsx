@@ -57,16 +57,28 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
 
     if (editingChart.legendPosition) {
       const { xRatio, yRatio } = editingChart.legendPosition
+      const ratioX = Number.isFinite(xRatio) ? xRatio : 0
+      const ratioY = Number.isFinite(yRatio) ? yRatio : 0
       const pos = {
-        x: Math.min(Math.max(0, xRatio * containerRect.width), containerRect.width - legendRect.width),
-        y: Math.min(Math.max(0, yRatio * containerRect.height), containerRect.height - legendRect.height)
+        x: Math.min(
+          Math.max(0, ratioX * containerRect.width),
+          containerRect.width - legendRect.width
+        ),
+        y: Math.min(
+          Math.max(0, ratioY * containerRect.height),
+          containerRect.height - legendRect.height
+        )
       }
       setLegendPos(pos)
     } else {
       const defaultPos = { x: containerRect.width - legendRect.width - 4, y: 4 }
       const defaultRatio = {
-        xRatio: defaultPos.x / containerRect.width,
-        yRatio: defaultPos.y / containerRect.height
+        xRatio: containerRect.width
+          ? defaultPos.x / containerRect.width
+          : 0,
+        yRatio: containerRect.height
+          ? defaultPos.y / containerRect.height
+          : 0
       }
       legendRatioRef.current = defaultRatio
       setLegendPos(defaultPos)
@@ -80,9 +92,17 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     const containerRect = containerRef.current.getBoundingClientRect()
     const legendRect = legendRef.current.getBoundingClientRect()
     const { xRatio, yRatio } = editingChart.legendPosition
+    const ratioX = Number.isFinite(xRatio) ? xRatio : 0
+    const ratioY = Number.isFinite(yRatio) ? yRatio : 0
     const newPos = {
-      x: Math.min(Math.max(0, xRatio * containerRect.width), containerRect.width - legendRect.width),
-      y: Math.min(Math.max(0, yRatio * containerRect.height), containerRect.height - legendRect.height)
+      x: Math.min(
+        Math.max(0, ratioX * containerRect.width),
+        containerRect.width - legendRect.width
+      ),
+      y: Math.min(
+        Math.max(0, ratioY * containerRect.height),
+        containerRect.height - legendRect.height
+      )
     }
     if (legendPos?.x !== newPos.x || legendPos?.y !== newPos.y) {
       setLegendPos(newPos)
@@ -114,9 +134,17 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     const containerRect = containerRef.current.getBoundingClientRect()
     const legendRect = legendRef.current.getBoundingClientRect()
     const { xRatio, yRatio } = legendRatioRef.current
+    const ratioX = Number.isFinite(xRatio) ? xRatio : 0
+    const ratioY = Number.isFinite(yRatio) ? yRatio : 0
     const newPos = {
-      x: Math.min(Math.max(0, xRatio * containerRect.width), containerRect.width - legendRect.width),
-      y: Math.min(Math.max(0, yRatio * containerRect.height), containerRect.height - legendRect.height)
+      x: Math.min(
+        Math.max(0, ratioX * containerRect.width),
+        containerRect.width - legendRect.width
+      ),
+      y: Math.min(
+        Math.max(0, ratioY * containerRect.height),
+        containerRect.height - legendRect.height
+      )
     }
     setLegendPos(newPos)
   }, [dimensions, editingChart.legendPosition])
@@ -137,8 +165,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         y: Math.min(Math.max(0, y), containerRect.height - legendRect.height)
       }
       const newRatio = {
-        xRatio: newPos.x / containerRect.width,
-        yRatio: newPos.y / containerRect.height
+        xRatio: containerRect.width ? newPos.x / containerRect.width : 0,
+        yRatio: containerRect.height ? newPos.y / containerRect.height : 0
       }
       legendRatioRef.current = newRatio
       setLegendPos(newPos)
