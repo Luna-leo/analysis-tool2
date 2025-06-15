@@ -84,7 +84,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       setLegendPos(defaultPos)
       setEditingChart?.({ ...editingChart, legendPosition: defaultRatio })
     }
-  }, [legendPos, dimensions, editingChart.legendPosition])
+  }, [legendPos, dimensions, editingChart.legendPosition, editingChart.showLegend])
 
   // Sync legend position if editingChart changes elsewhere
   useEffect(() => {
@@ -249,6 +249,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               canvasRef.current = document.createElement('canvas')
               canvasRef.current.style.position = 'absolute'
               canvasRef.current.style.pointerEvents = 'none'
+              canvasRef.current.style.zIndex = '0'
               containerRef.current.appendChild(canvasRef.current)
             }
             canvasRef.current.style.left = `${margin.left}px`
@@ -335,7 +336,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           ref={legendRef}
           onPointerDown={handleLegendPointerDown}
           style={legendPos ? { top: legendPos.y, left: legendPos.x } : undefined}
-          className="absolute cursor-move"
+          className="absolute cursor-move z-20"
           dataSources={selectedDataSourceItems}
           dataSourceStyles={dataSourceStyles}
         />
