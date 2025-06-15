@@ -158,6 +158,10 @@ export interface ChartComponent {
   }>
   fileId?: string
   type?: string
+  legendPosition?: {
+    x: number
+    y: number
+  }
 }
 
 export interface FileNode {

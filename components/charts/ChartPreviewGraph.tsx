@@ -32,7 +32,9 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   const cleanupRef = useRef<(() => void) | null>(null)
   const [dimensions, setDimensions] = React.useState({ width: 400, height: 300 })
   const legendRef = useRef<HTMLDivElement>(null)
-  const [legendPos, setLegendPos] = React.useState<{ x: number; y: number } | null>(null)
+  const [legendPos, setLegendPos] = React.useState<{ x: number; y: number } | null>(
+    editingChart.legendPosition ?? null
+  )
   
   // Store scales in refs to avoid recreation during drag
   const scalesRef = useRef<{
@@ -44,10 +46,25 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   useLayoutEffect(() => {
     if (!containerRef.current || !legendRef.current) return
     if (legendPos !== null) return
-    const containerRect = containerRef.current.getBoundingClientRect()
-    const legendRect = legendRef.current.getBoundingClientRect()
-    setLegendPos({ x: containerRect.width - legendRect.width - 4, y: 4 })
-  }, [legendPos, dimensions])
+
+    if (editingChart.legendPosition) {
+      setLegendPos(editingChart.legendPosition)
+    } else {
+      const containerRect = containerRef.current.getBoundingClientRect()
+      const legendRect = legendRef.current.getBoundingClientRect()
+      const defaultPos = { x: containerRect.width - legendRect.width - 4, y: 4 }
+      setLegendPos(defaultPos)
+      setEditingChart?.({ ...editingChart, legendPosition: defaultPos })
+    }
+  }, [legendPos, dimensions, editingChart.legendPosition])
+
+  // Sync legend position if editingChart changes elsewhere
+  useEffect(() => {
+    if (editingChart.legendPosition &&
+        (legendPos?.x !== editingChart.legendPosition.x || legendPos?.y !== editingChart.legendPosition.y)) {
+      setLegendPos(editingChart.legendPosition)
+    }
+  }, [editingChart.legendPosition])
   
   // Use optimized data loading hook
   const { data: chartData, isLoading: isLoadingData, error } = useOptimizedChart({
@@ -100,15 +117,20 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     const handleMove = (ev: PointerEvent) => {
       const x = ev.clientX - containerRect.left - offsetX
       const y = ev.clientY - containerRect.top - offsetY
-      setLegendPos({
+      const newPos = {
         x: Math.min(Math.max(0, x), containerRect.width - legendRect.width),
         y: Math.min(Math.max(0, y), containerRect.height - legendRect.height)
-      })
+      }
+      setLegendPos(newPos)
+      setEditingChart?.({ ...editingChart, legendPosition: newPos })
     }
 
     const handleUp = () => {
       window.removeEventListener('pointermove', handleMove)
       window.removeEventListener('pointerup', handleUp)
+      if (legendPos) {
+        setEditingChart?.({ ...editingChart, legendPosition: legendPos })
+      }
     }
 
     window.addEventListener('pointermove', handleMove)
