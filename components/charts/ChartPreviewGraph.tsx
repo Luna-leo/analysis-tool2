@@ -330,7 +330,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         </div>
       )}
       <svg ref={svgRef} width={dimensions.width} height={dimensions.height} className="w-full h-full" style={{ visibility: isLoadingData ? 'hidden' : 'visible' }} />
-      {!isLoadingData && selectedDataSourceItems.length > 0 && (
+      {!isLoadingData && editingChart.showLegend !== false && selectedDataSourceItems.length > 0 && (
         <ChartLegend
           ref={legendRef}
           onPointerDown={handleLegendPointerDown}

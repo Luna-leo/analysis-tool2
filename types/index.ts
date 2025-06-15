@@ -101,6 +101,7 @@ export interface ChartComponent {
   id: string
   title: string
   showTitle?: boolean
+  showLegend?: boolean
   data: Array<{ name: string; value: number }>
   xLabel?: string
   yLabel?: string
