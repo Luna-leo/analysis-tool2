@@ -8,9 +8,8 @@ import { Button } from "@/components/ui/button"
 import { ChartGrid, ChartEditModal } from "../charts"
 import { DataSourceStyleDrawer } from "../charts/DataSourceStyleDrawer"
 import { DataSourceBadgePreview } from "../charts/DataSourceBadgePreview"
-import { DataSourceModal } from "../charts/DataSourceModal"
 import { BulkChartEditModal } from "../charts/BulkChartEditModal"
-import { LineChart, DatabaseIcon, Settings2 } from "lucide-react"
+import { LineChart, Settings2 } from "lucide-react"
 import { useFileStore } from "@/stores/useFileStore"
 import { useParameterStore } from "@/stores/useParameterStore"
 import { useGraphStateStore } from "@/stores/useGraphStateStore"
@@ -36,7 +35,6 @@ export default function AnalysisTool() {
     index: 0
   })
   const [styleDrawerOpen, setStyleDrawerOpen] = React.useState(false)
-  const [dataSourceModalOpen, setDataSourceModalOpen] = React.useState(false)
   const [bulkSettingsOpen, setBulkSettingsOpen] = React.useState(false)
   
   const { openTabs, activeTab, openFile, fileTree, setActiveTab, toggleFolder, setFileTree } = useFileStore()
@@ -210,22 +208,6 @@ export default function AnalysisTool() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setDataSourceModalOpen(true)}
-                        title="Data Source Settings"
-                        className="h-9 w-24 flex items-center justify-center gap-1.5 rounded-md border border-gray-400 relative"
-                      >
-                        <DatabaseIcon className="h-4 w-4" />
-                        <span className="text-sm font-medium">Data</span>
-                        {selectedDataSources.length === 0 && (
-                          <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                          </span>
-                        )}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
                         onClick={() => {
                           const uiStore = useUIStore.getState()
                           uiStore.setEditingChart({
@@ -342,20 +324,6 @@ export default function AnalysisTool() {
         return null
       })()}
       
-      {/* Data Source Modal */}
-      {activeTab && (() => {
-        const currentFile = openTabs.find((tab) => tab.id === activeTab)
-        if (currentFile && ((currentFile as any).charts || (currentFile as any).dataSources)) {
-          return (
-            <DataSourceModal
-              open={dataSourceModalOpen}
-              onOpenChange={setDataSourceModalOpen}
-              file={currentFile}
-            />
-          )
-        }
-        return null
-      })()}
       
       {/* Bulk Chart Edit Modal */}
       {activeTab && (() => {
