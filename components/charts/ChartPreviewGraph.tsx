@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useRef, useMemo } from "react"
+import React, { useEffect, useRef, useMemo, useLayoutEffect } from "react"
 import * as d3 from "d3"
 import { ChartComponent, EventInfo, DataSourceStyle } from "@/types"
 import {
@@ -31,12 +31,23 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   const animationFrameRef = useRef<number | null>(null)
   const cleanupRef = useRef<(() => void) | null>(null)
   const [dimensions, setDimensions] = React.useState({ width: 400, height: 300 })
+  const legendRef = useRef<HTMLDivElement>(null)
+  const [legendPos, setLegendPos] = React.useState<{ x: number; y: number } | null>(null)
   
   // Store scales in refs to avoid recreation during drag
   const scalesRef = useRef<{
     xScale: d3.ScaleTime<number, number> | d3.ScaleLinear<number, number> | null,
     yScale: d3.ScaleLinear<number, number> | null
   }>({ xScale: null, yScale: null })
+
+  // Initialize legend position once container and legend are mounted
+  useLayoutEffect(() => {
+    if (!containerRef.current || !legendRef.current) return
+    if (legendPos !== null) return
+    const containerRect = containerRef.current.getBoundingClientRect()
+    const legendRect = legendRef.current.getBoundingClientRect()
+    setLegendPos({ x: containerRect.width - legendRect.width - 4, y: 4 })
+  }, [legendPos, dimensions])
   
   // Use optimized data loading hook
   const { data: chartData, isLoading: isLoadingData, error } = useOptimizedChart({
@@ -56,6 +67,53 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       })
     }
   }, 150)
+
+  // Keep legend within bounds when container resizes
+  useEffect(() => {
+    if (!containerRef.current || !legendRef.current || legendPos === null) return
+    const containerRect = containerRef.current.getBoundingClientRect()
+    const legendRect = legendRef.current.getBoundingClientRect()
+    setLegendPos(pos =>
+      pos
+        ? {
+            x: Math.min(
+              Math.max(0, pos.x),
+              containerRect.width - legendRect.width
+            ),
+            y: Math.min(
+              Math.max(0, pos.y),
+              containerRect.height - legendRect.height
+            )
+          }
+        : pos
+    )
+  }, [dimensions])
+
+  const handleLegendPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!legendRef.current || !containerRef.current) return
+    e.preventDefault()
+    const containerRect = containerRef.current.getBoundingClientRect()
+    const legendRect = legendRef.current.getBoundingClientRect()
+    const offsetX = e.clientX - legendRect.left
+    const offsetY = e.clientY - legendRect.top
+
+    const handleMove = (ev: PointerEvent) => {
+      const x = ev.clientX - containerRect.left - offsetX
+      const y = ev.clientY - containerRect.top - offsetY
+      setLegendPos({
+        x: Math.min(Math.max(0, x), containerRect.width - legendRect.width),
+        y: Math.min(Math.max(0, y), containerRect.height - legendRect.height)
+      })
+    }
+
+    const handleUp = () => {
+      window.removeEventListener('pointermove', handleMove)
+      window.removeEventListener('pointerup', handleUp)
+    }
+
+    window.addEventListener('pointermove', handleMove)
+    window.addEventListener('pointerup', handleUp)
+  }
 
   // Handle resize with throttle
   useEffect(() => {
@@ -204,7 +262,10 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       <svg ref={svgRef} width={dimensions.width} height={dimensions.height} className="w-full h-full" style={{ visibility: isLoadingData ? 'hidden' : 'visible' }} />
       {!isLoadingData && selectedDataSourceItems.length > 0 && (
         <ChartLegend
-          className="absolute top-1 right-1"
+          ref={legendRef}
+          onPointerDown={handleLegendPointerDown}
+          style={legendPos ? { top: legendPos.y, left: legendPos.x } : undefined}
+          className="absolute cursor-move"
           dataSources={selectedDataSourceItems}
           dataSourceStyles={dataSourceStyles}
         />
