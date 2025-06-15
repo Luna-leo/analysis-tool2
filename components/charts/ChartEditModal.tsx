@@ -5,32 +5,22 @@ import { Dialog, DialogContent, DialogDescription } from "@/components/ui/dialog
 import { useUIStore } from "@/stores/useUIStore"
 import { useFileStore } from "@/stores/useFileStore"
 import { ChartPreview } from "./ChartPreview"
-import { EventInfo } from "@/types"
 import { ModalHeader } from "./EditModal/ModalHeader"
 import { TabNavigation, TabType } from "./EditModal/TabNavigation"
 import { TabContent } from "./EditModal/TabContent"
 
 export function ChartEditModal() {
   const { editingChart, editModalOpen, setEditingChart, setEditModalOpen } = useUIStore()
-  const { openTabs, activeTab: activeFileTab, updateFileCharts, updateFileDataSources } = useFileStore()
-  const [activeTab, setActiveTab] = useState<TabType>("datasource")
-  const [selectedDataSourceItems, setSelectedDataSourceItems] = useState<EventInfo[]>([])
+  const { openTabs, activeTab: activeFileTab, updateFileCharts } = useFileStore()
+  const [activeTab, setActiveTab] = useState<TabType>("parameters")
   const [dataSourceStyles, setDataSourceStyles] = useState<{ [dataSourceId: string]: any }>({})
 
-  // Initialize selectedDataSourceItems and dataSourceStyles from FileNode when modal opens
+  // Initialize dataSourceStyles from FileNode when modal opens
   React.useEffect(() => {
     if (editModalOpen && editingChart) {
       const targetFileId = editingChart.fileId || activeFileTab
       const currentFile = openTabs.find(tab => tab.id === targetFileId)
-      
-      // Use FileNode's selectedDataSources as the source of truth
-      if (currentFile?.selectedDataSources) {
-        setSelectedDataSourceItems(currentFile.selectedDataSources)
-      } else {
-        setSelectedDataSourceItems([])
-      }
-      
-      // Also get dataSourceStyles
+
       if (currentFile?.dataSourceStyles) {
         setDataSourceStyles(currentFile.dataSourceStyles)
       } else {
@@ -39,10 +29,10 @@ export function ChartEditModal() {
     }
   }, [editModalOpen, editingChart?.id, openTabs, activeFileTab])
   
-  // Reset to datasource tab when modal opens
+  // Reset to parameters tab when modal opens
   React.useEffect(() => {
     if (editModalOpen) {
-      setActiveTab("datasource")
+      setActiveTab("parameters")
     }
   }, [editModalOpen])
 
@@ -81,9 +71,6 @@ export function ChartEditModal() {
       
       // Save to file store
       updateFileCharts(currentFile.id, updatedCharts)
-      
-      // Also update the file's data sources
-      updateFileDataSources(currentFile.id, selectedDataSourceItems)
     }
     
     setEditModalOpen(false)
@@ -99,6 +86,10 @@ export function ChartEditModal() {
     setActiveTab(newTab)
   }
 
+  const targetFileId = editingChart.fileId || activeFileTab
+  const currentFile = openTabs.find(tab => tab.id === targetFileId)
+  const selectedDataSourceItems = currentFile?.selectedDataSources || []
+
   return (
     <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
       <DialogContent className="max-w-7xl w-[90vw] h-[90vh] flex flex-col overflow-hidden" hideCloseButton>
@@ -113,7 +104,7 @@ export function ChartEditModal() {
 
         <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
           <div className="border rounded-lg p-4 overflow-hidden h-full flex flex-col">
-            <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} />
+            <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} includeDataSourceTab={false} />
             
             <div className="flex-1 min-h-0">
               <TabContent
@@ -121,7 +112,7 @@ export function ChartEditModal() {
                 editingChart={editingChart}
                 setEditingChart={setEditingChart}
                 selectedDataSourceItems={selectedDataSourceItems}
-                setSelectedDataSourceItems={setSelectedDataSourceItems}
+                includeDataSourceTab={false}
               />
             </div>
           </div>
