@@ -202,60 +202,43 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
    * Render as line chart with optional markers
    */
   private renderLineChart(data: ScatterDataPoint[], showMarkers: boolean): void {
-    const yParams = this.editingChart.yAxisParams || []
+    // Group data by series (dataSource + parameter combination)
+    const seriesGroups = d3.group(data, d => d.series)
     
-    // Transform scatter data to line chart format
-    const dataByX = new Map<string, any>()
-    
-    data.forEach(point => {
-      const xKey = String(point.x)
-      if (!dataByX.has(xKey)) {
-        // Ensure we have the correct timestamp
-        const timestampValue = point.timestamp ? 
-          (typeof point.timestamp === 'string' ? new Date(point.timestamp) : point.timestamp) : 
-          point.x
-        dataByX.set(xKey, {
-          x: point.x,
-          timestamp: timestampValue
-        })
-      }
+    // Render each series as a separate line
+    seriesGroups.forEach((seriesData, seriesName) => {
+      // Sort data by x value for proper line rendering
+      const sortedData = seriesData.sort((a, b) => {
+        if (a.x instanceof Date && b.x instanceof Date) {
+          return a.x.getTime() - b.x.getTime()
+        }
+        return Number(a.x) - Number(b.x)
+      })
       
-      // Extract parameter name from series
-      const paramName = point.series.split(' - ').pop()
-      if (paramName) {
-        dataByX.get(xKey)[paramName] = point.y
-      }
-    })
-    
-    // Convert to array and sort
-    const chartData = Array.from(dataByX.values()).sort((a, b) => {
-      const aVal = a.x
-      const bVal = b.x
-      if (aVal instanceof Date && bVal instanceof Date) {
-        return aVal.getTime() - bVal.getTime()
-      }
-      return Number(aVal) - Number(bVal)
-    })
-    
-    yParams.forEach((param, index) => {
-      // Skip parameters with empty names
-      if (!param.parameter || param.parameter.trim() === '') {
-        return
-      }
+      // Find the corresponding yParam for this series
+      const paramName = seriesName.split(' - ').pop()
+      const yParam = this.editingChart.yAxisParams?.find(p => p.parameter === paramName)
       
-      // Filter data points that have this parameter
-      const paramData = chartData.filter(d => d[param.parameter] !== undefined)
-      if (paramData.length === 0) return
+      if (!yParam || !paramName) return
       
-      // Get color for this parameter
-      const lineColor = param.line?.color || defaultChartColors[index % defaultChartColors.length]
+      // Get color and style from yParam or use defaults
+      const paramIndex = this.editingChart.yAxisParams?.indexOf(yParam) || 0
+      const lineColor = yParam.line?.color || defaultChartColors[paramIndex % defaultChartColors.length]
       
-      // Always render line in line chart mode
-      this.renderLine(paramData, param, lineColor)
+      // Create line data
+      const lineData = sortedData.map(d => ({
+        x: d.x,
+        y: d.y,
+        timestamp: d.timestamp,
+        [paramName]: d.y  // Add parameter name as property for line rendering
+      }))
+      
+      // Render line
+      this.renderLine(lineData, yParam, lineColor)
       
       // Render markers if requested
       if (showMarkers) {
-        this.renderMarkers(paramData, param, lineColor)
+        this.renderMarkers(lineData, yParam, lineColor)
       }
     })
   }
