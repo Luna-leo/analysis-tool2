@@ -26,8 +26,12 @@ export function extractParametersFromCSV(csvData: ParsedCSVData): EnhancedParame
   const parameters: EnhancedParameter[] = []
 
   csvData.headers.forEach(header => {
-    // Skip if it's a system column
-    if (excludedColumns.has(header.toLowerCase())) return
+    // Skip if it's a system column (case-insensitive check)
+    const headerLower = header.toLowerCase()
+    if (excludedColumns.has(headerLower)) return
+    
+    // Also skip any variation of timestamp
+    if (headerLower.includes('timestamp') || headerLower === 'ts') return
 
     // Try to extract unit from header (e.g., "Temperature (°C)" -> name: "Temperature", unit: "°C")
     const unitMatch = header.match(/^(.+?)\s*\(([^)]+)\)\s*$/)

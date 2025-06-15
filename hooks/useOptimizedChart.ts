@@ -115,7 +115,11 @@ export function useOptimizedChart({
                   // Ensure timestamp is a Date object
                   xValue = point.timestamp instanceof Date ? point.timestamp : new Date(point.timestamp)
                 } else if (rawXValue !== undefined) {
-                  xValue = Number(rawXValue)
+                  const numValue = Number(rawXValue)
+                  // Only use the value if it's a valid number
+                  if (!isNaN(numValue)) {
+                    xValue = numValue
+                  }
                 }
                 
                 validYParams.forEach((yParam, index) => {
@@ -182,7 +186,7 @@ export function useOptimizedChart({
                 ...p, 
                 x: editingChart.xAxisType === 'datetime' && p.x instanceof Date 
                   ? Number(p.x) 
-                  : Number(p.x), 
+                  : typeof p.x === 'number' ? p.x : Number(p.x || 0), 
                 y: p.y 
               })),
               pointsPerSeries
