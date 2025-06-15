@@ -70,8 +70,8 @@ export function showTooltip(
   
   // Calculate optimal position
   // Default: position to the right and below cursor to avoid overlap
-  let x = event.clientX + 15 // Offset to the right
-  let y = event.clientY + 15 // Offset below cursor for better stability
+  let x = event.clientX + 20 // Offset further right to avoid cursor
+  let y = event.clientY - 10 // Position slightly above the cursor
   
   // Adjust if tooltip would go off-screen
   const viewportWidth = window.innerWidth
@@ -129,8 +129,8 @@ export function updateTooltipPosition(event: MouseEvent): void {
     const tooltipHeight = tooltipRect.height
     
     // Calculate optimal position with same logic as showTooltip
-    let x = event.clientX + 15
-    let y = event.clientY + 15
+    let x = event.clientX + 20
+    let y = event.clientY - 10
     
     const viewportWidth = window.innerWidth
     const viewportHeight = window.innerHeight
