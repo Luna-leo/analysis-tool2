@@ -6,6 +6,7 @@ import { ChartTooltipManager } from "@/utils/chart/chartTooltipManager"
 import { showTooltip, updateTooltipPosition, hideTooltip } from "@/utils/chartTooltip"
 import { formatXValue } from "@/utils/chartAxisUtils"
 import { determineLODLevel, simplifyData, getRenderMethod } from "./LODRenderer"
+import { renderWithOptimizedCanvas } from "./OptimizedCanvasRenderer"
 import { performanceTracker } from "@/utils/performanceTracking"
 import { defaultChartColors } from "@/utils/chartColors"
 
@@ -14,7 +15,7 @@ interface ScatterDataPoint {
   y: number
   series: string
   seriesIndex: number
-  timestamp: string
+  timestamp: string | Date
   dataSourceId: string
   dataSourceLabel: string
   dataSourceIndex?: number
@@ -23,6 +24,7 @@ interface ScatterDataPoint {
 interface ScatterPlotConfig extends BaseChartConfig {
   data: ScatterDataPoint[]
   dataSourceStyles?: { [dataSourceId: string]: DataSourceStyle }
+  canvas?: HTMLCanvasElement
 }
 
 /**
@@ -31,10 +33,12 @@ interface ScatterPlotConfig extends BaseChartConfig {
  */
 class ScatterPlot extends BaseChart<ScatterDataPoint> {
   private dataSourceStyles: { [dataSourceId: string]: DataSourceStyle }
+  private canvas?: HTMLCanvasElement
 
   constructor(config: ScatterPlotConfig) {
     super(config)
     this.dataSourceStyles = config.dataSourceStyles || {}
+    this.canvas = config.canvas
   }
 
   /**
@@ -95,10 +99,23 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
       // Get all unique series/data sources
       const uniqueSeries = Array.from(new Set(this.data.map(d => d.dataSourceId)))
       const seriesColorMap = this.createSeriesColorMap(uniqueSeries)
-      
-      // Always use SVG rendering for now
-      // TODO: Implement proper canvas rendering with BaseChart architecture
-      this.renderWithSVG(dataToRender, seriesColorMap)
+
+      if (renderMethod === 'canvas' && this.canvas) {
+        renderWithOptimizedCanvas({
+          canvas: this.canvas,
+          data: dataToRender,
+          width: this.width,
+          height: this.height,
+          margin: this.getMargins(),
+          xScale: this.scales.xScale,
+          yScale: this.scales.yScale,
+          editingChart: this.editingChart,
+          colorScale: (series) => seriesColorMap.get(series) || '#000',
+          dataSourceStyles: this.dataSourceStyles
+        })
+      } else {
+        this.renderWithSVG(dataToRender, seriesColorMap)
+      }
     }
     
     // End performance tracking
@@ -274,17 +291,17 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
       }
     }))
     
-    const tooltipHandlers = ChartTooltipManager.createHandlers({
-      xAxisType: this.editingChart.xAxisType || 'datetime',
-      showTimestamp: false,
-      showDataSource: false,
-      customContent: (data) => ChartTooltipManager.createLineChartTooltip(
-        data.parameter!,
-        data.value,
-        data.timestamp as Date,
-        data.unit
-      )
-    })
+      const tooltipHandlers = ChartTooltipManager.createHandlers({
+        xAxisType: this.editingChart.xAxisType || 'datetime',
+        showTimestamp: false,
+        showDataSource: false,
+        customContent: (d: any) => ChartTooltipManager.createLineChartTooltip(
+          d.parameter!,
+          d.value,
+          d.timestamp as Date,
+          d.unit
+        )
+      })
     
     MarkerRenderer.render({
       container: this.g,

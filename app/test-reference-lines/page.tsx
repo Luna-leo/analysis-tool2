@@ -48,8 +48,7 @@ export default function TestReferenceLines() {
         color: "#ff00ff",
         style: "dotted"
       }
-    ],
-    selectedDataSources: []
+    ]
   }
 
   const [editingChart, setEditingChart] = React.useState(testChart)

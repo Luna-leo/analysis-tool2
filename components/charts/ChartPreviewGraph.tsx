@@ -3,14 +3,14 @@
 import React, { useEffect, useRef, useMemo } from "react"
 import * as d3 from "d3"
 import { ChartComponent, EventInfo, DataSourceStyle } from "@/types"
-import { 
-  renderEmptyChart, 
+import {
+  renderEmptyChart,
   renderScatterPlot,
-  ReferenceLines,
-  generateMockData
+  ReferenceLines
 } from "./ChartPreview/index"
+import { getRenderMethod } from "./ChartPreview/LODRenderer"
 import { useOptimizedChart } from "@/hooks/useOptimizedChart"
-import { hideAllTooltips, hideTooltip } from "@/utils/chartTooltip"
+import { hideAllTooltips } from "@/utils/chartTooltip"
 import { useThrottle } from "@/hooks/useDebounce"
 
 interface ChartPreviewGraphProps {
@@ -25,6 +25,7 @@ interface ChartPreviewGraphProps {
 export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints = 500, dataSourceStyles }: ChartPreviewGraphProps) => {
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const renderingRef = useRef<boolean>(false)
   const animationFrameRef = useRef<number | null>(null)
   const cleanupRef = useRef<(() => void) | null>(null)
@@ -43,12 +44,6 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     maxDataPoints
   })
 
-  // Create a memoized version of editingChart without referenceLines to prevent re-renders
-  const chartConfigWithoutRefLines = React.useMemo(() => {
-    const { referenceLines, ...rest } = editingChart
-    return rest
-  }, [editingChart.title, editingChart.xAxisType, editingChart.xParameter, 
-      editingChart.xLabel, editingChart.xAxisRange, editingChart.yAxisParams, editingChart.yAxisLabels])
 
   // Throttled resize handler for better performance
   const handleResize = useThrottle((entries: ResizeObserverEntry[]) => {
@@ -117,19 +112,37 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           const g = svg.append("g")
             .attr("class", "main-chart-group")
             .attr("transform", `translate(${margin.left},${margin.top})`)
-          
+
+          const renderMethod = getRenderMethod(chartData.length, { width, height })
+
+          if (renderMethod === 'canvas' && containerRef.current) {
+            if (!canvasRef.current) {
+              canvasRef.current = document.createElement('canvas')
+              canvasRef.current.style.position = 'absolute'
+              canvasRef.current.style.pointerEvents = 'none'
+              containerRef.current.appendChild(canvasRef.current)
+            }
+            canvasRef.current.style.left = `${margin.left}px`
+            canvasRef.current.style.top = `${margin.top}px`
+            canvasRef.current.width = width
+            canvasRef.current.height = height
+          } else if (canvasRef.current && containerRef.current) {
+            containerRef.current.removeChild(canvasRef.current)
+            canvasRef.current = null
+          }
+
           if (chartData.length > 0) {
             // Render chart (ScatterPlot now handles both scatter and line types)
-            renderScatterPlot({ g, data: chartData, width, height, editingChart, scalesRef, dataSourceStyles })
+            renderScatterPlot({ g, data: chartData, width, height, editingChart, scalesRef, dataSourceStyles, canvas: canvasRef.current ?? undefined })
           } else {
             // Render empty chart with axes
-            renderEmptyChart({ g, width, height, chartType: editingChart.type || "scatter", editingChart, scalesRef })
+            renderEmptyChart({ g, width, height, chartType: editingChart.type || 'scatter', editingChart, scalesRef })
           }
           
-          // Ensure proper layering: reference lines should not block interaction
+          // Ensure reference lines layer is above main chart
           const refLinesLayer = svg.select(".reference-lines-layer")
           if (!refLinesLayer.empty()) {
-            refLinesLayer.style("pointer-events", "none")
+            refLinesLayer.raise()
           }
           
           // Store cleanup function
@@ -166,6 +179,9 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   useEffect(() => {
     return () => {
       hideAllTooltips()
+      if (canvasRef.current && containerRef.current) {
+        containerRef.current.removeChild(canvasRef.current)
+      }
     }
   }, [])
 
