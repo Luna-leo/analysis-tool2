@@ -214,6 +214,8 @@ export default function AnalysisTool() {
                             id: `chart_${Date.now()}`,
                             title: "新しいチャート",
                             type: "scatter",
+                            showMarkers: true,
+                            showLines: false,
                             xAxisType: "datetime",
                             xParameter: "timestamp",
                             data: [],

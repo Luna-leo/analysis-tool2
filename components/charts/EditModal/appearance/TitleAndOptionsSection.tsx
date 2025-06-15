@@ -13,26 +13,41 @@ interface TitleAndOptionsSectionProps {
 export function TitleAndOptionsSection({ editingChart, setEditingChart }: TitleAndOptionsSectionProps) {
   return (
     <div className="space-y-4">
-      {/* Chart Type Selection */}
+      {/* Display Options */}
       <div className="space-y-2">
-        <Label htmlFor="chart-type" className="text-sm">Chart Type</Label>
-        <Select
-          value={editingChart.type || "scatter"}
-          onValueChange={(value) => {
-            setEditingChart({
-              ...editingChart,
-              type: value,
-            })
-          }}
-        >
-          <SelectTrigger id="chart-type" className="h-8 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="line">Line Chart</SelectItem>
-            <SelectItem value="scatter">Scatter Plot</SelectItem>
-          </SelectContent>
-        </Select>
+        <Label className="text-sm">Display Options</Label>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="show-markers"
+              checked={editingChart.showMarkers ?? true}
+              onChange={(e) => {
+                setEditingChart({
+                  ...editingChart,
+                  showMarkers: e.target.checked,
+                })
+              }}
+              className="rounded"
+            />
+            <Label htmlFor="show-markers" className="text-sm whitespace-nowrap">Show Markers</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="show-lines"
+              checked={editingChart.showLines ?? false}
+              onChange={(e) => {
+                setEditingChart({
+                  ...editingChart,
+                  showLines: e.target.checked,
+                })
+              }}
+              className="rounded"
+            />
+            <Label htmlFor="show-lines" className="text-sm whitespace-nowrap">Show Lines</Label>
+          </div>
+        </div>
       </div>
       
       <Label htmlFor="chart-title" className="text-sm">Title</Label>

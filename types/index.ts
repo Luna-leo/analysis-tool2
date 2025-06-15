@@ -159,6 +159,8 @@ export interface ChartComponent {
   }>
   fileId?: string
   type?: string
+  showMarkers?: boolean
+  showLines?: boolean
   legendPosition?: {
     xRatio: number
     yRatio: number

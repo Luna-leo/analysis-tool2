@@ -92,31 +92,12 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
       dataToRender = simplifyData(this.data, lodConfig)
     }
     
-    // Render based on chart type
-    if (this.editingChart.type === 'line') {
-      this.renderLineChart(dataToRender)
-    } else {
-      // Get all unique series/data sources
-      const uniqueSeries = Array.from(new Set(this.data.map(d => d.dataSourceId)))
-      const seriesColorMap = this.createSeriesColorMap(uniqueSeries)
-
-      if (renderMethod === 'canvas' && this.canvas) {
-        renderWithOptimizedCanvas({
-          canvas: this.canvas,
-          data: dataToRender,
-          width: this.width,
-          height: this.height,
-          margin: this.getMargins(),
-          xScale: this.scales.xScale,
-          yScale: this.scales.yScale,
-          editingChart: this.editingChart,
-          colorScale: (series) => seriesColorMap.get(series) || '#000',
-          dataSourceStyles: this.dataSourceStyles
-        })
-      } else {
-        this.renderWithSVG(dataToRender, seriesColorMap)
-      }
-    }
+    // Render based on display options
+    const showLines = this.editingChart.showLines ?? (this.editingChart.type === 'line')
+    const showMarkers = this.editingChart.showMarkers ?? true
+    
+    // Always render using the unified method
+    this.renderChart(dataToRender, showLines, showMarkers)
     
     // End performance tracking
     performanceTracker.measure('scatter-plot-render', 'scatter-plot-render-start', undefined, {
@@ -193,9 +174,34 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
   }
 
   /**
-   * Render line chart with markers
+   * Render chart with lines and/or markers based on display options
    */
-  private renderLineChart(data: ScatterDataPoint[]): void {
+  private renderChart(data: ScatterDataPoint[], showLines: boolean, showMarkers: boolean): void {
+    // If only showing markers (scatter plot mode), use scatter rendering
+    if (showMarkers && !showLines) {
+      this.renderScatterPlot(data)
+    } else if (showLines) {
+      // Use line chart rendering (with optional markers)
+      this.renderLineChart(data, showMarkers)
+    }
+  }
+
+  /**
+   * Render as scatter plot (markers only)
+   */
+  private renderScatterPlot(data: ScatterDataPoint[]): void {
+    // Get all unique series/data sources
+    const uniqueSeries = Array.from(new Set(data.map(d => d.dataSourceId)))
+    const seriesColorMap = this.createSeriesColorMap(uniqueSeries)
+    
+    // Render with SVG for interactivity
+    this.renderWithSVG(data, seriesColorMap)
+  }
+
+  /**
+   * Render as line chart with optional markers
+   */
+  private renderLineChart(data: ScatterDataPoint[], showMarkers: boolean): void {
     const yParams = this.editingChart.yAxisParams || []
     
     // Transform scatter data to line chart format
@@ -222,7 +228,7 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
     })
     
     // Convert to array and sort
-    const lineData = Array.from(dataByX.values()).sort((a, b) => {
+    const chartData = Array.from(dataByX.values()).sort((a, b) => {
       const aVal = a.x
       const bVal = b.x
       if (aVal instanceof Date && bVal instanceof Date) {
@@ -237,21 +243,23 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
         return
       }
       
+      // Filter data points that have this parameter
+      const paramData = chartData.filter(d => d[param.parameter] !== undefined)
+      if (paramData.length === 0) return
+      
+      // Get color for this parameter
       const lineColor = param.line?.color || defaultChartColors[index % defaultChartColors.length]
-      const showLine = param.line?.width !== undefined && param.line.width > 0
-      const showMarker = param.marker !== undefined
       
-      // Draw line if enabled
-      if (showLine) {
-        this.renderLine(lineData, param, lineColor)
-      }
+      // Always render line in line chart mode
+      this.renderLine(paramData, param, lineColor)
       
-      // Draw markers if enabled
-      if (showMarker && param.marker) {
-        this.renderMarkers(lineData, param, lineColor)
+      // Render markers if requested
+      if (showMarkers && param.marker) {
+        this.renderMarkers(paramData, param, lineColor)
       }
     })
   }
+
 
   /**
    * Render line for a parameter
