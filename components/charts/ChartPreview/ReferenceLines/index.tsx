@@ -51,6 +51,8 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
     const width = (dimensions?.width || 400) - margin.left - margin.right
     const height = (dimensions?.height || 300) - margin.top - margin.bottom
 
+    const isInteractive = !!setEditingChart
+
     // Ensure reference lines layer exists at the SVG level, not inside main chart group
     let refLinesLayer = svg.select<SVGGElement>(".reference-lines-layer")
     if (refLinesLayer.empty()) {
@@ -58,7 +60,7 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
         .append<SVGGElement>("g")
         .attr("class", "reference-lines-layer")
         .attr("transform", `translate(${margin.left},${margin.top})`)
-        .style("pointer-events", "none")
+        .style("pointer-events", isInteractive ? "auto" : "none")
     }
     
     // Always bring reference lines layer to front
