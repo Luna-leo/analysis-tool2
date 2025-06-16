@@ -102,7 +102,7 @@ export function ChartEditModal() {
 
   return (
     <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-      <DialogContent className="max-w-7xl w-[90vw] h-[90vh] flex flex-col overflow-hidden" hideCloseButton>
+      <DialogContent className="max-w-[95vw] w-[95vw] h-[90vh] flex flex-col overflow-hidden" hideCloseButton>
         <DialogDescription className="sr-only">
           Edit chart settings including data source, parameters, and appearance
         </DialogDescription>
