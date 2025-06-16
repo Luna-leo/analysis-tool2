@@ -108,14 +108,15 @@ const ChartCardComponent = ({
   return (
     <div
       className={cn(
-        "bg-card border border-gray-400 rounded-sm flex flex-col relative group overflow-hidden h-full transition-all duration-200 cursor-move select-none",
+        "bg-card border border-gray-400 rounded-sm flex flex-col relative group h-full transition-all duration-200 cursor-move select-none",
         isDragging && "opacity-50 scale-105",
         isDropTarget && "ring-2 ring-primary ring-offset-2 bg-primary/5"
       )}
       style={{
         width: width ? `${width}px` : undefined,
         height: height ? `${height}px` : undefined,
-        minHeight: height ? undefined : `${cardMinHeight}px`
+        minHeight: height ? undefined : `${cardMinHeight}px`,
+        overflow: 'visible'
       }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -136,45 +137,47 @@ const ChartCardComponent = ({
       {/* Edit, Duplicate and Delete Buttons - appear on hover */}
       <div 
         className={cn(
-          "absolute top-2 right-2 flex gap-1 transition-opacity z-10",
-          isHovered ? "opacity-100" : "opacity-0"
+          "absolute -top-8 right-2 flex gap-1 transition-all duration-200 z-20",
+          isHovered ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"
         )}
         onMouseDown={(e) => e.stopPropagation()}
       >
+        <div className="flex gap-1 bg-background/95 backdrop-blur-sm rounded-full p-1 shadow-lg border border-border">
           <Button
-            variant="secondary"
+            variant="ghost"
             size="icon"
-            className="h-8 w-8 rounded-full shadow-md"
+            className="h-7 w-7 rounded-full hover:bg-secondary"
             onClick={handleEdit}
             title="編集"
             draggable={false}
           >
-            <Edit className="h-4 w-4" strokeWidth={2} />
+            <Edit className="h-3.5 w-3.5" strokeWidth={2} />
           </Button>
           <Button
-            variant="secondary"
+            variant="ghost"
             size="icon"
-            className="h-8 w-8 rounded-full shadow-md"
+            className="h-7 w-7 rounded-full hover:bg-secondary"
             onClick={handleDuplicate}
             title="複製"
             draggable={false}
           >
-            <Copy className="h-4 w-4" strokeWidth={2} />
+            <Copy className="h-3.5 w-3.5" strokeWidth={2} />
           </Button>
           <Button
-            variant="secondary"
+            variant="ghost"
             size="icon"
-            className="h-8 w-8 rounded-full shadow-md hover:bg-destructive hover:text-destructive-foreground"
+            className="h-7 w-7 rounded-full hover:bg-destructive hover:text-destructive-foreground"
             onClick={handleDelete}
             title="削除"
             draggable={false}
           >
-            <Trash2 className="h-4 w-4" strokeWidth={2} />
+            <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
           </Button>
         </div>
+      </div>
 
       <div
-        className="bg-white flex items-center justify-center flex-1 overflow-hidden min-h-0 pointer-events-none"
+        className="bg-white flex items-center justify-center flex-1 min-h-0 pointer-events-none rounded-sm overflow-hidden"
         draggable={false}
       >
         <ChartPreviewGraph 
