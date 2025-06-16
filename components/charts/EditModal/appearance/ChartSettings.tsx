@@ -5,12 +5,12 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ChartComponent } from "@/types"
 
-interface TitleAndOptionsSectionProps {
+interface ChartSettingsProps {
   editingChart: ChartComponent
   setEditingChart: (chart: ChartComponent) => void
 }
 
-export function TitleAndOptionsSection({ editingChart, setEditingChart }: TitleAndOptionsSectionProps) {
+export function ChartSettings({ editingChart, setEditingChart }: ChartSettingsProps) {
   return (
     <div className="space-y-4 px-4">
       {/* Title */}
@@ -29,36 +29,10 @@ export function TitleAndOptionsSection({ editingChart, setEditingChart }: TitleA
         />
       </div>
 
-      {/* Display Options - 1行で表示 */}
+      {/* Chart Display Options */}
       <div className="flex items-center gap-2">
         <Label className="text-sm font-medium w-20">Display</Label>
         <div className="flex items-center gap-6 flex-1">
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="show-markers"
-              checked={editingChart.showMarkers ?? true}
-              onCheckedChange={(checked) => {
-                setEditingChart({
-                  ...editingChart,
-                  showMarkers: checked,
-                })
-              }}
-            />
-            <Label htmlFor="show-markers" className="text-sm cursor-pointer">Markers</Label>
-          </div>
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="show-lines"
-              checked={editingChart.showLines ?? false}
-              onCheckedChange={(checked) => {
-                setEditingChart({
-                  ...editingChart,
-                  showLines: checked,
-                })
-              }}
-            />
-            <Label htmlFor="show-lines" className="text-sm cursor-pointer">Lines</Label>
-          </div>
           <div className="flex items-center gap-2">
             <Checkbox
               id="show-title"

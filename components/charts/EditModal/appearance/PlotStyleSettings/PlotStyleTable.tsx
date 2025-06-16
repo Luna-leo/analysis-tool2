@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react"
 import { Label } from "@/components/ui/label"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Checkbox } from "@/components/ui/checkbox"
 import { ChartComponent } from "@/types"
 import { LegendMode } from "@/types/plot-style"
 import { PlotStyleTableRow } from "./PlotStyleTableRow"
@@ -88,42 +89,77 @@ export function PlotStyleTable({
   const colSpan = mode === "both" ? 4 : 3
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <Label className="text-sm">Plot Style Settings</Label>
-        <div className="flex items-center gap-2">
-          <Label className="text-xs">Mode</Label>
-          <select
-            className="h-7 text-xs border rounded-md px-2"
-            value={mode}
-            onChange={handleModeChange}
-          >
-            <option value="datasource">By Data Source</option>
-            <option value="parameter">By Parameter</option>
-            <option value="both">By Data Source x Parameter</option>
-          </select>
+    <div className="space-y-4 px-4">
+      {/* Plot Display Options */}
+      <div className="flex items-center gap-2">
+        <Label className="text-sm font-medium w-20">Plot</Label>
+        <div className="flex items-center gap-6 flex-1">
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="show-markers"
+              checked={editingChart.showMarkers ?? true}
+              onCheckedChange={(checked) => {
+                setEditingChart({
+                  ...editingChart,
+                  showMarkers: checked,
+                })
+              }}
+            />
+            <Label htmlFor="show-markers" className="text-sm cursor-pointer">Markers</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="show-lines"
+              checked={editingChart.showLines ?? false}
+              onCheckedChange={(checked) => {
+                setEditingChart({
+                  ...editingChart,
+                  showLines: checked,
+                })
+              }}
+            />
+            <Label htmlFor="show-lines" className="text-sm cursor-pointer">Lines</Label>
+          </div>
         </div>
       </div>
-      <div className="border rounded-lg overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {getTableHeaders().map((header) => (
-                <TableHead key={header} className="text-xs">{header}</TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.length === 0 ? (
+
+      {/* Plot Style Settings Table */}
+      <div>
+        <div className="flex items-center justify-between mb-2 px-0">
+          <Label className="text-sm font-medium">Style Settings</Label>
+          <div className="flex items-center gap-2">
+            <Label className="text-xs">Mode</Label>
+            <select
+              className="h-7 text-xs border rounded-md px-2"
+              value={mode}
+              onChange={handleModeChange}
+            >
+              <option value="datasource">By Data Source</option>
+              <option value="parameter">By Parameter</option>
+              <option value="both">By Data Source x Parameter</option>
+            </select>
+          </div>
+        </div>
+        <div className="border rounded-lg overflow-hidden">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={colSpan} className="text-center text-xs text-muted-foreground py-4">
-                  {selectedDataSourceItems.length === 0 
-                    ? "No data sources selected. Please select data sources in the DataSource tab."
-                    : "No Y parameters configured. Please add parameters in the Parameters tab."}
-                </TableCell>
+                {getTableHeaders().map((header) => (
+                  <TableHead key={header} className="text-xs">{header}</TableHead>
+                ))}
               </TableRow>
-            ) : (
-              rows.map((row) => {
+            </TableHeader>
+            <TableBody>
+              {rows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={colSpan} className="text-center text-xs text-muted-foreground py-4">
+                    {selectedDataSourceItems.length === 0 
+                      ? "No data sources selected. Please select data sources in the DataSource tab."
+                      : "No Y parameters configured. Please add parameters in the Parameters tab."}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                rows.map((row) => {
                 const dataSourceId = row.dataSource?.id || ''
                 const dataSourceIndex = row.dataSourceIndex || 0
                 const paramIndex = row.paramIndex
@@ -146,23 +182,24 @@ export function PlotStyleTable({
                     },
                     legendText: plotStyle?.legendText || row.legendText
                   }
-                }
-                
-                return (
-                  <PlotStyleTableRow
-                    key={row.id}
-                    row={row}
-                    mode={mode}
-                    plotStyle={plotStyle}
-                    onUpdateMarker={(marker) => updateMarkerStyle(dataSourceId, paramIndex, marker)}
-                    onUpdateLine={(line) => updateLineStyle(dataSourceId, paramIndex, line)}
-                    onUpdateLegend={(legend) => updateLegend(dataSourceId, paramIndex, legend)}
-                  />
-                )
-              })
-            )}
-          </TableBody>
-        </Table>
+                  }
+                  
+                  return (
+                    <PlotStyleTableRow
+                      key={row.id}
+                      row={row}
+                      mode={mode}
+                      plotStyle={plotStyle}
+                      onUpdateMarker={(marker) => updateMarkerStyle(dataSourceId, dataSourceIndex, paramIndex, marker)}
+                      onUpdateLine={(line) => updateLineStyle(dataSourceId, dataSourceIndex, paramIndex, line)}
+                      onUpdateLegend={(legend) => updateLegend(dataSourceId, dataSourceIndex, paramIndex, legend)}
+                    />
+                  )
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   )

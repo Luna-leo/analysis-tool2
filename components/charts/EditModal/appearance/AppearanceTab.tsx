@@ -1,9 +1,10 @@
 "use client"
 
 import { ChartComponent } from "@/types"
-import { TitleAndOptionsSection } from "./TitleAndOptionsSection"
+import { ChartSettings } from "./ChartSettings"
 import { PlotStyleTable } from "./PlotStyleSettings"
 import { LayoutSettings } from "./LayoutSettings"
+import { Separator } from "@/components/ui/separator"
 
 interface AppearanceTabProps {
   editingChart: ChartComponent
@@ -24,8 +25,17 @@ export function AppearanceTab({
 }: AppearanceTabProps) {
   return (
     <div className="space-y-4">
-      <TitleAndOptionsSection editingChart={editingChart} setEditingChart={setEditingChart} />
+      {/* Chart General Settings */}
+      <ChartSettings editingChart={editingChart} setEditingChart={setEditingChart} />
+      
+      <Separator />
+      
+      {/* Layout Settings */}
       <LayoutSettings editingChart={editingChart} setEditingChart={setEditingChart} />
+      
+      <Separator />
+      
+      {/* Plot Style Settings */}
       <PlotStyleTable
         editingChart={editingChart}
         setEditingChart={setEditingChart}

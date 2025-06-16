@@ -226,6 +226,9 @@ export interface ChartComponent {
   yAxisTicks?: number
   xAxisTickPrecision?: number
   yAxisTickPrecision?: number
+  // Axis label offsets
+  xLabelOffset?: number
+  yLabelOffset?: number
 }
 
 export interface FileNode {

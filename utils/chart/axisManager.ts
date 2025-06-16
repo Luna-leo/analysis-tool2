@@ -243,13 +243,16 @@ export class AxisManager {
     height: number,
     editingChart: ChartComponent
   ): void {
+    const xLabelOffset = editingChart.xLabelOffset || 40
+    const yLabelOffset = editingChart.yLabelOffset || 40
+    
     // X-axis label
     if (editingChart.xLabel) {
       g.append("text")
         .attr("class", "x-axis-label")
         .attr("text-anchor", "middle")
         .attr("x", width / 2)
-        .attr("y", height + 40)
+        .attr("y", height + xLabelOffset)
         .style("font-size", "12px")
         .text(editingChart.xLabel)
     }
@@ -269,7 +272,7 @@ export class AxisManager {
         .attr("text-anchor", "middle")
         .attr("transform", "rotate(-90)")
         .attr("x", -height / 2)
-        .attr("y", -40)
+        .attr("y", -yLabelOffset)
         .style("font-size", "12px")
         .text(labelWithUnit)
     }
