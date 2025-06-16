@@ -165,6 +165,7 @@ export interface ChartComponent {
     xRatio: number
     yRatio: number
   }
+  legendMode?: 'datasource' | 'parameter' | 'both'
 }
 
 export interface FileNode {

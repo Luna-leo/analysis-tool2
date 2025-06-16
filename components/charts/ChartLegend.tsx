@@ -1,12 +1,13 @@
 "use client"
 
 import React from "react"
-import { EventInfo, DataSourceStyle } from "@/types"
+import { EventInfo, DataSourceStyle, ChartComponent } from "@/types"
 import { DataSourceBadgePreview } from "./DataSourceBadgePreview"
 import { getDefaultColor } from "@/utils/chartColors"
 import { cn } from "@/lib/utils"
 
 interface ChartLegendProps {
+  editingChart: ChartComponent
   dataSources: EventInfo[]
   dataSourceStyles?: { [dataSourceId: string]: DataSourceStyle }
   className?: string
@@ -17,6 +18,7 @@ interface ChartLegendProps {
 export const ChartLegend = React.memo(
   React.forwardRef<HTMLDivElement, ChartLegendProps>(
     ({
+      editingChart,
       dataSources,
       dataSourceStyles = {},
       className,
@@ -24,6 +26,30 @@ export const ChartLegend = React.memo(
       onPointerDown
     }, ref) => {
       if (!dataSources || dataSources.length === 0) return null
+
+      const mode = editingChart.legendMode || 'both'
+      const items: { key: string; label: string; colorIndex: number; dsId?: string }[] = []
+
+      if (mode === 'datasource') {
+        dataSources.forEach((ds, idx) => {
+          items.push({ key: ds.id, label: ds.label, colorIndex: idx, dsId: ds.id })
+        })
+      } else if (mode === 'parameter') {
+        editingChart.yAxisParams?.forEach((param, idx) => {
+          items.push({ key: `param-${idx}`, label: param.parameter || 'Unnamed', colorIndex: idx })
+        })
+      } else {
+        dataSources.forEach((ds, dsIdx) => {
+          editingChart.yAxisParams?.forEach((param, pIdx) => {
+            items.push({
+              key: `${ds.id}-${pIdx}`,
+              label: `${ds.label} - ${param.parameter || 'Unnamed'}`,
+              colorIndex: dsIdx,
+              dsId: ds.id
+            })
+          })
+        })
+      }
 
       return (
         <div
@@ -35,13 +61,13 @@ export const ChartLegend = React.memo(
             className
           )}
         >
-          {dataSources.map((source, index) => (
-            <div key={source.id} className="flex items-center gap-1 whitespace-nowrap">
+          {items.map((item) => (
+            <div key={item.key} className="flex items-center gap-1 whitespace-nowrap">
               <DataSourceBadgePreview
-                dataSourceStyle={dataSourceStyles[source.id]}
-                defaultColor={getDefaultColor(index)}
+                dataSourceStyle={item.dsId ? dataSourceStyles[item.dsId] : undefined}
+                defaultColor={getDefaultColor(item.colorIndex)}
               />
-              <span className="font-medium text-black">{source.label}</span>
+              <span className="font-medium text-black">{item.label}</span>
             </div>
           ))}
         </div>
