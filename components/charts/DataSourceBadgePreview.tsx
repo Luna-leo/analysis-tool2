@@ -6,17 +6,45 @@ import { DataSourceStyle } from "@/types"
 interface DataSourceBadgePreviewProps {
   dataSourceStyle?: DataSourceStyle
   defaultColor: string
+  plotStyle?: {
+    marker: {
+      type: string
+      size: number
+      borderColor: string
+      fillColor: string
+    }
+    line: {
+      width: number
+      color: string
+      style: string
+    }
+  }
+  showStylePreview?: boolean
 }
 
-export function DataSourceBadgePreview({ dataSourceStyle, defaultColor }: DataSourceBadgePreviewProps) {
-  const lineEnabled = dataSourceStyle?.lineEnabled || false
-  const lineColor = dataSourceStyle?.lineColor || defaultColor
-  const lineStyle = dataSourceStyle?.lineStyle || 'solid'
-  const lineWidth = dataSourceStyle?.lineWidth || 2
-  const markerEnabled = dataSourceStyle?.markerEnabled !== undefined ? dataSourceStyle.markerEnabled : true
-  const markerShape = dataSourceStyle?.markerShape || 'circle'
-  const markerSize = Math.min(dataSourceStyle?.markerSize || 4, 5) // Cap size for badge
-  const markerColor = dataSourceStyle?.markerColor || lineColor
+export function DataSourceBadgePreview({ dataSourceStyle, defaultColor, plotStyle, showStylePreview = true }: DataSourceBadgePreviewProps) {
+  // If showStylePreview is false, just show a colored dot
+  if (!showStylePreview) {
+    const color = dataSourceStyle?.lineColor || defaultColor
+    return (
+      <div className="flex items-center" style={{ width: '12px', height: '12px' }}>
+        <div 
+          className="w-2 h-2 rounded-full" 
+          style={{ backgroundColor: color }}
+        />
+      </div>
+    )
+  }
+
+  // Use plotStyle if provided, otherwise fall back to dataSourceStyle
+  const lineEnabled = plotStyle ? true : (dataSourceStyle?.lineEnabled || false)
+  const lineColor = plotStyle?.line.color || dataSourceStyle?.lineColor || defaultColor
+  const lineStyle = plotStyle?.line.style || dataSourceStyle?.lineStyle || 'solid'
+  const lineWidth = plotStyle?.line.width || dataSourceStyle?.lineWidth || 2
+  const markerEnabled = plotStyle ? true : (dataSourceStyle?.markerEnabled !== undefined ? dataSourceStyle.markerEnabled : true)
+  const markerShape = plotStyle?.marker.type || dataSourceStyle?.markerShape || 'circle'
+  const markerSize = Math.min(plotStyle?.marker.size || dataSourceStyle?.markerSize || 4, 5) // Cap size for badge
+  const markerColor = plotStyle?.marker.fillColor || dataSourceStyle?.markerColor || lineColor
 
   // Create line style pattern
   const getLinePattern = () => {

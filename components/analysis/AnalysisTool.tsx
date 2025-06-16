@@ -262,25 +262,44 @@ export default function AnalysisTool() {
                       </div>
                       {selectedDataSources.length > 0 ? (
                       <div className="flex items-center gap-2 flex-wrap">
-                        {selectedDataSources.map((source: any, index: number) => (
-                          <Badge 
-                            key={source.id} 
-                            variant="secondary" 
-                            className="text-xs cursor-pointer bg-white hover:bg-gray-50 transition-all pl-2 pr-3 py-1 rounded-full border border-gray-400"
-                            onClick={() => {
-                              setSelectedDataSourceInfo({ dataSource: source, index })
-                              setStyleDrawerOpen(true)
-                            }}
-                          >
-                            <div className="flex items-center gap-1">
-                              <DataSourceBadgePreview
-                                dataSourceStyle={(currentFile as any).dataSourceStyles?.[source.id]}
-                                defaultColor={getDefaultColor(index)}
-                              />
-                              <span className="font-medium text-black">{source.label}</span>
-                            </div>
-                          </Badge>
-                        ))}
+                        {selectedDataSources.map((source: any, index: number) => {
+                          // Check if all charts have plotStyles.mode === 'datasource'
+                          const charts = (currentFile as any).charts || []
+                          const allChartsDataSourceMode = charts.length > 0 && 
+                            charts.every((chart: any) => {
+                              // Same logic as ChartLegend component
+                              const mode = chart.plotStyles?.mode || chart.legendMode || 'datasource'
+                              return mode === 'datasource'
+                            })
+                          
+                          // Get plot style from first chart if all are in datasource mode
+                          let plotStyle = undefined
+                          if (allChartsDataSourceMode && charts[0]?.plotStyles?.byDataSource?.[source.id]) {
+                            plotStyle = charts[0].plotStyles.byDataSource[source.id]
+                          }
+                          
+                          return (
+                            <Badge 
+                              key={source.id} 
+                              variant="secondary" 
+                              className="text-xs cursor-pointer bg-white hover:bg-gray-50 transition-all pl-2 pr-3 py-1 rounded-full border border-gray-400"
+                              onClick={() => {
+                                setSelectedDataSourceInfo({ dataSource: source, index })
+                                setStyleDrawerOpen(true)
+                              }}
+                            >
+                              <div className="flex items-center gap-1">
+                                <DataSourceBadgePreview
+                                  dataSourceStyle={(currentFile as any).dataSourceStyles?.[source.id]}
+                                  defaultColor={getDefaultColor(index)}
+                                  plotStyle={plotStyle}
+                                  showStylePreview={allChartsDataSourceMode}
+                                />
+                                <span className="font-medium text-black">{source.label}</span>
+                              </div>
+                            </Badge>
+                          )
+                        })}
                       </div>
                     ) : (
                       <div className="text-sm text-muted-foreground italic">
