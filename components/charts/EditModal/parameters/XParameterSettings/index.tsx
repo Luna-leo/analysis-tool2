@@ -82,8 +82,8 @@ export function XParameterSettings({ editingChart, setEditingChart, selectedData
                     setEditingChart({
                       ...editingChart,
                       xAxisType: newAxisType,
-                      // Set xParameter to timestamp for datetime type
-                      ...(newAxisType === "datetime" && { xParameter: "timestamp" }),
+                      // Set xParameter to timestamp for datetime type, empty for others
+                      xParameter: newAxisType === "datetime" ? "timestamp" : "",
                     })
                   }}
                 >
