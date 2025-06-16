@@ -72,6 +72,32 @@ export function ChartSettings({ editingChart, setEditingChart }: ChartSettingsPr
             />
             <Label htmlFor="show-grid" className="text-sm cursor-pointer">Grid</Label>
           </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="show-x-label"
+              checked={editingChart.showXLabel ?? true}
+              onCheckedChange={(checked) => {
+                setEditingChart({
+                  ...editingChart,
+                  showXLabel: checked,
+                })
+              }}
+            />
+            <Label htmlFor="show-x-label" className="text-sm cursor-pointer">X Label</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="show-y-label"
+              checked={editingChart.showYLabel ?? true}
+              onCheckedChange={(checked) => {
+                setEditingChart({
+                  ...editingChart,
+                  showYLabel: checked,
+                })
+              }}
+            />
+            <Label htmlFor="show-y-label" className="text-sm cursor-pointer">Y Label</Label>
+          </div>
         </div>
       </div>
     </div>

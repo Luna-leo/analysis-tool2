@@ -3,6 +3,7 @@ import { ChartComponent } from "@/types"
 import { getTimeFormat } from "./utils"
 import { calculateXAxisPosition } from "@/utils/chart/axisPositioning"
 import { calculateConsistentYDomain } from "@/utils/chart/scaleUtils"
+import { AxisManager } from "@/utils/chart/axisManager"
 
 interface EmptyChartProps {
   g: d3.Selection<SVGGElement, unknown, null, undefined>
@@ -58,79 +59,30 @@ export const renderEmptyChart = ({ g, width, height, chartType, editingChart, sc
       yScale.nice()
     }
     
-    // Calculate X-axis position
-    const xAxisY = calculateXAxisPosition(yDomain, yScale, height)
+    // Use AxisManager to create axes with grid and tick settings
+    const axisManager = new AxisManager({
+      g,
+      width,
+      height,
+      editingChart,
+      data: []
+    })
     
-    // X axis
-    if (xAxisType === "datetime") {
-      const timeFormat = getTimeFormat(xDomain[0] as Date, xDomain[1] as Date)
-      g.append("g")
-        .attr("transform", `translate(0,${xAxisY})`)
-        .call(d3.axisBottom(xScale as d3.ScaleTime<number, number>)
-          .ticks(5)
-          .tickFormat((d) => d3.timeFormat(timeFormat)(d as Date)))
-        .selectAll("text")
-        .style("font-size", "12px")
-    } else if (xAxisType === "time") {
-      g.append("g")
-        .attr("transform", `translate(0,${xAxisY})`)
-        .call(d3.axisBottom(xScale as d3.ScaleLinear<number, number>)
-          .ticks(5)
-          .tickFormat((d) => `${d}min`))
-        .selectAll("text")
-        .style("font-size", "12px")
-    } else {
-      g.append("g")
-        .attr("transform", `translate(0,${xAxisY})`)
-        .call(d3.axisBottom(xScale as d3.ScaleLinear<number, number>)
-          .ticks(5))
-        .selectAll("text")
-        .style("font-size", "12px")
-    }
+    // Manually set scales for empty chart
+    ;(axisManager as any).xScale = xScale
+    ;(axisManager as any).yScale = yScale
     
-    // Y axis
-    g.append("g")
-      .call(d3.axisLeft(yScale))
-      .selectAll("text")
-      .style("font-size", "12px")
+    // Render axes with proper formatting
+    ;(axisManager as any).renderAxes()
     
-    // X axis label
-    if (editingChart.xLabel) {
-      g.append("text")
-        .attr("x", width / 2)
-        .attr("y", height + 35)
-        .attr("text-anchor", "middle")
-        .attr("fill", "#6b7280")
-        .style("font-size", "12px")
-        .text(editingChart.xLabel)
-    }
+    // Add chart title
+    AxisManager.addChartTitle(g, width, editingChart)
     
-    // Y axis label
-    const yAxisLabels = editingChart.yAxisLabels || {}
-    const firstYAxisLabel = Object.values(yAxisLabels)[0] || "Value"
+    // Add axis labels
+    AxisManager.addAxisLabels(g, width, height, editingChart)
     
-    // Get unit from the first Y parameter (reuse existing firstYParam variable)
-    const unit = firstYParam?.unit
-    const labelWithUnit = firstYAxisLabel && unit ? `${firstYAxisLabel} [${unit}]` : firstYAxisLabel
-    
-    g.append("text")
-      .attr("transform", "rotate(-90)")
-      .attr("x", -height / 2)
-      .attr("y", -35)
-      .attr("text-anchor", "middle")
-      .attr("fill", "#6b7280")
-      .style("font-size", "12px")
-      .text(labelWithUnit)
-    
-  // Add chart border (外枠)
-  g.append("rect")
-    .attr("x", 0)
-    .attr("y", 0)
-    .attr("width", width)
-    .attr("height", height)
-    .attr("fill", "none")
-    .attr("stroke", "#d1d5db")
-    .attr("stroke-width", 1)
+    // Add chart border
+    AxisManager.addChartBorder(g, width, height)
 
   // Store scales for reference lines
   scalesRef.current = { xScale, yScale }

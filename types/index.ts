@@ -226,7 +226,9 @@ export interface ChartComponent {
   yAxisTicks?: number
   xAxisTickPrecision?: number
   yAxisTickPrecision?: number
-  // Axis label offsets
+  // Axis label settings
+  showXLabel?: boolean
+  showYLabel?: boolean
   xLabelOffset?: number
   yLabelOffset?: number
 }

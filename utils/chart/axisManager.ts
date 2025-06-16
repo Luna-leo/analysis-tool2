@@ -247,7 +247,8 @@ export class AxisManager {
     const yLabelOffset = editingChart.yLabelOffset || 40
     
     // X-axis label
-    if (editingChart.xLabel) {
+    const showXLabel = editingChart.showXLabel ?? true
+    if (editingChart.xLabel && showXLabel) {
       g.append("text")
         .attr("class", "x-axis-label")
         .attr("text-anchor", "middle")
@@ -258,6 +259,7 @@ export class AxisManager {
     }
     
     // Y-axis label
+    const showYLabel = editingChart.showYLabel ?? true
     const yAxisLabels = editingChart.yAxisLabels || {}
     const firstYAxisLabel = yAxisLabels[1] || Object.values(yAxisLabels)[0] || ""
     
@@ -266,7 +268,7 @@ export class AxisManager {
     const unit = firstYParam?.unit
     const labelWithUnit = firstYAxisLabel && unit ? `${firstYAxisLabel} [${unit}]` : firstYAxisLabel
     
-    if (labelWithUnit) {
+    if (labelWithUnit && showYLabel) {
       g.append("text")
         .attr("class", "y-axis-label")
         .attr("text-anchor", "middle")
@@ -275,6 +277,28 @@ export class AxisManager {
         .attr("y", -yLabelOffset)
         .style("font-size", "12px")
         .text(labelWithUnit)
+    }
+  }
+
+  /**
+   * Add chart title
+   */
+  static addChartTitle(
+    g: d3.Selection<SVGGElement, unknown, null, undefined>,
+    width: number,
+    editingChart: ChartComponent
+  ): void {
+    const showTitle = editingChart.showTitle ?? true
+    
+    if (editingChart.title && showTitle) {
+      g.append("text")
+        .attr("class", "chart-title")
+        .attr("text-anchor", "middle")
+        .attr("x", width / 2)
+        .attr("y", -5)
+        .style("font-size", "14px")
+        .style("font-weight", "500")
+        .text(editingChart.title)
     }
   }
 

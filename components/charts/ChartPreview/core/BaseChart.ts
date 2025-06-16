@@ -85,6 +85,9 @@ export abstract class BaseChart<TData = any> {
    * Add common elements like labels and borders
    */
   protected addCommonElements(): void {
+    // Add chart title
+    AxisManager.addChartTitle(this.g, this.width, this.editingChart)
+    
     // Add axis labels
     AxisManager.addAxisLabels(this.g, this.width, this.height, this.editingChart)
     
