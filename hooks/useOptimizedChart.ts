@@ -4,6 +4,7 @@ import { ChartComponent, EventInfo } from '@/types'
 import { useCSVDataStore } from '@/stores/useCSVDataStore'
 import { useSharedDataCache } from './useSharedDataCache'
 import { adaptiveSample } from '@/utils/dataSampling'
+import { useSettingsStore } from '@/stores/useSettingsStore'
 
 interface UseOptimizedChartProps {
   editingChart: ChartComponent
@@ -36,6 +37,7 @@ export function useOptimizedChart({
 }: UseOptimizedChartProps): OptimizedChartData {
   const { getParameterData } = useCSVDataStore()
   const dataCache = useSharedDataCache()
+  const { settings } = useSettingsStore()
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState<Error | null>(null)
   const [data, setData] = React.useState<ChartDataPoint[]>([])
@@ -158,7 +160,7 @@ export function useOptimizedChart({
         
         // Apply data sampling if needed
         let sampledData = allData
-        if (allData.length > maxDataPoints) {
+        if (settings.performanceSettings.dataProcessing.enableSampling && allData.length > maxDataPoints) {
           // Group by series and sample each series separately
           const seriesMap = new Map<string, ChartDataPoint[]>()
           allData.forEach(point => {
@@ -212,7 +214,7 @@ export function useOptimizedChart({
         setIsLoading(false)
       }
     }, 300),
-    [selectedDataSourceItems, allParameters, editingChart, getParameterData, dataCache, maxDataPoints]
+    [selectedDataSourceItems, allParameters, editingChart, getParameterData, dataCache, maxDataPoints, settings.performanceSettings.dataProcessing.enableSampling]
   )
 
   // Trigger data loading when dependencies change

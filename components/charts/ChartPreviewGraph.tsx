@@ -13,6 +13,7 @@ import { getRenderMethod } from "./ChartPreview/LODRenderer"
 import { useOptimizedChart } from "@/hooks/useOptimizedChart"
 import { hideAllTooltips } from "@/utils/chartTooltip"
 import { useThrottle } from "@/hooks/useDebounce"
+import { useSettingsStore } from "@/stores/useSettingsStore"
 
 interface ChartPreviewGraphProps {
   editingChart: ChartComponent
@@ -23,7 +24,12 @@ interface ChartPreviewGraphProps {
 }
 
 
-export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints = 500, dataSourceStyles }: ChartPreviewGraphProps) => {
+export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints, dataSourceStyles }: ChartPreviewGraphProps) => {
+  const { settings } = useSettingsStore()
+  const defaultMaxDataPoints = settings.performanceSettings.dataProcessing.enableSampling 
+    ? settings.performanceSettings.dataProcessing.defaultSamplingPoints
+    : Number.MAX_SAFE_INTEGER
+  const effectiveMaxDataPoints = maxDataPoints ?? defaultMaxDataPoints
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -113,7 +119,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   const { data: chartData, isLoading: isLoadingData, error } = useOptimizedChart({
     editingChart,
     selectedDataSourceItems,
-    maxDataPoints
+    maxDataPoints: effectiveMaxDataPoints
   })
 
 

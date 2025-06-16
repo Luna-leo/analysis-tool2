@@ -18,6 +18,7 @@ import { ChartComponent, EventInfo, DataSourceStyle } from "@/types"
 import { useUIStore } from "@/stores/useUIStore"
 import { useFileStore } from "@/stores/useFileStore"
 import { ChartPreviewGraph } from "./ChartPreviewGraph"
+import { useSettingsStore } from "@/stores/useSettingsStore"
 
 interface ChartCardProps {
   chart: ChartComponent
@@ -60,6 +61,7 @@ const ChartCardComponent = ({
   const [isHovered, setIsHovered] = useState(false)
   const { setEditingChart, setEditModalOpen } = useUIStore()
   const { duplicateChart, deleteChart } = useFileStore()
+  const { settings } = useSettingsStore()
   
   const handleMouseEnter = useCallback(() => setIsHovered(true), [])
   const handleMouseLeave = useCallback(() => setIsHovered(false), [])
@@ -178,7 +180,13 @@ const ChartCardComponent = ({
         <ChartPreviewGraph 
           editingChart={chart} 
           selectedDataSourceItems={selectedDataSources} 
-          maxDataPoints={isCompactLayout ? 100 : 200}
+          maxDataPoints={
+            settings.performanceSettings.dataProcessing.enableSampling 
+              ? (isCompactLayout 
+                  ? Math.min(100, settings.performanceSettings.dataProcessing.defaultSamplingPoints) 
+                  : Math.min(200, settings.performanceSettings.dataProcessing.defaultSamplingPoints))
+              : undefined
+          }
           dataSourceStyles={dataSourceStyles}
         />
       </div>

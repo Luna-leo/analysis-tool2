@@ -7,6 +7,7 @@ import { renderScatterPlot, ReferenceLines } from "./ChartPreview/index"
 import { useOptimizedChart } from "@/hooks/useOptimizedChart"
 import { hideAllTooltips } from "@/utils/chartTooltip"
 import { useFrameBudget } from "@/utils/performanceOptimizations"
+import { useSettingsStore } from "@/stores/useSettingsStore"
 
 interface OptimizedChartPreviewProps {
   editingChart: ChartComponent
@@ -20,15 +21,22 @@ export const OptimizedChartPreview = React.memo(({
   editingChart, 
   selectedDataSourceItems, 
   setEditingChart, 
-  maxDataPoints = 300,
+  maxDataPoints,
   priority = 'low'
 }: OptimizedChartPreviewProps) => {
+  const { settings } = useSettingsStore()
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const renderingRef = useRef<boolean>(false)
   const [dimensions, setDimensions] = React.useState({ width: 400, height: 300 })
   const { canRender, checkFrameBudget } = useFrameBudget(priority === 'high' ? 60 : 30)
+  
+  const effectiveMaxDataPoints = maxDataPoints ?? (
+    settings.performanceSettings.dataProcessing.enableSampling 
+      ? settings.performanceSettings.dataProcessing.defaultSamplingPoints
+      : Number.MAX_SAFE_INTEGER
+  )
   
   // Store scales in refs to avoid recreation during drag
   const scalesRef = useRef<{
@@ -40,7 +48,7 @@ export const OptimizedChartPreview = React.memo(({
   const { data: chartData, isLoading: isLoadingData, error } = useOptimizedChart({
     editingChart,
     selectedDataSourceItems,
-    maxDataPoints
+    maxDataPoints: effectiveMaxDataPoints
   })
 
   // Intersection observer for lazy rendering
@@ -122,7 +130,7 @@ export const OptimizedChartPreview = React.memo(({
       
       if (chartData.length > 0) {
         // Use canvas for large datasets
-        if (chartData.length > 500 && containerRef.current) {
+        if (chartData.length > settings.performanceSettings.rendering.canvasThreshold && containerRef.current) {
           // Create or reuse canvas
           if (!canvasRef.current) {
             canvasRef.current = document.createElement('canvas')
@@ -215,12 +223,26 @@ export const OptimizedChartPreview = React.memo(({
   )
 }, (prevProps, nextProps) => {
   // Custom comparison for better performance
+  const { settings: prevSettings } = useSettingsStore.getState()
+  const { settings: nextSettings } = useSettingsStore.getState()
+  
+  const prevEffectiveMaxDataPoints = prevProps.maxDataPoints ?? (
+    prevSettings.performanceSettings.dataProcessing.enableSampling 
+      ? prevSettings.performanceSettings.dataProcessing.defaultSamplingPoints
+      : Number.MAX_SAFE_INTEGER
+  )
+  const nextEffectiveMaxDataPoints = nextProps.maxDataPoints ?? (
+    nextSettings.performanceSettings.dataProcessing.enableSampling 
+      ? nextSettings.performanceSettings.dataProcessing.defaultSamplingPoints
+      : Number.MAX_SAFE_INTEGER
+  )
+  
   return (
     prevProps.editingChart.id === nextProps.editingChart.id &&
     prevProps.editingChart.title === nextProps.editingChart.title &&
     prevProps.editingChart.xParameter === nextProps.editingChart.xParameter &&
     prevProps.editingChart.yAxisParams === nextProps.editingChart.yAxisParams &&
     prevProps.selectedDataSourceItems.length === nextProps.selectedDataSourceItems.length &&
-    prevProps.maxDataPoints === nextProps.maxDataPoints
+    prevEffectiveMaxDataPoints === nextEffectiveMaxDataPoints
   )
 })
