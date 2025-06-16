@@ -238,7 +238,7 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
       
       // Render markers if requested
       if (showMarkers) {
-        this.renderMarkers(lineData, yParam, lineColor)
+        this.renderMarkers(lineData, yParam, paramIndex)
       }
     })
   }
@@ -266,7 +266,10 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
   /**
    * Render markers for a parameter
    */
-  private renderMarkers(data: any[], param: any, lineColor: string): void {
+  private renderMarkers(data: any[], param: any, paramIndex: number): void {
+    // Use marker colors if defined, otherwise use default colors based on parameter index
+    const defaultColor = defaultChartColors[paramIndex % defaultChartColors.length]
+    
     const markers: MarkerConfig[] = data
       .filter(d => d[param.parameter] !== undefined)
       .map(d => ({
@@ -274,8 +277,8 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
         y: this.scales.yScale(d[param.parameter] as number),
         type: param.marker?.type || 'circle',
         size: param.marker?.size || 6,
-        fillColor: param.marker?.fillColor || lineColor,
-        borderColor: param.marker?.borderColor || lineColor,
+        fillColor: param.marker?.fillColor || defaultColor,
+        borderColor: param.marker?.borderColor || defaultColor,
         opacity: 1,
         data: {
           parameter: param.parameter,
