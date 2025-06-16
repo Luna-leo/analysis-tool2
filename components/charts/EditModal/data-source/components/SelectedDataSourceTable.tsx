@@ -41,7 +41,7 @@ export function SelectedDataSourceTable({
           <TableRow>
             <TableHead className="h-8 text-sm px-2">Plant</TableHead>
             <TableHead className="h-8 text-sm px-2">Machine No</TableHead>
-            <TableHead className="h-8 text-sm px-2">Legend</TableHead>
+            <TableHead className="h-8 text-sm px-2">Label</TableHead>
             <TableHead className="h-8 text-sm px-2">Start</TableHead>
             <TableHead className="h-8 text-sm px-2">End</TableHead>
             {useDataSourceStyle && onOpenStyleDrawer && file && (
