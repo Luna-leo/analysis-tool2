@@ -9,7 +9,8 @@ import { ChartGrid, ChartEditModal } from "../charts"
 import { DataSourceStyleDrawer } from "../charts/DataSourceStyleDrawer"
 import { DataSourceBadgePreview } from "../charts/DataSourceBadgePreview"
 import { BulkChartEditModal } from "../charts/BulkChartEditModal"
-import { LineChart, Settings2 } from "lucide-react"
+import { TemplateListDialog } from "../charts/PlotStyleTemplate"
+import { LineChart, FileEdit, Layers } from "lucide-react"
 import { useFileStore } from "@/stores/useFileStore"
 import { useParameterStore } from "@/stores/useParameterStore"
 import { useGraphStateStore } from "@/stores/useGraphStateStore"
@@ -36,6 +37,7 @@ export default function AnalysisTool() {
   })
   const [styleDrawerOpen, setStyleDrawerOpen] = React.useState(false)
   const [bulkSettingsOpen, setBulkSettingsOpen] = React.useState(false)
+  const [templateListOpen, setTemplateListOpen] = React.useState(false)
   
   const { openTabs, activeTab, openFile, fileTree, setActiveTab, toggleFolder, setFileTree } = useFileStore()
   const { loadParameters } = useParameterStore()
@@ -240,11 +242,21 @@ export default function AnalysisTool() {
                         variant="outline"
                         size="sm"
                         onClick={() => setBulkSettingsOpen(true)}
-                        title="一括設定"
-                        className="h-9 w-24 flex items-center justify-center gap-1.5 rounded-md border border-gray-400"
+                        title="Apply settings to all charts in this file"
+                        className="h-9 px-3 flex items-center justify-center gap-1.5 rounded-md border border-gray-400"
                       >
-                        <Settings2 className="h-4 w-4" />
-                        <span className="text-sm font-medium">Bulk</span>
+                        <FileEdit className="h-4 w-4" />
+                        <span className="text-sm font-medium">Bulk Edit</span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setTemplateListOpen(true)}
+                        title="Apply saved template to charts"
+                        className="h-9 px-3 flex items-center justify-center gap-1.5 rounded-md border border-gray-400"
+                      >
+                        <Layers className="h-4 w-4" />
+                        <span className="text-sm font-medium">Templates</span>
                       </Button>
                     </div>
                     {selectedDataSources.length > 0 ? (
@@ -336,6 +348,22 @@ export default function AnalysisTool() {
               open={bulkSettingsOpen}
               onOpenChange={setBulkSettingsOpen}
               file={currentFile as FileNode}
+            />
+          )
+        }
+        return null
+      })()}
+      
+      {/* Template List Dialog */}
+      {activeTab && (() => {
+        const currentFile = openTabs.find((tab) => tab.id === activeTab)
+        if (currentFile && currentFile.type === 'file') {
+          return (
+            <TemplateListDialog
+              open={templateListOpen}
+              onOpenChange={setTemplateListOpen}
+              onSelectTemplate={() => {}}
+              hasMultipleCharts={currentFile.charts && currentFile.charts.length > 1}
             />
           )
         }
