@@ -4,6 +4,7 @@ import React from "react"
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface ModalHeaderProps {
   title: string
@@ -32,48 +33,54 @@ export function ModalHeader({
   return (
     <DialogHeader className="flex-shrink-0">
       <div className="flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <DialogTitle>Edit Chart: {title}</DialogTitle>
-          
-          {showNavigation && (
-            <div className="flex items-center gap-2">
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={onPreviousChart}
-                disabled={currentIndex === 0}
-                className="h-8 w-8"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              
-              <span className="text-sm text-muted-foreground px-2">
-                {currentIndex + 1} / {totalCharts}
-              </span>
-              
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={onNextChart}
-                disabled={currentIndex === totalCharts - 1}
-                className="h-8 w-8"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-        </div>
+        <DialogTitle className="truncate pr-4" title={title}>
+          Edit Chart: {title}
+        </DialogTitle>
         
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Navigation controls (fixed position) */}
+          {showNavigation && (
+            <>
+              <div className="flex items-center gap-1 pr-2 border-r">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={onPreviousChart}
+                  disabled={currentIndex === 0}
+                  className="h-8 w-8 p-0"
+                  title="Previous chart (Ctrl+←)"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                
+                <div className="px-2 py-1 text-sm font-medium min-w-[60px] text-center">
+                  {currentIndex + 1} / {totalCharts}
+                </div>
+                
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={onNextChart}
+                  disabled={currentIndex === totalCharts - 1}
+                  className="h-8 w-8 p-0"
+                  title="Next chart (Ctrl+→)"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </>
+          )}
+          
+          {/* Action buttons */}
           <Button variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          <Button onClick={onSave}>Save Changes</Button>
           {hasNextChart && onSaveAndNext && (
             <Button onClick={onSaveAndNext} variant="secondary">
               Save & Next
             </Button>
           )}
+          <Button onClick={onSave}>{hasNextChart ? 'Save & Close' : 'Save Changes'}</Button>
         </div>
       </div>
     </DialogHeader>
