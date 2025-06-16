@@ -240,7 +240,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
             mainGroup.remove()
           }
 
-          const margin = { top: 20, right: 40, bottom: 60, left: 60 }
+          const margin = editingChart.margins || { top: 20, right: 40, bottom: 60, left: 60 }
           const width = dimensions.width - margin.left - margin.right
           const height = dimensions.height - margin.top - margin.bottom
 

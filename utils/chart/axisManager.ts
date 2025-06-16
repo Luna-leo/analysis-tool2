@@ -163,6 +163,10 @@ export class AxisManager {
   private renderAxes(): void {
     const { g, width, height, editingChart } = this.options
     const xAxisType = editingChart.xAxisType || 'datetime'
+    const xAxisTicks = editingChart.xAxisTicks || 5
+    const yAxisTicks = editingChart.yAxisTicks || 5
+    const xAxisTickPrecision = editingChart.xAxisTickPrecision ?? 2
+    const yAxisTickPrecision = editingChart.yAxisTickPrecision ?? 2
     
     // Create X-axis
     let xAxis: d3.Axis<number | Date | { valueOf(): number }>
@@ -171,10 +175,11 @@ export class AxisManager {
       const xDomain = this.xScale.domain() as [Date, Date]
       const timeFormat = getTimeFormat(xDomain[0], xDomain[1])
       xAxis = d3.axisBottom(this.xScale)
-        .ticks(5)
+        .ticks(xAxisTicks)
         .tickFormat((d) => d3.timeFormat(timeFormat)(d as Date))
     } else if (xAxisType === 'time') {
       xAxis = d3.axisBottom(this.xScale)
+        .ticks(xAxisTicks)
         .tickFormat(d => {
           const minutes = Number(d)
           const hours = Math.floor(minutes / 60)
@@ -183,7 +188,8 @@ export class AxisManager {
         })
     } else {
       xAxis = d3.axisBottom(this.xScale)
-        .tickFormat(d3.format(".2f"))
+        .ticks(xAxisTicks)
+        .tickFormat(d3.format(`.${xAxisTickPrecision}f`))
     }
     
     // Calculate X-axis position
@@ -191,22 +197,41 @@ export class AxisManager {
     const xAxisY = calculateXAxisPosition(yDomain, this.yScale, height)
     
     // Render X-axis
-    g.append("g")
+    const xAxisGroup = g.append("g")
       .attr("class", "x-axis")
       .attr("transform", `translate(0,${xAxisY})`)
       .call(xAxis)
-      .selectAll("text")
+    
+    xAxisGroup.selectAll("text")
       .style("font-size", "12px")
+    
+    // Add grid lines if enabled
+    if (editingChart.showGrid) {
+      xAxisGroup.selectAll(".tick line")
+        .clone()
+        .attr("y2", -height)
+        .attr("stroke-opacity", 0.1)
+    }
     
     // Create and render Y-axis
     const yAxis = d3.axisLeft(this.yScale)
-      .tickFormat(d3.format(".2f"))
+      .ticks(yAxisTicks)
+      .tickFormat(d3.format(`.${yAxisTickPrecision}f`))
     
-    g.append("g")
+    const yAxisGroup = g.append("g")
       .attr("class", "y-axis")
       .call(yAxis)
-      .selectAll("text")
+    
+    yAxisGroup.selectAll("text")
       .style("font-size", "12px")
+    
+    // Add grid lines if enabled
+    if (editingChart.showGrid) {
+      yAxisGroup.selectAll(".tick line")
+        .clone()
+        .attr("x2", width)
+        .attr("stroke-opacity", 0.1)
+    }
   }
 
   /**

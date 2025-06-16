@@ -3,6 +3,7 @@
 import { ChartComponent } from "@/types"
 import { TitleAndOptionsSection } from "./TitleAndOptionsSection"
 import { PlotStyleTable } from "./PlotStyleSettings"
+import { LayoutSettings } from "./LayoutSettings"
 
 interface AppearanceTabProps {
   editingChart: ChartComponent
@@ -24,6 +25,7 @@ export function AppearanceTab({
   return (
     <div className="space-y-4">
       <TitleAndOptionsSection editingChart={editingChart} setEditingChart={setEditingChart} />
+      <LayoutSettings editingChart={editingChart} setEditingChart={setEditingChart} />
       <PlotStyleTable
         editingChart={editingChart}
         setEditingChart={setEditingChart}

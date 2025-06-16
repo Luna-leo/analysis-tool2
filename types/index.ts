@@ -214,6 +214,18 @@ export interface ChartComponent {
       legendText?: string
     }>
   }
+  // Chart layout settings
+  margins?: {
+    top: number
+    right: number
+    bottom: number
+    left: number
+  }
+  showGrid?: boolean
+  xAxisTicks?: number
+  yAxisTicks?: number
+  xAxisTickPrecision?: number
+  yAxisTickPrecision?: number
 }
 
 export interface FileNode {

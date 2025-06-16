@@ -125,7 +125,7 @@ export abstract class BaseChart<TData = any> {
    * Helper method to get margin configuration
    */
   protected getMargins() {
-    return {
+    return this.editingChart.margins || {
       top: 20,
       right: 40,
       bottom: 60,
