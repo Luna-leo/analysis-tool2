@@ -18,8 +18,14 @@ interface PlotStyleTableProps {
 
 export function PlotStyleTable({ editingChart, setEditingChart, selectedDataSourceItems }: PlotStyleTableProps) {
   const [appearanceMode, setAppearanceMode] = useState<"datasource" | "parameter" | "both">(
-    editingChart.legendMode || "both"
+    editingChart.legendMode || "datasource"
   )
+
+  React.useEffect(() => {
+    if (!editingChart.legendMode) {
+      setEditingChart({ ...editingChart, legendMode: "datasource" })
+    }
+  }, [editingChart.legendMode])
 
   return (
     <div>
