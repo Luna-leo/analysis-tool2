@@ -12,7 +12,7 @@ import { TabContent } from "./EditModal/TabContent"
 import { ChartSelectionGrid } from "./EditModal/ChartSelectionGrid"
 import { Button } from "@/components/ui/button"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { Grid3x3, Eye } from "lucide-react"
+import { Grid3x3, Eye, CheckSquare, X, Settings2 } from "lucide-react"
 import type { EventInfo, ChartComponent } from "@/types"
 import { BulkApplyDialog, BulkApplySettings } from "./EditModal/BulkApplyDialog"
 
@@ -342,38 +342,66 @@ export function ChartEditModal() {
                 <div className="h-full flex flex-col">
                   {/* Grid controls */}
                   {allCharts.length > 1 && (
-                    <div className="mb-2 flex items-center justify-between">
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="xs"
-                          onClick={() => {
-                            const allChartIds = allCharts.map(chart => chart.id)
-                            useUIStore.getState().selectAllCharts(allChartIds)
-                          }}
-                          disabled={selectedChartIds.size === allCharts.length}
-                        >
-                          Select All
-                        </Button>
+                    <div className="mb-3 flex flex-col gap-2">
+                      {/* Selection controls */}
+                      <div className="flex items-center justify-between bg-muted/30 rounded-lg p-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-muted-foreground">Selection:</span>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const allChartIds = allCharts.map(chart => chart.id)
+                                useUIStore.getState().selectAllCharts(allChartIds)
+                              }}
+                              disabled={selectedChartIds.size === allCharts.length}
+                              className="gap-1.5"
+                              title="Select all charts (Ctrl+A)"
+                            >
+                              <CheckSquare className="h-3.5 w-3.5" />
+                              Select All
+                            </Button>
+                            {selectedChartIds.size > 0 && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => clearSelectedCharts()}
+                                className="gap-1.5"
+                                title="Clear selection (Escape)"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                                Clear
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        
                         {selectedChartIds.size > 0 && (
-                          <Button
-                            variant="ghost"
-                            size="xs"
-                            onClick={() => clearSelectedCharts()}
-                          >
-                            Clear
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">
+                              {selectedChartIds.size} of {allCharts.length} selected
+                            </span>
+                            <Button
+                              size="sm"
+                              onClick={() => setBulkApplyDialogOpen(true)}
+                              className="gap-1.5"
+                              title="Apply current chart settings to selected charts"
+                            >
+                              <Settings2 className="h-3.5 w-3.5" />
+                              Apply Settings
+                            </Button>
+                          </div>
                         )}
                       </div>
-                      {selectedChartIds.size > 0 && (
-                        <Button
-                          size="xs"
-                          onClick={() => setBulkApplyDialogOpen(true)}
-                        >
-                          Apply to Selected
-                        </Button>
-                      )}
                     </div>
+                  )}
+                  
+                  {/* Help text */}
+                  {selectedChartIds.size === 0 && previewMode === 'grid' && (
+                    <p className="text-xs text-muted-foreground text-center mb-2">
+                      Click to select charts • Double-click to view
+                    </p>
                   )}
                   
                   {/* Chart grid */}
