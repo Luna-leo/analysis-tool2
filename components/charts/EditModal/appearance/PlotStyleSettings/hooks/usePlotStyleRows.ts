@@ -13,7 +13,8 @@ interface DataSourceItem {
 export const usePlotStyleRows = (
   editingChart: ChartComponent,
   selectedDataSourceItems: DataSourceItem[],
-  mode: LegendMode
+  mode: LegendMode,
+  getPlotStyle: (dataSourceId: string, dataSourceIndex: number, paramIndex: number) => any
 ): PlotStyleRow[] => {
   return useMemo(() => {
     const rows: PlotStyleRow[] = []
@@ -25,10 +26,7 @@ export const usePlotStyleRows = (
     if (mode === 'datasource') {
       // By Data Source mode - one row per data source
       selectedDataSourceItems.forEach((dataSource, dataSourceIndex) => {
-        const param = editingChart.yAxisParams?.[0]
-        if (!param) return
-
-        const customLegend = editingChart.dataSourceLegends?.[dataSource.id]
+        const plotStyle = getPlotStyle(dataSource.id, dataSourceIndex, 0)
         const defaultLegend = dataSource.labelDescription 
           ? `${dataSource.label} (${dataSource.labelDescription})` 
           : dataSource.label
@@ -36,21 +34,23 @@ export const usePlotStyleRows = (
         rows.push({
           id: dataSource.id,
           dataSource,
-          parameter: param,
+          parameter: editingChart.yAxisParams?.[0], // Use first parameter for reference
           paramIndex: 0,
           dataSourceIndex,
-          legendText: customLegend || defaultLegend,
+          legendText: plotStyle.legendText || defaultLegend,
           colorIndex: dataSourceIndex
         })
       })
     } else if (mode === 'parameter') {
       // By Parameter mode - one row per parameter
       editingChart.yAxisParams.forEach((param, paramIndex) => {
+        const plotStyle = getPlotStyle('', 0, paramIndex)
+        
         rows.push({
           id: `param-${paramIndex}`,
           parameter: param,
           paramIndex,
-          legendText: param.legendText || param.parameter || "Unnamed",
+          legendText: plotStyle.legendText || param.parameter || "Unnamed",
           colorIndex: paramIndex
         })
       })
@@ -58,6 +58,7 @@ export const usePlotStyleRows = (
       // By Data Source x Parameter mode - one row per combination
       selectedDataSourceItems.forEach((dataSource, dataSourceIndex) => {
         editingChart.yAxisParams?.forEach((param, paramIndex) => {
+          const plotStyle = getPlotStyle(dataSource.id, dataSourceIndex, paramIndex)
           const defaultLegend = `${dataSource.label}-${param.parameter || "Unnamed"}`
           
           rows.push({
@@ -66,7 +67,7 @@ export const usePlotStyleRows = (
             parameter: param,
             paramIndex,
             dataSourceIndex,
-            legendText: param.legendText || defaultLegend,
+            legendText: plotStyle.legendText || defaultLegend,
             colorIndex: dataSourceIndex
           })
         })
@@ -74,5 +75,5 @@ export const usePlotStyleRows = (
     }
 
     return rows
-  }, [editingChart, selectedDataSourceItems, mode])
+  }, [editingChart, selectedDataSourceItems, mode, getPlotStyle])
 }

@@ -1,57 +1,178 @@
 import { useCallback } from "react"
 import { ChartComponent } from "@/types"
-import { MarkerSettings, LineSettings, LegendMode } from "@/types/plot-style"
+import { MarkerSettings, LineSettings, LegendMode, PlotStyle } from "@/types/plot-style"
+import { getDefaultColor } from "@/utils/chartColors"
 
 export const usePlotStyleUpdate = (
   editingChart: ChartComponent,
   setEditingChart: (chart: ChartComponent) => void
 ) => {
-  const updateMarkerStyle = useCallback((paramIndex: number, marker: MarkerSettings) => {
-    const newParams = [...(editingChart.yAxisParams || [])]
-    newParams[paramIndex] = {
-      ...newParams[paramIndex],
-      marker
-    }
-    setEditingChart({ ...editingChart, yAxisParams: newParams })
-  }, [editingChart, setEditingChart])
-
-  const updateLineStyle = useCallback((paramIndex: number, line: LineSettings) => {
-    const newParams = [...(editingChart.yAxisParams || [])]
-    newParams[paramIndex] = {
-      ...newParams[paramIndex],
-      line
-    }
-    setEditingChart({ ...editingChart, yAxisParams: newParams })
-  }, [editingChart, setEditingChart])
-
-  const updateLegend = useCallback((mode: LegendMode, rowId: string, legendText: string, paramIndex?: number) => {
-    if (mode === 'datasource') {
-      // Update dataSourceLegends
+  // Initialize plotStyles if not exists
+  const initializePlotStyles = useCallback(() => {
+    if (!editingChart.plotStyles) {
       setEditingChart({
         ...editingChart,
-        dataSourceLegends: {
-          ...editingChart.dataSourceLegends,
-          [rowId]: legendText
+        plotStyles: {
+          mode: editingChart.legendMode || 'datasource',
+          byDataSource: {},
+          byParameter: {},
+          byBoth: {}
         }
       })
-    } else {
-      // Update parameter legendText
-      if (paramIndex !== undefined) {
-        const newParams = [...(editingChart.yAxisParams || [])]
-        newParams[paramIndex] = {
-          ...newParams[paramIndex],
-          legendText
-        }
-        setEditingChart({ ...editingChart, yAxisParams: newParams })
-      }
     }
   }, [editingChart, setEditingChart])
 
+  // Get current plot style based on mode
+  const getPlotStyle = useCallback((
+    dataSourceId: string,
+    dataSourceIndex: number,
+    paramIndex: number
+  ): PlotStyle => {
+    const mode = editingChart.plotStyles?.mode || editingChart.legendMode || 'datasource'
+    
+    // Default style
+    const defaultStyle: PlotStyle = {
+      marker: {
+        type: 'circle',
+        size: 6,
+        borderColor: getDefaultColor(mode === 'parameter' ? paramIndex : dataSourceIndex),
+        fillColor: getDefaultColor(mode === 'parameter' ? paramIndex : dataSourceIndex)
+      },
+      line: {
+        style: 'solid',
+        width: 2,
+        color: getDefaultColor(mode === 'parameter' ? paramIndex : dataSourceIndex)
+      }
+    }
+
+    if (mode === 'datasource') {
+      return editingChart.plotStyles?.byDataSource?.[dataSourceId] || defaultStyle
+    } else if (mode === 'parameter') {
+      return editingChart.plotStyles?.byParameter?.[paramIndex] || defaultStyle
+    } else {
+      const key = `${dataSourceId}-${paramIndex}`
+      return editingChart.plotStyles?.byBoth?.[key] || defaultStyle
+    }
+  }, [editingChart])
+
+  // Update marker style
+  const updateMarkerStyle = useCallback((
+    dataSourceId: string,
+    paramIndex: number,
+    marker: MarkerSettings
+  ) => {
+    const mode = editingChart.plotStyles?.mode || editingChart.legendMode || 'datasource'
+    const plotStyles = { ...editingChart.plotStyles } || { mode, byDataSource: {}, byParameter: {}, byBoth: {} }
+
+    if (mode === 'datasource') {
+      plotStyles.byDataSource = plotStyles.byDataSource || {}
+      plotStyles.byDataSource[dataSourceId] = {
+        ...plotStyles.byDataSource[dataSourceId],
+        marker
+      }
+    } else if (mode === 'parameter') {
+      plotStyles.byParameter = plotStyles.byParameter || {}
+      plotStyles.byParameter[paramIndex] = {
+        ...plotStyles.byParameter[paramIndex],
+        marker
+      }
+    } else {
+      const key = `${dataSourceId}-${paramIndex}`
+      plotStyles.byBoth = plotStyles.byBoth || {}
+      plotStyles.byBoth[key] = {
+        ...plotStyles.byBoth[key],
+        marker
+      }
+    }
+
+    setEditingChart({ ...editingChart, plotStyles })
+  }, [editingChart, setEditingChart])
+
+  // Update line style
+  const updateLineStyle = useCallback((
+    dataSourceId: string,
+    paramIndex: number,
+    line: LineSettings
+  ) => {
+    const mode = editingChart.plotStyles?.mode || editingChart.legendMode || 'datasource'
+    const plotStyles = { ...editingChart.plotStyles } || { mode, byDataSource: {}, byParameter: {}, byBoth: {} }
+
+    if (mode === 'datasource') {
+      plotStyles.byDataSource = plotStyles.byDataSource || {}
+      plotStyles.byDataSource[dataSourceId] = {
+        ...plotStyles.byDataSource[dataSourceId],
+        line
+      }
+    } else if (mode === 'parameter') {
+      plotStyles.byParameter = plotStyles.byParameter || {}
+      plotStyles.byParameter[paramIndex] = {
+        ...plotStyles.byParameter[paramIndex],
+        line
+      }
+    } else {
+      const key = `${dataSourceId}-${paramIndex}`
+      plotStyles.byBoth = plotStyles.byBoth || {}
+      plotStyles.byBoth[key] = {
+        ...plotStyles.byBoth[key],
+        line
+      }
+    }
+
+    setEditingChart({ ...editingChart, plotStyles })
+  }, [editingChart, setEditingChart])
+
+  // Update legend text
+  const updateLegend = useCallback((
+    dataSourceId: string,
+    paramIndex: number,
+    legendText: string
+  ) => {
+    const mode = editingChart.plotStyles?.mode || editingChart.legendMode || 'datasource'
+    const plotStyles = { ...editingChart.plotStyles } || { mode, byDataSource: {}, byParameter: {}, byBoth: {} }
+
+    if (mode === 'datasource') {
+      plotStyles.byDataSource = plotStyles.byDataSource || {}
+      plotStyles.byDataSource[dataSourceId] = {
+        ...plotStyles.byDataSource[dataSourceId],
+        legendText
+      }
+    } else if (mode === 'parameter') {
+      plotStyles.byParameter = plotStyles.byParameter || {}
+      plotStyles.byParameter[paramIndex] = {
+        ...plotStyles.byParameter[paramIndex],
+        legendText
+      }
+    } else {
+      const key = `${dataSourceId}-${paramIndex}`
+      plotStyles.byBoth = plotStyles.byBoth || {}
+      plotStyles.byBoth[key] = {
+        ...plotStyles.byBoth[key],
+        legendText
+      }
+    }
+
+    setEditingChart({ ...editingChart, plotStyles })
+  }, [editingChart, setEditingChart])
+
+  // Update mode
   const updateMode = useCallback((mode: LegendMode) => {
-    setEditingChart({ ...editingChart, legendMode: mode })
+    const plotStyles = editingChart.plotStyles || {
+      mode,
+      byDataSource: {},
+      byParameter: {},
+      byBoth: {}
+    }
+    
+    setEditingChart({ 
+      ...editingChart, 
+      legendMode: mode,
+      plotStyles: { ...plotStyles, mode }
+    })
   }, [editingChart, setEditingChart])
 
   return {
+    initializePlotStyles,
+    getPlotStyle,
     updateMarkerStyle,
     updateLineStyle,
     updateLegend,

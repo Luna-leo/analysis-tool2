@@ -169,6 +169,51 @@ export interface ChartComponent {
   }
   legendMode?: 'datasource' | 'parameter' | 'both'
   dataSourceLegends?: Record<string, string> // For storing legend text per data source ID
+  plotStyles?: {
+    mode: 'datasource' | 'parameter' | 'both'
+    byDataSource?: Record<string, {
+      marker: {
+        type: MarkerType
+        size: number
+        borderColor: string
+        fillColor: string
+      }
+      line: {
+        width: number
+        color: string
+        style: LineStyle
+      }
+      legendText?: string
+    }>
+    byParameter?: Record<number, {
+      marker: {
+        type: MarkerType
+        size: number
+        borderColor: string
+        fillColor: string
+      }
+      line: {
+        width: number
+        color: string
+        style: LineStyle
+      }
+      legendText?: string
+    }>
+    byBoth?: Record<string, {
+      marker: {
+        type: MarkerType
+        size: number
+        borderColor: string
+        fillColor: string
+      }
+      line: {
+        width: number
+        color: string
+        style: LineStyle
+      }
+      legendText?: string
+    }>
+  }
 }
 
 export interface FileNode {

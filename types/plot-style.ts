@@ -47,3 +47,16 @@ export interface PlotStyleStrategy {
   getTableHeaders(): string[]
   getDefaultLegend(row: PlotStyleRow): string
 }
+
+export interface PlotStyle {
+  marker: MarkerSettings
+  line: LineSettings
+  legendText?: string
+}
+
+export interface PlotStylesConfig {
+  mode: LegendMode
+  byDataSource?: Record<string, PlotStyle>
+  byParameter?: Record<number, PlotStyle>
+  byBoth?: Record<string, PlotStyle> // key format: "${dataSourceId}-${paramIndex}"
+}

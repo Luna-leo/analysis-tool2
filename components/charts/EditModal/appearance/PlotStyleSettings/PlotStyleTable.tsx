@@ -26,38 +26,43 @@ export function PlotStyleTable({
   setEditingChart, 
   selectedDataSourceItems 
 }: PlotStyleTableProps) {
-  const [appearanceMode, setAppearanceMode] = useState<LegendMode>(
-    editingChart.legendMode || "datasource"
-  )
+  const mode = editingChart.plotStyles?.mode || editingChart.legendMode || "datasource"
+  
+  const {
+    initializePlotStyles,
+    getPlotStyle,
+    updateMarkerStyle,
+    updateLineStyle,
+    updateLegend,
+    updateMode
+  } = usePlotStyleUpdate(editingChart, setEditingChart)
 
-  const { updateMarkerStyle, updateLineStyle, updateLegend, updateMode } = usePlotStyleUpdate(
+  const rows = usePlotStyleRows(
     editingChart, 
-    setEditingChart
+    selectedDataSourceItems, 
+    mode,
+    getPlotStyle
   )
 
-  const rows = usePlotStyleRows(editingChart, selectedDataSourceItems, appearanceMode)
-
+  // Initialize plotStyles on mount
   useEffect(() => {
-    if (!editingChart.legendMode) {
-      updateMode("datasource")
-    }
+    initializePlotStyles()
   }, [])
 
   const handleModeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const mode = e.target.value as LegendMode
-    setAppearanceMode(mode)
-    updateMode(mode)
+    const newMode = e.target.value as LegendMode
+    updateMode(newMode)
   }
 
   const getTableHeaders = () => {
     const headers = []
-    if (appearanceMode !== "parameter") headers.push("Data Source")
-    if (appearanceMode !== "datasource") headers.push("Parameter")
+    if (mode !== "parameter") headers.push("Data Source")
+    if (mode !== "datasource") headers.push("Parameter")
     headers.push("Legend", "Plot Style")
     return headers
   }
 
-  const colSpan = appearanceMode === "both" ? 4 : 3
+  const colSpan = mode === "both" ? 4 : 3
 
   return (
     <div>
@@ -67,7 +72,7 @@ export function PlotStyleTable({
           <Label className="text-xs">Mode</Label>
           <select
             className="h-7 text-xs border rounded-md px-2"
-            value={appearanceMode}
+            value={mode}
             onChange={handleModeChange}
           >
             <option value="datasource">By Data Source</option>
@@ -95,16 +100,24 @@ export function PlotStyleTable({
                 </TableCell>
               </TableRow>
             ) : (
-              rows.map((row) => (
-                <PlotStyleTableRow
-                  key={row.id}
-                  row={row}
-                  mode={appearanceMode}
-                  onUpdateMarker={(marker) => updateMarkerStyle(row.paramIndex, marker)}
-                  onUpdateLine={(line) => updateLineStyle(row.paramIndex, line)}
-                  onUpdateLegend={(legend) => updateLegend(appearanceMode, row.id, legend, row.paramIndex)}
-                />
-              ))
+              rows.map((row) => {
+                const dataSourceId = row.dataSource?.id || ''
+                const dataSourceIndex = row.dataSourceIndex || 0
+                const paramIndex = row.paramIndex
+                const plotStyle = getPlotStyle(dataSourceId, dataSourceIndex, paramIndex)
+                
+                return (
+                  <PlotStyleTableRow
+                    key={row.id}
+                    row={row}
+                    mode={mode}
+                    plotStyle={plotStyle}
+                    onUpdateMarker={(marker) => updateMarkerStyle(dataSourceId, paramIndex, marker)}
+                    onUpdateLine={(line) => updateLineStyle(dataSourceId, paramIndex, line)}
+                    onUpdateLegend={(legend) => updateLegend(dataSourceId, paramIndex, legend)}
+                  />
+                )
+              })
             )}
           </TableBody>
         </Table>

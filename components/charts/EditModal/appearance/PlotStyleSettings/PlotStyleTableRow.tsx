@@ -3,13 +3,14 @@
 import React from "react"
 import { TableCell, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { PlotStyleRow, LegendMode, MarkerSettings, LineSettings } from "@/types/plot-style"
+import { PlotStyleRow, LegendMode, MarkerSettings, LineSettings, PlotStyle } from "@/types/plot-style"
 import { PlotStylePopover } from "./PlotStylePopover"
 import { LegendInput } from "./LegendInput"
 
 interface PlotStyleTableRowProps {
   row: PlotStyleRow
   mode: LegendMode
+  plotStyle: PlotStyle
   onUpdateMarker: (marker: MarkerSettings) => void
   onUpdateLine: (line: LineSettings) => void
   onUpdateLegend: (legend: string) => void
@@ -18,6 +19,7 @@ interface PlotStyleTableRowProps {
 export const PlotStyleTableRow = React.memo(({
   row,
   mode,
+  plotStyle,
   onUpdateMarker,
   onUpdateLine,
   onUpdateLegend
@@ -57,8 +59,8 @@ export const PlotStyleTableRow = React.memo(({
       </TableCell>
       <TableCell className="text-xs">
         <PlotStylePopover
-          marker={row.parameter?.marker}
-          line={row.parameter?.line}
+          marker={plotStyle.marker}
+          line={plotStyle.line}
           colorIndex={row.colorIndex}
           onUpdateMarker={onUpdateMarker}
           onUpdateLine={onUpdateLine}

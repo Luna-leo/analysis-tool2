@@ -272,8 +272,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               scalesRef, 
               dataSourceStyles, 
               canvas: canvasRef.current ?? undefined,
-              legendMode: editingChart.legendMode,
-              yAxisParams: editingChart.yAxisParams
+              plotStyles: editingChart.plotStyles
             })
           } else {
             // Render empty chart with axes

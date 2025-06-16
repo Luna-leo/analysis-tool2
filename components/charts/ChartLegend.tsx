@@ -27,26 +27,32 @@ export const ChartLegend = React.memo(
     }, ref) => {
       if (!dataSources || dataSources.length === 0) return null
 
-      const mode = editingChart.legendMode || 'datasource'
+      const mode = editingChart.plotStyles?.mode || editingChart.legendMode || 'datasource'
       const items: { key: string; label: string; colorIndex: number; dsId?: string }[] = []
 
       if (mode === 'datasource') {
         dataSources.forEach((ds, idx) => {
-          const customLabel = editingChart.dataSourceLegends?.[ds.id]
+          const plotStyle = editingChart.plotStyles?.byDataSource?.[ds.id]
+          const customLabel = plotStyle?.legendText
           const defaultLabel = ds.labelDescription ? `${ds.label} (${ds.labelDescription})` : ds.label
           items.push({ key: ds.id, label: customLabel || defaultLabel, colorIndex: idx, dsId: ds.id })
         })
       } else if (mode === 'parameter') {
         editingChart.yAxisParams?.forEach((param, idx) => {
-          items.push({ key: `param-${idx}`, label: param.legendText || param.parameter || 'Unnamed', colorIndex: idx })
+          const plotStyle = editingChart.plotStyles?.byParameter?.[idx]
+          const customLabel = plotStyle?.legendText
+          items.push({ key: `param-${idx}`, label: customLabel || param.parameter || 'Unnamed', colorIndex: idx })
         })
       } else {
         dataSources.forEach((ds, dsIdx) => {
           editingChart.yAxisParams?.forEach((param, pIdx) => {
+            const key = `${ds.id}-${pIdx}`
+            const plotStyle = editingChart.plotStyles?.byBoth?.[key]
+            const customLabel = plotStyle?.legendText
             const defaultLabel = `${ds.label}-${param.parameter || 'Unnamed'}`
             items.push({
-              key: `${ds.id}-${pIdx}`,
-              label: param.legendText || defaultLabel,
+              key,
+              label: customLabel || defaultLabel,
               colorIndex: dsIdx,
               dsId: ds.id
             })
