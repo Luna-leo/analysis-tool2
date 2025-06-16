@@ -205,8 +205,9 @@ export default function AnalysisTool() {
               
               if (isGraphPage) {
                 return (
-                  <div className="px-6 py-2 space-y-1">
-                    <div className="flex items-center gap-2">
+                  <div className="px-6 pt-2 pb-0 flex flex-col justify-center min-h-[4.5rem]">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
                         size="sm"
@@ -258,8 +259,8 @@ export default function AnalysisTool() {
                         <Layers className="h-4 w-4" />
                         <span className="text-sm font-medium">Templates</span>
                       </Button>
-                    </div>
-                    {selectedDataSources.length > 0 ? (
+                      </div>
+                      {selectedDataSources.length > 0 ? (
                       <div className="flex items-center gap-2 flex-wrap">
                         {selectedDataSources.map((source: any, index: number) => (
                           <Badge 
@@ -286,6 +287,7 @@ export default function AnalysisTool() {
                         データソースを追加してください
                       </div>
                     )}
+                    </div>
                   </div>
                 )
               }

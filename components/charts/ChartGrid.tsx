@@ -196,7 +196,7 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
 
   return (
     <div className="absolute inset-0 overflow-auto" ref={contentRef}>
-      <div className="px-6 pt-3 pb-6">
+      <div className="px-6 pt-2 pb-6">
 
         {/* Grid */}
         <div

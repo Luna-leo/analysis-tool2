@@ -300,7 +300,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
   return (
     <div className="h-full flex flex-col" ref={contentRef}>
       <div className="flex-1 overflow-auto">
-        <div className="px-6 pt-3 pb-6">
+        <div className="px-6 pt-2 pb-6">
           
           {/* Virtualized Grid */}
           <div 

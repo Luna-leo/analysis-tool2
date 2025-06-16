@@ -150,7 +150,7 @@ export const ProgressiveChartGrid = React.memo(function ProgressiveChartGrid({
   
   return (
     <div className="absolute inset-0 overflow-auto">
-      <div className="px-6 pt-3 pb-6">
+      <div className="px-6 pt-2 pb-6">
         
         {/* Grid with progressive rendering */}
         <div
