@@ -90,9 +90,9 @@ export function ChartThumbnailGrid({
                   <div className="truncate px-1 font-medium">
                     {chart.title}
                   </div>
-                  {chart.yParameters && chart.yParameters.length > 0 && (
+                  {chart.yAxisParams && chart.yAxisParams.filter(p => p.parameter && p.parameter.trim() !== '').length > 0 && (
                     <div className="text-[8px] text-muted-foreground mt-0.5">
-                      {chart.yParameters.length}p
+                      {chart.yAxisParams.filter(p => p.parameter && p.parameter.trim() !== '').length}p
                     </div>
                   )}
                 </div>

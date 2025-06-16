@@ -14,7 +14,8 @@ export function ChartMiniPreview({ chart, isActive }: ChartMiniPreviewProps) {
   const getChartIcon = () => {
     // Check if it's time-series data
     const hasTimeAxis = chart.xAxisType === "datetime" || chart.xAxisType === "time"
-    const paramCount = chart.yParameters?.length || 0
+    // Extract parameter count from yAxisParams
+    const paramCount = chart.yAxisParams?.filter(p => p.parameter && p.parameter.trim() !== '').length || 0
 
     if (hasTimeAxis) {
       return <Activity className="h-5 w-5" />
@@ -37,9 +38,9 @@ export function ChartMiniPreview({ chart, isActive }: ChartMiniPreviewProps) {
       }`}>
         {chart.title}
       </div>
-      {chart.yParameters && chart.yParameters.length > 0 && (
+      {chart.yAxisParams && chart.yAxisParams.filter(p => p.parameter && p.parameter.trim() !== '').length > 0 && (
         <div className="text-[8px] text-muted-foreground">
-          {chart.yParameters.length} param{chart.yParameters.length > 1 ? "s" : ""}
+          {chart.yAxisParams.filter(p => p.parameter && p.parameter.trim() !== '').length} param{chart.yAxisParams.filter(p => p.parameter && p.parameter.trim() !== '').length > 1 ? "s" : ""}
         </div>
       )}
     </div>

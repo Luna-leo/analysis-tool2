@@ -22,6 +22,9 @@ export function SimplifiedChartPreview({ chart, isActive, hasCheckbox = false }:
     return "LINE"
   }
 
+  // Get valid Y parameters
+  const validYParams = chart.yAxisParams?.filter(p => p.parameter && p.parameter.trim() !== '') || []
+
   return (
     <div 
       className={cn(
@@ -31,26 +34,34 @@ export function SimplifiedChartPreview({ chart, isActive, hasCheckbox = false }:
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Chart title - with padding for checkbox */}
+      {/* Chart title - with padding for jump icon */}
       <div className={cn(
         "text-xs font-bold truncate mb-0.5",
-        hasCheckbox ? "pl-5" : "",
+        hasCheckbox ? "pl-5 pr-12" : "pr-16",
         isActive ? "text-blue-900" : "text-foreground"
       )}>
         {chart.title}
       </div>
       
       {/* Y Parameter display */}
-      {chart.yParameters && chart.yParameters.length > 0 && (
+      {validYParams.length > 0 ? (
         <div className={cn(
           "text-[10px] truncate",
-          hasCheckbox ? "pl-5" : "",
+          hasCheckbox ? "pl-5 pr-12" : "pr-16",
           isActive ? "text-blue-700" : "text-muted-foreground"
         )}>
-          {chart.yParameters[0].name}
-          {chart.yParameters.length > 1 && (
-            <span className="text-[9px] ml-1">+{chart.yParameters.length - 1}</span>
+          {validYParams[0].parameter}
+          {validYParams.length > 1 && (
+            <span className="text-[9px] ml-1">+{validYParams.length - 1}</span>
           )}
+        </div>
+      ) : (
+        <div className={cn(
+          "text-[10px] truncate italic",
+          hasCheckbox ? "pl-5 pr-12" : "pr-16",
+          "text-muted-foreground/60"
+        )}>
+          No parameters
         </div>
       )}
       
@@ -65,18 +76,18 @@ export function SimplifiedChartPreview({ chart, isActive, hasCheckbox = false }:
         )}>
           {getChartTypeLabel()}
         </span>
-        {chart.yParameters && chart.yParameters.length > 0 && (
+        {validYParams.length > 0 && (
           <span className={cn(
             "font-bold",
             isActive && "text-blue-600"
           )}>
-            {chart.yParameters.length}p
+            {validYParams.length}p
           </span>
         )}
       </div>
       
       {/* Hover tooltip for all parameters */}
-      {isHovered && chart.yParameters && chart.yParameters.length > 1 && (
+      {isHovered && validYParams.length > 1 && (
         <div className="absolute z-20 bg-popover border rounded-md shadow-lg p-2 text-xs max-w-xs"
              style={{ 
                bottom: '100%', 
@@ -84,9 +95,9 @@ export function SimplifiedChartPreview({ chart, isActive, hasCheckbox = false }:
                marginBottom: '4px'
              }}>
           <div className="font-semibold mb-1">Y Parameters:</div>
-          {chart.yParameters.map((param, idx) => (
+          {validYParams.map((param, idx) => (
             <div key={idx} className="truncate">
-              {param.name}
+              {param.parameter}
             </div>
           ))}
         </div>

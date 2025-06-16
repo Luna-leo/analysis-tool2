@@ -4,7 +4,7 @@ import React from "react"
 import { cn } from "@/lib/utils"
 import { ChartComponent, EventInfo, DataSourceStyle } from "@/types"
 import { SimplifiedChartPreview } from "./SimplifiedChartPreview"
-import { Checkbox } from "@/components/ui/checkbox"
+import { ExternalLink } from "lucide-react"
 
 interface ChartSelectionGridProps {
   charts: ChartComponent[]
@@ -50,7 +50,7 @@ export function ChartSelectionGrid({
   return (
     <div className="h-full overflow-auto">
       <div 
-        className="grid gap-1"
+        className="grid gap-1.5"
         style={{
           gridTemplateColumns: `repeat(${columns}, 1fr)`,
         }}
@@ -64,47 +64,65 @@ export function ChartSelectionGrid({
               key={chart.id}
               className={cn(
                 "relative border rounded-lg overflow-hidden transition-all duration-200",
-                "hover:shadow-md cursor-pointer",
-                isCurrent && "ring-2 ring-blue-500 border-blue-500",
-                isSelected && !isCurrent && "ring-2 ring-primary border-primary",
-                !isSelected && !isCurrent && "border-border"
+                "cursor-pointer",
+                isCurrent && "border-blue-500 bg-blue-50 shadow-sm shadow-blue-200",
+                isSelected && !isCurrent && "border-primary/60 bg-primary/5",
+                !isSelected && !isCurrent && "border-border bg-white hover:border-gray-300 hover:shadow-sm"
               )}
               style={{ height: `${cardHeight}px` }}
             >
 
-              {/* Chart number with current indicator */}
-              <div className={cn(
-                "absolute top-1 right-1 z-10 px-1.5 py-0.5 rounded text-[10px] font-bold",
-                isCurrent ? "bg-blue-500 text-white" : "bg-background/90"
-              )}>
-                {index + 1}
+              {/* Chart number and jump icon */}
+              <div className="absolute top-1 right-1 z-10 flex items-center gap-1">
+                {/* Jump icon */}
+                <button
+                  className={cn(
+                    "p-1 rounded transition-all",
+                    "bg-white/80 hover:bg-white shadow-sm",
+                    "hover:shadow-md"
+                  )}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onChartSelect(chart, index)
+                  }}
+                  title="View this chart"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                </button>
+                
+                {/* Chart number with current indicator */}
+                <div className={cn(
+                  "px-1.5 py-0.5 rounded text-[10px] font-bold shadow-sm",
+                  isCurrent ? "bg-blue-500 text-white" : isSelected ? "bg-primary text-primary-foreground" : "bg-white/90 text-gray-700"
+                )}>
+                  {index + 1}
+                </div>
               </div>
 
 
               {/* Chart preview with integrated checkbox */}
               <div 
-                className="w-full h-full bg-white cursor-pointer relative"
-                onClick={() => onChartSelect(chart, index)}
+                className="w-full h-full cursor-pointer relative"
+                onClick={(e) => handleCheckboxChange(chart.id, index, e)}
+                title="Click to select"
               >
-                {/* Integrated checkbox in content */}
-                <div 
-                  className="absolute top-1 left-1 z-10"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleCheckboxChange(chart.id, index, e)
-                  }}
-                >
-                  <Checkbox
-                    checked={isSelected}
-                    onCheckedChange={() => {}}
-                    className="h-3 w-3 bg-background border"
-                  />
-                </div>
+                {/* Selection indicator - more prominent */}
+                {isSelected && (
+                  <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+                    {/* Corner triangle indicator */}
+                    <div className="absolute top-0 left-0 w-6 h-6">
+                      <div className="absolute top-0 left-0 w-0 h-0 border-t-[20px] border-t-primary border-r-[20px] border-r-transparent" />
+                      <svg className="absolute top-0.5 left-0.5 w-2.5 h-2.5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  </div>
+                )}
                 
                 <SimplifiedChartPreview 
                   chart={chart}
                   isActive={isCurrent}
-                  hasCheckbox={true}
+                  hasCheckbox={false}
                 />
               </div>
             </div>

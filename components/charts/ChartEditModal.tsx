@@ -166,6 +166,10 @@ export function ChartEditModal() {
     setPreviewMode('preview') // Switch back to preview after selection
   }
 
+  const handleChartDoubleClick = (chart: ChartComponent, index: number) => {
+    handleChartSelect(chart, index)
+  }
+
   const handleCancel = () => {
     setEditModalOpen(false)
     clearSelectedCharts()
@@ -212,7 +216,7 @@ export function ChartEditModal() {
       }
 
       if (settings.applyDataSources) {
-        updatedChart.yParameters = editingChart.yParameters ? [...editingChart.yParameters] : []
+        updatedChart.yAxisParams = editingChart.yAxisParams ? [...editingChart.yAxisParams] : []
         updatedChart.xParameter = editingChart.xParameter
         updatedChart.xAxisType = editingChart.xAxisType
       }
@@ -291,9 +295,27 @@ export function ChartEditModal() {
               </h3>
               <div className="flex items-center gap-2">
                 {previewMode === 'grid' && selectedChartIds.size > 0 && (
-                  <span className="text-xs text-muted-foreground mr-2">
-                    {selectedChartIds.size} selected
-                  </span>
+                  <>
+                    <span className="text-xs text-muted-foreground mr-2">
+                      {selectedChartIds.size} selected
+                    </span>
+                    {selectedChartIds.size === 1 && (
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        onClick={() => {
+                          const selectedId = Array.from(selectedChartIds)[0]
+                          const selectedChart = allCharts.find(c => c.id === selectedId)
+                          if (selectedChart) {
+                            const index = allCharts.findIndex(c => c.id === selectedId)
+                            handleChartSelect(selectedChart, index)
+                          }
+                        }}
+                      >
+                        View Selected
+                      </Button>
+                    )}
+                  </>
                 )}
                 <ToggleGroup type="single" value={previewMode} onValueChange={(value) => value && setPreviewMode(value as 'preview' | 'grid')}>
                   <ToggleGroupItem value="preview" aria-label="Preview mode" size="sm">
@@ -361,7 +383,7 @@ export function ChartEditModal() {
                       columns={currentLayoutSettings.columns} // Use actual layout columns
                       currentChartId={editingChart.id}
                       selectedChartIds={selectedChartIds}
-                      onChartSelect={handleChartSelect}
+                      onChartSelect={handleChartDoubleClick}
                       onToggleSelection={toggleChartSelection}
                     />
                   </div>
