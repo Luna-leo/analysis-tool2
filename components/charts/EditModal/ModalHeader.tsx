@@ -4,7 +4,6 @@ import React from "react"
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { cn } from "@/lib/utils"
 
 interface ModalHeaderProps {
   title: string
