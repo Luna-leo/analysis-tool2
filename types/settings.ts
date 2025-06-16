@@ -18,12 +18,18 @@ export interface PlotDefaults {
   }
 }
 
+export interface SeriesDefaults {
+  colorSequence: string[]
+  markerSequence: MarkerType[]
+}
+
 export interface ToolSettings {
   parameterSource: ParameterSource
 }
 
 export interface DisplaySettings {
   plotDefaults: PlotDefaults
+  seriesDefaults: SeriesDefaults
 }
 
 export interface UserSettings {
@@ -37,6 +43,8 @@ export interface SettingsStore {
   updateParameterSource: (source: ParameterSource) => void
   updatePlotDefaults: (plotDefaults: Partial<PlotDefaults>) => void
   resetPlotDefaults: () => void
+  updateSeriesDefaults: (seriesDefaults: Partial<SeriesDefaults>) => void
+  resetSeriesDefaults: () => void
   loadSettings: () => void
   saveSettings: () => void
 }

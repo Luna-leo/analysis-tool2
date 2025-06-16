@@ -9,7 +9,14 @@ import { ParameterSource } from "@/types/settings"
 import { PlotDefaultsSettings } from "./PlotDefaultsSettings"
 
 export function SettingsPage() {
-  const { settings, updateParameterSource, updatePlotDefaults, resetPlotDefaults } = useSettingsStore()
+  const { 
+    settings, 
+    updateParameterSource, 
+    updatePlotDefaults, 
+    resetPlotDefaults,
+    updateSeriesDefaults,
+    resetSeriesDefaults
+  } = useSettingsStore()
 
   const handleParameterSourceChange = (value: string) => {
     updateParameterSource(value as ParameterSource)
@@ -74,11 +81,14 @@ export function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Display Preferences with Plot Defaults */}
+        {/* Display Preferences with Plot and Series Defaults */}
         <PlotDefaultsSettings
           plotDefaults={settings.displaySettings.plotDefaults}
-          onUpdate={updatePlotDefaults}
-          onReset={resetPlotDefaults}
+          seriesDefaults={settings.displaySettings.seriesDefaults}
+          onUpdatePlot={updatePlotDefaults}
+          onResetPlot={resetPlotDefaults}
+          onUpdateSeries={updateSeriesDefaults}
+          onResetSeries={resetSeriesDefaults}
         />
 
         <Card>

@@ -1,4 +1,5 @@
-import { UserSettings, PlotDefaults } from '@/types/settings'
+import { UserSettings, PlotDefaults, SeriesDefaults } from '@/types/settings'
+import { defaultChartColors } from '@/utils/chartColors'
 
 /**
  * Default plot settings used across the application
@@ -20,6 +21,14 @@ export const DEFAULT_PLOT_SETTINGS: PlotDefaults = {
 } as const
 
 /**
+ * Default series settings for multiple data visualization
+ */
+export const DEFAULT_SERIES_SETTINGS: SeriesDefaults = {
+  colorSequence: [...defaultChartColors],
+  markerSequence: ['circle', 'square', 'triangle', 'diamond', 'star', 'cross']
+} as const
+
+/**
  * Default user settings used across the application
  */
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -27,7 +36,8 @@ export const DEFAULT_SETTINGS: UserSettings = {
     parameterSource: 'master'
   },
   displaySettings: {
-    plotDefaults: DEFAULT_PLOT_SETTINGS
+    plotDefaults: DEFAULT_PLOT_SETTINGS,
+    seriesDefaults: DEFAULT_SERIES_SETTINGS
   }
 } as const
 
