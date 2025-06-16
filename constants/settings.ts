@@ -1,4 +1,4 @@
-import { UserSettings, PlotDefaults, SeriesDefaults } from '@/types/settings'
+import { UserSettings, PlotDefaults, SeriesDefaults, PerformanceSettings } from '@/types/settings'
 import { defaultChartColors } from '@/utils/chartColors'
 
 /**
@@ -29,6 +29,37 @@ export const DEFAULT_SERIES_SETTINGS: SeriesDefaults = {
 } as const
 
 /**
+ * Default performance settings for optimal chart rendering
+ */
+export const DEFAULT_PERFORMANCE_SETTINGS: PerformanceSettings = {
+  rendering: {
+    canvasThreshold: 300,
+    lodHighThreshold: 1000,
+    lodMediumThreshold: 500,
+    maxSvgPoints: 5000,
+    targetFPS: 30
+  },
+  memory: {
+    warningThreshold: 80,
+    cacheMaxSize: 100,
+    cacheTTL: 5,
+    autoCleanupInterval: 300
+  },
+  dataProcessing: {
+    defaultSamplingPoints: 500,
+    samplingMethod: 'auto',
+    batchSize: 10,
+    virtualizationBuffer: 2
+  },
+  interaction: {
+    tooltipDelay: 200,
+    transitionDuration: 300,
+    resizeDebounce: 150,
+    enableAnimations: true
+  }
+} as const
+
+/**
  * Default user settings used across the application
  */
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -38,6 +69,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   displaySettings: {
     plotDefaults: DEFAULT_PLOT_SETTINGS,
     seriesDefaults: DEFAULT_SERIES_SETTINGS
-  }
+  },
+  performanceSettings: DEFAULT_PERFORMANCE_SETTINGS
 } as const
 

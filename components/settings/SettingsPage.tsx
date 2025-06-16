@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { useSettingsStore } from "@/stores/useSettingsStore"
 import { ParameterSource } from "@/types/settings"
 import { PlotDefaultsSettings } from "./PlotDefaultsSettings"
+import { PerformanceSettings } from "./PerformanceSettings"
 
 export function SettingsPage() {
   const { 
@@ -15,7 +16,9 @@ export function SettingsPage() {
     updatePlotDefaults, 
     resetPlotDefaults,
     updateSeriesDefaults,
-    resetSeriesDefaults
+    resetSeriesDefaults,
+    updatePerformanceSettings,
+    resetPerformanceSettings
   } = useSettingsStore()
 
   const handleParameterSourceChange = (value: string) => {
@@ -91,19 +94,12 @@ export function SettingsPage() {
           onResetSeries={resetSeriesDefaults}
         />
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Performance</CardTitle>
-            <CardDescription>
-              Optimize application performance based on your needs
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Performance settings will be available in a future update.
-            </p>
-          </CardContent>
-        </Card>
+        {/* Performance Settings */}
+        <PerformanceSettings
+          performanceSettings={settings.performanceSettings}
+          onUpdate={updatePerformanceSettings}
+          onReset={resetPerformanceSettings}
+        />
       </div>
     </div>
   )
