@@ -39,7 +39,8 @@ export interface PerformanceSettings {
   }
   dataProcessing: {
     defaultSamplingPoints: number
-    samplingMethod: 'lttb' | 'nth-point' | 'auto'
+    samplingMethod: 'lttb' | 'nth-point' | 'auto' | 'none'
+    enableSampling: boolean
     batchSize: number
     virtualizationBuffer: number // rows
   }

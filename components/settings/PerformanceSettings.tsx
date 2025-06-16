@@ -271,6 +271,23 @@ export function PerformanceSettings({
 
           <TabsContent value="data" className="space-y-6 mt-6">
             <div className="space-y-4">
+              {/* Enable Sampling */}
+              <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
+                <Label htmlFor="enable-sampling" className="cursor-pointer">
+                  <div>
+                    Enable Data Sampling
+                    <span className="text-xs text-muted-foreground block">
+                      Disable to plot all data points (may impact performance)
+                    </span>
+                  </div>
+                </Label>
+                <Switch
+                  id="enable-sampling"
+                  checked={performanceSettings.dataProcessing.enableSampling}
+                  onCheckedChange={(checked) => updateDataProcessingSettings('enableSampling', checked)}
+                />
+              </div>
+
               {/* Default Sampling Points */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
@@ -289,6 +306,7 @@ export function PerformanceSettings({
                   step={100}
                   value={[performanceSettings.dataProcessing.defaultSamplingPoints]}
                   onValueChange={([value]) => updateDataProcessingSettings('defaultSamplingPoints', value)}
+                  disabled={!performanceSettings.dataProcessing.enableSampling}
                 />
               </div>
 
@@ -298,6 +316,7 @@ export function PerformanceSettings({
                 <Select
                   value={performanceSettings.dataProcessing.samplingMethod}
                   onValueChange={(value) => updateDataProcessingSettings('samplingMethod', value)}
+                  disabled={!performanceSettings.dataProcessing.enableSampling}
                 >
                   <SelectTrigger id="sampling-method">
                     <SelectValue />
@@ -319,6 +338,12 @@ export function PerformanceSettings({
                       <div className="flex flex-col">
                         <span>Nth Point</span>
                         <span className="text-xs text-muted-foreground">Simple decimation</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="none">
+                      <div className="flex flex-col">
+                        <span>None</span>
+                        <span className="text-xs text-muted-foreground">No sampling (use all points)</span>
                       </div>
                     </SelectItem>
                   </SelectContent>

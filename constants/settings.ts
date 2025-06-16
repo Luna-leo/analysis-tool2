@@ -48,6 +48,7 @@ export const DEFAULT_PERFORMANCE_SETTINGS: PerformanceSettings = {
   dataProcessing: {
     defaultSamplingPoints: 500,
     samplingMethod: 'auto',
+    enableSampling: true,
     batchSize: 10,
     virtualizationBuffer: 2
   },
