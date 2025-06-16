@@ -121,8 +121,8 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
   private getPlotStyle(dataSourceId: string, dataSourceIndex: number, paramIndex: number) {
     const mode = this.plotStyles.mode
     
-    // Default style
-    const defaultColor = defaultChartColors[mode === 'parameter' ? paramIndex : dataSourceIndex]
+    // Default style with proper color based on mode
+    const defaultColor = defaultChartColors[mode === 'parameter' ? paramIndex : dataSourceIndex] || defaultChartColors[0]
     const defaultStyle = {
       marker: {
         type: 'circle' as MarkerType,
@@ -134,16 +134,30 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
         style: 'solid' as LineStyle,
         width: 2,
         color: defaultColor
-      }
+      },
+      legendText: ''
     }
 
+    let style: any
+    
     if (mode === 'datasource') {
-      return this.plotStyles.byDataSource?.[dataSourceId] || defaultStyle
+      style = this.plotStyles.byDataSource?.[dataSourceId]
     } else if (mode === 'parameter') {
-      return this.plotStyles.byParameter?.[paramIndex] || defaultStyle
+      style = this.plotStyles.byParameter?.[paramIndex]
     } else {
       const key = `${dataSourceId}-${paramIndex}`
-      return this.plotStyles.byBoth?.[key] || defaultStyle
+      style = this.plotStyles.byBoth?.[key]
+    }
+    
+    // Ensure the style has all required properties
+    if (!style) {
+      return defaultStyle
+    }
+    
+    return {
+      marker: style.marker || defaultStyle.marker,
+      line: style.line || defaultStyle.line,
+      legendText: style.legendText || defaultStyle.legendText
     }
   }
 
@@ -163,11 +177,11 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
         const paramIndex = d.seriesIndex
         const plotStyle = this.getPlotStyle(seriesId, dsIndex, paramIndex)
         
-        // Use plotStyle for marker settings, fallback to dataSourceStyles
-        const markerType = plotStyle?.marker?.type || style.markerShape || 'circle'
-        const markerSize = plotStyle?.marker?.size || style.markerSize || 6
-        const fillColor = plotStyle?.marker?.fillColor || style.markerColor || defaultChartColors[dsIndex % defaultChartColors.length]
-        const borderColor = plotStyle?.marker?.borderColor || style.markerColor || defaultChartColors[dsIndex % defaultChartColors.length]
+        // Use plotStyle for marker settings
+        const markerType = plotStyle.marker.type
+        const markerSize = plotStyle.marker.size
+        const fillColor = plotStyle.marker.fillColor
+        const borderColor = plotStyle.marker.borderColor
         
         return {
           x: this.scales.xScale(d.x as any),
@@ -278,7 +292,7 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
       }))
       
       // Render line with plot style
-      this.renderLine(lineData, yParam, plotStyle?.line?.color || defaultChartColors[paramIndex % defaultChartColors.length])
+      this.renderLine(lineData, yParam, plotStyle.line.color)
       
       // Render markers if requested
       if (showMarkers) {
@@ -311,18 +325,15 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
    * Render markers with plot style
    */
   private renderMarkersWithStyle(data: any[], param: any, plotStyle: any): void {
-    const paramIndex = data[0]?.seriesIndex || 0
-    const defaultColor = defaultChartColors[paramIndex % defaultChartColors.length]
-    
     const markers: MarkerConfig[] = data
       .filter(d => d[param.parameter] !== undefined)
       .map(d => ({
         x: this.scales.xScale(d.x as any),
         y: this.scales.yScale(d[param.parameter] as number),
-        type: plotStyle?.marker?.type || 'circle',
-        size: plotStyle?.marker?.size || 6,
-        fillColor: plotStyle?.marker?.fillColor || defaultColor,
-        borderColor: plotStyle?.marker?.borderColor || defaultColor,
+        type: plotStyle.marker.type,
+        size: plotStyle.marker.size,
+        fillColor: plotStyle.marker.fillColor,
+        borderColor: plotStyle.marker.borderColor,
         opacity: 1,
         data: {
           parameter: param.parameter,

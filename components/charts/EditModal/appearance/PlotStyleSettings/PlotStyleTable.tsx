@@ -8,6 +8,7 @@ import { LegendMode } from "@/types/plot-style"
 import { PlotStyleTableRow } from "./PlotStyleTableRow"
 import { usePlotStyleRows } from "./hooks/usePlotStyleRows"
 import { usePlotStyleUpdate } from "./hooks/usePlotStyleUpdate"
+import { getDefaultColor } from "@/utils/chartColors"
 
 interface PlotStyleTableProps {
   editingChart: ChartComponent
@@ -30,6 +31,7 @@ export function PlotStyleTable({
   
   const {
     initializePlotStyles,
+    initializeDefaultStylesForMode,
     getPlotStyle,
     updateMarkerStyle,
     updateLineStyle,
@@ -51,7 +53,28 @@ export function PlotStyleTable({
 
   const handleModeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newMode = e.target.value as LegendMode
-    updateMode(newMode)
+    
+    // Check if we need to initialize default styles for the new mode
+    const needsInitialization = (
+      (newMode === 'datasource' && (!editingChart.plotStyles?.byDataSource || Object.keys(editingChart.plotStyles.byDataSource).length === 0)) ||
+      (newMode === 'parameter' && (!editingChart.plotStyles?.byParameter || Object.keys(editingChart.plotStyles.byParameter).length === 0)) ||
+      (newMode === 'both' && (!editingChart.plotStyles?.byBoth || Object.keys(editingChart.plotStyles.byBoth).length === 0))
+    )
+    
+    if (needsInitialization) {
+      const newStyles = initializeDefaultStylesForMode(
+        newMode,
+        selectedDataSourceItems,
+        editingChart.yAxisParams || []
+      )
+      setEditingChart({
+        ...editingChart,
+        legendMode: newMode,
+        plotStyles: newStyles
+      })
+    } else {
+      updateMode(newMode)
+    }
   }
 
   const getTableHeaders = () => {
@@ -104,7 +127,26 @@ export function PlotStyleTable({
                 const dataSourceId = row.dataSource?.id || ''
                 const dataSourceIndex = row.dataSourceIndex || 0
                 const paramIndex = row.paramIndex
-                const plotStyle = getPlotStyle(dataSourceId, dataSourceIndex, paramIndex)
+                let plotStyle = getPlotStyle(dataSourceId, dataSourceIndex, paramIndex)
+                
+                // Ensure plotStyle has valid marker and line properties
+                if (!plotStyle || !plotStyle.marker || !plotStyle.line) {
+                  const defaultColor = getDefaultColor(mode === 'parameter' ? paramIndex : dataSourceIndex)
+                  plotStyle = {
+                    marker: plotStyle?.marker || {
+                      type: 'circle',
+                      size: 6,
+                      borderColor: defaultColor,
+                      fillColor: defaultColor
+                    },
+                    line: plotStyle?.line || {
+                      style: 'solid',
+                      width: 2,
+                      color: defaultColor
+                    },
+                    legendText: plotStyle?.legendText || row.legendText
+                  }
+                }
                 
                 return (
                   <PlotStyleTableRow

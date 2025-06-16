@@ -154,24 +154,96 @@ export const usePlotStyleUpdate = (
     setEditingChart({ ...editingChart, plotStyles })
   }, [editingChart, setEditingChart])
 
-  // Update mode
-  const updateMode = useCallback((mode: LegendMode) => {
-    const plotStyles = editingChart.plotStyles || {
+  // Initialize default styles for a mode
+  const initializeDefaultStylesForMode = useCallback((
+    mode: LegendMode,
+    dataSources: any[],
+    parameters: any[]
+  ) => {
+    const styles: any = {
       mode,
       byDataSource: {},
       byParameter: {},
       byBoth: {}
     }
-    
+
+    if (mode === 'datasource') {
+      // Create default style for each data source
+      dataSources.forEach((ds, idx) => {
+        const defaultColor = getDefaultColor(idx)
+        styles.byDataSource[ds.id] = {
+          marker: {
+            type: 'circle',
+            size: 6,
+            borderColor: defaultColor,
+            fillColor: defaultColor
+          },
+          line: {
+            style: 'solid',
+            width: 2,
+            color: defaultColor
+          },
+          legendText: ds.labelDescription ? `${ds.label} (${ds.labelDescription})` : ds.label
+        }
+      })
+    } else if (mode === 'parameter') {
+      // Create default style for each parameter
+      parameters.forEach((param, idx) => {
+        const defaultColor = getDefaultColor(idx)
+        styles.byParameter[idx] = {
+          marker: {
+            type: 'circle',
+            size: 6,
+            borderColor: defaultColor,
+            fillColor: defaultColor
+          },
+          line: {
+            style: 'solid',
+            width: 2,
+            color: defaultColor
+          },
+          legendText: param.parameter || 'Unnamed'
+        }
+      })
+    } else {
+      // Create default style for each combination
+      dataSources.forEach((ds, dsIdx) => {
+        parameters.forEach((param, paramIdx) => {
+          const key = `${ds.id}-${paramIdx}`
+          const defaultColor = getDefaultColor(dsIdx)
+          styles.byBoth[key] = {
+            marker: {
+              type: 'circle',
+              size: 6,
+              borderColor: defaultColor,
+              fillColor: defaultColor
+            },
+            line: {
+              style: 'solid',
+              width: 2,
+              color: defaultColor
+            },
+            legendText: `${ds.label}-${param.parameter || 'Unnamed'}`
+          }
+        })
+      })
+    }
+
+    return styles
+  }, [])
+
+  // Update mode
+  const updateMode = useCallback((mode: LegendMode) => {
     setEditingChart({ 
       ...editingChart, 
       legendMode: mode,
-      plotStyles: { ...plotStyles, mode }
+      plotStyles: { ...editingChart.plotStyles, mode }
     })
   }, [editingChart, setEditingChart])
 
   return {
     initializePlotStyles,
+    initializeDefaultStylesForMode,
     getPlotStyle,
     updateMarkerStyle,
     updateLineStyle,
