@@ -337,6 +337,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           onPointerDown={handleLegendPointerDown}
           style={legendPos ? { top: legendPos.y, left: legendPos.x } : undefined}
           className="absolute cursor-move z-20"
+          editingChart={editingChart}
           dataSources={selectedDataSourceItems}
           dataSourceStyles={dataSourceStyles}
         />

@@ -17,7 +17,9 @@ interface PlotStyleTableProps {
 }
 
 export function PlotStyleTable({ editingChart, setEditingChart, selectedDataSourceItems }: PlotStyleTableProps) {
-  const [appearanceMode, setAppearanceMode] = useState<"datasource" | "parameter" | "both">("both")
+  const [appearanceMode, setAppearanceMode] = useState<"datasource" | "parameter" | "both">(
+    editingChart.legendMode || "both"
+  )
 
   return (
     <div>
@@ -28,11 +30,11 @@ export function PlotStyleTable({ editingChart, setEditingChart, selectedDataSour
           <select
             className="h-7 text-xs border rounded-md px-2"
             value={appearanceMode}
-            onChange={(e) =>
-              setAppearanceMode(
-                e.target.value as "datasource" | "parameter" | "both"
-              )
-            }
+            onChange={(e) => {
+              const mode = e.target.value as "datasource" | "parameter" | "both"
+              setAppearanceMode(mode)
+              setEditingChart({ ...editingChart, legendMode: mode })
+            }}
           >
             <option value="datasource">By Data Source</option>
             <option value="parameter">By Parameter</option>
