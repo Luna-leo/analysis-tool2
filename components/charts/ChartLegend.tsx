@@ -84,11 +84,31 @@ export const ChartLegend = React.memo(
           )}
         >
           {items.map((item) => {
-            // Use PlotStyleBadge if plotStyle is available
-            if (item.plotStyle?.marker && item.plotStyle?.line) {
+            // Use PlotStyleBadge if plotStyle is available (even partially)
+            if (item.plotStyle) {
+              // Ensure plotStyle has required properties with defaults
+              const defaultColor = getDefaultColor(item.colorIndex)
+              const completeStyle = {
+                marker: item.plotStyle.marker || {
+                  type: 'circle' as const,
+                  size: 6,
+                  borderColor: defaultColor,
+                  fillColor: defaultColor
+                },
+                line: item.plotStyle.line || {
+                  style: 'solid' as const,
+                  width: 2,
+                  color: defaultColor
+                },
+                legendText: item.plotStyle.legendText || item.label
+              }
               return (
                 <div key={item.key} className="flex items-center gap-1 whitespace-nowrap">
-                  <PlotStyleBadge plotStyle={item.plotStyle} />
+                  <PlotStyleBadge 
+                    plotStyle={completeStyle} 
+                    showLines={editingChart.showLines ?? false}
+                    showMarkers={editingChart.showMarkers ?? true}
+                  />
                   <span className="font-medium text-black">{item.label}</span>
                 </div>
               )

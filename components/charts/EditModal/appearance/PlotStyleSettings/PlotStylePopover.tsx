@@ -45,22 +45,86 @@ export const PlotStylePopover = React.memo(({
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="h-7 px-2">
           <div className="flex items-center gap-1.5">
-            {/* Marker preview */}
-            <div 
-              className="w-3 h-3 border rounded-full" 
-              style={{
-                backgroundColor: currentMarker.fillColor,
-                borderColor: currentMarker.borderColor
-              }}
-            />
-            {/* Line preview */}
-            <div 
-              className="w-4 h-0 border-b-2"
-              style={{
-                borderColor: currentLine.color,
-                borderStyle: currentLine.style
-              }}
-            />
+            {/* Marker and Line preview */}
+            <svg width="20" height="12" className="flex-shrink-0">
+              {/* Line */}
+              <line
+                x1="0"
+                y1="6"
+                x2="20"
+                y2="6"
+                stroke={currentLine.color}
+                strokeWidth={Math.min(currentLine.width, 2)}
+                strokeDasharray={currentLine.style === 'dashed' ? '3,2' : currentLine.style === 'dotted' ? '1,2' : 'none'}
+              />
+              
+              {/* Marker at center */}
+              {currentMarker.type === 'circle' && (
+                <circle
+                  cx="10"
+                  cy="6"
+                  r="4"
+                  fill={currentMarker.fillColor}
+                  stroke={currentMarker.borderColor}
+                  strokeWidth="0.5"
+                />
+              )}
+              {currentMarker.type === 'square' && (
+                <rect
+                  x="6"
+                  y="2"
+                  width="8"
+                  height="8"
+                  fill={currentMarker.fillColor}
+                  stroke={currentMarker.borderColor}
+                  strokeWidth="0.5"
+                />
+              )}
+              {currentMarker.type === 'triangle' && (
+                <polygon
+                  points="10,2 14,10 6,10"
+                  fill={currentMarker.fillColor}
+                  stroke={currentMarker.borderColor}
+                  strokeWidth="0.5"
+                />
+              )}
+              {currentMarker.type === 'diamond' && (
+                <polygon
+                  points="10,2 14,6 10,10 6,6"
+                  fill={currentMarker.fillColor}
+                  stroke={currentMarker.borderColor}
+                  strokeWidth="0.5"
+                />
+              )}
+              {currentMarker.type === 'star' && (
+                <polygon
+                  points="10,2 11.8,5.5 15.5,5.5 12.3,7.8 13.9,11.5 10,9 6.1,11.5 7.7,7.8 4.5,5.5 8.2,5.5"
+                  fill={currentMarker.fillColor}
+                  stroke={currentMarker.borderColor}
+                  strokeWidth="0.5"
+                />
+              )}
+              {currentMarker.type === 'cross' && (
+                <g>
+                  <line
+                    x1="6"
+                    y1="6"
+                    x2="14"
+                    y2="6"
+                    stroke={currentMarker.borderColor}
+                    strokeWidth="1"
+                  />
+                  <line
+                    x1="10"
+                    y1="2"
+                    x2="10"
+                    y2="10"
+                    stroke={currentMarker.borderColor}
+                    strokeWidth="1"
+                  />
+                </g>
+              )}
+            </svg>
             <span className="text-xs">Style</span>
           </div>
         </Button>
