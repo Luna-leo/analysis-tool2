@@ -58,6 +58,7 @@ export const usePlotStyleUpdate = (
   // Update marker style
   const updateMarkerStyle = useCallback((
     dataSourceId: string,
+    dataSourceIndex: number,
     paramIndex: number,
     marker: MarkerSettings
   ) => {
@@ -91,6 +92,7 @@ export const usePlotStyleUpdate = (
   // Update line style
   const updateLineStyle = useCallback((
     dataSourceId: string,
+    dataSourceIndex: number,
     paramIndex: number,
     line: LineSettings
   ) => {
@@ -124,6 +126,7 @@ export const usePlotStyleUpdate = (
   // Update legend text
   const updateLegend = useCallback((
     dataSourceId: string,
+    dataSourceIndex: number,
     paramIndex: number,
     legendText: string
   ) => {

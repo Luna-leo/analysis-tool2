@@ -90,6 +90,7 @@ export function PlotStyleTable({
 
   return (
     <div className="space-y-4 px-4">
+
       {/* Plot Display Options */}
       <div className="flex items-center gap-2">
         <Label className="text-sm font-medium w-20">Plot</Label>
@@ -101,7 +102,7 @@ export function PlotStyleTable({
               onCheckedChange={(checked) => {
                 setEditingChart({
                   ...editingChart,
-                  showMarkers: checked,
+                  showMarkers: checked as boolean,
                 })
               }}
             />
@@ -114,7 +115,7 @@ export function PlotStyleTable({
               onCheckedChange={(checked) => {
                 setEditingChart({
                   ...editingChart,
-                  showLines: checked,
+                  showLines: checked as boolean,
                 })
               }}
             />
@@ -201,6 +202,7 @@ export function PlotStyleTable({
           </Table>
         </div>
       </div>
+
     </div>
   )
 }
