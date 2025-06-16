@@ -19,6 +19,7 @@ interface ScatterDataPoint {
   dataSourceId: string
   dataSourceLabel: string
   dataSourceIndex?: number
+  paramIndex?: number  // Add parameter index for parameter-based styling
 }
 
 interface ScatterPlotConfig extends BaseChartConfig {
@@ -119,7 +120,7 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
    * Get plot style for a specific data point
    */
   private getPlotStyle(dataSourceId: string, dataSourceIndex: number, paramIndex: number) {
-    const mode = this.plotStyles.mode
+    const mode = this.plotStyles?.mode || 'datasource'
     
     // Default style with proper color based on mode
     const defaultColor = defaultChartColors[mode === 'parameter' ? paramIndex : dataSourceIndex] || defaultChartColors[0]
@@ -141,12 +142,12 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
     let style: any
     
     if (mode === 'datasource') {
-      style = this.plotStyles.byDataSource?.[dataSourceId]
+      style = this.plotStyles?.byDataSource?.[dataSourceId]
     } else if (mode === 'parameter') {
-      style = this.plotStyles.byParameter?.[paramIndex]
+      style = this.plotStyles?.byParameter?.[paramIndex]
     } else {
       const key = `${dataSourceId}-${paramIndex}`
-      style = this.plotStyles.byBoth?.[key]
+      style = this.plotStyles?.byBoth?.[key]
     }
     
     // Ensure the style has all required properties
@@ -174,7 +175,7 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
       
       const markers: MarkerConfig[] = points.map(d => {
         const dsIndex = d.dataSourceIndex || 0
-        const paramIndex = d.seriesIndex
+        const paramIndex = d.paramIndex !== undefined ? d.paramIndex : d.seriesIndex
         const plotStyle = this.getPlotStyle(seriesId, dsIndex, paramIndex)
         
         // Use plotStyle for marker settings
@@ -252,7 +253,11 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
     const dataByDsAndParam = new Map<string, ScatterDataPoint[]>()
     
     data.forEach(d => {
-      const key = `${d.dataSourceId}-${d.seriesIndex}`
+      // Use paramIndex for grouping when in parameter mode
+      const groupIndex = this.plotStyles?.mode === 'parameter' && d.paramIndex !== undefined 
+        ? d.paramIndex 
+        : d.seriesIndex
+      const key = `${d.dataSourceId}-${groupIndex}`
       if (!dataByDsAndParam.has(key)) {
         dataByDsAndParam.set(key, [])
       }
@@ -264,6 +269,8 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
       const [dataSourceId, paramIndexStr] = key.split('-')
       const paramIndex = parseInt(paramIndexStr)
       const dataSourceIndex = seriesData[0]?.dataSourceIndex || 0
+      // Use paramIndex from data point if available
+      const actualParamIndex = seriesData[0]?.paramIndex !== undefined ? seriesData[0].paramIndex : paramIndex
       
       // Sort data by x value for proper line rendering
       const sortedData = seriesData.sort((a, b) => {
@@ -274,10 +281,10 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
       })
       
       // Get plot style for this combination
-      const plotStyle = this.getPlotStyle(dataSourceId, dataSourceIndex, paramIndex)
+      const plotStyle = this.getPlotStyle(dataSourceId, dataSourceIndex, actualParamIndex)
       
       // Find the corresponding yParam
-      const yParam = this.editingChart.yAxisParams?.[paramIndex]
+      const yParam = this.editingChart.yAxisParams?.[actualParamIndex]
       if (!yParam) return
       
       // Create line data

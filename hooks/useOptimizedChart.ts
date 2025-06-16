@@ -1,7 +1,7 @@
-import React, { useCallback, useRef, useMemo, useEffect } from 'react'
+import React, { useRef, useMemo, useEffect } from 'react'
 import { debounce } from 'lodash'
 import { ChartComponent, EventInfo } from '@/types'
-import { CSVDataPoint, useCSVDataStore } from '@/stores/useCSVDataStore'
+import { useCSVDataStore } from '@/stores/useCSVDataStore'
 import { useSharedDataCache } from './useSharedDataCache'
 import { adaptiveSample } from '@/utils/dataSampling'
 
@@ -26,6 +26,7 @@ interface ChartDataPoint {
   dataSourceId: string
   dataSourceLabel: string
   dataSourceIndex?: number
+  paramIndex?: number  // Add parameter index for parameter-based styling
 }
 
 export function useOptimizedChart({
@@ -112,8 +113,8 @@ export function useOptimizedChart({
                 let xValue: number | string | Date | undefined
                 
                 if (editingChart.xAxisType === 'datetime') {
-                  // Ensure timestamp is a Date object
-                  xValue = point.timestamp instanceof Date ? point.timestamp : new Date(point.timestamp)
+                  // Ensure timestamp is a Date object (timestamp is always a string in DataPoint)
+                  xValue = new Date(point.timestamp)
                 } else if (rawXValue !== undefined) {
                   const numValue = Number(rawXValue)
                   // Only use the value if it's a valid number
@@ -145,7 +146,8 @@ export function useOptimizedChart({
                       timestamp: point.timestamp,
                       dataSourceId: dataSource.id,
                       dataSourceLabel: dataSource.label,
-                      dataSourceIndex: dataSourceIndex  // Add dataSourceIndex for consistent coloring
+                      dataSourceIndex: dataSourceIndex,  // Add dataSourceIndex for consistent coloring
+                      paramIndex: index  // Add parameter index for parameter-based styling
                     })
                   }
                 })

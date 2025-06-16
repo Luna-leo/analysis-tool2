@@ -3,6 +3,7 @@
 import React from "react"
 import { EventInfo, DataSourceStyle, ChartComponent } from "@/types"
 import { DataSourceBadgePreview } from "./DataSourceBadgePreview"
+import { PlotStyleBadge } from "./PlotStyleBadge"
 import { getDefaultColor } from "@/utils/chartColors"
 import { cn } from "@/lib/utils"
 
@@ -28,20 +29,31 @@ export const ChartLegend = React.memo(
       if (!dataSources || dataSources.length === 0) return null
 
       const mode = editingChart.plotStyles?.mode || editingChart.legendMode || 'datasource'
-      const items: { key: string; label: string; colorIndex: number; dsId?: string }[] = []
+      const items: { key: string; label: string; colorIndex: number; dsId?: string; plotStyle?: any }[] = []
 
       if (mode === 'datasource') {
         dataSources.forEach((ds, idx) => {
           const plotStyle = editingChart.plotStyles?.byDataSource?.[ds.id]
           const customLabel = plotStyle?.legendText
           const defaultLabel = ds.labelDescription ? `${ds.label} (${ds.labelDescription})` : ds.label
-          items.push({ key: ds.id, label: customLabel || defaultLabel, colorIndex: idx, dsId: ds.id })
+          items.push({ 
+            key: ds.id, 
+            label: customLabel || defaultLabel, 
+            colorIndex: idx, 
+            dsId: ds.id,
+            plotStyle 
+          })
         })
       } else if (mode === 'parameter') {
         editingChart.yAxisParams?.forEach((param, idx) => {
           const plotStyle = editingChart.plotStyles?.byParameter?.[idx]
           const customLabel = plotStyle?.legendText
-          items.push({ key: `param-${idx}`, label: customLabel || param.parameter || 'Unnamed', colorIndex: idx })
+          items.push({ 
+            key: `param-${idx}`, 
+            label: customLabel || param.parameter || 'Unnamed', 
+            colorIndex: idx,
+            plotStyle 
+          })
         })
       } else {
         dataSources.forEach((ds, dsIdx) => {
@@ -54,7 +66,8 @@ export const ChartLegend = React.memo(
               key,
               label: customLabel || defaultLabel,
               colorIndex: dsIdx,
-              dsId: ds.id
+              dsId: ds.id,
+              plotStyle
             })
           })
         })
@@ -70,15 +83,27 @@ export const ChartLegend = React.memo(
             className
           )}
         >
-          {items.map((item) => (
-            <div key={item.key} className="flex items-center gap-1 whitespace-nowrap">
-              <DataSourceBadgePreview
-                dataSourceStyle={item.dsId ? dataSourceStyles[item.dsId] : undefined}
-                defaultColor={getDefaultColor(item.colorIndex)}
-              />
-              <span className="font-medium text-black">{item.label}</span>
-            </div>
-          ))}
+          {items.map((item) => {
+            // Use PlotStyleBadge if plotStyle is available
+            if (item.plotStyle?.marker && item.plotStyle?.line) {
+              return (
+                <div key={item.key} className="flex items-center gap-1 whitespace-nowrap">
+                  <PlotStyleBadge plotStyle={item.plotStyle} />
+                  <span className="font-medium text-black">{item.label}</span>
+                </div>
+              )
+            }
+            // Fallback to DataSourceBadgePreview for backward compatibility
+            return (
+              <div key={item.key} className="flex items-center gap-1 whitespace-nowrap">
+                <DataSourceBadgePreview
+                  dataSourceStyle={item.dsId ? dataSourceStyles[item.dsId] : undefined}
+                  defaultColor={getDefaultColor(item.colorIndex)}
+                />
+                <span className="font-medium text-black">{item.label}</span>
+              </div>
+            )
+          })}
         </div>
       )
     }
