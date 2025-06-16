@@ -14,6 +14,7 @@ interface TabContentProps {
   selectedDataSourceItems?: EventInfo[]
   setSelectedDataSourceItems?: React.Dispatch<React.SetStateAction<EventInfo[]>>
   includeDataSourceTab?: boolean
+  isBulkEdit?: boolean
 }
 
 export function TabContent({
@@ -22,7 +23,8 @@ export function TabContent({
   setEditingChart,
   selectedDataSourceItems = [],
   setSelectedDataSourceItems,
-  includeDataSourceTab = true
+  includeDataSourceTab = true,
+  isBulkEdit = false
 }: TabContentProps) {
   switch (activeTab) {
     case "datasource":
@@ -43,6 +45,7 @@ export function TabContent({
             editingChart={editingChart} 
             setEditingChart={setEditingChart}
             selectedDataSourceItems={selectedDataSourceItems}
+            isBulkEdit={isBulkEdit}
           />
         </div>
       )

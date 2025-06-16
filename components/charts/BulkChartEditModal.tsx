@@ -92,6 +92,7 @@ export function BulkChartEditModal({ open, onOpenChange, file }: BulkChartEditMo
                 setEditingChart={setBulkSettings}
                 selectedDataSourceItems={selectedDataSourceItems}
                 includeDataSourceTab={false}
+                isBulkEdit={true}
               />
             </div>
           </div>
