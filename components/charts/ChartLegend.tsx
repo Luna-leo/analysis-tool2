@@ -32,18 +32,21 @@ export const ChartLegend = React.memo(
 
       if (mode === 'datasource') {
         dataSources.forEach((ds, idx) => {
-          items.push({ key: ds.id, label: ds.label, colorIndex: idx, dsId: ds.id })
+          const customLabel = editingChart.dataSourceLegends?.[ds.id]
+          const defaultLabel = ds.labelDescription ? `${ds.label} (${ds.labelDescription})` : ds.label
+          items.push({ key: ds.id, label: customLabel || defaultLabel, colorIndex: idx, dsId: ds.id })
         })
       } else if (mode === 'parameter') {
         editingChart.yAxisParams?.forEach((param, idx) => {
-          items.push({ key: `param-${idx}`, label: param.parameter || 'Unnamed', colorIndex: idx })
+          items.push({ key: `param-${idx}`, label: param.legendText || param.parameter || 'Unnamed', colorIndex: idx })
         })
       } else {
         dataSources.forEach((ds, dsIdx) => {
           editingChart.yAxisParams?.forEach((param, pIdx) => {
+            const defaultLabel = `${ds.label}-${param.parameter || 'Unnamed'}`
             items.push({
               key: `${ds.id}-${pIdx}`,
-              label: `${ds.label} - ${param.parameter || 'Unnamed'}`,
+              label: param.legendText || defaultLabel,
               colorIndex: dsIdx,
               dsId: ds.id
             })

@@ -156,6 +156,8 @@ export interface ChartComponent {
     // Unit conversion
     unit?: string
     unitConversionId?: string
+    // Legend text
+    legendText?: string
   }>
   fileId?: string
   type?: string
@@ -166,6 +168,7 @@ export interface ChartComponent {
     yRatio: number
   }
   legendMode?: 'datasource' | 'parameter' | 'both'
+  dataSourceLegends?: Record<string, string> // For storing legend text per data source ID
 }
 
 export interface FileNode {

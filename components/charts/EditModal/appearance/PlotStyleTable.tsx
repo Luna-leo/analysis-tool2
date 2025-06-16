@@ -32,7 +32,7 @@ export function PlotStyleTable({ editingChart, setEditingChart, selectedDataSour
     if (selectedDataSourceItems.length === 0 || !editingChart.yAxisParams || editingChart.yAxisParams.length === 0) {
       return (
         <TableRow>
-          <TableCell colSpan={appearanceMode === "both" ? 4 : 3} className="text-center text-xs text-muted-foreground py-4">
+          <TableCell colSpan={appearanceMode === "both" ? 5 : 4} className="text-center text-xs text-muted-foreground py-4">
             {selectedDataSourceItems.length === 0 
               ? "No data sources selected. Please select data sources in the DataSource tab."
               : "No Y parameters configured. Please add parameters in the Parameters tab."}
@@ -58,6 +58,23 @@ export function PlotStyleTable({ editingChart, setEditingChart, selectedDataSour
               </div>
             </TableCell>
             <TableCell className="text-xs">
+              <Input
+                type="text"
+                value={editingChart.dataSourceLegends?.[dataSource.id] || (dataSource.labelDescription ? `${dataSource.label} (${dataSource.labelDescription})` : dataSource.label)}
+                onChange={(e) => {
+                  setEditingChart({ 
+                    ...editingChart, 
+                    dataSourceLegends: {
+                      ...editingChart.dataSourceLegends,
+                      [dataSource.id]: e.target.value
+                    }
+                  })
+                }}
+                className="h-7 text-xs"
+                placeholder="Enter legend text"
+              />
+            </TableCell>
+            <TableCell className="text-xs">
               {renderMarkerSettings(param, 0, dataSourceIndex)}
             </TableCell>
             <TableCell className="text-xs">
@@ -80,6 +97,22 @@ export function PlotStyleTable({ editingChart, setEditingChart, selectedDataSour
               </div>
               <div className="text-muted-foreground">Axis {param.axisNo || 1}</div>
             </div>
+          </TableCell>
+          <TableCell className="text-xs">
+            <Input
+              type="text"
+              value={param.legendText || param.parameter || "Unnamed"}
+              onChange={(e) => {
+                const newParams = [...(editingChart.yAxisParams || [])]
+                newParams[paramIndex] = {
+                  ...newParams[paramIndex],
+                  legendText: e.target.value
+                }
+                setEditingChart({ ...editingChart, yAxisParams: newParams })
+              }}
+              className="h-7 text-xs"
+              placeholder="Enter legend text"
+            />
           </TableCell>
           <TableCell className="text-xs">
             {renderMarkerSettings(param, paramIndex)}
@@ -114,6 +147,22 @@ export function PlotStyleTable({ editingChart, setEditingChart, selectedDataSour
                   </div>
                   <div className="text-muted-foreground">Axis {param.axisNo || 1}</div>
                 </div>
+              </TableCell>
+              <TableCell className="text-xs">
+                <Input
+                  type="text"
+                  value={param.legendText || `${dataSource.label}-${param.parameter || "Unnamed"}`}
+                  onChange={(e) => {
+                    const newParams = [...(editingChart.yAxisParams || [])]
+                    newParams[paramIndex] = {
+                      ...newParams[paramIndex],
+                      legendText: e.target.value
+                    }
+                    setEditingChart({ ...editingChart, yAxisParams: newParams })
+                  }}
+                  className="h-7 text-xs"
+                  placeholder="Enter legend text"
+                />
               </TableCell>
               <TableCell className="text-xs">
                 {renderMarkerSettings(param, paramIndex, dataSourceIndex)}
@@ -389,6 +438,7 @@ export function PlotStyleTable({ editingChart, setEditingChart, selectedDataSour
               {appearanceMode !== "datasource" && (
                 <TableHead className="text-xs">Parameter</TableHead>
               )}
+              <TableHead className="text-xs">Legend</TableHead>
               <TableHead className="text-xs">Marker</TableHead>
               <TableHead className="text-xs">Line</TableHead>
             </TableRow>
