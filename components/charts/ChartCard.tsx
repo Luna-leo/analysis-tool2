@@ -59,7 +59,7 @@ const ChartCardComponent = ({
 }: ChartCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
-  const { setEditingChart, setEditModalOpen } = useUIStore()
+  const { setEditingChart, setEditingChartWithIndex, setEditModalOpen, editingChart } = useUIStore()
   const { duplicateChart, deleteChart } = useFileStore()
   const { settings } = useSettingsStore()
   
@@ -67,9 +67,9 @@ const ChartCardComponent = ({
   const handleMouseLeave = useCallback(() => setIsHovered(false), [])
   
   const handleEdit = useCallback(() => {
-    setEditingChart(chart)
+    setEditingChartWithIndex(chart, index)
     setEditModalOpen(true)
-  }, [setEditingChart, setEditModalOpen, chart])
+  }, [setEditingChartWithIndex, setEditModalOpen, chart, index])
 
   const handleDuplicate = useCallback(() => {
     duplicateChart(fileId, chart.id)
@@ -104,13 +104,15 @@ const ChartCardComponent = ({
   }, [index, onDrop])
 
   const isDropTarget = dragOverIndex === index
+  const isEditing = editingChart?.id === chart.id
 
   return (
     <div
       className={cn(
         "bg-card border border-gray-400 rounded-sm flex flex-col relative group h-full transition-all duration-200 cursor-move select-none",
         isDragging && "opacity-50 scale-105",
-        isDropTarget && "ring-2 ring-primary ring-offset-2 bg-primary/5"
+        isDropTarget && "ring-2 ring-primary ring-offset-2 bg-primary/5",
+        isEditing && "ring-2 ring-blue-500 shadow-lg border-blue-500"
       )}
       style={{
         width: width ? `${width}px` : undefined,

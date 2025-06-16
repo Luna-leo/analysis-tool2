@@ -53,10 +53,18 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
         const cardMinHeight = isCompactLayout ? 140 : 180
         const chartMinHeight = isCompactLayout ? 60 : 80
 
-        setChartSizes({
-          cardMinHeight,
-          chartMinHeight,
-          isCompactLayout,
+        setChartSizes(prev => {
+          // Only update if values actually changed
+          if (prev.cardMinHeight === cardMinHeight && 
+              prev.chartMinHeight === chartMinHeight && 
+              prev.isCompactLayout === isCompactLayout) {
+            return prev
+          }
+          return {
+            cardMinHeight,
+            chartMinHeight,
+            isCompactLayout,
+          }
         })
       }
 
@@ -71,7 +79,7 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
         resizeObserver.disconnect()
       }
     }
-  }, [layoutSettingsMap, activeTab, file.id, currentSettings])
+  }, [layoutSettingsMap, activeTab, file.id, currentSettings.rows, currentSettings.columns])
 
   // Update local charts when file.charts changes
   useEffect(() => {

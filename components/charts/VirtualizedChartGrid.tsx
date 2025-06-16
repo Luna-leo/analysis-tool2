@@ -199,9 +199,11 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     const scrollTop = container.scrollTop
     const containerHeight = container.clientHeight
     
-    // Calculate rough item height based on chart sizes
-    const itemHeight = chartSizes.cardMinHeight + (chartSizes.isCompactLayout ? 2 : 4)
-    const totalRows = Math.ceil((localCharts.length || 0) / currentSettings.columns)
+    // Calculate rough item height based on layout settings
+    const isCompactLayout = currentSettings.rows >= 3 || currentSettings.columns >= 3
+    const cardMinHeight = isCompactLayout ? 140 : 180
+    const gap = isCompactLayout ? 2 : 4
+    const itemHeight = cardMinHeight + gap
     
     // Calculate visible range with smaller buffer for better performance
     const visibleStart = Math.floor(scrollTop / itemHeight) * currentSettings.columns
@@ -213,7 +215,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     const end = Math.min(localCharts.length || 0, visibleEnd + bufferSize)
     
     setVisibleRange({ start, end })
-  }, [localCharts.length, currentSettings.columns, chartSizes])
+  }, [localCharts.length, currentSettings.columns, currentSettings.rows])
   
   // Update chart sizes
   useEffect(() => {
@@ -221,12 +223,20 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     const cardMinHeight = isCompactLayout ? 140 : 180
     const chartMinHeight = isCompactLayout ? 60 : 80
     
-    setChartSizes({
-      cardMinHeight,
-      chartMinHeight,
-      isCompactLayout,
+    setChartSizes(prev => {
+      // Only update if values actually changed
+      if (prev.cardMinHeight === cardMinHeight && 
+          prev.chartMinHeight === chartMinHeight && 
+          prev.isCompactLayout === isCompactLayout) {
+        return prev
+      }
+      return {
+        cardMinHeight,
+        chartMinHeight,
+        isCompactLayout,
+      }
     })
-  }, [currentSettings])
+  }, [currentSettings.rows, currentSettings.columns])
   
   // Handle scroll with throttle for better performance
   useEffect(() => {
@@ -255,10 +265,8 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     const container = contentRef.current
     container.addEventListener('scroll', handleScroll, { passive: true })
     
-    // Initial range calculation with small delay to ensure DOM is ready
-    requestAnimationFrame(() => {
-      updateVisibleRange()
-    })
+    // Initial range calculation
+    updateVisibleRange()
     
     return () => {
       if (rafId) cancelAnimationFrame(rafId)

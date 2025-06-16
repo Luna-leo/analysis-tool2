@@ -8,13 +8,49 @@ import { ChartPreview } from "./ChartPreview"
 import { ModalHeader } from "./EditModal/ModalHeader"
 import { TabNavigation, TabType } from "./EditModal/TabNavigation"
 import { TabContent } from "./EditModal/TabContent"
-import type { EventInfo } from "@/types"
+import { ChartThumbnailGrid } from "./EditModal/ChartThumbnailGrid"
+import type { EventInfo, ChartComponent } from "@/types"
 
 export function ChartEditModal() {
-  const { editingChart, editModalOpen, setEditingChart, setEditModalOpen } = useUIStore()
+  const { editingChart, editingChartIndex, editModalOpen, setEditingChart, setEditModalOpen, navigateToNextChart, navigateToPreviousChart } = useUIStore()
   const { openTabs, activeTab: activeFileTab, updateFileCharts, updateFileDataSources } = useFileStore()
   const [activeTab, setActiveTab] = useState<TabType>("datasource")
   const [dataSourceStyles, setDataSourceStyles] = useState<{ [dataSourceId: string]: any }>({})
+
+  // Keyboard shortcut handlers
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!editModalOpen || !editingChart) return
+
+      // Ctrl/Cmd + Arrow keys for navigation
+      if (e.ctrlKey || e.metaKey) {
+        const targetFileId = editingChart.fileId || activeFileTab
+        const currentFile = openTabs.find(tab => tab.id === targetFileId)
+        const allCharts = currentFile?.charts || []
+
+        if (e.key === 'ArrowRight') {
+          e.preventDefault()
+          navigateToNextChart(allCharts)
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault()
+          navigateToPreviousChart(allCharts)
+        } else if (e.key >= '1' && e.key <= '9') {
+          // Ctrl/Cmd + Number to jump to specific chart
+          e.preventDefault()
+          const index = parseInt(e.key) - 1
+          if (index < allCharts.length) {
+            const chart = allCharts[index]
+            setEditingChart(chart)
+            useUIStore.getState().setEditingChartWithIndex(chart, index)
+            setActiveTab("datasource")
+          }
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [editModalOpen, editingChart, activeFileTab, openTabs, navigateToNextChart, navigateToPreviousChart])
 
   // Initialize dataSourceStyles from FileNode when modal opens
   React.useEffect(() => {
@@ -39,7 +75,7 @@ export function ChartEditModal() {
 
   if (!editingChart) return null
 
-  const handleSave = () => {
+  const handleSave = (closeModal = true) => {
     // Find the current file based on fileId from editingChart
     const targetFileId = editingChart.fileId || activeFileTab
     const currentFile = openTabs.find(tab => tab.id === targetFileId)
@@ -74,7 +110,21 @@ export function ChartEditModal() {
       updateFileCharts(currentFile.id, updatedCharts)
     }
     
-    setEditModalOpen(false)
+    if (closeModal) {
+      setEditModalOpen(false)
+    }
+  }
+
+  const handleSaveAndNext = () => {
+    handleSave(false) // Save without closing modal
+    navigateToNextChart(allCharts) // Navigate to next chart
+    setActiveTab("datasource") // Reset to first tab
+  }
+
+  const handleChartSelect = (chart: ChartComponent, index: number) => {
+    setEditingChart(chart)
+    useUIStore.getState().setEditingChartWithIndex(chart, index)
+    setActiveTab("datasource") // Reset to first tab when switching charts
   }
 
   const handleCancel = () => {
@@ -90,6 +140,7 @@ export function ChartEditModal() {
   const targetFileId = editingChart.fileId || activeFileTab
   const currentFile = openTabs.find(tab => tab.id === targetFileId)
   const selectedDataSourceItems = currentFile?.selectedDataSources || []
+  const allCharts = currentFile?.charts || []
 
   const handleSetSelectedDataSourceItems = (items: React.SetStateAction<EventInfo[]>) => {
     if (typeof items === 'function') {
@@ -102,17 +153,31 @@ export function ChartEditModal() {
 
   return (
     <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-      <DialogContent className="max-w-[95vw] w-[95vw] h-[90vh] flex flex-col overflow-hidden" hideCloseButton>
+      <DialogContent className="max-w-[95vw] w-[95vw] h-[95vh] flex flex-col overflow-hidden" hideCloseButton>
         <DialogDescription className="sr-only">
           Edit chart settings including data source, parameters, and appearance
         </DialogDescription>
         <ModalHeader
           title={editingChart.title}
           onCancel={handleCancel}
-          onSave={handleSave}
+          onSave={() => handleSave(true)}
+          currentIndex={editingChartIndex}
+          totalCharts={allCharts.length}
+          onPreviousChart={() => navigateToPreviousChart(allCharts)}
+          onNextChart={() => navigateToNextChart(allCharts)}
+          onSaveAndNext={handleSaveAndNext}
         />
 
-        <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
+        {allCharts.length > 1 && (
+          <ChartThumbnailGrid
+            charts={allCharts}
+            currentChartId={editingChart.id}
+            onChartSelect={handleChartSelect}
+            className="mx-6 mt-2"
+          />
+        )}
+
+        <div className="grid grid-cols-2 gap-4 flex-1 min-h-0 mt-4">
           <div className="border rounded-lg p-4 overflow-hidden h-full flex flex-col">
             <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} includeDataSourceTab={true} />
             

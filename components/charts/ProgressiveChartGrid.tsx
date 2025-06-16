@@ -63,12 +63,20 @@ export const ProgressiveChartGrid = React.memo(function ProgressiveChartGrid({
     const cardMinHeight = isCompactLayout ? 140 : 180
     const chartMinHeight = isCompactLayout ? 60 : 80
     
-    setChartSizes({
-      cardMinHeight,
-      chartMinHeight,
-      isCompactLayout,
+    setChartSizes(prev => {
+      // Only update if values actually changed
+      if (prev.cardMinHeight === cardMinHeight && 
+          prev.chartMinHeight === chartMinHeight && 
+          prev.isCompactLayout === isCompactLayout) {
+        return prev
+      }
+      return {
+        cardMinHeight,
+        chartMinHeight,
+        isCompactLayout,
+      }
     })
-  }, [currentSettings])
+  }, [currentSettings.rows, currentSettings.columns])
   
   // Drag and drop handlers
   const handleDragStart = useCallback((index: number) => {
