@@ -263,7 +263,18 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
 
           if (chartData.length > 0) {
             // Render chart (ScatterPlot now handles both scatter and line types)
-            renderScatterPlot({ g, data: chartData, width, height, editingChart, scalesRef, dataSourceStyles, canvas: canvasRef.current ?? undefined })
+            renderScatterPlot({ 
+              g, 
+              data: chartData, 
+              width, 
+              height, 
+              editingChart, 
+              scalesRef, 
+              dataSourceStyles, 
+              canvas: canvasRef.current ?? undefined,
+              legendMode: editingChart.legendMode,
+              yAxisParams: editingChart.yAxisParams
+            })
           } else {
             // Render empty chart with axes
             renderEmptyChart({ g, width, height, chartType: editingChart.type || 'scatter', editingChart, scalesRef })

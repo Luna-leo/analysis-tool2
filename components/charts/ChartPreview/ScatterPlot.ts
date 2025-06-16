@@ -25,6 +25,21 @@ interface ScatterPlotConfig extends BaseChartConfig {
   data: ScatterDataPoint[]
   dataSourceStyles?: { [dataSourceId: string]: DataSourceStyle }
   canvas?: HTMLCanvasElement
+  legendMode?: 'datasource' | 'parameter' | 'both'
+  yAxisParams?: Array<{
+    parameter: string
+    marker?: {
+      type: string
+      size: number
+      borderColor: string
+      fillColor: string
+    }
+    line?: {
+      width: number
+      color: string
+      style: string
+    }
+  }>
 }
 
 /**
@@ -34,11 +49,15 @@ interface ScatterPlotConfig extends BaseChartConfig {
 class ScatterPlot extends BaseChart<ScatterDataPoint> {
   private dataSourceStyles: { [dataSourceId: string]: DataSourceStyle }
   private canvas?: HTMLCanvasElement
+  private legendMode: 'datasource' | 'parameter' | 'both'
+  private yAxisParams: ScatterPlotConfig['yAxisParams']
 
   constructor(config: ScatterPlotConfig) {
     super(config)
     this.dataSourceStyles = config.dataSourceStyles || {}
     this.canvas = config.canvas
+    this.legendMode = config.legendMode || 'datasource'
+    this.yAxisParams = config.yAxisParams || []
   }
 
   /**
@@ -108,16 +127,33 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
   }
 
   /**
-   * Create color map for series
+   * Create color map for series based on legend mode
    */
   private createSeriesColorMap(uniqueSeries: string[]): Map<string, string> {
     const colorMap = new Map<string, string>()
     
-    uniqueSeries.forEach((seriesId, index) => {
-      const style = this.dataSourceStyles[seriesId]
-      const color = style?.markerColor || defaultChartColors[index % defaultChartColors.length]
-      colorMap.set(seriesId, color)
-    })
+    if (this.legendMode === 'datasource') {
+      // Color by data source index
+      uniqueSeries.forEach((seriesId, index) => {
+        const style = this.dataSourceStyles[seriesId]
+        const color = style?.markerColor || defaultChartColors[index % defaultChartColors.length]
+        colorMap.set(seriesId, color)
+      })
+    } else if (this.legendMode === 'parameter') {
+      // Color by parameter - all data sources use same color per parameter
+      uniqueSeries.forEach((seriesId) => {
+        // For parameter mode, we need to use parameter index for color
+        // This will be handled in renderWithSVG where we have access to point data
+        colorMap.set(seriesId, '#000000') // Placeholder
+      })
+    } else {
+      // Both mode - use data source index
+      uniqueSeries.forEach((seriesId, index) => {
+        const style = this.dataSourceStyles[seriesId]
+        const color = style?.markerColor || defaultChartColors[index % defaultChartColors.length]
+        colorMap.set(seriesId, color)
+      })
+    }
     
     return colorMap
   }
@@ -132,18 +168,61 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
     
     seriesGroups.forEach((points, seriesId) => {
       const style = this.dataSourceStyles[seriesId] || {}
-      const color = seriesColorMap.get(seriesId) || '#000'
       
-      const markers: MarkerConfig[] = points.map(d => ({
-        x: this.scales.xScale(d.x as any),
-        y: this.scales.yScale(d.y),
-        type: style.markerShape || 'circle',
-        size: style.markerSize || 6,
-        fillColor: color,
-        borderColor: color,
-        opacity: style.markerOpacity || 0.8,
-        data: d
-      }))
+      const markers: MarkerConfig[] = points.map(d => {
+        let fillColor: string
+        let borderColor: string
+        let markerType = style.markerShape || 'circle'
+        let markerSize = style.markerSize || 6
+        
+        if (this.legendMode === 'parameter') {
+          // Use parameter index for color and parameter marker settings
+          const paramIndex = d.seriesIndex
+          const param = this.yAxisParams?.[paramIndex]
+          
+          if (param?.marker) {
+            fillColor = param.marker.fillColor
+            borderColor = param.marker.borderColor
+            markerType = param.marker.type as any
+            markerSize = param.marker.size
+          } else {
+            fillColor = defaultChartColors[paramIndex % defaultChartColors.length]
+            borderColor = fillColor
+          }
+        } else if (this.legendMode === 'datasource') {
+          // Use data source index for color
+          const dsIndex = d.dataSourceIndex || 0
+          fillColor = style.markerColor || defaultChartColors[dsIndex % defaultChartColors.length]
+          borderColor = fillColor
+        } else {
+          // Both mode - use data source index but could consider parameter settings
+          const dsIndex = d.dataSourceIndex || 0
+          const paramIndex = d.seriesIndex
+          const param = this.yAxisParams?.[paramIndex]
+          
+          if (param?.marker) {
+            // If parameter has custom marker settings, use those
+            fillColor = param.marker.fillColor
+            borderColor = param.marker.borderColor
+            markerType = param.marker.type as any
+            markerSize = param.marker.size
+          } else {
+            fillColor = style.markerColor || defaultChartColors[dsIndex % defaultChartColors.length]
+            borderColor = fillColor
+          }
+        }
+        
+        return {
+          x: this.scales.xScale(d.x as any),
+          y: this.scales.yScale(d.y),
+          type: markerType,
+          size: markerSize,
+          fillColor,
+          borderColor,
+          opacity: style.markerOpacity || 0.8,
+          data: d
+        }
+      })
       
       const tooltipHandlers = this.createTooltipHandlers()
       

@@ -4,8 +4,7 @@ import React from "react"
 import { TableCell, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { PlotStyleRow, LegendMode, MarkerSettings, LineSettings } from "@/types/plot-style"
-import { MarkerSettingsPopover } from "./MarkerSettingsPopover"
-import { LineSettingsPopover } from "./LineSettingsPopover"
+import { PlotStylePopover } from "./PlotStylePopover"
 import { LegendInput } from "./LegendInput"
 
 interface PlotStyleTableRowProps {
@@ -57,15 +56,12 @@ export const PlotStyleTableRow = React.memo(({
         />
       </TableCell>
       <TableCell className="text-xs">
-        <MarkerSettingsPopover
+        <PlotStylePopover
           marker={row.parameter?.marker}
-          onUpdate={onUpdateMarker}
-        />
-      </TableCell>
-      <TableCell className="text-xs">
-        <LineSettingsPopover
           line={row.parameter?.line}
-          onUpdate={onUpdateLine}
+          colorIndex={row.colorIndex}
+          onUpdateMarker={onUpdateMarker}
+          onUpdateLine={onUpdateLine}
         />
       </TableCell>
     </TableRow>

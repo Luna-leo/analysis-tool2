@@ -53,11 +53,11 @@ export function PlotStyleTable({
     const headers = []
     if (appearanceMode !== "parameter") headers.push("Data Source")
     if (appearanceMode !== "datasource") headers.push("Parameter")
-    headers.push("Legend", "Marker", "Line")
+    headers.push("Legend", "Plot Style")
     return headers
   }
 
-  const colSpan = appearanceMode === "both" ? 5 : 4
+  const colSpan = appearanceMode === "both" ? 4 : 3
 
   return (
     <div>
