@@ -1,4 +1,23 @@
-import { UserSettings } from '@/types/settings'
+import { UserSettings, PlotDefaults } from '@/types/settings'
+
+/**
+ * Default plot settings used across the application
+ */
+export const DEFAULT_PLOT_SETTINGS: PlotDefaults = {
+  showMarkers: true,
+  showLines: true,
+  marker: {
+    type: 'circle',
+    size: 6,
+    borderColor: '#3b82f6',
+    fillColor: '#3b82f6'
+  },
+  line: {
+    style: 'solid',
+    width: 2,
+    color: '#3b82f6'
+  }
+} as const
 
 /**
  * Default user settings used across the application
@@ -6,6 +25,9 @@ import { UserSettings } from '@/types/settings'
 export const DEFAULT_SETTINGS: UserSettings = {
   toolDefaults: {
     parameterSource: 'master'
+  },
+  displaySettings: {
+    plotDefaults: DEFAULT_PLOT_SETTINGS
   }
 } as const
 

@@ -6,9 +6,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { useSettingsStore } from "@/stores/useSettingsStore"
 import { ParameterSource } from "@/types/settings"
+import { PlotDefaultsSettings } from "./PlotDefaultsSettings"
 
 export function SettingsPage() {
-  const { settings, updateParameterSource } = useSettingsStore()
+  const { settings, updateParameterSource, updatePlotDefaults, resetPlotDefaults } = useSettingsStore()
 
   const handleParameterSourceChange = (value: string) => {
     updateParameterSource(value as ParameterSource)
@@ -73,20 +74,12 @@ export function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Additional Settings Cards can be added here */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Display Preferences</CardTitle>
-            <CardDescription>
-              Customize how data is displayed in the application
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Display settings will be available in a future update.
-            </p>
-          </CardContent>
-        </Card>
+        {/* Display Preferences with Plot Defaults */}
+        <PlotDefaultsSettings
+          plotDefaults={settings.displaySettings.plotDefaults}
+          onUpdate={updatePlotDefaults}
+          onReset={resetPlotDefaults}
+        />
 
         <Card>
           <CardHeader>
