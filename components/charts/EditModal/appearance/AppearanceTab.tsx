@@ -2,7 +2,7 @@
 
 import { ChartComponent } from "@/types"
 import { TitleAndOptionsSection } from "./TitleAndOptionsSection"
-import { PlotStyleTable } from "./PlotStyleTable"
+import { PlotStyleTable } from "./PlotStyleSettings"
 
 interface AppearanceTabProps {
   editingChart: ChartComponent
