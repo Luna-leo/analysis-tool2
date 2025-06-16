@@ -204,6 +204,7 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
           style={{
             gridTemplateColumns: `repeat(${currentSettings.columns}, 1fr)`,
             gap: chartSizes.isCompactLayout ? "2px" : "4px",
+            overflow: "visible",
           }}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => e.preventDefault()}

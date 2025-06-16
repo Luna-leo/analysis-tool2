@@ -313,6 +313,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
               style={{
                 gridTemplateColumns: `repeat(${currentSettings.columns}, 1fr)`,
                 gap: chartSizes.isCompactLayout ? "2px" : "4px",
+                overflow: "visible",
               }}
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => e.preventDefault()}

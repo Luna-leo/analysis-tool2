@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useCallback, useState } from "react"
-import { LineChart, Edit, Copy, Trash2, GripVertical } from "lucide-react"
+import { Edit, Copy, Trash2, GripVertical } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -137,7 +137,7 @@ const ChartCardComponent = ({
       {/* Edit, Duplicate and Delete Buttons - appear on hover */}
       <div 
         className={cn(
-          "absolute -top-8 right-2 flex gap-1 transition-all duration-200 z-20",
+          "absolute -top-3 right-2 flex gap-1 transition-all duration-200 z-50",
           isHovered ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"
         )}
         onMouseDown={(e) => e.stopPropagation()}

@@ -158,6 +158,7 @@ export const ProgressiveChartGrid = React.memo(function ProgressiveChartGrid({
           style={{
             gridTemplateColumns: `repeat(${currentSettings.columns}, 1fr)`,
             gap: chartSizes.isCompactLayout ? "2px" : "4px",
+            overflow: "visible",
           }}
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => e.preventDefault()}
