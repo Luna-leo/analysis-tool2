@@ -27,7 +27,7 @@ export const ChartLegend = React.memo(
     }, ref) => {
       if (!dataSources || dataSources.length === 0) return null
 
-      const mode = editingChart.legendMode || 'both'
+      const mode = editingChart.legendMode || 'datasource'
       const items: { key: string; label: string; colorIndex: number; dsId?: string }[] = []
 
       if (mode === 'datasource') {
