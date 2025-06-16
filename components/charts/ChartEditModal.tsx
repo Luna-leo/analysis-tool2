@@ -4,18 +4,37 @@ import React, { useState } from "react"
 import { Dialog, DialogContent, DialogDescription } from "@/components/ui/dialog"
 import { useUIStore } from "@/stores/useUIStore"
 import { useFileStore } from "@/stores/useFileStore"
+import { useLayoutStore } from "@/stores/useLayoutStore"
 import { ChartPreview } from "./ChartPreview"
 import { ModalHeader } from "./EditModal/ModalHeader"
 import { TabNavigation, TabType } from "./EditModal/TabNavigation"
 import { TabContent } from "./EditModal/TabContent"
-import { ChartThumbnailGrid } from "./EditModal/ChartThumbnailGrid"
+import { ChartSelectionGrid } from "./EditModal/ChartSelectionGrid"
+import { Button } from "@/components/ui/button"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { Grid3x3, Eye } from "lucide-react"
 import type { EventInfo, ChartComponent } from "@/types"
+import { BulkApplyDialog, BulkApplySettings } from "./EditModal/BulkApplyDialog"
 
 export function ChartEditModal() {
-  const { editingChart, editingChartIndex, editModalOpen, setEditingChart, setEditModalOpen, navigateToNextChart, navigateToPreviousChart } = useUIStore()
+  const { 
+    editingChart, 
+    editingChartIndex, 
+    editModalOpen, 
+    selectedChartIds,
+    setEditingChart, 
+    setEditModalOpen, 
+    navigateToNextChart, 
+    navigateToPreviousChart,
+    toggleChartSelection,
+    clearSelectedCharts
+  } = useUIStore()
   const { openTabs, activeTab: activeFileTab, updateFileCharts, updateFileDataSources } = useFileStore()
+  const { layoutSettingsMap } = useLayoutStore()
   const [activeTab, setActiveTab] = useState<TabType>("datasource")
   const [dataSourceStyles, setDataSourceStyles] = useState<{ [dataSourceId: string]: any }>({})
+  const [previewMode, setPreviewMode] = useState<'preview' | 'grid'>('preview')
+  const [bulkApplyDialogOpen, setBulkApplyDialogOpen] = useState(false)
 
   // Keyboard shortcut handlers
   React.useEffect(() => {
@@ -44,13 +63,26 @@ export function ChartEditModal() {
             useUIStore.getState().setEditingChartWithIndex(chart, index)
             setActiveTab("datasource")
           }
+        } else if (e.key === 'a' || e.key === 'A') {
+          // Ctrl/Cmd + A to select all in grid mode
+          if (previewMode === 'grid') {
+            e.preventDefault()
+            const allChartIds = allCharts.map(chart => chart.id)
+            useUIStore.getState().selectAllCharts(allChartIds)
+          }
         }
+      }
+      
+      // Escape key to clear selection
+      if (e.key === 'Escape' && previewMode === 'grid' && selectedChartIds.size > 0) {
+        e.preventDefault()
+        clearSelectedCharts()
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [editModalOpen, editingChart, activeFileTab, openTabs, navigateToNextChart, navigateToPreviousChart])
+  }, [editModalOpen, editingChart, activeFileTab, openTabs, navigateToNextChart, navigateToPreviousChart, previewMode, selectedChartIds, clearSelectedCharts])
 
   // Initialize dataSourceStyles from FileNode when modal opens
   React.useEffect(() => {
@@ -70,8 +102,10 @@ export function ChartEditModal() {
   React.useEffect(() => {
     if (editModalOpen) {
       setActiveTab("datasource")
+      setPreviewMode('preview')
+      clearSelectedCharts()
     }
-  }, [editModalOpen])
+  }, [editModalOpen, clearSelectedCharts])
 
   if (!editingChart) return null
 
@@ -116,6 +150,10 @@ export function ChartEditModal() {
   }
 
   const handleSaveAndNext = () => {
+    const targetFileId = editingChart.fileId || activeFileTab
+    const currentFile = openTabs.find(tab => tab.id === targetFileId)
+    const allCharts = currentFile?.charts || []
+    
     handleSave(false) // Save without closing modal
     navigateToNextChart(allCharts) // Navigate to next chart
     setActiveTab("datasource") // Reset to first tab
@@ -125,10 +163,65 @@ export function ChartEditModal() {
     setEditingChart(chart)
     useUIStore.getState().setEditingChartWithIndex(chart, index)
     setActiveTab("datasource") // Reset to first tab when switching charts
+    setPreviewMode('preview') // Switch back to preview after selection
   }
 
   const handleCancel = () => {
     setEditModalOpen(false)
+    clearSelectedCharts()
+  }
+
+  const handleBulkApply = (settings: BulkApplySettings) => {
+    if (!editingChart || selectedChartIds.size === 0) return
+
+    const targetFileId = editingChart.fileId || activeFileTab
+    const currentFile = openTabs.find(tab => tab.id === targetFileId)
+    
+    if (!currentFile) return
+
+    const updatedCharts = currentFile.charts.map(chart => {
+      // Skip if not selected or if it's the source chart
+      if (!selectedChartIds.has(chart.id) || chart.id === editingChart.id) {
+        return chart
+      }
+
+      let updatedChart = { ...chart }
+
+      if (settings.applyAxisSettings) {
+        updatedChart.yMin = editingChart.yMin
+        updatedChart.yMax = editingChart.yMax
+        updatedChart.yAxisType = editingChart.yAxisType
+        updatedChart.showGrid = editingChart.showGrid
+      }
+
+      if (settings.applyDisplaySettings) {
+        updatedChart.lineWidth = editingChart.lineWidth
+        updatedChart.plotType = editingChart.plotType
+        updatedChart.stacked = editingChart.stacked
+        updatedChart.plotStyle = editingChart.plotStyle
+        updatedChart.showDataPoints = editingChart.showDataPoints
+        updatedChart.smoothing = editingChart.smoothing
+      }
+
+      if (settings.applyReferenceLines) {
+        updatedChart.referenceLines = editingChart.referenceLines ? [...editingChart.referenceLines] : []
+      }
+
+      if (settings.applyAnnotations) {
+        updatedChart.annotations = editingChart.annotations ? [...editingChart.annotations] : []
+      }
+
+      if (settings.applyDataSources) {
+        updatedChart.yParameters = editingChart.yParameters ? [...editingChart.yParameters] : []
+        updatedChart.xParameter = editingChart.xParameter
+        updatedChart.xAxisType = editingChart.xAxisType
+      }
+
+      return updatedChart
+    })
+
+    updateFileCharts(targetFileId, updatedCharts)
+    clearSelectedCharts()
   }
   
   const handleTabChange = (newTab: TabType) => {
@@ -137,10 +230,14 @@ export function ChartEditModal() {
     setActiveTab(newTab)
   }
 
-  const targetFileId = editingChart.fileId || activeFileTab
+  const targetFileId = editingChart?.fileId || activeFileTab
   const currentFile = openTabs.find(tab => tab.id === targetFileId)
   const selectedDataSourceItems = currentFile?.selectedDataSources || []
   const allCharts = currentFile?.charts || []
+  const currentLayoutSettings = layoutSettingsMap[targetFileId] || {
+    columns: 2,
+    rows: 2
+  }
 
   const handleSetSelectedDataSourceItems = (items: React.SetStateAction<EventInfo[]>) => {
     if (typeof items === 'function') {
@@ -168,16 +265,9 @@ export function ChartEditModal() {
           onSaveAndNext={handleSaveAndNext}
         />
 
-        {allCharts.length > 1 && (
-          <ChartThumbnailGrid
-            charts={allCharts}
-            currentChartId={editingChart.id}
-            onChartSelect={handleChartSelect}
-            className="mx-6 mt-2"
-          />
-        )}
 
         <div className="grid grid-cols-2 gap-4 flex-1 min-h-0 mt-4">
+          {/* Left panel - always show edit controls */}
           <div className="border rounded-lg p-4 overflow-hidden h-full flex flex-col">
             <TabNavigation activeTab={activeTab} onTabChange={handleTabChange} includeDataSourceTab={true} />
             
@@ -193,19 +283,104 @@ export function ChartEditModal() {
             </div>
           </div>
 
+          {/* Right panel - switchable preview/grid */}
           <div className="border rounded-lg p-4 overflow-hidden h-full flex flex-col">
-            <h3 className="text-base font-semibold border-b pb-1 mb-2 flex-shrink-0">Chart Preview</h3>
+            <div className="flex items-center justify-between border-b pb-2 mb-2 flex-shrink-0">
+              <h3 className="text-base font-semibold">
+                {previewMode === 'preview' ? 'Chart Preview' : 'All Charts'}
+              </h3>
+              <div className="flex items-center gap-2">
+                {previewMode === 'grid' && selectedChartIds.size > 0 && (
+                  <span className="text-xs text-muted-foreground mr-2">
+                    {selectedChartIds.size} selected
+                  </span>
+                )}
+                <ToggleGroup type="single" value={previewMode} onValueChange={(value) => value && setPreviewMode(value as 'preview' | 'grid')}>
+                  <ToggleGroupItem value="preview" aria-label="Preview mode" size="sm">
+                    <Eye className="h-3 w-3 mr-1" />
+                    Preview
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="grid" aria-label="Grid mode" size="sm">
+                    <Grid3x3 className="h-3 w-3 mr-1" />
+                    Grid
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+            </div>
+            
             <div className="flex-1 min-h-0">
-              <ChartPreview
-                editingChart={editingChart}
-                selectedDataSourceItems={selectedDataSourceItems}
-                setEditingChart={setEditingChart}
-                dataSourceStyles={dataSourceStyles}
-              />
+              {previewMode === 'preview' ? (
+                <ChartPreview
+                  editingChart={editingChart}
+                  selectedDataSourceItems={selectedDataSourceItems}
+                  setEditingChart={setEditingChart}
+                  dataSourceStyles={dataSourceStyles}
+                />
+              ) : (
+                <div className="h-full flex flex-col">
+                  {/* Grid controls */}
+                  {allCharts.length > 1 && (
+                    <div className="mb-2 flex items-center justify-between">
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="xs"
+                          onClick={() => {
+                            const allChartIds = allCharts.map(chart => chart.id)
+                            useUIStore.getState().selectAllCharts(allChartIds)
+                          }}
+                          disabled={selectedChartIds.size === allCharts.length}
+                        >
+                          Select All
+                        </Button>
+                        {selectedChartIds.size > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="xs"
+                            onClick={() => clearSelectedCharts()}
+                          >
+                            Clear
+                          </Button>
+                        )}
+                      </div>
+                      {selectedChartIds.size > 0 && (
+                        <Button
+                          size="xs"
+                          onClick={() => setBulkApplyDialogOpen(true)}
+                        >
+                          Apply to Selected
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Chart grid */}
+                  <div className="flex-1 overflow-hidden">
+                    <ChartSelectionGrid
+                      charts={allCharts}
+                      columns={currentLayoutSettings.columns} // Use actual layout columns
+                      currentChartId={editingChart.id}
+                      selectedChartIds={selectedChartIds}
+                      onChartSelect={handleChartSelect}
+                      onToggleSelection={toggleChartSelection}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </DialogContent>
+      
+      {/* Bulk Apply Dialog */}
+      <BulkApplyDialog
+        open={bulkApplyDialogOpen}
+        onOpenChange={setBulkApplyDialogOpen}
+        selectedChartIds={selectedChartIds}
+        currentChart={editingChart}
+        allCharts={allCharts}
+        onApply={(settings) => handleBulkApply(settings)}
+      />
     </Dialog>
   )
 }

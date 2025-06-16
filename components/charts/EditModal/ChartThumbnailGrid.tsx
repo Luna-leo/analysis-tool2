@@ -10,6 +10,7 @@ interface ChartThumbnailGridProps {
   charts: ChartComponent[]
   currentChartId: string
   onChartSelect: (chart: ChartComponent, index: number) => void
+  columns: number
   className?: string
 }
 
@@ -17,63 +18,87 @@ export function ChartThumbnailGrid({
   charts, 
   currentChartId, 
   onChartSelect,
+  columns,
   className 
 }: ChartThumbnailGridProps) {
   const scrollAreaRef = useRef<HTMLDivElement>(null)
   const activeButtonRef = useRef<HTMLButtonElement>(null)
+  const activeIndex = charts.findIndex(chart => chart.id === currentChartId)
 
-  // Auto-scroll to active chart when it changes
+  // Auto-scroll to active chart
   useEffect(() => {
     if (activeButtonRef.current && scrollAreaRef.current) {
       const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]')
       if (scrollContainer) {
-        const buttonRect = activeButtonRef.current.getBoundingClientRect()
-        const containerRect = scrollContainer.getBoundingClientRect()
-        
-        const scrollLeft = activeButtonRef.current.offsetLeft - (containerRect.width / 2) + (buttonRect.width / 2)
-        scrollContainer.scrollTo({ left: scrollLeft, behavior: 'smooth' })
+        activeButtonRef.current.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        })
       }
     }
   }, [currentChartId])
 
   return (
-    <div className={cn("border rounded-lg p-2", className)}>
-      <div className="text-sm font-medium mb-2 text-muted-foreground">
-        Charts Overview ({charts.length})
+    <div className={cn("border rounded-lg p-3", className)}>
+      <div className="text-sm font-medium mb-2 text-muted-foreground flex justify-between items-center">
+        <span>Grid Overview</span>
+        <span className="text-xs">
+          {activeIndex + 1} / {charts.length}
+        </span>
       </div>
       
-      <ScrollArea className="h-24" ref={scrollAreaRef}>
-        <div className="flex gap-2 pb-2">
-          {charts.map((chart, index) => (
-            <button
-              key={chart.id}
-              ref={currentChartId === chart.id ? activeButtonRef : null}
-              onClick={() => onChartSelect(chart, index)}
-              className={cn(
-                "flex-shrink-0 w-24 h-20 rounded-lg border-2 transition-all duration-200",
-                "hover:scale-105 hover:border-primary/50",
-                "flex items-center justify-center text-xs font-medium",
-                "bg-background",
-                "relative overflow-hidden",
-                currentChartId === chart.id 
-                  ? "border-blue-500 shadow-lg ring-2 ring-blue-500/20 scale-105" 
-                  : "border-border hover:border-primary/30"
-              )}
-              title={chart.title}
-            >
-              {currentChartId === chart.id && (
-                <div className="absolute top-0 right-0 bg-blue-500 text-white text-[9px] px-1.5 py-0.5 rounded-bl-md">
+      <ScrollArea className="h-[160px]" ref={scrollAreaRef}>
+        <div 
+          className="grid gap-1 pr-2"
+          style={{
+            gridTemplateColumns: `repeat(${columns}, 1fr)`,
+          }}
+        >
+          {charts.map((chart, index) => {
+            const row = Math.floor(index / columns)
+            const col = index % columns
+            
+            return (
+              <button
+                key={chart.id}
+                ref={currentChartId === chart.id ? activeButtonRef : null}
+                onClick={() => onChartSelect(chart, index)}
+                className={cn(
+                  "aspect-[3/2] rounded border transition-all duration-200",
+                  "hover:border-primary/50 hover:shadow-sm",
+                  "flex items-center justify-center text-[11px] font-medium",
+                  "bg-muted/10 p-2",
+                  "relative overflow-hidden",
+                  currentChartId === chart.id 
+                    ? "border-blue-500 shadow-md ring-1 ring-blue-500/30 bg-blue-50/50" 
+                    : "border-border"
+                )}
+                title={`${chart.title} (Row ${row + 1}, Col ${col + 1})`}
+              >
+                {currentChartId === chart.id && (
+                  <div className="absolute inset-0 bg-blue-500/10 pointer-events-none" />
+                )}
+                <div className={cn(
+                  "absolute top-0.5 left-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded",
+                  currentChartId === chart.id 
+                    ? "bg-blue-500 text-white" 
+                    : "bg-muted text-muted-foreground"
+                )}>
                   {index + 1}
                 </div>
-              )}
-              {currentChartId !== chart.id && (
-                <div className="absolute top-0 left-0 text-[9px] text-muted-foreground px-1 py-0.5">
-                  {index + 1}
+                <div className="text-center w-full">
+                  <div className="truncate px-1 font-medium">
+                    {chart.title}
+                  </div>
+                  {chart.yParameters && chart.yParameters.length > 0 && (
+                    <div className="text-[8px] text-muted-foreground mt-0.5">
+                      {chart.yParameters.length}p
+                    </div>
+                  )}
                 </div>
-              )}
-              <ChartMiniPreview chart={chart} isActive={currentChartId === chart.id} />
-            </button>
-          ))}
+              </button>
+            )
+          })}
         </div>
       </ScrollArea>
     </div>

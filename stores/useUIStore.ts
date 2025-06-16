@@ -9,6 +9,7 @@ interface UIState {
   editingChart: ChartComponent | null
   editingChartIndex: number
   editModalOpen: boolean
+  selectedChartIds: Set<string>
   searchConditionDialogOpen: boolean
   editingConditionId: string | null
 }
@@ -21,6 +22,9 @@ interface UIActions {
   navigateToNextChart: (charts: ChartComponent[]) => void
   navigateToPreviousChart: (charts: ChartComponent[]) => void
   setEditModalOpen: (open: boolean) => void
+  toggleChartSelection: (chartId: string) => void
+  clearSelectedCharts: () => void
+  selectAllCharts: (chartIds: string[]) => void
   openSearchConditionDialog: (conditionId?: string) => void
   closeSearchConditionDialog: () => void
 }
@@ -36,6 +40,7 @@ export const useUIStore = create<UIStore>()(
       editingChart: null,
       editingChartIndex: -1,
       editModalOpen: false,
+      selectedChartIds: new Set(),
       searchConditionDialogOpen: false,
       editingConditionId: null,
 
@@ -70,6 +75,17 @@ export const useUIStore = create<UIStore>()(
         }
       },
       setEditModalOpen: (open) => set({ editModalOpen: open }),
+      toggleChartSelection: (chartId) => set((state) => {
+        const newSet = new Set(state.selectedChartIds)
+        if (newSet.has(chartId)) {
+          newSet.delete(chartId)
+        } else {
+          newSet.add(chartId)
+        }
+        return { selectedChartIds: newSet }
+      }),
+      clearSelectedCharts: () => set({ selectedChartIds: new Set() }),
+      selectAllCharts: (chartIds) => set({ selectedChartIds: new Set(chartIds) }),
       openSearchConditionDialog: (conditionId) => set({ 
         searchConditionDialogOpen: true, 
         editingConditionId: conditionId || null 
