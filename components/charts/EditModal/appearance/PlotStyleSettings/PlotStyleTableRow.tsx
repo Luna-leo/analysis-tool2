@@ -30,7 +30,7 @@ export const PlotStyleTableRow = React.memo(({
   const isVisible = plotStyle.visible !== false // default to true if not specified
 
   return (
-    <TableRow>
+    <TableRow className={!isVisible ? "opacity-50" : ""}>
       {mode !== "parameter" && row.dataSource && (
         <TableCell className="text-xs">
           <div>
@@ -57,30 +57,43 @@ export const PlotStyleTableRow = React.memo(({
         </TableCell>
       )}
       <TableCell className="text-xs">
-        <LegendInput
-          value={row.legendText}
-          onChange={onUpdateLegend}
-        />
+        <div className="space-y-1">
+          <LegendInput
+            value={row.legendText}
+            onChange={onUpdateLegend}
+            disabled={!isVisible}
+          />
+          {!isVisible && (
+            <span className="text-[10px] text-muted-foreground">(非表示)</span>
+          )}
+        </div>
       </TableCell>
       <TableCell className="text-xs">
-        <PlotStylePopover
-          marker={plotStyle.marker}
-          line={plotStyle.line}
-          colorIndex={row.colorIndex}
-          onUpdateMarker={onUpdateMarker}
-          onUpdateLine={onUpdateLine}
-        />
+        <div className={!isVisible ? "pointer-events-none" : ""}>
+          <PlotStylePopover
+            marker={plotStyle.marker}
+            line={plotStyle.line}
+            colorIndex={row.colorIndex}
+            onUpdateMarker={onUpdateMarker}
+            onUpdateLine={onUpdateLine}
+          />
+        </div>
       </TableCell>
       <TableCell className="text-xs">
         <button
           onClick={() => onUpdateVisibility(!isVisible)}
-          className="p-1 hover:bg-accent rounded transition-colors"
+          className={`p-1.5 rounded transition-all ${
+            isVisible 
+              ? "hover:bg-accent text-foreground" 
+              : "bg-muted hover:bg-muted-foreground/20 text-muted-foreground"
+          }`}
           aria-label={isVisible ? "Hide plot" : "Show plot"}
+          title={isVisible ? "クリックして非表示" : "クリックして表示"}
         >
           {isVisible ? (
-            <Eye className="h-4 w-4 text-muted-foreground" />
+            <Eye className="h-4 w-4" />
           ) : (
-            <EyeOff className="h-4 w-4 text-muted-foreground" />
+            <EyeOff className="h-4 w-4" />
           )}
         </button>
       </TableCell>

@@ -84,6 +84,7 @@ export const ChartLegend = React.memo(
           )}
         >
           {items.map((item) => {
+            const isHidden = item.plotStyle?.visible === false
             // Use PlotStyleBadge if plotStyle is available (even partially)
             if (item.plotStyle) {
               // Ensure plotStyle has required properties with defaults
@@ -103,13 +104,19 @@ export const ChartLegend = React.memo(
                 legendText: item.plotStyle.legendText || item.label
               }
               return (
-                <div key={item.key} className="flex items-center gap-1 whitespace-nowrap">
+                <div key={item.key} className={cn(
+                  "flex items-center gap-1 whitespace-nowrap",
+                  isHidden && "opacity-40"
+                )}>
                   <PlotStyleBadge 
                     plotStyle={completeStyle} 
                     showLines={editingChart.showLines ?? false}
                     showMarkers={editingChart.showMarkers ?? true}
                   />
-                  <span className="font-medium text-black">{item.label}</span>
+                  <span className={cn(
+                    "font-medium",
+                    isHidden ? "text-black/60" : "text-black"
+                  )}>{item.label}</span>
                 </div>
               )
             }
