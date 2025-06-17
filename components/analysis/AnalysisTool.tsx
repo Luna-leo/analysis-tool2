@@ -1,22 +1,13 @@
 "use client"
 
 import React, { useEffect } from "react"
-import { Sidebar, TabHeader, BreadcrumbNavigation, WelcomeMessage, LayoutSettings } from "../layout"
+import { Sidebar, TabHeader, BreadcrumbNavigation, WelcomeMessage } from "../layout"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { ChartGrid, ChartEditModal, SelectionToolbar } from "../charts"
 import { DataSourceStyleDrawer } from "../charts/DataSourceStyleDrawer"
 import { DataSourceBadgePreview } from "../charts/DataSourceBadgePreview"
 import { TemplateListDialog, SaveTemplateDialog } from "../charts/PlotStyleTemplate"
-import { LineChart, Layers, ChevronDown, CheckSquare } from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { usePlotStyleTemplateStore } from "@/stores/usePlotStyleTemplateStore"
 import { PlotStyleApplicator } from "@/utils/plotStyleApplicator"
 import { toast } from "sonner"

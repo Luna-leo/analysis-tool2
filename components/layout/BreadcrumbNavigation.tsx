@@ -46,21 +46,21 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
   const filePath = getFilePath(currentFile.id, fileTree)
 
   return (
-    <div className="border-b bg-background">
-      <div className="px-4 py-1">
+    <div className="border-b bg-background flex items-center h-5">
+      <div className="px-4 -my-0.5">
         <Breadcrumb>
-          <BreadcrumbList>
+          <BreadcrumbList className="text-xs">
             {filePath ? (
               filePath.map((pathItem, index) => (
               <React.Fragment key={index}>
                 {index === filePath.length - 1 ? (
                   <BreadcrumbItem>
-                    <BreadcrumbPage>{pathItem}</BreadcrumbPage>
+                    <BreadcrumbPage className="leading-none">{pathItem}</BreadcrumbPage>
                   </BreadcrumbItem>
                 ) : (
                   <>
                     <BreadcrumbItem>
-                      <BreadcrumbLink href="#" className="text-muted-foreground">
+                      <BreadcrumbLink href="#" className="text-muted-foreground leading-none">
                         {pathItem}
                       </BreadcrumbLink>
                     </BreadcrumbItem>
@@ -72,7 +72,7 @@ export const BreadcrumbNavigation: React.FC<BreadcrumbNavigationProps> = ({
             ) : (
               // If no file path found (e.g., for special tabs or reconstructed files)
               <BreadcrumbItem>
-                <BreadcrumbPage>{currentFile.name}</BreadcrumbPage>
+                <BreadcrumbPage className="leading-none">{currentFile.name}</BreadcrumbPage>
               </BreadcrumbItem>
             )}
           </BreadcrumbList>
