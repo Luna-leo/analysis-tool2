@@ -152,7 +152,8 @@ export const OptimizedChartPreview = React.memo(({
           width, 
           height, 
           editingChart, 
-          scalesRef 
+          scalesRef,
+          enableSampling: settings.performanceSettings.dataProcessing.enableSampling
         })
       }
       

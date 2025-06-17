@@ -27,6 +27,7 @@ interface ScatterPlotConfig extends BaseChartConfig {
   dataSourceStyles?: { [dataSourceId: string]: DataSourceStyle }
   canvas?: HTMLCanvasElement
   plotStyles?: ChartComponent['plotStyles']
+  enableSampling?: boolean
 }
 
 /**
@@ -37,6 +38,7 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
   private dataSourceStyles: { [dataSourceId: string]: DataSourceStyle }
   private canvas?: HTMLCanvasElement
   private plotStyles: ChartComponent['plotStyles']
+  private enableSampling: boolean
 
   constructor(config: ScatterPlotConfig) {
     super(config)
@@ -48,6 +50,7 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
       byParameter: {},
       byBoth: {}
     }
+    this.enableSampling = config.enableSampling ?? true
   }
 
   /**
@@ -97,7 +100,7 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
     
     // Apply LOD simplification if needed
     let dataToRender = this.data
-    if (lodConfig.level !== 'high') {
+    if (this.enableSampling && lodConfig.level !== 'high') {
       dataToRender = simplifyData(this.data, lodConfig)
     }
     

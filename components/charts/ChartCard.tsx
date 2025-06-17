@@ -187,9 +187,7 @@ const ChartCardComponent = ({
           selectedDataSourceItems={selectedDataSources} 
           maxDataPoints={
             settings.performanceSettings.dataProcessing.enableSampling 
-              ? (isCompactLayout 
-                  ? Math.min(100, settings.performanceSettings.dataProcessing.defaultSamplingPoints) 
-                  : Math.min(200, settings.performanceSettings.dataProcessing.defaultSamplingPoints))
+              ? settings.performanceSettings.dataProcessing.defaultSamplingPoints
               : undefined
           }
           dataSourceStyles={dataSourceStyles}
