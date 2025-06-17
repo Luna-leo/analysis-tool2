@@ -253,6 +253,7 @@ export interface LayoutSettings {
   pagination: boolean
   width?: number
   height?: number
+  currentPage?: number  // Current page number (0-indexed)
 }
 
 export interface ChartSettings {

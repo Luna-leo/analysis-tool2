@@ -38,15 +38,25 @@ export const useLayoutStore = create<LayoutStore>()(
       chartSettingsMap: {},
 
       // Actions
-      updateLayoutSettings: (fileId, settings) => set((state) => ({
-        layoutSettingsMap: {
-          ...state.layoutSettingsMap,
-          [fileId]: {
-            ...(state.layoutSettingsMap[fileId] || defaultLayoutSettings),
-            ...settings,
+      updateLayoutSettings: (fileId, settings) => set((state) => {
+        const currentSettings = state.layoutSettingsMap[fileId] || defaultLayoutSettings
+        const newSettings = {
+          ...currentSettings,
+          ...settings,
+        }
+        
+        // Reset currentPage when pagination is turned on
+        if (!currentSettings.pagination && settings.pagination) {
+          newSettings.currentPage = 0
+        }
+        
+        return {
+          layoutSettingsMap: {
+            ...state.layoutSettingsMap,
+            [fileId]: newSettings,
           },
-        },
-      })),
+        }
+      }),
 
       updateChartSettings: (fileId, settings) => set((state) => ({
         chartSettingsMap: {
