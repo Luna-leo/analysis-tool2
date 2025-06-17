@@ -159,8 +159,14 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
     }
     
     return {
-      marker: style.marker || defaultStyle.marker,
-      line: style.line || defaultStyle.line,
+      marker: {
+        ...defaultStyle.marker,
+        ...(style.marker || {})
+      },
+      line: {
+        ...defaultStyle.line,
+        ...(style.line || {})
+      },
       legendText: style.legendText || defaultStyle.legendText
     }
   }
@@ -169,7 +175,7 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
   /**
    * Render with SVG for interactivity
    */
-  private renderWithSVG(data: ScatterDataPoint[], seriesColorMap: Map<string, string>): void {
+  private renderWithSVG(data: ScatterDataPoint[]): void {
     // Group data by series for batch rendering
     const seriesGroups = d3.group(data, d => d.dataSourceId)
     
@@ -245,7 +251,7 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
    */
   private renderScatterPlot(data: ScatterDataPoint[]): void {
     // Render with SVG for interactivity
-    this.renderWithSVG(data, new Map())
+    this.renderWithSVG(data)
   }
 
   /**

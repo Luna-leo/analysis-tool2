@@ -38,13 +38,13 @@ export function DataSourceBadgePreview({ dataSourceStyle, defaultColor, plotStyl
 
   // Use plotStyle if provided, otherwise fall back to dataSourceStyle
   const lineEnabled = plotStyle ? true : (dataSourceStyle?.lineEnabled || false)
-  const lineColor = plotStyle?.line.color || dataSourceStyle?.lineColor || defaultColor
-  const lineStyle = plotStyle?.line.style || dataSourceStyle?.lineStyle || 'solid'
-  const lineWidth = plotStyle?.line.width || dataSourceStyle?.lineWidth || 2
+  const lineColor = plotStyle?.line?.color || dataSourceStyle?.lineColor || defaultColor
+  const lineStyle = plotStyle?.line?.style || dataSourceStyle?.lineStyle || 'solid'
+  const lineWidth = plotStyle?.line?.width || dataSourceStyle?.lineWidth || 2
   const markerEnabled = plotStyle ? true : (dataSourceStyle?.markerEnabled !== undefined ? dataSourceStyle.markerEnabled : true)
-  const markerShape = plotStyle?.marker.type || dataSourceStyle?.markerShape || 'circle'
-  const markerSize = Math.min(plotStyle?.marker.size || dataSourceStyle?.markerSize || 4, 5) // Cap size for badge
-  const markerColor = plotStyle?.marker.fillColor || dataSourceStyle?.markerColor || lineColor
+  const markerShape = plotStyle?.marker?.type || dataSourceStyle?.markerShape || 'circle'
+  const markerSize = Math.min(plotStyle?.marker?.size || dataSourceStyle?.markerSize || 4, 5) // Cap size for badge
+  const markerColor = plotStyle?.marker?.fillColor || dataSourceStyle?.markerColor || lineColor
 
   // Create line style pattern
   const getLinePattern = () => {
