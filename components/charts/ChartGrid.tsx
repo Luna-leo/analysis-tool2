@@ -71,8 +71,8 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
         // If pagination is enabled, calculate dynamic heights to fit viewport
         if (currentSettings.pagination && gridRef.current) {
           const containerHeight = contentRef.current.clientHeight
-          const paginationHeight = 64 // Height of pagination controls
-          const padding = 48 // Total vertical padding (pt-2 pb-6 = 8px + 24px + gaps)
+          const paginationHeight = 48 // Height of pagination controls (h-8 button + py-2)
+          const padding = 8 // Only pt-2 (8px) when pagination is enabled
           const gap = isCompactLayout ? 2 : 4
           const rowGaps = (currentSettings.rows - 1) * gap
           

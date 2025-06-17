@@ -83,7 +83,7 @@ export const ChartPagination = React.memo(function ChartPagination({
   }
 
   return (
-    <div className={cn("flex items-center justify-center gap-2 p-4", className)}>
+    <div className={cn("flex items-center justify-center gap-2 py-2 px-4", className)}>
       {/* Previous button */}
       <Button
         variant="outline"
