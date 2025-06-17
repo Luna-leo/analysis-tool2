@@ -52,6 +52,7 @@ export interface PlotStyle {
   marker: MarkerSettings
   line: LineSettings
   legendText?: string
+  visible?: boolean
 }
 
 export interface PlotStylesConfig {

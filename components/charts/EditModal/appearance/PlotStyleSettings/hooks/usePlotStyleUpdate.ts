@@ -42,7 +42,8 @@ export const usePlotStyleUpdate = (
         style: 'solid',
         width: 2,
         color: getDefaultColor(mode === 'parameter' ? paramIndex : dataSourceIndex)
-      }
+      },
+      visible: true
     }
 
     if (mode === 'datasource') {
@@ -186,7 +187,8 @@ export const usePlotStyleUpdate = (
             width: 2,
             color: defaultColor
           },
-          legendText: ds.labelDescription ? `${ds.label} (${ds.labelDescription})` : ds.label
+          legendText: ds.labelDescription ? `${ds.label} (${ds.labelDescription})` : ds.label,
+          visible: true
         }
       })
     } else if (mode === 'parameter') {
@@ -205,7 +207,8 @@ export const usePlotStyleUpdate = (
             width: 2,
             color: defaultColor
           },
-          legendText: param.parameter || 'Unnamed'
+          legendText: param.parameter || 'Unnamed',
+          visible: true
         }
       })
     } else {
@@ -226,7 +229,8 @@ export const usePlotStyleUpdate = (
               width: 2,
               color: defaultColor
             },
-            legendText: `${ds.label}-${param.parameter || 'Unnamed'}`
+            legendText: `${ds.label}-${param.parameter || 'Unnamed'}`,
+            visible: true
           }
         })
       })
@@ -244,6 +248,40 @@ export const usePlotStyleUpdate = (
     })
   }, [editingChart, setEditingChart])
 
+  // Update visibility
+  const updateVisibility = useCallback((
+    dataSourceId: string,
+    dataSourceIndex: number,
+    paramIndex: number,
+    visible: boolean
+  ) => {
+    const mode = editingChart.plotStyles?.mode || editingChart.legendMode || 'datasource'
+    const plotStyles = { ...editingChart.plotStyles } || { mode, byDataSource: {}, byParameter: {}, byBoth: {} }
+
+    if (mode === 'datasource') {
+      plotStyles.byDataSource = plotStyles.byDataSource || {}
+      plotStyles.byDataSource[dataSourceId] = {
+        ...plotStyles.byDataSource[dataSourceId],
+        visible
+      }
+    } else if (mode === 'parameter') {
+      plotStyles.byParameter = plotStyles.byParameter || {}
+      plotStyles.byParameter[paramIndex] = {
+        ...plotStyles.byParameter[paramIndex],
+        visible
+      }
+    } else {
+      const key = `${dataSourceId}-${paramIndex}`
+      plotStyles.byBoth = plotStyles.byBoth || {}
+      plotStyles.byBoth[key] = {
+        ...plotStyles.byBoth[key],
+        visible
+      }
+    }
+
+    setEditingChart({ ...editingChart, plotStyles })
+  }, [editingChart, setEditingChart])
+
   return {
     initializePlotStyles,
     initializeDefaultStylesForMode,
@@ -251,6 +289,7 @@ export const usePlotStyleUpdate = (
     updateMarkerStyle,
     updateLineStyle,
     updateLegend,
-    updateMode
+    updateMode,
+    updateVisibility
   }
 }

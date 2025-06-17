@@ -37,7 +37,8 @@ export function PlotStyleTable({
     updateMarkerStyle,
     updateLineStyle,
     updateLegend,
-    updateMode
+    updateMode,
+    updateVisibility
   } = usePlotStyleUpdate(editingChart, setEditingChart)
 
   const rows = usePlotStyleRows(
@@ -82,11 +83,11 @@ export function PlotStyleTable({
     const headers = []
     if (mode !== "parameter") headers.push("Data Source")
     if (mode !== "datasource") headers.push("Parameter")
-    headers.push("Legend", "Plot Style")
+    headers.push("Legend", "Plot Style", "Visible")
     return headers
   }
 
-  const colSpan = mode === "both" ? 4 : 3
+  const colSpan = mode === "both" ? 5 : 4
 
   return (
     <div className="space-y-4 px-4">
@@ -181,7 +182,8 @@ export function PlotStyleTable({
                       width: 2,
                       color: defaultColor
                     },
-                    legendText: plotStyle?.legendText || row.legendText
+                    legendText: plotStyle?.legendText || row.legendText,
+                    visible: plotStyle?.visible !== undefined ? plotStyle.visible : true
                   }
                   }
                   
@@ -194,6 +196,7 @@ export function PlotStyleTable({
                       onUpdateMarker={(marker) => updateMarkerStyle(dataSourceId, dataSourceIndex, paramIndex, marker)}
                       onUpdateLine={(line) => updateLineStyle(dataSourceId, dataSourceIndex, paramIndex, line)}
                       onUpdateLegend={(legend) => updateLegend(dataSourceId, dataSourceIndex, paramIndex, legend)}
+                      onUpdateVisibility={(visible) => updateVisibility(dataSourceId, dataSourceIndex, paramIndex, visible)}
                     />
                   )
                 })

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { PlotStyleRow, LegendMode, MarkerSettings, LineSettings, PlotStyle } from "@/types/plot-style"
 import { PlotStylePopover } from "./PlotStylePopover"
 import { LegendInput } from "./LegendInput"
+import { Eye, EyeOff } from "lucide-react"
 
 interface PlotStyleTableRowProps {
   row: PlotStyleRow
@@ -14,6 +15,7 @@ interface PlotStyleTableRowProps {
   onUpdateMarker: (marker: MarkerSettings) => void
   onUpdateLine: (line: LineSettings) => void
   onUpdateLegend: (legend: string) => void
+  onUpdateVisibility: (visible: boolean) => void
 }
 
 export const PlotStyleTableRow = React.memo(({
@@ -22,8 +24,11 @@ export const PlotStyleTableRow = React.memo(({
   plotStyle,
   onUpdateMarker,
   onUpdateLine,
-  onUpdateLegend
+  onUpdateLegend,
+  onUpdateVisibility
 }: PlotStyleTableRowProps) => {
+  const isVisible = plotStyle.visible !== false // default to true if not specified
+
   return (
     <TableRow>
       {mode !== "parameter" && row.dataSource && (
@@ -65,6 +70,19 @@ export const PlotStyleTableRow = React.memo(({
           onUpdateMarker={onUpdateMarker}
           onUpdateLine={onUpdateLine}
         />
+      </TableCell>
+      <TableCell className="text-xs">
+        <button
+          onClick={() => onUpdateVisibility(!isVisible)}
+          className="p-1 hover:bg-accent rounded transition-colors"
+          aria-label={isVisible ? "Hide plot" : "Show plot"}
+        >
+          {isVisible ? (
+            <Eye className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <EyeOff className="h-4 w-4 text-muted-foreground" />
+          )}
+        </button>
       </TableCell>
     </TableRow>
   )

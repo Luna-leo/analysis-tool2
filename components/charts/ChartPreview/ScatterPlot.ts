@@ -136,7 +136,8 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
         width: 2,
         color: defaultColor
       },
-      legendText: ''
+      legendText: '',
+      visible: true
     }
 
     let style: any
@@ -164,7 +165,8 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
         ...defaultStyle.line,
         ...(style.line || {})
       },
-      legendText: style.legendText || defaultStyle.legendText
+      legendText: style.legendText || defaultStyle.legendText,
+      visible: style.visible !== undefined ? style.visible : defaultStyle.visible
     }
   }
 
@@ -179,7 +181,14 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
     seriesGroups.forEach((points, seriesId) => {
       const style = this.dataSourceStyles[seriesId] || {}
       
-      const markers: MarkerConfig[] = points.map(d => {
+      const markers: MarkerConfig[] = points
+        .filter(d => {
+          const dsIndex = d.dataSourceIndex || 0
+          const paramIndex = d.paramIndex !== undefined ? d.paramIndex : d.seriesIndex
+          const plotStyle = this.getPlotStyle(seriesId, dsIndex, paramIndex)
+          return plotStyle.visible !== false
+        })
+        .map(d => {
         const dsIndex = d.dataSourceIndex || 0
         const paramIndex = d.paramIndex !== undefined ? d.paramIndex : d.seriesIndex
         const plotStyle = this.getPlotStyle(seriesId, dsIndex, paramIndex)
@@ -278,6 +287,12 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
       // Use paramIndex from data point if available
       const actualParamIndex = seriesData[0]?.paramIndex !== undefined ? seriesData[0].paramIndex : paramIndex
       
+      // Get plot style for this combination
+      const plotStyle = this.getPlotStyle(dataSourceId, dataSourceIndex, actualParamIndex)
+      
+      // Skip if not visible
+      if (plotStyle.visible === false) return
+      
       // Sort data by x value for proper line rendering
       const sortedData = seriesData.sort((a, b) => {
         if (a.x instanceof Date && b.x instanceof Date) {
@@ -285,9 +300,6 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
         }
         return Number(a.x) - Number(b.x)
       })
-      
-      // Get plot style for this combination
-      const plotStyle = this.getPlotStyle(dataSourceId, dataSourceIndex, actualParamIndex)
       
       // Find the corresponding yParam
       const yParam = this.editingChart.yAxisParams?.[actualParamIndex]
