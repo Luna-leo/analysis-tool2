@@ -16,6 +16,9 @@ import { UnitConverterFormulaMasterPage } from "@/components/unit-converter-form
 import { SettingsPage } from "@/components/settings"
 import { useFileStore } from "@/stores/useFileStore"
 import { useLayoutStore } from "@/stores/useLayoutStore"
+import { useUIStore } from "@/stores/useUIStore"
+import { SelectionToolbar } from "./SelectionToolbar"
+import { SourceSelectionBanner } from "./SourceSelectionBanner"
 
 interface ChartGridProps {
   file: FileNode
@@ -34,6 +37,7 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
 
   const { activeTab, updateFileCharts } = useFileStore()
   const { layoutSettingsMap } = useLayoutStore()
+  const { gridSelectionMode, selectAllGridCharts, clearGridSelectedCharts, sourceSelectionMode } = useUIStore()
 
   const currentSettings = layoutSettingsMap[file.id] || {
     showFileName: true,
@@ -85,6 +89,28 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
   useEffect(() => {
     setLocalCharts(file.charts || [])
   }, [file.charts])
+  
+  // Keyboard shortcuts for selection mode
+  useEffect(() => {
+    if (!gridSelectionMode) return
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + A: Select all
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault()
+        const allChartIds = localCharts.map(chart => chart.id)
+        selectAllGridCharts(allChartIds)
+      }
+      // Escape: Clear selection
+      else if (e.key === 'Escape') {
+        e.preventDefault()
+        clearGridSelectedCharts()
+      }
+    }
+    
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [gridSelectionMode, localCharts, selectAllGridCharts, clearGridSelectedCharts])
 
   // Drag and drop handlers
   const handleDragStart = useCallback((index: number) => {
@@ -203,11 +229,12 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
   }
 
   return (
-    <div className="absolute inset-0 overflow-auto" ref={contentRef}>
-      <div className="px-6 pt-2 pb-6">
+    <>
+      <div className="absolute inset-0 overflow-auto" ref={contentRef}>
+        <div className="px-6 pt-2 pb-6">
 
-        {/* Grid */}
-        <div
+          {/* Grid */}
+          <div
           className="grid"
           style={{
             gridTemplateColumns: `repeat(${currentSettings.columns}, 1fr)`,
@@ -242,5 +269,14 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
         </div>
       </div>
     </div>
+    
+    {gridSelectionMode && (
+      <SelectionToolbar fileId={file.id} />
+    )}
+    
+    {sourceSelectionMode && (
+      <SourceSelectionBanner />
+    )}
+  </>
   )
 })

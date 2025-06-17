@@ -9,7 +9,7 @@ import { ChartGrid, ChartEditModal } from "../charts"
 import { DataSourceStyleDrawer } from "../charts/DataSourceStyleDrawer"
 import { DataSourceBadgePreview } from "../charts/DataSourceBadgePreview"
 import { TemplateListDialog, SaveTemplateDialog } from "../charts/PlotStyleTemplate"
-import { LineChart, Layers, ChevronDown } from "lucide-react"
+import { LineChart, Layers, ChevronDown, CheckSquare } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,7 +52,7 @@ export default function AnalysisTool() {
   const { loadParameters } = useParameterStore()
   const { loadState } = useGraphStateStore()
   const { updateLayoutSettings } = useLayoutStore()
-  const { setCurrentPage } = useUIStore()
+  const { setCurrentPage, gridSelectionMode, setGridSelectionMode, gridSelectedChartIds } = useUIStore()
   const { setActiveView, setSidebarOpen, sidebarOpen } = useViewStore()
   const { loadFromIndexedDB } = useCSVDataStore()
   const { isVisible: isPerformanceMonitorVisible, setIsVisible: setPerformanceMonitorVisible } = usePerformanceMonitor()
@@ -249,6 +249,18 @@ export default function AnalysisTool() {
                         )}
                       </Button>
                       <LayoutSettings fileId={activeTab} />
+                      <Button
+                        variant={gridSelectionMode ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setGridSelectionMode(!gridSelectionMode)}
+                        className="h-9 px-3 flex items-center justify-center gap-1.5 rounded-md border border-gray-400"
+                        title={gridSelectionMode ? "Exit selection mode" : "Enter selection mode"}
+                      >
+                        <CheckSquare className="h-4 w-4" />
+                        <span className="text-sm font-medium">
+                          {gridSelectionMode ? `${gridSelectedChartIds.size} Selected` : "Select"}
+                        </span>
+                      </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button

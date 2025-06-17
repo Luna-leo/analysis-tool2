@@ -10,6 +10,8 @@ import { useLayoutStore } from "@/stores/useLayoutStore"
 import { useUIStore } from "@/stores/useUIStore"
 import { useFileStore } from "@/stores/useFileStore"
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver"
+import { SelectionToolbar } from "./SelectionToolbar"
+import { SourceSelectionBanner } from "./SourceSelectionBanner"
 
 interface VirtualizedChartGridProps {
   file: FileNode
@@ -122,6 +124,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
   
   const { layoutSettingsMap } = useLayoutStore()
   const { updateFileCharts } = useFileStore()
+  const { gridSelectionMode, sourceSelectionMode } = useUIStore()
   const currentSettings = layoutSettingsMap[file.id] || {
     showFileName: true,
     showDataSources: true,
@@ -306,53 +309,63 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
   }, [charts, visibleRange])
   
   return (
-    <div className="h-full flex flex-col" ref={contentRef}>
-      <div className="flex-1 overflow-auto">
-        <div className="px-6 pt-2 pb-6">
-          
-          {/* Virtualized Grid */}
-          <div 
-            ref={gridRef}
-            className="relative"
-            style={{ minHeight: `${estimatedTotalHeight}px` }}
-          >
-            <div
-              className="grid"
-              style={{
-                gridTemplateColumns: `repeat(${currentSettings.columns}, 1fr)`,
-                gap: chartSizes.isCompactLayout ? "2px" : "4px",
-                overflow: "visible",
-              }}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => e.preventDefault()}
-              onDragEnd={handleDragEnd}
+    <>
+      <div className="h-full flex flex-col" ref={contentRef}>
+        <div className="flex-1 overflow-auto">
+          <div className="px-6 pt-2 pb-6">
+            
+            {/* Virtualized Grid */}
+            <div 
+              ref={gridRef}
+              className="relative"
+              style={{ minHeight: `${estimatedTotalHeight}px` }}
             >
-              {visibleCharts.map(({ chart, index, isVisible }) => (
-                  <VirtualizedChartCard
-                    key={chart.id}
-                    chart={chart}
-                    isCompactLayout={chartSizes.isCompactLayout}
-                    cardMinHeight={chartSizes.cardMinHeight}
-                    chartMinHeight={chartSizes.chartMinHeight}
-                    fileId={file.id}
-                    index={index}
-                    isVisible={isVisible}
-                    onDragStart={handleDragStart}
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
-                    onDragEnd={handleDragEnd}
-                    isDragging={draggedIndex === index}
-                    dragOverIndex={dragOverIndex}
-                    selectedDataSources={file.selectedDataSources}
-                    dataSourceStyles={file.dataSourceStyles}
-                    width={currentSettings.width}
-                    height={currentSettings.height}
-                  />
-              ))}
+              <div
+                className="grid"
+                style={{
+                  gridTemplateColumns: `repeat(${currentSettings.columns}, 1fr)`,
+                  gap: chartSizes.isCompactLayout ? "2px" : "4px",
+                  overflow: "visible",
+                }}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => e.preventDefault()}
+                onDragEnd={handleDragEnd}
+              >
+                {visibleCharts.map(({ chart, index, isVisible }) => (
+                    <VirtualizedChartCard
+                      key={chart.id}
+                      chart={chart}
+                      isCompactLayout={chartSizes.isCompactLayout}
+                      cardMinHeight={chartSizes.cardMinHeight}
+                      chartMinHeight={chartSizes.chartMinHeight}
+                      fileId={file.id}
+                      index={index}
+                      isVisible={isVisible}
+                      onDragStart={handleDragStart}
+                      onDragOver={handleDragOver}
+                      onDrop={handleDrop}
+                      onDragEnd={handleDragEnd}
+                      isDragging={draggedIndex === index}
+                      dragOverIndex={dragOverIndex}
+                      selectedDataSources={file.selectedDataSources}
+                      dataSourceStyles={file.dataSourceStyles}
+                      width={currentSettings.width}
+                      height={currentSettings.height}
+                    />
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+      
+      {gridSelectionMode && (
+        <SelectionToolbar fileId={file.id} />
+      )}
+      
+      {sourceSelectionMode && (
+        <SourceSelectionBanner />
+      )}
+    </>
   )
 })

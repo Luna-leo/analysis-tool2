@@ -12,6 +12,14 @@ interface UIState {
   selectedChartIds: Set<string>
   searchConditionDialogOpen: boolean
   editingConditionId: string | null
+  gridSelectionMode: boolean
+  gridSelectedChartIds: Set<string>
+  lastSelectedChartId: string | null
+  sourceSelectionMode: boolean
+  pendingSourceSelection: {
+    targetChartIds: Set<string>
+    onSourceSelect: (sourceChart: ChartComponent) => void
+  } | null
 }
 
 interface UIActions {
@@ -27,6 +35,13 @@ interface UIActions {
   selectAllCharts: (chartIds: string[]) => void
   openSearchConditionDialog: (conditionId?: string) => void
   closeSearchConditionDialog: () => void
+  setGridSelectionMode: (mode: boolean) => void
+  toggleGridChartSelection: (chartId: string, isShiftClick?: boolean, allChartIds?: string[]) => void
+  clearGridSelectedCharts: () => void
+  selectAllGridCharts: (chartIds: string[]) => void
+  startSourceSelection: (targetChartIds: Set<string>, onSourceSelect: (sourceChart: ChartComponent) => void) => void
+  cancelSourceSelection: () => void
+  selectSourceChart: (sourceChart: ChartComponent) => void
 }
 
 export type UIStore = UIState & UIActions
@@ -43,6 +58,11 @@ export const useUIStore = create<UIStore>()(
       selectedChartIds: new Set(),
       searchConditionDialogOpen: false,
       editingConditionId: null,
+      gridSelectionMode: false,
+      gridSelectedChartIds: new Set(),
+      lastSelectedChartId: null,
+      sourceSelectionMode: false,
+      pendingSourceSelection: null,
 
       // Actions
       setCurrentPage: (page) => set({ currentPage: page }),
@@ -94,6 +114,67 @@ export const useUIStore = create<UIStore>()(
         searchConditionDialogOpen: false, 
         editingConditionId: null 
       }),
+      setGridSelectionMode: (mode) => set({ 
+        gridSelectionMode: mode,
+        gridSelectedChartIds: mode ? new Set() : new Set()
+      }),
+      toggleGridChartSelection: (chartId, isShiftClick = false, allChartIds = []) => set((state) => {
+        const newSet = new Set(state.gridSelectedChartIds)
+        
+        if (isShiftClick && state.lastSelectedChartId && allChartIds.length > 0) {
+          // Shift+Click: range selection
+          const startIndex = allChartIds.indexOf(state.lastSelectedChartId)
+          const endIndex = allChartIds.indexOf(chartId)
+          
+          if (startIndex !== -1 && endIndex !== -1) {
+            const [minIndex, maxIndex] = [Math.min(startIndex, endIndex), Math.max(startIndex, endIndex)]
+            for (let i = minIndex; i <= maxIndex; i++) {
+              newSet.add(allChartIds[i])
+            }
+          }
+        } else {
+          // Normal click: toggle selection
+          if (newSet.has(chartId)) {
+            newSet.delete(chartId)
+          } else {
+            newSet.add(chartId)
+          }
+        }
+        
+        return { 
+          gridSelectedChartIds: newSet,
+          lastSelectedChartId: chartId
+        }
+      }),
+      clearGridSelectedCharts: () => set({ 
+        gridSelectedChartIds: new Set(),
+        lastSelectedChartId: null
+      }),
+      selectAllGridCharts: (chartIds) => set({ 
+        gridSelectedChartIds: new Set(chartIds),
+        lastSelectedChartId: chartIds.length > 0 ? chartIds[chartIds.length - 1] : null
+      }),
+      startSourceSelection: (targetChartIds, onSourceSelect) => set({
+        sourceSelectionMode: true,
+        pendingSourceSelection: {
+          targetChartIds,
+          onSourceSelect
+        }
+      }),
+      cancelSourceSelection: () => set({
+        sourceSelectionMode: false,
+        pendingSourceSelection: null
+      }),
+      selectSourceChart: (sourceChart) => {
+        const state = useUIStore.getState()
+        if (state.pendingSourceSelection) {
+          state.pendingSourceSelection.onSourceSelect(sourceChart)
+          set({
+            sourceSelectionMode: false,
+            pendingSourceSelection: null
+          })
+        }
+      },
     })),
     {
       name: 'ui-store',

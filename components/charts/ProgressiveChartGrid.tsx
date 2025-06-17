@@ -8,6 +8,9 @@ import { ChartCard } from "./ChartCard"
 import { ChartSkeleton } from "./ChartSkeleton"
 import { useLayoutStore } from "@/stores/useLayoutStore"
 import { useFileStore } from "@/stores/useFileStore"
+import { useUIStore } from "@/stores/useUIStore"
+import { SelectionToolbar } from "./SelectionToolbar"
+import { SourceSelectionBanner } from "./SourceSelectionBanner"
 
 interface ProgressiveChartGridProps {
   file: FileNode
@@ -31,6 +34,7 @@ export const ProgressiveChartGrid = React.memo(function ProgressiveChartGrid({
   
   const { layoutSettingsMap } = useLayoutStore()
   const { updateFileCharts } = useFileStore()
+  const { gridSelectionMode, sourceSelectionMode } = useUIStore()
   
   const currentSettings = layoutSettingsMap[file.id] || {
     showFileName: true,
@@ -157,6 +161,7 @@ export const ProgressiveChartGrid = React.memo(function ProgressiveChartGrid({
   }, [charts, renderedCount])
   
   return (
+    <>
     <div className="absolute inset-0 overflow-auto">
       <div className="px-6 pt-2 pb-6">
         
@@ -212,5 +217,14 @@ export const ProgressiveChartGrid = React.memo(function ProgressiveChartGrid({
         )}
       </div>
     </div>
+    
+    {gridSelectionMode && (
+      <SelectionToolbar fileId={file.id} />
+    )}
+    
+    {sourceSelectionMode && (
+      <SourceSelectionBanner />
+    )}
+  </>
   )
 })

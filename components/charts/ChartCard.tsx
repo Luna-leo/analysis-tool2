@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useCallback, useState } from "react"
-import { Edit, Copy, Trash2, GripVertical, Save, Layers } from "lucide-react"
+import { Edit, Copy, Trash2, GripVertical, Save, Layers, Check, GitMerge, MousePointer } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -30,6 +30,7 @@ import { SaveTemplateDialog, TemplateListDialog } from "./PlotStyleTemplate"
 import { PlotStyleTemplate } from "@/types/plot-style-template"
 import { PlotStyleApplicator } from "@/utils/plotStyleApplicator"
 import { toast } from "sonner"
+import { BulkApplyDialog, BulkApplySettings } from "./EditModal/BulkApplyDialog"
 
 interface ChartCardProps {
   chart: ChartComponent
@@ -72,12 +73,51 @@ const ChartCardComponent = ({
   const [isHovered, setIsHovered] = useState(false)
   const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false)
   const [showTemplateListDialog, setShowTemplateListDialog] = useState(false)
-  const { setEditingChart, setEditingChartWithIndex, setEditModalOpen, editingChart } = useUIStore()
+  const { 
+    setEditingChart, 
+    setEditingChartWithIndex, 
+    setEditModalOpen, 
+    editingChart,
+    gridSelectionMode,
+    gridSelectedChartIds,
+    toggleGridChartSelection,
+    sourceSelectionMode,
+    pendingSourceSelection,
+    selectSourceChart
+  } = useUIStore()
   const { duplicateChart, deleteChart, updateFileCharts, openTabs } = useFileStore()
   const { settings } = useSettingsStore()
+  const [showBulkApplyDialog, setShowBulkApplyDialog] = useState(false)
   
   const handleMouseEnter = useCallback(() => setIsHovered(true), [])
   const handleMouseLeave = useCallback(() => setIsHovered(false), [])
+  
+  const isSelected = gridSelectedChartIds.has(chart.id)
+  const isSourceCandidate = sourceSelectionMode && pendingSourceSelection && !pendingSourceSelection.targetChartIds.has(chart.id)
+  const isDisabledInSourceMode = sourceSelectionMode && pendingSourceSelection && pendingSourceSelection.targetChartIds.has(chart.id)
+  
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    if (sourceSelectionMode) {
+      e.preventDefault()
+      e.stopPropagation()
+      
+      if (isSourceCandidate) {
+        selectSourceChart(chart)
+      }
+      return
+    }
+    
+    if (gridSelectionMode) {
+      e.preventDefault()
+      e.stopPropagation()
+      
+      // Get all chart IDs for shift+click range selection
+      const currentFile = openTabs.find(tab => tab.id === fileId)
+      const allChartIds = currentFile?.charts?.map(c => c.id) || []
+      
+      toggleGridChartSelection(chart.id, e.shiftKey, allChartIds)
+    }
+  }, [gridSelectionMode, sourceSelectionMode, chart, isSourceCandidate, toggleGridChartSelection, selectSourceChart, openTabs, fileId])
   
   const handleEdit = useCallback(() => {
     setEditingChartWithIndex(chart, index)
@@ -98,12 +138,16 @@ const ChartCardComponent = ({
   }, [deleteChart, fileId, chart.id])
 
   const handleDragStart = useCallback((e: React.DragEvent) => {
+    if (gridSelectionMode) {
+      e.preventDefault()
+      return
+    }
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', String(index))
     if (onDragStart) {
       onDragStart(index)
     }
-  }, [index, onDragStart])
+  }, [index, onDragStart, gridSelectionMode])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -135,6 +179,57 @@ const ChartCardComponent = ({
     }
     setShowTemplateListDialog(false)
   }, [chart, fileId, openTabs, updateFileCharts])
+  
+  const handleBulkApply = useCallback((settings: BulkApplySettings) => {
+    const currentFile = openTabs.find(tab => tab.id === fileId)
+    if (!currentFile || !currentFile.charts) return
+    
+    let appliedCount = 0
+    const updatedCharts = currentFile.charts.map(targetChart => {
+      if (!gridSelectedChartIds.has(targetChart.id) || targetChart.id === chart.id) {
+        return targetChart
+      }
+      
+      appliedCount++
+      let updatedChart = { ...targetChart }
+      
+      if (settings.applyAxisSettings) {
+        updatedChart.yMin = chart.yMin
+        updatedChart.yMax = chart.yMax
+        updatedChart.yAxisType = chart.yAxisType
+        updatedChart.showGrid = chart.showGrid
+      }
+      
+      if (settings.applyDisplaySettings) {
+        updatedChart.lineWidth = chart.lineWidth
+        updatedChart.plotType = chart.plotType
+        updatedChart.stacked = chart.stacked
+        updatedChart.plotStyle = chart.plotStyle
+        updatedChart.showDataPoints = chart.showDataPoints
+        updatedChart.smoothing = chart.smoothing
+      }
+      
+      if (settings.applyReferenceLines) {
+        updatedChart.referenceLines = chart.referenceLines ? [...chart.referenceLines] : []
+      }
+      
+      if (settings.applyAnnotations) {
+        updatedChart.annotations = chart.annotations ? [...chart.annotations] : []
+      }
+      
+      if (settings.applyDataSources) {
+        updatedChart.yAxisParams = chart.yAxisParams ? [...chart.yAxisParams] : []
+        updatedChart.xParameter = chart.xParameter
+        updatedChart.xAxisType = chart.xAxisType
+      }
+      
+      return updatedChart
+    })
+    
+    updateFileCharts(fileId, updatedCharts)
+    toast.success(`Applied settings from "${chart.title}" to ${appliedCount} charts`)
+    setShowBulkApplyDialog(false)
+  }, [chart, fileId, openTabs, updateFileCharts, gridSelectedChartIds])
 
   return (
     <>
@@ -142,10 +237,15 @@ const ChartCardComponent = ({
       <ContextMenuTrigger asChild>
     <div
       className={cn(
-        "bg-card border border-gray-400 rounded-sm flex flex-col relative group h-full transition-all duration-200 cursor-move select-none",
+        "bg-card border border-gray-400 rounded-sm flex flex-col relative group h-full transition-all duration-200 select-none",
+        !gridSelectionMode && !sourceSelectionMode && "cursor-move",
+        gridSelectionMode && "cursor-pointer",
+        sourceSelectionMode && isSourceCandidate && "cursor-pointer border-2 border-dashed border-blue-400 hover:border-blue-500 hover:bg-blue-50/50",
+        sourceSelectionMode && isDisabledInSourceMode && "opacity-50 cursor-not-allowed",
         isDragging && "opacity-50 scale-105",
         isDropTarget && "ring-2 ring-primary ring-offset-2 bg-primary/5",
-        isEditing && "ring-2 ring-blue-500 shadow-lg border-blue-500"
+        isEditing && "ring-2 ring-blue-500 shadow-lg border-blue-500",
+        isSelected && gridSelectionMode && !sourceSelectionMode && "ring-2 ring-blue-500 bg-blue-50 border-blue-500"
       )}
       style={{
         width: width ? `${width}px` : undefined,
@@ -155,7 +255,8 @@ const ChartCardComponent = ({
       }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      draggable={true}
+      onClick={handleClick}
+      draggable={!gridSelectionMode}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
@@ -164,19 +265,48 @@ const ChartCardComponent = ({
         onDragEnd?.()
       }}
     >
-      {/* Drag Handle */}
-      <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
-        <GripVertical className="h-5 w-5 text-muted-foreground" strokeWidth={2} />
-      </div>
+      {/* Selection Indicator or Drag Handle */}
+      {sourceSelectionMode ? (
+        isSourceCandidate ? (
+          <div className="absolute top-2 left-2 animate-pulse">
+            <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center">
+              <MousePointer className="h-3.5 w-3.5 text-white" />
+            </div>
+          </div>
+        ) : (
+          <div className={cn(
+            "absolute top-2 left-2 w-6 h-6 rounded-full border-2 transition-all z-10",
+            "bg-gray-300 border-gray-400"
+          )}>
+            <Check className="h-3.5 w-3.5 text-gray-600 absolute top-0.5 left-0.5" strokeWidth={3} />
+          </div>
+        )
+      ) : gridSelectionMode ? (
+        <div className={cn(
+          "absolute top-2 left-2 w-6 h-6 rounded-full border-2 transition-all z-10",
+          isSelected 
+            ? "bg-blue-500 border-blue-500" 
+            : "bg-white border-gray-400"
+        )}>
+          {isSelected && (
+            <Check className="h-3.5 w-3.5 text-white absolute top-0.5 left-0.5" strokeWidth={3} />
+          )}
+        </div>
+      ) : (
+        <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 pointer-events-none">
+          <GripVertical className="h-5 w-5 text-muted-foreground" strokeWidth={2} />
+        </div>
+      )}
 
-      {/* Edit, Duplicate and Delete Buttons - appear on hover */}
-      <div 
-        className={cn(
-          "absolute -top-3 right-2 flex gap-1 transition-all duration-200 z-50",
-          isHovered ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"
-        )}
-        onMouseDown={(e) => e.stopPropagation()}
-      >
+      {/* Edit, Duplicate and Delete Buttons - appear on hover (not in selection mode) */}
+      {!gridSelectionMode && !sourceSelectionMode && (
+        <div 
+          className={cn(
+            "absolute -top-3 right-2 flex gap-1 transition-all duration-200 z-50",
+            isHovered ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"
+          )}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
         <div className="flex gap-1 bg-background/95 backdrop-blur-sm rounded-full p-1 shadow-lg border border-border">
           <Button
             variant="ghost"
@@ -210,6 +340,7 @@ const ChartCardComponent = ({
           </Button>
         </div>
       </div>
+      )}
 
       <div
         className="bg-white flex items-center justify-center flex-1 min-h-0 pointer-events-none rounded-sm overflow-hidden"
@@ -264,6 +395,12 @@ const ChartCardComponent = ({
           <Layers className="mr-2 h-4 w-4" />
           Apply Template
         </ContextMenuItem>
+        {gridSelectionMode && gridSelectedChartIds.size > 1 && gridSelectedChartIds.has(chart.id) && (
+          <ContextMenuItem onClick={() => setShowBulkApplyDialog(true)}>
+            <GitMerge className="mr-2 h-4 w-4" />
+            Copy Settings to Selected Charts
+          </ContextMenuItem>
+        )}
         <ContextMenuSeparator />
         <ContextMenuItem 
           onClick={handleDelete}
@@ -288,6 +425,17 @@ const ChartCardComponent = ({
       onSelectTemplate={handleTemplateSelect}
       hasMultipleCharts={false}
     />
+    
+    {gridSelectionMode && gridSelectedChartIds.size > 1 && (
+      <BulkApplyDialog
+        open={showBulkApplyDialog}
+        onOpenChange={setShowBulkApplyDialog}
+        selectedChartIds={new Set(Array.from(gridSelectedChartIds).filter(id => id !== chart.id))}
+        currentChart={chart}
+        allCharts={openTabs.find(tab => tab.id === fileId)?.charts || []}
+        onApply={handleBulkApply}
+      />
+    )}
   </>
   )
 }
