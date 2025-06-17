@@ -3,6 +3,7 @@
 import React from "react"
 import { LayoutGrid } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,9 +15,10 @@ import { useLayoutStore } from "@/stores/useLayoutStore"
 
 interface LayoutSettingsProps {
   fileId: string
+  size?: "default" | "sm"
 }
 
-export function LayoutSettings({ fileId }: LayoutSettingsProps) {
+export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
   const { layoutSettingsMap, updateLayoutSettings } = useLayoutStore()
   
   const defaultSettings = {
@@ -37,11 +39,14 @@ export function LayoutSettings({ fileId }: LayoutSettingsProps) {
       <DropdownMenuTrigger asChild>
         <Button 
           variant="outline" 
-          size="sm" 
-          className="h-9 w-24 flex items-center justify-center gap-1.5 rounded-md border border-gray-400"
+          size={size} 
+          className={cn(
+            "flex items-center justify-center gap-1.5",
+            size === "sm" ? "h-8 px-3 text-xs" : "h-9 w-24"
+          )}
         >
-          <LayoutGrid className="h-4 w-4" />
-          <span className="text-sm font-medium">Layout</span>
+          <LayoutGrid className={size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4"} />
+          <span className={size === "sm" ? "" : "text-sm font-medium"}>Layout</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">

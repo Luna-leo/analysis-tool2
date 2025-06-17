@@ -199,7 +199,64 @@ export default function AnalysisTool() {
       <div className="flex-1 flex flex-col h-full overflow-hidden relative">
         {/* Tab Header - Fixed at top */}
         <div className="flex-shrink-0">
-          <TabHeader openTabs={openTabs} activeTab={activeTab} />
+          <TabHeader 
+            openTabs={openTabs} 
+            activeTab={activeTab}
+            onChartClick={() => {
+              if (!activeTab) return
+              const currentFile = openTabs.find((tab) => tab.id === activeTab)
+              const isGraphPage = (currentFile as any)?.charts || (currentFile as any)?.dataSources
+              if (!isGraphPage) return
+              
+              const uiStore = useUIStore.getState()
+              uiStore.setEditingChart({
+                id: `chart_${Date.now()}`,
+                title: "新しいチャート",
+                type: "scatter",
+                showMarkers: true,
+                showLines: false,
+                xAxisType: "datetime",
+                xParameter: "timestamp",
+                data: [],
+                referenceLines: [],
+                fileId: activeTab
+              })
+              uiStore.setEditModalOpen(true)
+            }}
+            onSelectClick={() => setGridSelectionMode(!gridSelectionMode)}
+            onTemplateAction={(action) => {
+              if (!activeTab) return
+              const currentFile = openTabs.find((tab) => tab.id === activeTab)
+              
+              if (action === "browse") {
+                setTemplateListOpen(true)
+              } else if (action === "save") {
+                const firstChart = (currentFile as any)?.charts?.[0]
+                if (firstChart) {
+                  setSaveTemplateOpen(true)
+                } else {
+                  toast.error("No chart to save as template")
+                }
+              } else if (action.startsWith("apply:")) {
+                const templateId = action.replace("apply:", "")
+                const template = templates.find(t => t.id === templateId)
+                if (template && (currentFile as any)?.charts?.length > 0) {
+                  const updatedCharts = (currentFile as any).charts.map((chart: any) => {
+                    const result = PlotStyleApplicator.applyTemplate(chart, template)
+                    return result.updatedChart || chart
+                  })
+                  updateFileCharts(activeTab, updatedCharts)
+                  toast.success(`Applied template "${template.name}" to all charts`)
+                }
+              }
+            }}
+            gridSelectionMode={gridSelectionMode}
+            selectedCount={gridSelectedChartIds.size}
+            showActionButtons={activeTab ? (() => {
+              const currentFile = openTabs.find((tab) => tab.id === activeTab)
+              return (currentFile as any)?.charts || (currentFile as any)?.dataSources
+            })() : false}
+          />
         </div>
 
         {/* Scrollable Content Area */}
@@ -220,117 +277,14 @@ export default function AnalysisTool() {
             
             if (isGraphPage) {
               return (
-                <div className="px-6 pt-2 pb-0 flex flex-col justify-center min-h-[4.5rem] flex-shrink-0">
+                <div className="px-6 pt-2 pb-0 flex flex-col justify-center flex-shrink-0">
                   <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const uiStore = useUIStore.getState()
-                          uiStore.setEditingChart({
-                            id: `chart_${Date.now()}`,
-                            title: "新しいチャート",
-                            type: "scatter",
-                            showMarkers: true,
-                            showLines: false,
-                            xAxisType: "datetime",
-                            xParameter: "timestamp",
-                            data: [],
-                            referenceLines: [],
-                            fileId: activeTab
-                          })
-                          uiStore.setEditModalOpen(true)
-                        }}
-                        className="h-9 w-24 flex items-center justify-center gap-1.5 rounded-md border border-gray-400 relative"
-                      >
-                        <LineChart className="h-4 w-4" />
-                        <span className="text-sm font-medium">Chart</span>
-                        {(!currentFile.charts || currentFile.charts.length === 0) && (
-                          <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-                          </span>
-                        )}
-                      </Button>
-                      <LayoutSettings fileId={activeTab} />
-                      <Button
-                        variant={gridSelectionMode ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setGridSelectionMode(!gridSelectionMode)}
-                        className="h-9 px-3 flex items-center justify-center gap-1.5 rounded-md border border-gray-400"
-                        title={gridSelectionMode ? "Exit selection mode" : "Enter selection mode"}
-                      >
-                        <CheckSquare className="h-4 w-4" />
-                        <span className="text-sm font-medium">
-                          {gridSelectionMode ? `${gridSelectedChartIds.size} Selected` : "Select"}
-                        </span>
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="h-9 px-3 flex items-center justify-center gap-1.5 rounded-md border border-gray-400"
-                          >
-                            <Layers className="h-4 w-4" />
-                            <span className="text-sm font-medium">Templates</span>
-                            <ChevronDown className="h-3 w-3 ml-0.5" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56">
-                          <DropdownMenuItem onClick={() => setTemplateListOpen(true)}>
-                            Browse Templates...
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => {
-                              // Save current view as template - find the first chart to use as template
-                              const firstChart = currentFile.charts?.[0]
-                              if (firstChart) {
-                                setSaveTemplateOpen(true)
-                              } else {
-                                toast.error("No chart to save as template")
-                              }
-                            }}
-                            disabled={!currentFile.charts || currentFile.charts.length === 0}
-                          >
-                            Save Current View as Template
-                          </DropdownMenuItem>
-                          {templates.length > 0 && (
-                            <>
-                              <DropdownMenuSeparator />
-                              <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                                Recent Templates
-                              </div>
-                              {templates.slice(0, 5).map(template => (
-                                <DropdownMenuItem 
-                                  key={template.id}
-                                  onClick={() => {
-                                    // Apply template to all charts in current file
-                                    if (currentFile.charts && currentFile.charts.length > 0) {
-                                      const updatedCharts = currentFile.charts.map(chart => {
-                                        const result = PlotStyleApplicator.applyTemplate(chart, template)
-                                        return result.updatedChart || chart
-                                      })
-                                      updateFileCharts(activeTab, updatedCharts)
-                                      toast.success(`Applied template "${template.name}" to all charts`)
-                                    }
-                                  }}
-                                >
-                                  {template.name}
-                                </DropdownMenuItem>
-                              ))}
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      {/* Selection Toolbar - Inline with other buttons */}
+                      {/* Selection Toolbar - Now standalone */}
                       {gridSelectionMode && (
-                        <div className="flex-1 flex justify-end">
+                        <div className="flex justify-end">
                           <SelectionToolbar fileId={activeTab} />
                         </div>
                       )}
-                      </div>
                       {selectedDataSources.length > 0 ? (
                       <div className="flex items-center gap-2 flex-wrap">
                         {selectedDataSources.map((source: any, index: number) => {
