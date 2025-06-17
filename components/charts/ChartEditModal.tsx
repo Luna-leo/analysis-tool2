@@ -198,19 +198,55 @@ export function ChartEditModal() {
       let updatedChart = { ...chart }
 
       if (settings.applyAxisSettings) {
-        updatedChart.yMin = editingChart.yMin
-        updatedChart.yMax = editingChart.yMax
-        updatedChart.yAxisType = editingChart.yAxisType
+        // Copy Y-axis settings from each parameter
+        if (editingChart.yAxisParams) {
+          updatedChart.yAxisParams = chart.yAxisParams?.map((param, index) => {
+            const sourceParam = editingChart.yAxisParams?.[index]
+            if (sourceParam) {
+              return {
+                ...param,
+                range: sourceParam.range ? { ...sourceParam.range } : param.range
+              }
+            }
+            return param
+          }) || []
+        }
+        
+        // Copy grid and axis settings
         updatedChart.showGrid = editingChart.showGrid
+        updatedChart.xAxisTicks = editingChart.xAxisTicks
+        updatedChart.yAxisTicks = editingChart.yAxisTicks
+        updatedChart.xAxisTickPrecision = editingChart.xAxisTickPrecision
+        updatedChart.yAxisTickPrecision = editingChart.yAxisTickPrecision
+        updatedChart.showXLabel = editingChart.showXLabel
+        updatedChart.showYLabel = editingChart.showYLabel
+        updatedChart.xLabelOffset = editingChart.xLabelOffset
+        updatedChart.yLabelOffset = editingChart.yLabelOffset
       }
 
       if (settings.applyDisplaySettings) {
-        updatedChart.lineWidth = editingChart.lineWidth
-        updatedChart.plotType = editingChart.plotType
-        updatedChart.stacked = editingChart.stacked
-        updatedChart.plotStyle = editingChart.plotStyle
-        updatedChart.showDataPoints = editingChart.showDataPoints
-        updatedChart.smoothing = editingChart.smoothing
+        // Copy basic display settings
+        updatedChart.type = editingChart.type
+        updatedChart.showMarkers = editingChart.showMarkers
+        updatedChart.showLines = editingChart.showLines
+        updatedChart.showTitle = editingChart.showTitle
+        updatedChart.showLegend = editingChart.showLegend
+        updatedChart.legendPosition = editingChart.legendPosition ? { ...editingChart.legendPosition } : undefined
+        updatedChart.legendMode = editingChart.legendMode
+        updatedChart.dataSourceLegends = editingChart.dataSourceLegends ? { ...editingChart.dataSourceLegends } : undefined
+        
+        // Copy plot styles (very important for appearance)
+        if (editingChart.plotStyles) {
+          updatedChart.plotStyles = {
+            mode: editingChart.plotStyles.mode,
+            byDataSource: editingChart.plotStyles.byDataSource ? { ...editingChart.plotStyles.byDataSource } : undefined,
+            byParameter: editingChart.plotStyles.byParameter ? { ...editingChart.plotStyles.byParameter } : undefined,
+            byBoth: editingChart.plotStyles.byBoth ? { ...editingChart.plotStyles.byBoth } : undefined
+          }
+        }
+        
+        // Copy margins
+        updatedChart.margins = editingChart.margins ? { ...editingChart.margins } : undefined
       }
 
       if (settings.applyReferenceLines) {
@@ -218,13 +254,16 @@ export function ChartEditModal() {
       }
 
       if (settings.applyAnnotations) {
-        updatedChart.annotations = editingChart.annotations ? [...editingChart.annotations] : []
+        // Note: annotations property doesn't exist in ChartComponent type
+        // This might need to be handled differently or removed
       }
 
       if (settings.applyDataSources) {
-        updatedChart.yAxisParams = editingChart.yAxisParams ? [...editingChart.yAxisParams] : []
+        updatedChart.yAxisParams = editingChart.yAxisParams ? 
+          editingChart.yAxisParams.map(param => ({ ...param })) : []
         updatedChart.xParameter = editingChart.xParameter
         updatedChart.xAxisType = editingChart.xAxisType
+        updatedChart.xAxisRange = editingChart.xAxisRange ? { ...editingChart.xAxisRange } : undefined
       }
 
       return updatedChart

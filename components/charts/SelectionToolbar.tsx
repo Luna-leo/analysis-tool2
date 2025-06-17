@@ -123,19 +123,55 @@ export function SelectionToolbar({ fileId }: SelectionToolbarProps) {
       let updatedChart = { ...chart }
       
       if (settings.applyAxisSettings) {
-        updatedChart.yMin = sourceChart.yMin
-        updatedChart.yMax = sourceChart.yMax
-        updatedChart.yAxisType = sourceChart.yAxisType
+        // Copy Y-axis settings from each parameter
+        if (sourceChart.yAxisParams) {
+          updatedChart.yAxisParams = chart.yAxisParams?.map((param, index) => {
+            const sourceParam = sourceChart.yAxisParams?.[index]
+            if (sourceParam) {
+              return {
+                ...param,
+                range: sourceParam.range ? { ...sourceParam.range } : param.range
+              }
+            }
+            return param
+          }) || []
+        }
+        
+        // Copy grid and axis settings
         updatedChart.showGrid = sourceChart.showGrid
+        updatedChart.xAxisTicks = sourceChart.xAxisTicks
+        updatedChart.yAxisTicks = sourceChart.yAxisTicks
+        updatedChart.xAxisTickPrecision = sourceChart.xAxisTickPrecision
+        updatedChart.yAxisTickPrecision = sourceChart.yAxisTickPrecision
+        updatedChart.showXLabel = sourceChart.showXLabel
+        updatedChart.showYLabel = sourceChart.showYLabel
+        updatedChart.xLabelOffset = sourceChart.xLabelOffset
+        updatedChart.yLabelOffset = sourceChart.yLabelOffset
       }
       
       if (settings.applyDisplaySettings) {
-        updatedChart.lineWidth = sourceChart.lineWidth
-        updatedChart.plotType = sourceChart.plotType
-        updatedChart.stacked = sourceChart.stacked
-        updatedChart.plotStyle = sourceChart.plotStyle
-        updatedChart.showDataPoints = sourceChart.showDataPoints
-        updatedChart.smoothing = sourceChart.smoothing
+        // Copy basic display settings
+        updatedChart.type = sourceChart.type
+        updatedChart.showMarkers = sourceChart.showMarkers
+        updatedChart.showLines = sourceChart.showLines
+        updatedChart.showTitle = sourceChart.showTitle
+        updatedChart.showLegend = sourceChart.showLegend
+        updatedChart.legendPosition = sourceChart.legendPosition ? { ...sourceChart.legendPosition } : undefined
+        updatedChart.legendMode = sourceChart.legendMode
+        updatedChart.dataSourceLegends = sourceChart.dataSourceLegends ? { ...sourceChart.dataSourceLegends } : undefined
+        
+        // Copy plot styles (very important for appearance)
+        if (sourceChart.plotStyles) {
+          updatedChart.plotStyles = {
+            mode: sourceChart.plotStyles.mode,
+            byDataSource: sourceChart.plotStyles.byDataSource ? { ...sourceChart.plotStyles.byDataSource } : undefined,
+            byParameter: sourceChart.plotStyles.byParameter ? { ...sourceChart.plotStyles.byParameter } : undefined,
+            byBoth: sourceChart.plotStyles.byBoth ? { ...sourceChart.plotStyles.byBoth } : undefined
+          }
+        }
+        
+        // Copy margins
+        updatedChart.margins = sourceChart.margins ? { ...sourceChart.margins } : undefined
       }
       
       if (settings.applyReferenceLines) {
@@ -143,13 +179,16 @@ export function SelectionToolbar({ fileId }: SelectionToolbarProps) {
       }
       
       if (settings.applyAnnotations) {
-        updatedChart.annotations = sourceChart.annotations ? [...sourceChart.annotations] : []
+        // Note: annotations property doesn't exist in ChartComponent type
+        // This might need to be handled differently or removed
       }
       
       if (settings.applyDataSources) {
-        updatedChart.yAxisParams = sourceChart.yAxisParams ? [...sourceChart.yAxisParams] : []
+        updatedChart.yAxisParams = sourceChart.yAxisParams ? 
+          sourceChart.yAxisParams.map(param => ({ ...param })) : []
         updatedChart.xParameter = sourceChart.xParameter
         updatedChart.xAxisType = sourceChart.xAxisType
+        updatedChart.xAxisRange = sourceChart.xAxisRange ? { ...sourceChart.xAxisRange } : undefined
       }
       
       return updatedChart

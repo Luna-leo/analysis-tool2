@@ -194,19 +194,55 @@ const ChartCardComponent = ({
       let updatedChart = { ...targetChart }
       
       if (settings.applyAxisSettings) {
-        updatedChart.yMin = chart.yMin
-        updatedChart.yMax = chart.yMax
-        updatedChart.yAxisType = chart.yAxisType
+        // Copy Y-axis settings from each parameter
+        if (chart.yAxisParams) {
+          updatedChart.yAxisParams = targetChart.yAxisParams?.map((param, index) => {
+            const sourceParam = chart.yAxisParams?.[index]
+            if (sourceParam) {
+              return {
+                ...param,
+                range: sourceParam.range ? { ...sourceParam.range } : param.range
+              }
+            }
+            return param
+          }) || []
+        }
+        
+        // Copy grid and axis settings
         updatedChart.showGrid = chart.showGrid
+        updatedChart.xAxisTicks = chart.xAxisTicks
+        updatedChart.yAxisTicks = chart.yAxisTicks
+        updatedChart.xAxisTickPrecision = chart.xAxisTickPrecision
+        updatedChart.yAxisTickPrecision = chart.yAxisTickPrecision
+        updatedChart.showXLabel = chart.showXLabel
+        updatedChart.showYLabel = chart.showYLabel
+        updatedChart.xLabelOffset = chart.xLabelOffset
+        updatedChart.yLabelOffset = chart.yLabelOffset
       }
       
       if (settings.applyDisplaySettings) {
-        updatedChart.lineWidth = chart.lineWidth
-        updatedChart.plotType = chart.plotType
-        updatedChart.stacked = chart.stacked
-        updatedChart.plotStyle = chart.plotStyle
-        updatedChart.showDataPoints = chart.showDataPoints
-        updatedChart.smoothing = chart.smoothing
+        // Copy basic display settings
+        updatedChart.type = chart.type
+        updatedChart.showMarkers = chart.showMarkers
+        updatedChart.showLines = chart.showLines
+        updatedChart.showTitle = chart.showTitle
+        updatedChart.showLegend = chart.showLegend
+        updatedChart.legendPosition = chart.legendPosition ? { ...chart.legendPosition } : undefined
+        updatedChart.legendMode = chart.legendMode
+        updatedChart.dataSourceLegends = chart.dataSourceLegends ? { ...chart.dataSourceLegends } : undefined
+        
+        // Copy plot styles (very important for appearance)
+        if (chart.plotStyles) {
+          updatedChart.plotStyles = {
+            mode: chart.plotStyles.mode,
+            byDataSource: chart.plotStyles.byDataSource ? { ...chart.plotStyles.byDataSource } : undefined,
+            byParameter: chart.plotStyles.byParameter ? { ...chart.plotStyles.byParameter } : undefined,
+            byBoth: chart.plotStyles.byBoth ? { ...chart.plotStyles.byBoth } : undefined
+          }
+        }
+        
+        // Copy margins
+        updatedChart.margins = chart.margins ? { ...chart.margins } : undefined
       }
       
       if (settings.applyReferenceLines) {
@@ -214,13 +250,16 @@ const ChartCardComponent = ({
       }
       
       if (settings.applyAnnotations) {
-        updatedChart.annotations = chart.annotations ? [...chart.annotations] : []
+        // Note: annotations property doesn't exist in ChartComponent type
+        // This might need to be handled differently or removed
       }
       
       if (settings.applyDataSources) {
-        updatedChart.yAxisParams = chart.yAxisParams ? [...chart.yAxisParams] : []
+        updatedChart.yAxisParams = chart.yAxisParams ? 
+          chart.yAxisParams.map(param => ({ ...param })) : []
         updatedChart.xParameter = chart.xParameter
         updatedChart.xAxisType = chart.xAxisType
+        updatedChart.xAxisRange = chart.xAxisRange ? { ...chart.xAxisRange } : undefined
       }
       
       return updatedChart
