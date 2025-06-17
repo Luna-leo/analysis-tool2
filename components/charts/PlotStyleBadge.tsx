@@ -1,6 +1,7 @@
 "use client"
 
 import React from "react"
+import * as d3 from "d3"
 import { PlotStyle } from "@/types/plot-style"
 import { MarkerType } from "@/types"
 
@@ -27,6 +28,36 @@ export function PlotStyleBadge({ plotStyle, showLines = true, showMarkers = true
 
   // Cap marker size for badge display
   const displaySize = Math.min(marker.size, 5)
+
+  // Get D3 symbol path
+  const getSymbolPath = (type: MarkerType) => {
+    let symbolType
+    let symbolSize = displaySize * displaySize
+    
+    switch (type) {
+      case 'circle':
+        return null // Handle circle separately for better control
+      case 'square':
+        return null // Handle square separately for better control
+      case 'triangle':
+        symbolType = d3.symbolTriangle
+        break
+      case 'diamond':
+        symbolType = d3.symbolDiamond
+        symbolSize = symbolSize * 1.25 // Match MarkerRenderer scaling
+        break
+      case 'star':
+        symbolType = d3.symbolStar
+        break
+      case 'cross':
+        symbolType = d3.symbolCross
+        break
+      default:
+        return null
+    }
+    
+    return d3.symbol().type(symbolType).size(symbolSize)()
+  }
 
   return (
     <div className="flex items-center gap-1" style={{ width: '24px', height: '12px', position: 'relative' }}>
@@ -68,49 +99,15 @@ export function PlotStyleBadge({ plotStyle, showLines = true, showMarkers = true
                 strokeWidth="0.5"
               />
             )}
-            {marker.type === 'triangle' && (
-              <polygon
-                points={`12,${6 - displaySize} ${12 - displaySize},${6 + displaySize} ${12 + displaySize},${6 + displaySize}`}
+            {/* Use D3 symbols for other shapes to match MarkerRenderer */}
+            {(marker.type === 'triangle' || marker.type === 'diamond' || marker.type === 'star' || marker.type === 'cross') && (
+              <path
+                d={getSymbolPath(marker.type) || ''}
+                transform={`translate(12, 6)`}
                 fill={marker.fillColor}
                 stroke={marker.borderColor}
                 strokeWidth="0.5"
               />
-            )}
-            {marker.type === 'diamond' && (
-              <polygon
-                points={`12,${6 - displaySize} ${12 + displaySize},6 12,${6 + displaySize} ${12 - displaySize},6`}
-                fill={marker.fillColor}
-                stroke={marker.borderColor}
-                strokeWidth="0.5"
-              />
-            )}
-            {marker.type === 'star' && (
-              <polygon
-                points={`12,${6 - displaySize} ${12 + displaySize * 0.4},${6 - displaySize * 0.3} ${12 + displaySize * 0.65},${6 + displaySize * 0.6} ${12 - displaySize * 0.65},${6 + displaySize * 0.6} ${12 - displaySize * 0.4},${6 - displaySize * 0.3}`}
-                fill={marker.fillColor}
-                stroke={marker.borderColor}
-                strokeWidth="0.5"
-              />
-            )}
-            {marker.type === 'cross' && (
-              <g>
-                <line
-                  x1={12 - displaySize}
-                  y1="6"
-                  x2={12 + displaySize}
-                  y2="6"
-                  stroke={marker.borderColor}
-                  strokeWidth="1"
-                />
-                <line
-                  x1="12"
-                  y1={6 - displaySize}
-                  x2="12"
-                  y2={6 + displaySize}
-                  stroke={marker.borderColor}
-                  strokeWidth="1"
-                />
-              </g>
             )}
           </>
         )}
