@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useCallback, useState } from "react"
-import { Edit, Copy, Trash2, GripVertical } from "lucide-react"
+import { Edit, Copy, Trash2, GripVertical, Save, Layers } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -14,11 +14,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu"
 import { ChartComponent, EventInfo, DataSourceStyle } from "@/types"
 import { useUIStore } from "@/stores/useUIStore"
 import { useFileStore } from "@/stores/useFileStore"
 import { ChartPreviewGraph } from "./ChartPreviewGraph"
 import { useSettingsStore } from "@/stores/useSettingsStore"
+import { SaveTemplateDialog, TemplateListDialog } from "./PlotStyleTemplate"
+import { PlotStyleTemplate } from "@/types/plot-style-template"
+import { PlotStyleApplicator } from "@/utils/plotStyleApplicator"
+import { toast } from "sonner"
 
 interface ChartCardProps {
   chart: ChartComponent
@@ -59,8 +70,10 @@ const ChartCardComponent = ({
 }: ChartCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
+  const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false)
+  const [showTemplateListDialog, setShowTemplateListDialog] = useState(false)
   const { setEditingChart, setEditingChartWithIndex, setEditModalOpen, editingChart } = useUIStore()
-  const { duplicateChart, deleteChart } = useFileStore()
+  const { duplicateChart, deleteChart, updateFileCharts, openTabs } = useFileStore()
   const { settings } = useSettingsStore()
   
   const handleMouseEnter = useCallback(() => setIsHovered(true), [])
@@ -106,7 +119,27 @@ const ChartCardComponent = ({
   const isDropTarget = dragOverIndex === index
   const isEditing = editingChart?.id === chart.id
 
+  const handleTemplateSelect = useCallback((template: PlotStyleTemplate) => {
+    const result = PlotStyleApplicator.applyTemplate(chart, template)
+    if (result.applied && result.updatedChart) {
+      const currentFile = openTabs.find(tab => tab.id === fileId)
+      if (currentFile && currentFile.charts) {
+        const updatedCharts = currentFile.charts.map(c => 
+          c.id === chart.id ? result.updatedChart : c
+        )
+        updateFileCharts(fileId, updatedCharts)
+        toast.success(`Applied template "${template.name}"`)
+      }
+    } else {
+      toast.error("Failed to apply template")
+    }
+    setShowTemplateListDialog(false)
+  }, [chart, fileId, openTabs, updateFileCharts])
+
   return (
+    <>
+    <ContextMenu>
+      <ContextMenuTrigger asChild>
     <div
       className={cn(
         "bg-card border border-gray-400 rounded-sm flex flex-col relative group h-full transition-all duration-200 cursor-move select-none",
@@ -212,6 +245,50 @@ const ChartCardComponent = ({
         </AlertDialogContent>
       </AlertDialog>
     </div>
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem onClick={handleEdit}>
+          <Edit className="mr-2 h-4 w-4" />
+          Edit Chart
+        </ContextMenuItem>
+        <ContextMenuItem onClick={handleDuplicate}>
+          <Copy className="mr-2 h-4 w-4" />
+          Duplicate
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem onClick={() => setShowSaveTemplateDialog(true)}>
+          <Save className="mr-2 h-4 w-4" />
+          Save Style as Template
+        </ContextMenuItem>
+        <ContextMenuItem onClick={() => setShowTemplateListDialog(true)}>
+          <Layers className="mr-2 h-4 w-4" />
+          Apply Template
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem 
+          onClick={handleDelete}
+          className="text-destructive focus:text-destructive"
+        >
+          <Trash2 className="mr-2 h-4 w-4" />
+          Delete
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
+    
+    {/* Template Dialogs */}
+    <SaveTemplateDialog
+      open={showSaveTemplateDialog}
+      onOpenChange={setShowSaveTemplateDialog}
+      chart={chart}
+    />
+    
+    <TemplateListDialog
+      open={showTemplateListDialog}
+      onOpenChange={setShowTemplateListDialog}
+      onSelectTemplate={handleTemplateSelect}
+      hasMultipleCharts={false}
+    />
+  </>
   )
 }
 

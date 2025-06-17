@@ -3,7 +3,7 @@
 import React from "react"
 import { DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Save, Layers } from "lucide-react"
 
 interface ModalHeaderProps {
   title: string
@@ -14,6 +14,8 @@ interface ModalHeaderProps {
   onPreviousChart?: () => void
   onNextChart?: () => void
   onSaveAndNext?: () => void
+  onSaveAsTemplate?: () => void
+  onApplyTemplate?: () => void
 }
 
 export function ModalHeader({ 
@@ -24,7 +26,9 @@ export function ModalHeader({
   totalCharts,
   onPreviousChart,
   onNextChart,
-  onSaveAndNext
+  onSaveAndNext,
+  onSaveAsTemplate,
+  onApplyTemplate
 }: ModalHeaderProps) {
   const showNavigation = currentIndex !== undefined && totalCharts !== undefined && totalCharts > 1
   const hasNextChart = showNavigation && currentIndex < totalCharts - 1
@@ -68,6 +72,36 @@ export function ModalHeader({
                 </Button>
               </div>
             </>
+          )}
+          
+          {/* Template controls */}
+          {(onSaveAsTemplate || onApplyTemplate) && (
+            <div className="flex items-center gap-1 pr-2 border-r">
+              {onSaveAsTemplate && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onSaveAsTemplate}
+                  className="h-8 gap-1.5"
+                  title="Save current chart style as template"
+                >
+                  <Save className="h-4 w-4" />
+                  Save Template
+                </Button>
+              )}
+              {onApplyTemplate && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onApplyTemplate}
+                  className="h-8 gap-1.5"
+                  title="Apply template to current chart"
+                >
+                  <Layers className="h-4 w-4" />
+                  Templates
+                </Button>
+              )}
+            </div>
           )}
           
           {/* Action buttons */}

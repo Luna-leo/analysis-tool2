@@ -15,6 +15,10 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Grid3x3, Eye, CheckSquare, X, Settings2 } from "lucide-react"
 import type { EventInfo, ChartComponent } from "@/types"
 import { BulkApplyDialog, BulkApplySettings } from "./EditModal/BulkApplyDialog"
+import { SaveTemplateDialog, TemplateListDialog } from "./PlotStyleTemplate"
+import { PlotStyleTemplate } from "@/types/plot-style-template"
+import { PlotStyleApplicator } from "@/utils/plotStyleApplicator"
+import { toast } from "sonner"
 
 export function ChartEditModal() {
   const { 
@@ -35,6 +39,8 @@ export function ChartEditModal() {
   const [dataSourceStyles, setDataSourceStyles] = useState<{ [dataSourceId: string]: any }>({})
   const [previewMode, setPreviewMode] = useState<'preview' | 'grid'>('preview')
   const [bulkApplyDialogOpen, setBulkApplyDialogOpen] = useState(false)
+  const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false)
+  const [showTemplateListDialog, setShowTemplateListDialog] = useState(false)
 
   // Keyboard shortcut handlers
   React.useEffect(() => {
@@ -252,6 +258,17 @@ export function ChartEditModal() {
     }
   }
 
+  const handleTemplateSelect = (template: PlotStyleTemplate) => {
+    const result = PlotStyleApplicator.applyTemplate(editingChart, template)
+    if (result.applied && result.updatedChart) {
+      setEditingChart(result.updatedChart)
+      toast.success(`Applied template "${template.name}"`)
+    } else {
+      toast.error("Failed to apply template")
+    }
+    setShowTemplateListDialog(false)
+  }
+
   return (
     <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
       <DialogContent className="max-w-[95vw] w-[95vw] h-[95vh] flex flex-col overflow-hidden" hideCloseButton>
@@ -267,6 +284,8 @@ export function ChartEditModal() {
           onPreviousChart={() => navigateToPreviousChart(allCharts)}
           onNextChart={() => navigateToNextChart(allCharts)}
           onSaveAndNext={handleSaveAndNext}
+          onSaveAsTemplate={() => setShowSaveTemplateDialog(true)}
+          onApplyTemplate={() => setShowTemplateListDialog(true)}
         />
 
 
@@ -430,6 +449,20 @@ export function ChartEditModal() {
         currentChart={editingChart}
         allCharts={allCharts}
         onApply={(settings) => handleBulkApply(settings)}
+      />
+      
+      {/* Template Dialogs */}
+      <SaveTemplateDialog
+        open={showSaveTemplateDialog}
+        onOpenChange={setShowSaveTemplateDialog}
+        chart={editingChart}
+      />
+      
+      <TemplateListDialog
+        open={showTemplateListDialog}
+        onOpenChange={setShowTemplateListDialog}
+        onSelectTemplate={handleTemplateSelect}
+        hasMultipleCharts={allCharts.length > 1}
       />
     </Dialog>
   )

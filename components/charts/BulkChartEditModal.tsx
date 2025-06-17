@@ -8,8 +8,8 @@ import { TabContent } from "./EditModal/TabContent"
 import { FileNode, ChartComponent } from "@/types"
 import { useFileStore } from "@/stores/useFileStore"
 import { Button } from "@/components/ui/button"
-import { FolderOpen } from "lucide-react"
-import { TemplateListDialog } from "./PlotStyleTemplate"
+import { FolderOpen, Save } from "lucide-react"
+import { TemplateListDialog, SaveTemplateDialog } from "./PlotStyleTemplate"
 import { PlotStyleTemplate } from "@/types/plot-style-template"
 import { PlotStyleApplicator } from "@/utils/plotStyleApplicator"
 import { toast } from "sonner"
@@ -32,6 +32,7 @@ export function BulkChartEditModal({ open, onOpenChange, file }: BulkChartEditMo
     fileId: file.id
   } as unknown as ChartComponent))
   const [showTemplateList, setShowTemplateList] = useState(false)
+  const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false)
 
   useEffect(() => {
     if (open) {
@@ -70,21 +71,15 @@ export function BulkChartEditModal({ open, onOpenChange, file }: BulkChartEditMo
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-7xl w-[90vw] h-[90vh] flex flex-col overflow-hidden" hideCloseButton>
           <DialogDescription className="sr-only">Bulk edit chart settings</DialogDescription>
-          <ModalHeader title={`${file.name} Bulk Edit`} onCancel={handleCancel} onSave={handleSave} />
+          <ModalHeader 
+            title={`${file.name} Bulk Edit`} 
+            onCancel={handleCancel} 
+            onSave={handleSave}
+            onSaveAsTemplate={() => setShowSaveTemplateDialog(true)}
+            onApplyTemplate={() => setShowTemplateList(true)}
+          />
           <div className="flex-1 min-h-0 flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} includeDataSourceTab={false} />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowTemplateList(true)}
-                className="gap-2"
-                title="Apply a saved template to these settings"
-              >
-                <FolderOpen className="h-4 w-4" />
-                Apply Template
-              </Button>
-            </div>
+            <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} includeDataSourceTab={false} />
             <div className="flex-1 min-h-0 overflow-y-auto">
               <TabContent
                 activeTab={activeTab}
@@ -105,6 +100,13 @@ export function BulkChartEditModal({ open, onOpenChange, file }: BulkChartEditMo
         onOpenChange={setShowTemplateList}
         onSelectTemplate={handleTemplateSelect}
         hasMultipleCharts={false}
+      />
+      
+      {/* Save Template Dialog */}
+      <SaveTemplateDialog
+        open={showSaveTemplateDialog}
+        onOpenChange={setShowSaveTemplateDialog}
+        chart={bulkSettings}
       />
     </>
   )

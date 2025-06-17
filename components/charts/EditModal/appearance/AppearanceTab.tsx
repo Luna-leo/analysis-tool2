@@ -56,32 +56,6 @@ export function AppearanceTab({
 
   return (
     <div className="space-y-4">
-      {/* Template Actions - at the top level */}
-      <div className="flex items-center justify-between px-4">
-        <h3 className="text-sm font-medium">Appearance Settings</h3>
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowSaveDialog(true)}
-            className="gap-2"
-          >
-            <Save className="h-4 w-4" />
-            Save as Template
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setShowTemplateList(true)}
-            className="gap-2"
-          >
-            <FolderOpen className="h-4 w-4" />
-            Apply Template
-          </Button>
-        </div>
-      </div>
-      
-      <Separator />
       {/* Chart General Settings */}
       <ChartSettings editingChart={editingChart} setEditingChart={setEditingChart} />
       

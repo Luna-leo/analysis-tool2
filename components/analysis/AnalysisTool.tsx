@@ -8,8 +8,18 @@ import { Button } from "@/components/ui/button"
 import { ChartGrid, ChartEditModal } from "../charts"
 import { DataSourceStyleDrawer } from "../charts/DataSourceStyleDrawer"
 import { DataSourceBadgePreview } from "../charts/DataSourceBadgePreview"
-import { TemplateListDialog } from "../charts/PlotStyleTemplate"
-import { LineChart, Layers } from "lucide-react"
+import { TemplateListDialog, SaveTemplateDialog } from "../charts/PlotStyleTemplate"
+import { LineChart, Layers, ChevronDown } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { usePlotStyleTemplateStore } from "@/stores/usePlotStyleTemplateStore"
+import { PlotStyleApplicator } from "@/utils/plotStyleApplicator"
+import { toast } from "sonner"
 import { useFileStore } from "@/stores/useFileStore"
 import { useParameterStore } from "@/stores/useParameterStore"
 import { useGraphStateStore } from "@/stores/useGraphStateStore"
@@ -36,8 +46,9 @@ export default function AnalysisTool() {
   })
   const [styleDrawerOpen, setStyleDrawerOpen] = React.useState(false)
   const [templateListOpen, setTemplateListOpen] = React.useState(false)
+  const [saveTemplateOpen, setSaveTemplateOpen] = React.useState(false)
   
-  const { openTabs, activeTab, openFile, fileTree, setActiveTab, toggleFolder, setFileTree } = useFileStore()
+  const { openTabs, activeTab, openFile, fileTree, setActiveTab, toggleFolder, setFileTree, updateFileCharts } = useFileStore()
   const { loadParameters } = useParameterStore()
   const { loadState } = useGraphStateStore()
   const { updateLayoutSettings } = useLayoutStore()
@@ -45,6 +56,7 @@ export default function AnalysisTool() {
   const { setActiveView, setSidebarOpen, sidebarOpen } = useViewStore()
   const { loadFromIndexedDB } = useCSVDataStore()
   const { isVisible: isPerformanceMonitorVisible, setIsVisible: setPerformanceMonitorVisible } = usePerformanceMonitor()
+  const { templates } = usePlotStyleTemplateStore()
   
   // Memory optimization handler
   const handleMemoryOptimization = async () => {
@@ -237,16 +249,64 @@ export default function AnalysisTool() {
                         )}
                       </Button>
                       <LayoutSettings fileId={activeTab} />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setTemplateListOpen(true)}
-                        title="Apply saved template to charts"
-                        className="h-9 px-3 flex items-center justify-center gap-1.5 rounded-md border border-gray-400"
-                      >
-                        <Layers className="h-4 w-4" />
-                        <span className="text-sm font-medium">Templates</span>
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-9 px-3 flex items-center justify-center gap-1.5 rounded-md border border-gray-400"
+                          >
+                            <Layers className="h-4 w-4" />
+                            <span className="text-sm font-medium">Templates</span>
+                            <ChevronDown className="h-3 w-3 ml-0.5" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-56">
+                          <DropdownMenuItem onClick={() => setTemplateListOpen(true)}>
+                            Browse Templates...
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => {
+                              // Save current view as template - find the first chart to use as template
+                              const firstChart = currentFile.charts?.[0]
+                              if (firstChart) {
+                                setSaveTemplateOpen(true)
+                              } else {
+                                toast.error("No chart to save as template")
+                              }
+                            }}
+                            disabled={!currentFile.charts || currentFile.charts.length === 0}
+                          >
+                            Save Current View as Template
+                          </DropdownMenuItem>
+                          {templates.length > 0 && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                                Recent Templates
+                              </div>
+                              {templates.slice(0, 5).map(template => (
+                                <DropdownMenuItem 
+                                  key={template.id}
+                                  onClick={() => {
+                                    // Apply template to all charts in current file
+                                    if (currentFile.charts && currentFile.charts.length > 0) {
+                                      const updatedCharts = currentFile.charts.map(chart => {
+                                        const result = PlotStyleApplicator.applyTemplate(chart, template)
+                                        return result.updatedChart || chart
+                                      })
+                                      updateFileCharts(activeTab, updatedCharts)
+                                      toast.success(`Applied template "${template.name}" to all charts`)
+                                    }
+                                  }}
+                                >
+                                  {template.name}
+                                </DropdownMenuItem>
+                              ))}
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       </div>
                       {selectedDataSources.length > 0 ? (
                       <div className="flex items-center gap-2 flex-wrap">
@@ -353,12 +413,33 @@ export default function AnalysisTool() {
         const currentFile = openTabs.find((tab) => tab.id === activeTab)
         if (currentFile && currentFile.type === 'file') {
           return (
-            <TemplateListDialog
-              open={templateListOpen}
-              onOpenChange={setTemplateListOpen}
-              onSelectTemplate={() => {}}
-              hasMultipleCharts={currentFile.charts && currentFile.charts.length > 1}
-            />
+            <>
+              <TemplateListDialog
+                open={templateListOpen}
+                onOpenChange={setTemplateListOpen}
+                onSelectTemplate={(template) => {
+                  // Apply template to all charts
+                  if (currentFile.charts && currentFile.charts.length > 0) {
+                    const updatedCharts = currentFile.charts.map(chart => {
+                      const result = PlotStyleApplicator.applyTemplate(chart, template)
+                      return result.updatedChart || chart
+                    })
+                    updateFileCharts(activeTab, updatedCharts)
+                    toast.success(`Applied template "${template.name}" to all charts`)
+                  }
+                }}
+                hasMultipleCharts={currentFile.charts && currentFile.charts.length > 1}
+              />
+              
+              {/* Save Template Dialog */}
+              {currentFile.charts && currentFile.charts.length > 0 && (
+                <SaveTemplateDialog
+                  open={saveTemplateOpen}
+                  onOpenChange={setSaveTemplateOpen}
+                  chart={currentFile.charts[0]}
+                />
+              )}
+            </>
           )
         }
         return null
