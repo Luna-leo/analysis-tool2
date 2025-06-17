@@ -270,12 +270,6 @@ export default function AnalysisTool() {
               return (
                 <div className="px-6 pt-2 pb-0 flex flex-col justify-center flex-shrink-0">
                   <div className="space-y-2">
-                      {/* Selection Toolbar - Now standalone */}
-                      {gridSelectionMode && (
-                        <div className="flex justify-end">
-                          <SelectionToolbar fileId={activeTab} />
-                        </div>
-                      )}
                       {selectedDataSources.length > 0 ? (
                       <div className="flex items-center gap-2 flex-wrap">
                         {selectedDataSources.map((source: any, index: number) => {
@@ -316,11 +310,25 @@ export default function AnalysisTool() {
                             </Badge>
                           )
                         })}
+                        {/* Selection Toolbar - Same line as Data Sources */}
+                        {gridSelectionMode && (
+                          <div className="flex-1 flex justify-end ml-auto">
+                            <SelectionToolbar fileId={activeTab} />
+                          </div>
+                        )}
                       </div>
                     ) : (
-                      <div className="text-sm text-muted-foreground italic">
-                        データソースを追加してください
-                      </div>
+                      <>
+                        {gridSelectionMode ? (
+                          <div className="flex justify-end">
+                            <SelectionToolbar fileId={activeTab} />
+                          </div>
+                        ) : (
+                          <div className="text-sm text-muted-foreground italic">
+                            データソースを追加してください
+                          </div>
+                        )}
+                      </>
                     )}
                     </div>
                   </div>
