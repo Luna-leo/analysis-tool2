@@ -39,7 +39,7 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
 
   const { activeTab, updateFileCharts } = useFileStore()
   const { layoutSettingsMap, updateLayoutSettings } = useLayoutStore()
-  const { gridSelectionMode, selectAllGridCharts, clearGridSelectedCharts, sourceSelectionMode } = useUIStore()
+  const { interactionMode, gridSelectionMode, selectAllGridCharts, clearGridSelectedCharts, sourceSelectionMode } = useUIStore()
 
   const currentSettings = layoutSettingsMap[file.id] || {
     showFileName: true,
@@ -131,7 +131,7 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
   
   // Keyboard shortcuts for selection mode
   useEffect(() => {
-    if (!gridSelectionMode) return
+    if (interactionMode !== 'select') return
     
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ctrl/Cmd + A: Select all
@@ -149,7 +149,7 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
     
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [gridSelectionMode, localCharts, selectAllGridCharts, clearGridSelectedCharts])
+  }, [interactionMode, localCharts, selectAllGridCharts, clearGridSelectedCharts])
 
   // Handle page change
   const handlePageChange = useCallback((newPage: number) => {

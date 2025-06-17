@@ -33,7 +33,7 @@ export const ProgressiveChartGrid = React.memo(function ProgressiveChartGrid({
   
   const { layoutSettingsMap } = useLayoutStore()
   const { updateFileCharts } = useFileStore()
-  const { gridSelectionMode, sourceSelectionMode } = useUIStore()
+  const { sourceSelectionMode } = useUIStore()
   
   const currentSettings = layoutSettingsMap[file.id] || {
     showFileName: true,

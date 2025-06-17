@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { LayoutSettings } from "./LayoutSettings"
+import { QuickSettingsMenu } from "../analysis/QuickSettingsMenu"
 import { usePlotStyleTemplateStore } from "@/stores/usePlotStyleTemplateStore"
 
 interface TabBarProps {
@@ -267,7 +268,12 @@ export function TabBar({
             <span>Chart</span>
           </Button>
           
-          {activeTabProp && <LayoutSettings fileId={activeTabProp} />}
+          {activeTabProp && (
+            <>
+              <LayoutSettings fileId={activeTabProp} />
+              <QuickSettingsMenu fileId={activeTabProp} />
+            </>
+          )}
           
           <Button
             variant={gridSelectionMode ? "default" : "outline"}

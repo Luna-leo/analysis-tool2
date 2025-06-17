@@ -12,6 +12,7 @@ interface UIState {
   selectedChartIds: Set<string>
   searchConditionDialogOpen: boolean
   editingConditionId: string | null
+  interactionMode: 'analysis' | 'select'
   gridSelectionMode: boolean
   gridSelectedChartIds: Set<string>
   lastSelectedChartId: string | null
@@ -35,6 +36,7 @@ interface UIActions {
   selectAllCharts: (chartIds: string[]) => void
   openSearchConditionDialog: (conditionId?: string) => void
   closeSearchConditionDialog: () => void
+  setInteractionMode: (mode: 'analysis' | 'select') => void
   setGridSelectionMode: (mode: boolean) => void
   toggleGridChartSelection: (chartId: string, isShiftClick?: boolean, allChartIds?: string[]) => void
   clearGridSelectedCharts: () => void
@@ -58,6 +60,7 @@ export const useUIStore = create<UIStore>()(
       selectedChartIds: new Set(),
       searchConditionDialogOpen: false,
       editingConditionId: null,
+      interactionMode: 'analysis',
       gridSelectionMode: false,
       gridSelectedChartIds: new Set(),
       lastSelectedChartId: null,
@@ -110,12 +113,19 @@ export const useUIStore = create<UIStore>()(
         searchConditionDialogOpen: true, 
         editingConditionId: conditionId || null 
       }),
-      closeSearchConditionDialog: () => set({ 
-        searchConditionDialogOpen: false, 
-        editingConditionId: null 
+      closeSearchConditionDialog: () => set({
+        searchConditionDialogOpen: false,
+        editingConditionId: null
       }),
-      setGridSelectionMode: (mode) => set({ 
+      setInteractionMode: (mode) =>
+        set({
+          interactionMode: mode,
+          gridSelectionMode: mode === 'select',
+          gridSelectedChartIds: mode === 'select' ? new Set() : new Set(),
+        }),
+      setGridSelectionMode: (mode) => set({
         gridSelectionMode: mode,
+        interactionMode: mode ? 'select' : 'analysis',
         gridSelectedChartIds: mode ? new Set() : new Set()
       }),
       toggleGridChartSelection: (chartId, isShiftClick = false, allChartIds = []) => set((state) => {

@@ -14,6 +14,7 @@ import { useOptimizedChart } from "@/hooks/useOptimizedChart"
 import { hideAllTooltips } from "@/utils/chartTooltip"
 import { useThrottle } from "@/hooks/useDebounce"
 import { useSettingsStore } from "@/stores/useSettingsStore"
+import { useUIStore } from "@/stores/useUIStore"
 
 interface ChartPreviewGraphProps {
   editingChart: ChartComponent
@@ -26,6 +27,7 @@ interface ChartPreviewGraphProps {
 
 export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints, dataSourceStyles }: ChartPreviewGraphProps) => {
   const { settings } = useSettingsStore()
+  const { interactionMode } = useUIStore()
   const defaultMaxDataPoints = settings.performanceSettings.dataProcessing.enableSampling 
     ? settings.performanceSettings.dataProcessing.defaultSamplingPoints
     : Number.MAX_SAFE_INTEGER
@@ -52,6 +54,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     xScale: d3.ScaleTime<number, number> | d3.ScaleLinear<number, number> | null,
     yScale: d3.ScaleLinear<number, number> | null
   }>({ xScale: null, yScale: null })
+  const originalScalesRef = useRef<{ xScale: any; yScale: any }>({ xScale: null, yScale: null })
 
   // Initialize legend position once container and legend are mounted
   useLayoutEffect(() => {
@@ -269,14 +272,14 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
 
           if (chartData.length > 0) {
             // Render chart (ScatterPlot now handles both scatter and line types)
-            renderScatterPlot({ 
-              g, 
-              data: chartData, 
-              width, 
-              height, 
-              editingChart, 
-              scalesRef, 
-              dataSourceStyles, 
+            renderScatterPlot({
+              g,
+              data: chartData,
+              width,
+              height,
+              editingChart,
+              scalesRef,
+              dataSourceStyles,
               canvas: canvasRef.current ?? undefined,
               plotStyles: editingChart.plotStyles,
               enableSampling: settings.performanceSettings.dataProcessing.enableSampling
@@ -284,6 +287,34 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           } else {
             // Render empty chart with axes
             renderEmptyChart({ g, width, height, chartType: editingChart.type || 'scatter', editingChart, scalesRef })
+          }
+
+          if (scalesRef.current.xScale && scalesRef.current.yScale) {
+            originalScalesRef.current = {
+              xScale: (scalesRef.current.xScale as any).copy ? (scalesRef.current.xScale as any).copy() : scalesRef.current.xScale,
+              yScale: (scalesRef.current.yScale as any).copy ? (scalesRef.current.yScale as any).copy() : scalesRef.current.yScale
+            }
+
+            if (editingChart.annotations && editingChart.annotations.length > 0) {
+              const annGroup = g.append('g').attr('class', 'annotations-group')
+              editingChart.annotations.forEach((ann) => {
+                const ax = (scalesRef.current.xScale as any)(ann.x)
+                const ay = (scalesRef.current.yScale as any)(ann.y)
+                annGroup
+                  .append('circle')
+                  .attr('cx', ax)
+                  .attr('cy', ay)
+                  .attr('r', 4)
+                  .attr('fill', 'red')
+                annGroup
+                  .append('text')
+                  .attr('x', ax + 6)
+                  .attr('y', ay - 6)
+                  .attr('font-size', 10)
+                  .attr('fill', 'black')
+                  .text(ann.text)
+              })
+            }
           }
           
           // Ensure reference lines layer is above main chart
@@ -321,6 +352,35 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       renderingRef.current = false
     }
   }, [renderChart])
+
+  // Attach zoom and pan interactions in analysis mode
+  useEffect(() => {
+    if (!svgRef.current) return
+
+    const svg = d3.select(svgRef.current)
+    svg.on('.zoom', null)
+
+    if (interactionMode !== 'analysis' || !originalScalesRef.current.xScale || !originalScalesRef.current.yScale) {
+      return
+    }
+
+    const zoomBehavior = d3
+      .zoom<SVGSVGElement, unknown>()
+      .scaleExtent([1, 20])
+      .on('zoom', (event) => {
+        const newX = event.transform.rescaleX(originalScalesRef.current.xScale)
+        const newY = event.transform.rescaleY(originalScalesRef.current.yScale)
+        scalesRef.current.xScale = newX as any
+        scalesRef.current.yScale = newY as any
+        renderChart()
+      })
+
+    svg.call(zoomBehavior as any)
+
+    return () => {
+      svg.on('.zoom', null)
+    }
+  }, [interactionMode, renderChart, dimensions])
 
   // Clean up tooltips on unmount
   useEffect(() => {

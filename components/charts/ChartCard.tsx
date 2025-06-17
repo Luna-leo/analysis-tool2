@@ -76,9 +76,9 @@ const ChartCardComponent = ({
   const { 
     setEditingChart, 
     setEditingChartWithIndex, 
-    setEditModalOpen, 
+    setEditModalOpen,
     editingChart,
-    gridSelectionMode,
+    interactionMode,
     gridSelectedChartIds,
     toggleGridChartSelection,
     sourceSelectionMode,
@@ -107,7 +107,7 @@ const ChartCardComponent = ({
       return
     }
     
-    if (gridSelectionMode) {
+    if (interactionMode === 'select') {
       e.preventDefault()
       e.stopPropagation()
       
@@ -117,7 +117,7 @@ const ChartCardComponent = ({
       
       toggleGridChartSelection(chart.id, e.shiftKey, allChartIds)
     }
-  }, [gridSelectionMode, sourceSelectionMode, chart, isSourceCandidate, toggleGridChartSelection, selectSourceChart, openTabs, fileId])
+  }, [interactionMode, sourceSelectionMode, chart, isSourceCandidate, toggleGridChartSelection, selectSourceChart, openTabs, fileId])
   
   const handleEdit = useCallback(() => {
     setEditingChartWithIndex(chart, index)
@@ -138,7 +138,7 @@ const ChartCardComponent = ({
   }, [deleteChart, fileId, chart.id])
 
   const handleDragStart = useCallback((e: React.DragEvent) => {
-    if (gridSelectionMode) {
+    if (interactionMode === 'select') {
       e.preventDefault()
       return
     }
@@ -147,7 +147,7 @@ const ChartCardComponent = ({
     if (onDragStart) {
       onDragStart(index)
     }
-  }, [index, onDragStart, gridSelectionMode])
+  }, [index, onDragStart, interactionMode])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -277,14 +277,15 @@ const ChartCardComponent = ({
     <div
       className={cn(
         "bg-card border border-gray-400 rounded-sm flex flex-col relative group h-full transition-all duration-200 select-none",
-        !gridSelectionMode && !sourceSelectionMode && "cursor-move",
-        gridSelectionMode && "cursor-pointer",
+        interactionMode !== 'select' && !sourceSelectionMode && "cursor-move",
+        interactionMode === 'select' && "cursor-pointer",
         sourceSelectionMode && isSourceCandidate && "cursor-pointer border-2 border-dashed border-blue-400 hover:border-blue-500 hover:bg-blue-50/50",
         sourceSelectionMode && isDisabledInSourceMode && "opacity-50 cursor-not-allowed",
         isDragging && "opacity-50 scale-105",
         isDropTarget && "ring-2 ring-primary ring-offset-2 bg-primary/5",
         isEditing && "ring-2 ring-blue-500 shadow-lg border-blue-500",
-        isSelected && gridSelectionMode && !sourceSelectionMode && "ring-2 ring-blue-500 bg-blue-50 border-blue-500"
+        isSelected && interactionMode === 'select' && !sourceSelectionMode &&
+          "ring-2 ring-blue-500 bg-blue-50 border-blue-500"
       )}
       style={{
         width: width ? `${width}px` : undefined,
@@ -295,7 +296,7 @@ const ChartCardComponent = ({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={handleClick}
-      draggable={!gridSelectionMode}
+      draggable={interactionMode !== 'select'}
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
@@ -320,7 +321,7 @@ const ChartCardComponent = ({
             <Check className="h-3.5 w-3.5 text-gray-600 absolute top-0.5 left-0.5" strokeWidth={3} />
           </div>
         )
-      ) : gridSelectionMode ? (
+      ) : interactionMode === 'select' ? (
         <div className={cn(
           "absolute top-2 left-2 w-6 h-6 rounded-full border-2 transition-all z-10",
           isSelected 
@@ -338,7 +339,7 @@ const ChartCardComponent = ({
       )}
 
       {/* Edit, Duplicate and Delete Buttons - appear on hover (not in selection mode) */}
-      {!gridSelectionMode && !sourceSelectionMode && (
+      {interactionMode !== 'select' && !sourceSelectionMode && (
         <div 
           className={cn(
             "absolute -top-3 right-2 flex gap-1 transition-all duration-200 z-50",
@@ -434,7 +435,7 @@ const ChartCardComponent = ({
           <Layers className="mr-2 h-4 w-4" />
           Apply Template
         </ContextMenuItem>
-        {gridSelectionMode && gridSelectedChartIds.size > 1 && gridSelectedChartIds.has(chart.id) && (
+        {interactionMode === 'select' && gridSelectedChartIds.size > 1 && gridSelectedChartIds.has(chart.id) && (
           <ContextMenuItem onClick={() => setShowBulkApplyDialog(true)}>
             <GitMerge className="mr-2 h-4 w-4" />
             Copy Settings to Selected Charts
@@ -465,7 +466,7 @@ const ChartCardComponent = ({
       hasMultipleCharts={false}
     />
     
-    {gridSelectionMode && gridSelectedChartIds.size > 1 && (
+    {interactionMode === 'select' && gridSelectedChartIds.size > 1 && (
       <BulkApplyDialog
         open={showBulkApplyDialog}
         onOpenChange={setShowBulkApplyDialog}

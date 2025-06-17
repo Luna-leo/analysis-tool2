@@ -77,6 +77,13 @@ export interface ReferenceLine {
   selectedThresholds?: string[]
 }
 
+export interface ChartAnnotation {
+  id: string
+  x: number | string | Date
+  y: number
+  text: string
+}
+
 export interface DataSourceStyle {
   // Line settings
   lineEnabled?: boolean  // Whether to show lines connecting points
@@ -111,6 +118,7 @@ export interface ChartComponent {
   verticalLines?: Array<{ value: number; label?: string; color?: string }>
   horizontalLines?: Array<{ value: number; label?: string; color?: string }>
   referenceLines?: ReferenceLine[]
+  annotations?: ChartAnnotation[]
   dataSource?: {
     name: string
     table: string

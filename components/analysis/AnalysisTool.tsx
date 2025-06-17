@@ -43,7 +43,7 @@ export default function AnalysisTool() {
   const { loadParameters } = useParameterStore()
   const { loadState } = useGraphStateStore()
   const { updateLayoutSettings } = useLayoutStore()
-  const { setCurrentPage, gridSelectionMode, setGridSelectionMode, gridSelectedChartIds } = useUIStore()
+  const { setCurrentPage, interactionMode, setInteractionMode, gridSelectedChartIds } = useUIStore()
   const { setActiveView, setSidebarOpen, sidebarOpen } = useViewStore()
   const { loadFromIndexedDB } = useCSVDataStore()
   const { isVisible: isPerformanceMonitorVisible, setIsVisible: setPerformanceMonitorVisible } = usePerformanceMonitor()
@@ -214,7 +214,7 @@ export default function AnalysisTool() {
               })
               uiStore.setEditModalOpen(true)
             }}
-            onSelectClick={() => setGridSelectionMode(!gridSelectionMode)}
+            onSelectClick={() => setInteractionMode(interactionMode === 'select' ? 'analysis' : 'select')}
             onTemplateAction={(action) => {
               if (!activeTab) return
               const currentFile = openTabs.find((tab) => tab.id === activeTab)
@@ -241,7 +241,7 @@ export default function AnalysisTool() {
                 }
               }
             }}
-            gridSelectionMode={gridSelectionMode}
+            gridSelectionMode={interactionMode === 'select'}
             selectedCount={gridSelectedChartIds.size}
             showActionButtons={activeTab ? (() => {
               const currentFile = openTabs.find((tab) => tab.id === activeTab)
@@ -311,7 +311,7 @@ export default function AnalysisTool() {
                           )
                         })}
                         {/* Selection Toolbar - Same line as Data Sources */}
-                        {gridSelectionMode && (
+                        {interactionMode === 'select' && (
                           <div className="flex-1 flex justify-end ml-auto">
                             <SelectionToolbar fileId={activeTab} />
                           </div>
@@ -319,7 +319,7 @@ export default function AnalysisTool() {
                       </div>
                     ) : (
                       <>
-                        {gridSelectionMode ? (
+                        {interactionMode === 'select' ? (
                           <div className="flex justify-end">
                             <SelectionToolbar fileId={activeTab} />
                           </div>
