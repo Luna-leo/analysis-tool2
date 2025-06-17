@@ -10,18 +10,11 @@
  * @returns The Y position for the X-axis
  */
 export function calculateXAxisPosition(
-  yDomain: [number, number],
-  yScale: (value: number) => number,
+  _yDomain: [number, number],
+  _yScale: (value: number) => number,
   height: number
 ): number {
-  const [yMin, yMax] = yDomain
-  
-  // If there are no negative values (yMin >= 0), place X-axis at y=0
-  if (yMin >= 0) {
-    return yScale(0)
-  }
-  
-  // If there are negative values, place X-axis at bottom
+  // Always place X-axis at the bottom of the chart
   return height
 }
 
