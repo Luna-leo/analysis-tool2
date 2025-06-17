@@ -60,6 +60,7 @@ export function determineLODLevel(
 
 /**
  * Simplify data based on LOD level using Douglas-Peucker algorithm
+ * This is now only used for rendering optimization, not data reduction
  */
 export function simplifyData<T extends { x: number | string | Date; y: number }>(
   data: T[],
@@ -70,100 +71,7 @@ export function simplifyData<T extends { x: number | string | Date; y: number }>
   }
   
   // Use Douglas-Peucker algorithm for line simplification
-  const epsilon = calculateEpsilon(data, lodConfig.maxPoints)
-  return douglasPeucker(data, epsilon)
-}
-
-/**
- * Calculate epsilon for Douglas-Peucker based on desired point count
- */
-function calculateEpsilon<T extends { x: number | string | Date; y: number }>(
-  data: T[],
-  targetPoints: number
-): number {
-  // Binary search for optimal epsilon
-  let low = 0
-  let high = 1000
-  let bestEpsilon = 0
-  
-  while (low <= high) {
-    const mid = (low + high) / 2
-    const simplified = douglasPeucker(data, mid)
-    
-    if (simplified.length > targetPoints) {
-      low = mid + 0.1
-    } else {
-      bestEpsilon = mid
-      high = mid - 0.1
-    }
-    
-    if (high - low < 0.1) break
-  }
-  
-  return bestEpsilon
-}
-
-/**
- * Douglas-Peucker algorithm for line simplification
- */
-function douglasPeucker<T extends { x: number | string | Date; y: number }>(
-  points: T[],
-  epsilon: number
-): T[] {
-  if (points.length <= 2) return points
-  
-  // Find the point with maximum distance
-  let maxDistance = 0
-  let maxIndex = 0
-  
-  for (let i = 1; i < points.length - 1; i++) {
-    const distance = perpendicularDistance(
-      { x: convertToNumber(points[i].x), y: points[i].y },
-      { x: convertToNumber(points[0].x), y: points[0].y },
-      { x: convertToNumber(points[points.length - 1].x), y: points[points.length - 1].y }
-    )
-    
-    if (distance > maxDistance) {
-      maxDistance = distance
-      maxIndex = i
-    }
-  }
-  
-  // If max distance is greater than epsilon, recursively simplify
-  if (maxDistance > epsilon) {
-    const left = douglasPeucker(points.slice(0, maxIndex + 1), epsilon)
-    const right = douglasPeucker(points.slice(maxIndex), epsilon)
-    
-    return left.slice(0, -1).concat(right)
-  } else {
-    return [points[0], points[points.length - 1]]
-  }
-}
-
-/**
- * Calculate perpendicular distance from point to line
- */
-function perpendicularDistance(
-  point: { x: number; y: number },
-  lineStart: { x: number; y: number },
-  lineEnd: { x: number; y: number }
-): number {
-  const dx = lineEnd.x - lineStart.x
-  const dy = lineEnd.y - lineStart.y
-  
-  if (dx === 0 && dy === 0) {
-    return Math.sqrt(
-      Math.pow(point.x - lineStart.x, 2) + 
-      Math.pow(point.y - lineStart.y, 2)
-    )
-  }
-  
-  const normalLength = Math.sqrt(dx * dx + dy * dy)
-  
-  return Math.abs(
-    (dy * point.x - dx * point.y + lineEnd.x * lineStart.y - lineEnd.y * lineStart.x) / 
-    normalLength
-  )
+  return douglasPeuckerWithTarget(data, lodConfig.maxPoints)
 }
 
 /**
@@ -214,19 +122,6 @@ export function renderLODGrid(
     .style('stroke-width', 0.5)
     .style('stroke-dasharray', '2,2')
     .style('opacity', lodConfig.level === 'low' ? 0.5 : 0.7)
-}
-
-/**
- * Convert x value to number for calculations
- */
-function convertToNumber(x: number | string | Date): number {
-  if (typeof x === 'number') return x
-  if (x instanceof Date) return x.getTime()
-  if (typeof x === 'string') {
-    const parsed = Date.parse(x)
-    return isNaN(parsed) ? parseFloat(x) || 0 : parsed
-  }
-  return 0
 }
 
 /**

@@ -43,7 +43,7 @@ export function PerformanceSettings({
     })
   }
 
-  const updateDataProcessingSettings = (key: keyof PerformanceSettingsType['dataProcessing'], value: number | string) => {
+  const updateDataProcessingSettings = (key: keyof PerformanceSettingsType['dataProcessing'], value: number | string | boolean) => {
     onUpdate({
       dataProcessing: {
         ...performanceSettings.dataProcessing,
@@ -325,19 +325,25 @@ export function PerformanceSettings({
                     <SelectItem value="auto">
                       <div className="flex flex-col">
                         <span>Auto</span>
-                        <span className="text-xs text-muted-foreground">Choose based on data size</span>
+                        <span className="text-xs text-muted-foreground">Choose based on data characteristics</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="lttb">
                       <div className="flex flex-col">
                         <span>LTTB</span>
-                        <span className="text-xs text-muted-foreground">Largest Triangle Three Buckets</span>
+                        <span className="text-xs text-muted-foreground">Best for time series data</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="nth-point">
                       <div className="flex flex-col">
                         <span>Nth Point</span>
-                        <span className="text-xs text-muted-foreground">Simple decimation</span>
+                        <span className="text-xs text-muted-foreground">Fast, even distribution</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="douglas-peucker">
+                      <div className="flex flex-col">
+                        <span>Douglas-Peucker</span>
+                        <span className="text-xs text-muted-foreground">Preserves line shape</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="none">

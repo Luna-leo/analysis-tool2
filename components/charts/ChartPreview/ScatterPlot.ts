@@ -5,7 +5,7 @@ import { MarkerRenderer, MarkerConfig } from "@/utils/chart/markerRenderer"
 import { ChartTooltipManager } from "@/utils/chart/chartTooltipManager"
 import { showTooltip, updateTooltipPosition, hideTooltip } from "@/utils/chartTooltip"
 import { formatXValue } from "@/utils/chartAxisUtils"
-import { determineLODLevel, simplifyData, getRenderMethod } from "./LODRenderer"
+import { determineLODLevel, getRenderMethod } from "./LODRenderer"
 import { renderWithOptimizedCanvas } from "./OptimizedCanvasRenderer"
 import { performanceTracker } from "@/utils/performanceTracking"
 import { defaultChartColors } from "@/utils/chartColors"
@@ -98,11 +98,8 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
       })
     }
     
-    // Apply LOD simplification if needed
-    let dataToRender = this.data
-    if (this.enableSampling && lodConfig.level !== 'high') {
-      dataToRender = simplifyData(this.data, lodConfig)
-    }
+    // Data is already sampled in useOptimizedChart, no need for additional sampling here
+    const dataToRender = this.data
     
     // Render based on display options
     const showLines = this.editingChart.showLines ?? (this.editingChart.type === 'line')

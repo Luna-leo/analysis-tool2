@@ -3,7 +3,7 @@ import { debounce } from 'lodash'
 import { ChartComponent, EventInfo } from '@/types'
 import { useCSVDataStore } from '@/stores/useCSVDataStore'
 import { useSharedDataCache } from './useSharedDataCache'
-import { adaptiveSample } from '@/utils/dataSampling'
+import { sampleData, sampleMultipleSeries, SamplingOptions } from '@/utils/sampling'
 import { useSettingsStore } from '@/stores/useSettingsStore'
 
 interface UseOptimizedChartProps {
@@ -167,7 +167,7 @@ export function useOptimizedChart({
         // Apply data sampling if needed
         let sampledData = allData
         if (settings.performanceSettings.dataProcessing.enableSampling && allData.length > effectiveMaxDataPoints) {
-          // Group by series and sample each series separately
+          // Group by series for batch sampling
           const seriesMap = new Map<string, ChartDataPoint[]>()
           allData.forEach(point => {
             const series = seriesMap.get(point.series) || []
@@ -175,40 +175,32 @@ export function useOptimizedChart({
             seriesMap.set(point.series, series)
           })
           
-          sampledData = []
-          const pointsPerSeries = Math.floor(effectiveMaxDataPoints / seriesMap.size)
+          // Prepare sampling options
+          const samplingOptions: SamplingOptions = {
+            method: settings.performanceSettings.dataProcessing.samplingMethod === 'none' 
+              ? 'none' 
+              : settings.performanceSettings.dataProcessing.samplingMethod,
+            targetPoints: effectiveMaxDataPoints,
+            chartType: editingChart.type === 'scatter' ? 'scatter' : 'line',
+            isTimeSeries: editingChart.xAxisType === 'datetime'
+          }
           
-          seriesMap.forEach((seriesData) => {
-            // Filter out invalid data points
-            const validData = seriesData.filter(p => p && p.x !== undefined && p.y !== undefined)
-            
-            if (validData.length === 0) return
-            
-            // Sort by x value for proper sampling
-            validData.sort((a, b) => {
-              if (a.x < b.x) return -1
-              if (a.x > b.x) return 1
-              return 0
-            })
-            
-            const sampled = adaptiveSample(
-              validData.map(p => ({ 
-                ...p, 
-                x: editingChart.xAxisType === 'datetime' && p.x instanceof Date 
-                  ? Number(p.x) 
-                  : typeof p.x === 'number' ? p.x : Number(p.x || 0), 
-                y: p.y 
-              })),
-              pointsPerSeries
-            ).map(p => ({ 
-              ...p, 
-              x: editingChart.xAxisType === 'datetime' && validData[0]?.x instanceof Date 
-                ? new Date(p.x) 
-                : p.x 
-            }))
-            
-            sampledData.push(...sampled as ChartDataPoint[])
+          // Use batch sampling for better performance
+          const sampledSeriesMap = sampleMultipleSeries(seriesMap, samplingOptions)
+          
+          sampledData = []
+          sampledSeriesMap.forEach((result) => {
+            sampledData.push(...result.data)
           })
+          
+          // Sort final data by x value if needed
+          if (editingChart.xAxisType === 'datetime') {
+            sampledData.sort((a, b) => {
+              const aTime = a.x instanceof Date ? a.x.getTime() : new Date(a.x).getTime()
+              const bTime = b.x instanceof Date ? b.x.getTime() : new Date(b.x).getTime()
+              return aTime - bTime
+            })
+          }
         }
         
         setData(sampledData)

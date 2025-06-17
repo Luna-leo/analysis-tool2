@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { useSettingsStore } from "@/stores/useSettingsStore"
 import { ParameterSource } from "@/types/settings"
 import { PlotDefaultsSettings } from "./PlotDefaultsSettings"
-import { PerformanceSettings } from "./PerformanceSettings"
+import { PerformancePresetsUI } from "./PerformancePresetsUI"
 
 export function SettingsPage() {
   const { 
@@ -95,7 +95,7 @@ export function SettingsPage() {
         />
 
         {/* Performance Settings */}
-        <PerformanceSettings
+        <PerformancePresetsUI
           performanceSettings={settings.performanceSettings}
           onUpdate={updatePerformanceSettings}
           onReset={resetPerformanceSettings}
