@@ -33,7 +33,7 @@ interface ChartDataPoint {
 export function useOptimizedChart({
   editingChart,
   selectedDataSourceItems,
-  maxDataPoints = 500
+  maxDataPoints
 }: UseOptimizedChartProps): OptimizedChartData {
   const { getParameterData } = useCSVDataStore()
   const dataCache = useSharedDataCache()
@@ -42,6 +42,12 @@ export function useOptimizedChart({
   const [error, setError] = React.useState<Error | null>(null)
   const [data, setData] = React.useState<ChartDataPoint[]>([])
   const loadingRef = useRef(false)
+  
+  // Use settings to determine default max data points
+  const defaultMaxDataPoints = settings.performanceSettings.dataProcessing.enableSampling
+    ? settings.performanceSettings.dataProcessing.defaultSamplingPoints
+    : Number.MAX_SAFE_INTEGER
+  const effectiveMaxDataPoints = maxDataPoints ?? defaultMaxDataPoints
 
   // Memoize parameters
   const allParameters = useMemo(() => {
@@ -160,7 +166,7 @@ export function useOptimizedChart({
         
         // Apply data sampling if needed
         let sampledData = allData
-        if (settings.performanceSettings.dataProcessing.enableSampling && allData.length > maxDataPoints) {
+        if (settings.performanceSettings.dataProcessing.enableSampling && allData.length > effectiveMaxDataPoints) {
           // Group by series and sample each series separately
           const seriesMap = new Map<string, ChartDataPoint[]>()
           allData.forEach(point => {
@@ -170,7 +176,7 @@ export function useOptimizedChart({
           })
           
           sampledData = []
-          const pointsPerSeries = Math.floor(maxDataPoints / seriesMap.size)
+          const pointsPerSeries = Math.floor(effectiveMaxDataPoints / seriesMap.size)
           
           seriesMap.forEach((seriesData) => {
             // Filter out invalid data points
@@ -214,7 +220,7 @@ export function useOptimizedChart({
         setIsLoading(false)
       }
     }, 300),
-    [selectedDataSourceItems, allParameters, editingChart, getParameterData, dataCache, maxDataPoints, settings.performanceSettings.dataProcessing.enableSampling]
+    [selectedDataSourceItems, allParameters, editingChart, getParameterData, dataCache, effectiveMaxDataPoints, settings.performanceSettings.dataProcessing.enableSampling]
   )
 
   // Trigger data loading when dependencies change
