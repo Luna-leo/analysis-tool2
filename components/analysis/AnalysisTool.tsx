@@ -186,37 +186,42 @@ export default function AnalysisTool() {
   }, []) // Empty dependency array to run only once on mount
 
   return (
-    <div className="h-screen flex flex-col">
-      <div className="flex flex-1 min-h-0">
-        {/* Sidebar - Always visible but width changes */}
-        <div className={cn(
-          "border-r transition-all duration-200",
-          sidebarOpen ? "w-[270px]" : "w-14"
-        )}>
-          <Sidebar />
+    <div className="h-screen flex">
+      {/* Sidebar - Fixed position */}
+      <div className={cn(
+        "h-full border-r transition-all duration-200 flex-shrink-0",
+        sidebarOpen ? "w-[270px]" : "w-14"
+      )}>
+        <Sidebar />
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
+        {/* Tab Header - Fixed at top */}
+        <div className="flex-shrink-0">
+          <TabHeader openTabs={openTabs} activeTab={activeTab} />
         </div>
 
-        {/* Main Content Panel */}
-        <div className="flex-1 flex flex-col min-w-0">{/* Replace ResizablePanel with div */}
-          <div className="flex flex-col flex-1">
-            <TabHeader openTabs={openTabs} activeTab={activeTab} />
-
-            {activeTab && openTabs.find((tab) => tab.id === activeTab) && (
+        {/* Scrollable Content Area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {activeTab && openTabs.find((tab) => tab.id === activeTab) && (
+            <div className="flex-shrink-0">
               <BreadcrumbNavigation activeTab={activeTab} openTabs={openTabs} />
-            )}
+            </div>
+          )}
             
-            {/* Data Sources Legend */}
-            {activeTab && (() => {
-              const currentFile = openTabs.find((tab) => tab.id === activeTab)
-              if (!currentFile) return null
-              
-              const isGraphPage = (currentFile as any).charts || (currentFile as any).dataSources
-              const selectedDataSources = (currentFile as any).selectedDataSources || []
-              
-              if (isGraphPage) {
-                return (
-                  <div className="px-6 pt-2 pb-0 flex flex-col justify-center min-h-[4.5rem]">
-                    <div className="space-y-2">
+          {/* Data Sources Legend - Fixed */}
+          {activeTab && (() => {
+            const currentFile = openTabs.find((tab) => tab.id === activeTab)
+            if (!currentFile) return null
+            
+            const isGraphPage = (currentFile as any).charts || (currentFile as any).dataSources
+            const selectedDataSources = (currentFile as any).selectedDataSources || []
+            
+            if (isGraphPage) {
+              return (
+                <div className="px-6 pt-2 pb-0 flex flex-col justify-center min-h-[4.5rem] flex-shrink-0">
+                  <div className="space-y-2">
                       <div className="flex items-center gap-2">
                       <Button
                         variant="outline"
@@ -374,14 +379,13 @@ export default function AnalysisTool() {
             })()}
 
 
-            {/* Main Content */}
-            <div className="flex-1 min-h-0 relative">
-              {activeTab && openTabs.find((tab) => tab.id === activeTab) ? (
-                <ChartGrid file={openTabs.find((tab) => tab.id === activeTab)!} />
-              ) : (
-                <WelcomeMessage />
-              )}
-            </div>
+          {/* Main Content - Scrollable */}
+          <div className="flex-1 overflow-auto">
+            {activeTab && openTabs.find((tab) => tab.id === activeTab) ? (
+              <ChartGrid file={openTabs.find((tab) => tab.id === activeTab)!} />
+            ) : (
+              <WelcomeMessage />
+            )}
           </div>
         </div>
       </div>
