@@ -17,7 +17,6 @@ import { SettingsPage } from "@/components/settings"
 import { useFileStore } from "@/stores/useFileStore"
 import { useLayoutStore } from "@/stores/useLayoutStore"
 import { useUIStore } from "@/stores/useUIStore"
-import { SelectionToolbar } from "./SelectionToolbar"
 import { SourceSelectionBanner } from "./SourceSelectionBanner"
 
 interface ChartGridProps {
@@ -269,10 +268,6 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
         </div>
       </div>
     </div>
-    
-    {gridSelectionMode && (
-      <SelectionToolbar fileId={file.id} />
-    )}
     
     {sourceSelectionMode && (
       <SourceSelectionBanner />

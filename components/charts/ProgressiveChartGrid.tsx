@@ -9,7 +9,6 @@ import { ChartSkeleton } from "./ChartSkeleton"
 import { useLayoutStore } from "@/stores/useLayoutStore"
 import { useFileStore } from "@/stores/useFileStore"
 import { useUIStore } from "@/stores/useUIStore"
-import { SelectionToolbar } from "./SelectionToolbar"
 import { SourceSelectionBanner } from "./SourceSelectionBanner"
 
 interface ProgressiveChartGridProps {
@@ -217,10 +216,6 @@ export const ProgressiveChartGrid = React.memo(function ProgressiveChartGrid({
         )}
       </div>
     </div>
-    
-    {gridSelectionMode && (
-      <SelectionToolbar fileId={file.id} />
-    )}
     
     {sourceSelectionMode && (
       <SourceSelectionBanner />

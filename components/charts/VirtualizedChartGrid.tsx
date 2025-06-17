@@ -10,7 +10,6 @@ import { useLayoutStore } from "@/stores/useLayoutStore"
 import { useUIStore } from "@/stores/useUIStore"
 import { useFileStore } from "@/stores/useFileStore"
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver"
-import { SelectionToolbar } from "./SelectionToolbar"
 import { SourceSelectionBanner } from "./SourceSelectionBanner"
 
 interface VirtualizedChartGridProps {
@@ -358,10 +357,6 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
           </div>
         </div>
       </div>
-      
-      {gridSelectionMode && (
-        <SelectionToolbar fileId={file.id} />
-      )}
       
       {sourceSelectionMode && (
         <SourceSelectionBanner />

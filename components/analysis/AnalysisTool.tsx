@@ -5,7 +5,7 @@ import { Sidebar, TabHeader, BreadcrumbNavigation, WelcomeMessage, LayoutSetting
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ChartGrid, ChartEditModal } from "../charts"
+import { ChartGrid, ChartEditModal, SelectionToolbar } from "../charts"
 import { DataSourceStyleDrawer } from "../charts/DataSourceStyleDrawer"
 import { DataSourceBadgePreview } from "../charts/DataSourceBadgePreview"
 import { TemplateListDialog, SaveTemplateDialog } from "../charts/PlotStyleTemplate"
@@ -196,7 +196,7 @@ export default function AnalysisTool() {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
         {/* Tab Header - Fixed at top */}
         <div className="flex-shrink-0">
           <TabHeader openTabs={openTabs} activeTab={activeTab} />
@@ -324,6 +324,12 @@ export default function AnalysisTool() {
                           )}
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      {/* Selection Toolbar - Inline with other buttons */}
+                      {gridSelectionMode && (
+                        <div className="flex-1 flex justify-end">
+                          <SelectionToolbar fileId={activeTab} />
+                        </div>
+                      )}
                       </div>
                       {selectedDataSources.length > 0 ? (
                       <div className="flex items-center gap-2 flex-wrap">
@@ -388,6 +394,7 @@ export default function AnalysisTool() {
             )}
           </div>
         </div>
+        
       </div>
       
       {/* Chart Edit Modal */}
