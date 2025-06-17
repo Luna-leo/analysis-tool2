@@ -28,10 +28,10 @@ export function SourceSelectionBanner() {
   
   return (
     <div className={cn(
-      "fixed top-20 left-1/2 -translate-x-1/2 z-50",
+      "fixed top-20 right-6 z-50",
       "bg-blue-500 text-white rounded-lg shadow-lg px-6 py-3",
       "flex items-center gap-4 transition-all duration-200",
-      "animate-in slide-in-from-top-4 fade-in"
+      "animate-in slide-in-from-top-4 slide-in-from-right-2 fade-in"
     )}>
       <div className="flex items-center gap-3">
         <MousePointer className="h-5 w-5 animate-pulse" />

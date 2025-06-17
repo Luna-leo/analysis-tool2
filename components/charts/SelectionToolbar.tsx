@@ -203,10 +203,10 @@ export function SelectionToolbar({ fileId }: SelectionToolbarProps) {
   return (
     <>
       <div className={cn(
-        "fixed bottom-8 left-1/2 -translate-x-1/2 z-50",
-        "bg-background/95 backdrop-blur-sm rounded-lg shadow-lg border p-2",
+        "fixed top-20 right-6 z-50",
+        "bg-blue-50/95 dark:bg-blue-950/20 backdrop-blur-sm rounded-lg shadow-lg border border-blue-200 dark:border-blue-800 p-2",
         "flex items-center gap-2 transition-all duration-200",
-        "animate-in slide-in-from-bottom-4 fade-in"
+        "animate-in slide-in-from-top-4 slide-in-from-right-2 fade-in"
       )}>
         <span className="text-sm font-medium px-2">
           {gridSelectedChartIds.size} chart{gridSelectedChartIds.size > 1 ? 's' : ''} selected
