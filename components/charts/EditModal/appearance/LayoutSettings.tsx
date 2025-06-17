@@ -4,6 +4,13 @@ import { ChartComponent } from "@/types"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 interface LayoutSettingsProps {
   editingChart: ChartComponent
@@ -12,12 +19,12 @@ interface LayoutSettingsProps {
 
 export function LayoutSettings({ editingChart, setEditingChart }: LayoutSettingsProps) {
   const margins = editingChart.margins || { top: 20, right: 40, bottom: 60, left: 60 }
-  const xAxisTicks = editingChart.xAxisTicks || 5
-  const yAxisTicks = editingChart.yAxisTicks || 5
-  const xAxisTickPrecision = editingChart.xAxisTickPrecision || 2
-  const yAxisTickPrecision = editingChart.yAxisTickPrecision || 2
-  const xLabelOffset = editingChart.xLabelOffset || 40
-  const yLabelOffset = editingChart.yLabelOffset || 40
+  const xAxisTicks = editingChart.xAxisTicks ?? 5
+  const yAxisTicks = editingChart.yAxisTicks ?? 5
+  const xAxisTickPrecision = editingChart.xAxisTickPrecision ?? 2
+  const yAxisTickPrecision = editingChart.yAxisTickPrecision ?? 2
+  const xLabelOffset = editingChart.xLabelOffset ?? 40
+  const yLabelOffset = editingChart.yLabelOffset ?? 40
 
   const handleMarginChange = (side: 'top' | 'right' | 'bottom' | 'left', value: string) => {
     const numValue = parseInt(value) || 0
@@ -113,14 +120,22 @@ export function LayoutSettings({ editingChart, setEditingChart }: LayoutSettings
             max="20"
           />
           <span className="text-xs text-muted-foreground ml-4">Precision</span>
-          <Input
-            type="number"
-            value={xAxisTickPrecision}
-            onChange={(e) => handlePrecisionChange('x', e.target.value)}
-            className="h-8 w-16"
-            min="0"
-            max="10"
-          />
+          <Select
+            value={xAxisTickPrecision.toString()}
+            onValueChange={(value) => handlePrecisionChange('x', value)}
+          >
+            <SelectTrigger className="h-8 w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">0 (整数)</SelectItem>
+              <SelectItem value="1">1</SelectItem>
+              <SelectItem value="2">2</SelectItem>
+              <SelectItem value="3">3</SelectItem>
+              <SelectItem value="4">4</SelectItem>
+              <SelectItem value="5">5</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -138,14 +153,22 @@ export function LayoutSettings({ editingChart, setEditingChart }: LayoutSettings
             max="20"
           />
           <span className="text-xs text-muted-foreground ml-4">Precision</span>
-          <Input
-            type="number"
-            value={yAxisTickPrecision}
-            onChange={(e) => handlePrecisionChange('y', e.target.value)}
-            className="h-8 w-16"
-            min="0"
-            max="10"
-          />
+          <Select
+            value={yAxisTickPrecision.toString()}
+            onValueChange={(value) => handlePrecisionChange('y', value)}
+          >
+            <SelectTrigger className="h-8 w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="0">0 (整数)</SelectItem>
+              <SelectItem value="1">1</SelectItem>
+              <SelectItem value="2">2</SelectItem>
+              <SelectItem value="3">3</SelectItem>
+              <SelectItem value="4">4</SelectItem>
+              <SelectItem value="5">5</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
