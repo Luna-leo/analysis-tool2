@@ -65,135 +65,166 @@ export function LayoutSettings({ editingChart, setEditingChart }: LayoutSettings
   }
 
   return (
-    <div className="space-y-4 px-4">
-      {/* Margins - 1行で表示 */}
-      <div className="flex items-center gap-2">
-        <Label className="text-sm font-medium w-20">Margins</Label>
-        <div className="flex items-center gap-2 flex-1">
-          <span className="text-xs text-muted-foreground">Top</span>
-          <Input
-            type="number"
-            value={margins.top}
-            onChange={(e) => handleMarginChange('top', e.target.value)}
-            className="h-8 w-16"
-            min="0"
-          />
-          <span className="text-xs text-muted-foreground">Right</span>
-          <Input
-            type="number"
-            value={margins.right}
-            onChange={(e) => handleMarginChange('right', e.target.value)}
-            className="h-8 w-16"
-            min="0"
-          />
-          <span className="text-xs text-muted-foreground">Bottom</span>
-          <Input
-            type="number"
-            value={margins.bottom}
-            onChange={(e) => handleMarginChange('bottom', e.target.value)}
-            className="h-8 w-16"
-            min="0"
-          />
-          <span className="text-xs text-muted-foreground">Left</span>
-          <Input
-            type="number"
-            value={margins.left}
-            onChange={(e) => handleMarginChange('left', e.target.value)}
-            className="h-8 w-16"
-            min="0"
-          />
+    <div className="px-4">
+      <div className="grid grid-cols-2 gap-6">
+        {/* Left Column */}
+        <div className="space-y-4">
+          {/* Margins */}
+          <div className="space-y-3">
+            <Label className="text-sm font-semibold">Chart Margins</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground w-12">Top</span>
+                <Input
+                  type="number"
+                  value={margins.top}
+                  onChange={(e) => handleMarginChange('top', e.target.value)}
+                  className="h-8 flex-1"
+                  min="0"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground w-12">Right</span>
+                <Input
+                  type="number"
+                  value={margins.right}
+                  onChange={(e) => handleMarginChange('right', e.target.value)}
+                  className="h-8 flex-1"
+                  min="0"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground w-12">Bottom</span>
+                <Input
+                  type="number"
+                  value={margins.bottom}
+                  onChange={(e) => handleMarginChange('bottom', e.target.value)}
+                  className="h-8 flex-1"
+                  min="0"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground w-12">Left</span>
+                <Input
+                  type="number"
+                  value={margins.left}
+                  onChange={(e) => handleMarginChange('left', e.target.value)}
+                  className="h-8 flex-1"
+                  min="0"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* X-Axis Settings */}
+          <div className="space-y-3">
+            <Label className="text-sm font-semibold">X-Axis Settings</Label>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground w-16">Ticks</span>
+                <Input
+                  type="number"
+                  value={xAxisTicks}
+                  onChange={(e) => handleTicksChange('x', e.target.value)}
+                  className="h-8 flex-1"
+                  min="1"
+                  max="20"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground w-16">Precision</span>
+                <Select
+                  value={xAxisTickPrecision.toString()}
+                  onValueChange={(value) => handlePrecisionChange('x', value)}
+                >
+                  <SelectTrigger className="h-8 flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">0 (整数)</SelectItem>
+                    <SelectItem value="1">1</SelectItem>
+                    <SelectItem value="2">2</SelectItem>
+                    <SelectItem value="3">3</SelectItem>
+                    <SelectItem value="4">4</SelectItem>
+                    <SelectItem value="5">5</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground w-16">Label Offset</span>
+                <Input
+                  type="number"
+                  value={xLabelOffset}
+                  onChange={(e) => handleLabelOffsetChange('x', e.target.value)}
+                  className="h-8 flex-1"
+                  min="0"
+                  max="100"
+                />
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
 
+        {/* Right Column */}
+        <div className="space-y-4">
+          {/* Y-Axis Settings */}
+          <div className="space-y-3">
+            <Label className="text-sm font-semibold">Y-Axis Settings</Label>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground w-16">Ticks</span>
+                <Input
+                  type="number"
+                  value={yAxisTicks}
+                  onChange={(e) => handleTicksChange('y', e.target.value)}
+                  className="h-8 flex-1"
+                  min="1"
+                  max="20"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground w-16">Precision</span>
+                <Select
+                  value={yAxisTickPrecision.toString()}
+                  onValueChange={(value) => handlePrecisionChange('y', value)}
+                >
+                  <SelectTrigger className="h-8 flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">0 (整数)</SelectItem>
+                    <SelectItem value="1">1</SelectItem>
+                    <SelectItem value="2">2</SelectItem>
+                    <SelectItem value="3">3</SelectItem>
+                    <SelectItem value="4">4</SelectItem>
+                    <SelectItem value="5">5</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground w-16">Label Offset</span>
+                <Input
+                  type="number"
+                  value={yLabelOffset}
+                  onChange={(e) => handleLabelOffsetChange('y', e.target.value)}
+                  className="h-8 flex-1"
+                  min="0"
+                  max="100"
+                />
+              </div>
+            </div>
+          </div>
 
-      {/* X-axis ticks - 1行で表示 */}
-      <div className="flex items-center gap-2">
-        <Label className="text-sm font-medium w-20">X-Axis</Label>
-        <div className="flex items-center gap-2 flex-1">
-          <span className="text-xs text-muted-foreground">Ticks</span>
-          <Input
-            type="number"
-            value={xAxisTicks}
-            onChange={(e) => handleTicksChange('x', e.target.value)}
-            className="h-8 w-16"
-            min="1"
-            max="20"
-          />
-          <span className="text-xs text-muted-foreground ml-4">Precision</span>
-          <Select
-            value={xAxisTickPrecision.toString()}
-            onValueChange={(value) => handlePrecisionChange('x', value)}
-          >
-            <SelectTrigger className="h-8 w-24">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0">0 (整数)</SelectItem>
-              <SelectItem value="1">1</SelectItem>
-              <SelectItem value="2">2</SelectItem>
-              <SelectItem value="3">3</SelectItem>
-              <SelectItem value="4">4</SelectItem>
-              <SelectItem value="5">5</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Y-axis ticks - 1行で表示 */}
-      <div className="flex items-center gap-2">
-        <Label className="text-sm font-medium w-20">Y-Axis</Label>
-        <div className="flex items-center gap-2 flex-1">
-          <span className="text-xs text-muted-foreground">Ticks</span>
-          <Input
-            type="number"
-            value={yAxisTicks}
-            onChange={(e) => handleTicksChange('y', e.target.value)}
-            className="h-8 w-16"
-            min="1"
-            max="20"
-          />
-          <span className="text-xs text-muted-foreground ml-4">Precision</span>
-          <Select
-            value={yAxisTickPrecision.toString()}
-            onValueChange={(value) => handlePrecisionChange('y', value)}
-          >
-            <SelectTrigger className="h-8 w-24">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="0">0 (整数)</SelectItem>
-              <SelectItem value="1">1</SelectItem>
-              <SelectItem value="2">2</SelectItem>
-              <SelectItem value="3">3</SelectItem>
-              <SelectItem value="4">4</SelectItem>
-              <SelectItem value="5">5</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* Axis Label Offsets - 1行で表示 */}
-      <div className="flex items-center gap-2">
-        <Label className="text-sm font-medium w-20">Label Offset</Label>
-        <div className="flex items-center gap-2 flex-1">
-          <span className="text-xs text-muted-foreground">X</span>
-          <Input
-            type="number"
-            value={xLabelOffset}
-            onChange={(e) => handleLabelOffsetChange('x', e.target.value)}
-            className="h-8 w-16"
-            min="0"
-            max="100"
-          />
-          <span className="text-xs text-muted-foreground ml-4">Y</span>
-          <Input
-            type="number"
-            value={yLabelOffset}
-            onChange={(e) => handleLabelOffsetChange('y', e.target.value)}
-            className="h-8 w-16"
-            min="0"
-            max="100"
-          />
+          {/* Visual Helper */}
+          <div className="mt-8 p-3 bg-muted/30 rounded-md">
+            <p className="text-xs text-muted-foreground">
+              <strong>Tips:</strong><br/>
+              • Margins: チャート周囲の余白を設定<br/>
+              • Ticks: 軸上の目盛り数を調整<br/>
+              • Precision: 小数点以下の表示桁数<br/>
+              • Label Offset: 軸ラベルの位置調整
+            </p>
+          </div>
         </div>
       </div>
     </div>
