@@ -106,20 +106,16 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   // Track pending zoom transform
   const pendingZoomTransform = useRef<d3.ZoomTransform | null>(null)
   
-  // Debug zoom persistence
-  useEffect(() => {
-    console.log('[ChartPreviewGraph] Component mounted/updated, chartId:', mergedChart.id);
-  }, [mergedChart.id]);
 
   // Handle zoom transformation
   const handleZoomTransform = useCallback((transform: d3.ZoomTransform) => {
     if (!baseScalesRef.current.xScale || !baseScalesRef.current.yScale) {
-      console.log('[ChartPreviewGraph] Base scales not ready, queuing zoom transform');
+      // Base scales not ready, queuing zoom transform
       pendingZoomTransform.current = transform;
       return;
     }
 
-    console.log('[ChartPreviewGraph] Handling zoom transform:', { k: transform.k, x: transform.x, y: transform.y });
+    // Zoom transform is being handled
 
     // Determine zoom mode based on chart type
     const effectiveZoomMode = zoomMode === 'auto' 
@@ -385,11 +381,11 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               currentScalesRef.current.xScale = baseScalesRef.current.xScale
               currentScalesRef.current.yScale = baseScalesRef.current.yScale
               isInitialRenderComplete.current = true
-              console.log('[ChartPreviewGraph] Initial render complete, scales ready');
+              // Initial render complete, scales ready
               
               // Apply pending zoom transform if any
               if (pendingZoomTransform.current) {
-                console.log('[ChartPreviewGraph] Applying pending zoom transform');
+                // Apply pending zoom transform
                 handleZoomTransform(pendingZoomTransform.current);
               }
             }

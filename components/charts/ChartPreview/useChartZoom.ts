@@ -55,7 +55,7 @@ export const useChartZoom = ({
         const transform = d3.zoomIdentity
           .translate(parsed.x || 0, parsed.y || 0)
           .scale(parsed.k || 1);
-        console.log(`[useChartZoom] Loaded zoom state for chart ${chartId}:`, parsed);
+        // console.log(`[useChartZoom] Loaded zoom state for chart ${chartId}:`, parsed);
         return {
           k: parsed.k || 1,
           x: parsed.x || 0,
@@ -87,7 +87,7 @@ export const useChartZoom = ({
           timestamp: Date.now()
         };
         localStorage.setItem(`chart-zoom-${chartId}`, JSON.stringify(data));
-        console.log(`[useChartZoom] Saved zoom state for chart ${chartId}:`, data);
+        // console.log(`[useChartZoom] Saved zoom state for chart ${chartId}:`, data);
       } catch (error) {
         console.warn('Failed to save zoom state to localStorage:', error);
       }
@@ -159,7 +159,7 @@ export const useChartZoom = ({
     
     const initialState = getInitialZoomState();
     if (initialState.k !== 1 || initialState.x !== 0 || initialState.y !== 0) {
-      console.log(`[useChartZoom] Setting initial state from localStorage for chart ${chartId}`);
+      // console.log(`[useChartZoom] Setting initial state from localStorage for chart ${chartId}`);
       setZoomState(initialState);
       hasInitialized.current = true;
     }
@@ -183,12 +183,12 @@ export const useChartZoom = ({
       const timeoutId = setTimeout(() => {
         if (!svgRef.current || !zoomBehaviorRef.current) return;
         
-        console.log(`[useChartZoom] Applying zoom state for chart ${chartId}:`, zoomState);
+        // console.log(`[useChartZoom] Applying zoom state for chart ${chartId}:`, zoomState);
         const svg = d3.select(svgRef.current);
-        // Force the transform without animation
+        // Apply transform immediately without animation for smooth experience
         svg.call(zoomBehaviorRef.current.transform, zoomState.transform);
         hasAppliedInitialZoom.current = true;
-      }, 500); // Reduced delay since we now handle pending transforms
+      }, 100); // Small delay to ensure zoom behavior is ready
       
       return () => clearTimeout(timeoutId);
     }
@@ -197,22 +197,31 @@ export const useChartZoom = ({
   const zoomIn = useCallback(() => {
     if (!svgRef.current || !zoomBehaviorRef.current) return;
     const svg = d3.select(svgRef.current);
-    svg.transition().duration(200).call(zoomBehaviorRef.current.scaleBy, 1.2);
+    svg.transition()
+      .duration(300)
+      .ease(d3.easeCubicInOut)
+      .call(zoomBehaviorRef.current.scaleBy, 1.2);
   }, [svgRef]);
 
   const zoomOut = useCallback(() => {
     if (!svgRef.current || !zoomBehaviorRef.current) return;
     const svg = d3.select(svgRef.current);
-    svg.transition().duration(200).call(zoomBehaviorRef.current.scaleBy, 0.8);
+    svg.transition()
+      .duration(300)
+      .ease(d3.easeCubicInOut)
+      .call(zoomBehaviorRef.current.scaleBy, 0.8);
   }, [svgRef]);
 
   const resetZoom = useCallback(() => {
     if (!svgRef.current || !zoomBehaviorRef.current) return;
     const svg = d3.select(svgRef.current);
-    svg.transition().duration(300).call(
-      zoomBehaviorRef.current.transform,
-      d3.zoomIdentity
-    );
+    svg.transition()
+      .duration(400)
+      .ease(d3.easeCubicInOut)
+      .call(
+        zoomBehaviorRef.current.transform,
+        d3.zoomIdentity
+      );
     
     // Clear saved zoom state
     if (chartId) {
@@ -229,10 +238,13 @@ export const useChartZoom = ({
   const setZoom = useCallback((scale: number, x = 0, y = 0) => {
     if (!svgRef.current || !zoomBehaviorRef.current) return;
     const svg = d3.select(svgRef.current);
-    svg.transition().duration(200).call(
-      zoomBehaviorRef.current.transform,
-      d3.zoomIdentity.translate(x, y).scale(scale)
-    );
+    svg.transition()
+      .duration(300)
+      .ease(d3.easeCubicInOut)
+      .call(
+        zoomBehaviorRef.current.transform,
+        d3.zoomIdentity.translate(x, y).scale(scale)
+      );
   }, [svgRef]);
 
   return {

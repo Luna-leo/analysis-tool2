@@ -23,11 +23,33 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({
   const canZoomIn = zoomLevel < maxZoom;
   const canZoomOut = zoomLevel > minZoom;
   const zoomPercentage = Math.round(zoomLevel * 100);
+  const [isHighlighted, setIsHighlighted] = React.useState(false);
+  const hasHighlightedRef = React.useRef(false);
+  
+  // Highlight zoom level only on initial restoration from localStorage
+  React.useEffect(() => {
+    if (zoomLevel !== 1 && !hasHighlightedRef.current) {
+      hasHighlightedRef.current = true;
+      setIsHighlighted(true);
+      const timer = setTimeout(() => setIsHighlighted(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [zoomLevel]);
 
   return (
     <div className="absolute bottom-4 right-4 flex flex-col gap-0.5">
       {showZoomLevel && (
-        <div className="mb-2 bg-white/90 backdrop-blur-sm rounded-md px-2 py-1 text-xs text-gray-600 text-center shadow-sm border border-gray-200/50">
+        <div 
+          className={`
+            mb-2 bg-white/90 backdrop-blur-sm rounded-md px-2 py-1 text-xs text-center shadow-sm border
+            transition-all duration-500
+            ${
+              isHighlighted 
+                ? 'bg-blue-50 border-blue-300 text-blue-700 scale-110 shadow-md' 
+                : 'border-gray-200/50 text-gray-600'
+            }
+          `}
+        >
           {zoomPercentage}%
         </div>
       )}
