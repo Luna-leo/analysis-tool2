@@ -311,7 +311,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     <>
       <div className="h-full flex flex-col" ref={contentRef}>
         <div className="flex-1 overflow-auto">
-          <div className="px-6 pt-2 pb-6">
+          <div className="px-6 pt-2 pb-6 relative">
             
             {/* Virtualized Grid */}
             <div 

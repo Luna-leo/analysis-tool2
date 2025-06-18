@@ -30,6 +30,12 @@ const defaultChartSettings: ChartSettings = {
   showGrid: true,
   showLegend: true,
   showChartTitle: true,
+  margins: {
+    top: 20,
+    right: 40,
+    bottom: 60,
+    left: 60
+  }
 }
 
 export const useLayoutStore = create<LayoutStore>()(

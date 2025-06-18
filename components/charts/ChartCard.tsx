@@ -55,6 +55,12 @@ interface ChartCardProps {
     showGrid: boolean
     showLegend?: boolean
     showChartTitle?: boolean
+    margins?: {
+      top: number
+      right: number
+      bottom: number
+      left: number
+    }
   }
 }
 
@@ -96,6 +102,17 @@ const ChartCardComponent = ({
   const { duplicateChart, deleteChart, updateFileCharts, openTabs } = useFileStore()
   const { settings } = useSettingsStore()
   const [showBulkApplyDialog, setShowBulkApplyDialog] = useState(false)
+  
+  // Handler for updating chart when legend is dragged
+  const handleChartUpdate = useCallback((updatedChart: ChartComponent) => {
+    const currentFile = openTabs.find(tab => tab.id === fileId)
+    if (currentFile && currentFile.charts) {
+      const updatedCharts = currentFile.charts.map(c => 
+        c.id === chart.id ? updatedChart : c
+      )
+      updateFileCharts(fileId, updatedCharts)
+    }
+  }, [chart.id, fileId, openTabs, updateFileCharts])
   
   const handleMouseEnter = useCallback(() => setIsHovered(true), [])
   const handleMouseLeave = useCallback(() => setIsHovered(false), [])
@@ -396,6 +413,7 @@ const ChartCardComponent = ({
         <ChartPreviewGraph 
           editingChart={chart} 
           selectedDataSourceItems={selectedDataSources} 
+          setEditingChart={handleChartUpdate}
           maxDataPoints={
             settings.performanceSettings.dataProcessing.enableSampling 
               ? settings.performanceSettings.dataProcessing.defaultSamplingPoints

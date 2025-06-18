@@ -1,189 +1,222 @@
 "use client"
 
-import React from "react"
-import { Zap } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import React, { useState } from "react"
+import { Zap, Scale, Search, Settings } from "lucide-react"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Label } from "@/components/ui/label"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Separator } from "@/components/ui/separator"
+import { Switch } from "@/components/ui/switch"
+import { Slider } from "@/components/ui/slider"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { useSettingsStore } from "@/stores/useSettingsStore"
-import { PERFORMANCE_PRESETS, detectCurrentPreset, getPresetById, PerformancePreset } from "@/constants/performancePresets"
-import { useCSVDataStore } from "@/stores/useCSVDataStore"
-import Link from "next/link"
+import { PERFORMANCE_PRESETS, detectCurrentPreset as detectPreset } from "@/constants/performancePresets"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
 
 interface PerformancePresetPopoverProps {
   size?: "default" | "sm"
-  align?: "start" | "center" | "end"
 }
 
-export function PerformancePresetPopover({ 
-  size = "sm",
-  align = "end" 
-}: PerformancePresetPopoverProps) {
+export function PerformancePresetPopover({ size = "sm" }: PerformancePresetPopoverProps) {
   const { settings, updatePerformanceSettings } = useSettingsStore()
-  const performanceSettings = settings.performanceSettings
+  const [customPopoverOpen, setCustomPopoverOpen] = useState(false)
   
-  const [selectedPreset, setSelectedPreset] = React.useState<PerformancePreset>(
-    detectCurrentPreset(performanceSettings)
-  )
-  const [open, setOpen] = React.useState(false)
+  const performanceSettings = settings?.performanceSettings
   
-  // Get current data info from store
-  const datasets = useCSVDataStore((state) => state.datasets)
-  const totalDataPoints = React.useMemo(() => {
-    let total = 0
-    datasets.forEach(dataset => {
-      total += dataset.data?.length || 0
-    })
-    return total
-  }, [datasets])
-
-  // Calculate performance impact
-  const calculatePerformanceImpact = React.useCallback(() => {
-    if (!performanceSettings.dataProcessing.enableSampling) {
-      return { level: 'high', percentage: 90, color: 'text-red-500' }
-    }
+  const detectCurrentPreset = () => {
+    // Handle case where performanceSettings might be undefined or null
+    if (!performanceSettings) return "high-performance"
     
-    const points = performanceSettings.dataProcessing.defaultSamplingPoints
-    if (points <= 500) {
-      return { level: 'low', percentage: 20, color: 'text-green-500' }
-    } else if (points <= 1000) {
-      return { level: 'medium', percentage: 50, color: 'text-yellow-500' }
-    } else {
-      return { level: 'high', percentage: 80, color: 'text-orange-500' }
-    }
-  }, [performanceSettings])
-
-  const performanceImpact = calculatePerformanceImpact()
-  const currentPreset = getPresetById(selectedPreset)
-
-  const handlePresetChange = (preset: PerformancePreset) => {
-    setSelectedPreset(preset)
+    return detectPreset(performanceSettings)
+  }
+  
+  const currentPreset = detectCurrentPreset()
+  
+  const handlePresetChange = (presetId: string | undefined) => {
+    if (!presetId) return
     
-    if (preset === 'custom') {
-      // Close popover and navigate to settings
-      setOpen(false)
+    if (presetId === "custom") {
+      setCustomPopoverOpen(true)
       return
     }
     
-    const presetConfig = getPresetById(preset)
-    if (presetConfig?.settings) {
-      updatePerformanceSettings(presetConfig.settings)
+    const preset = PERFORMANCE_PRESETS.find(p => p.id === presetId)
+    if (preset && preset.settings) {
+      updatePerformanceSettings(preset.settings)
+      setCustomPopoverOpen(false)
     }
   }
-
+  
+  const handleCustomSettingChange = (key: string, value: any) => {
+    if (!performanceSettings) return
+    
+    // Build a partial update object
+    const keys = key.split('.')
+    const update: any = {}
+    let current = update
+    
+    for (let i = 0; i < keys.length - 1; i++) {
+      current[keys[i]] = {}
+      current = current[keys[i]]
+    }
+    
+    current[keys[keys.length - 1]] = value
+    updatePerformanceSettings(update)
+  }
+  
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button 
-          variant="outline" 
-          size={size}
-          className={cn(
-            "flex items-center justify-center gap-1.5",
-            size === "sm" ? "h-8 px-3 text-xs" : "h-9"
-          )}
+    <TooltipProvider>
+      <div className="flex items-center">
+        <ToggleGroup 
+          type="single" 
+          value={currentPreset} 
+          onValueChange={handlePresetChange} 
+          className="h-8 flex items-center gap-0 border border-gray-300 rounded-md bg-gray-100"
         >
-          <Zap className={size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4"} />
-          <span className={size === "sm" ? "" : "text-sm font-medium"}>
-            {currentPreset?.icon} {currentPreset?.name}
-          </span>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align={align} className="w-80">
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h4 className="font-medium text-sm">Performance Preset</h4>
-            <Link 
-              href="/settings" 
-              className="text-xs text-muted-foreground hover:text-primary"
-              onClick={() => setOpen(false)}
-            >
-              Advanced settings
-            </Link>
-          </div>
-
-          <Separator />
-
-          {/* Preset Selection */}
-          <RadioGroup value={selectedPreset} onValueChange={handlePresetChange}>
-            <div className="space-y-2">
-              {PERFORMANCE_PRESETS.map((preset) => (
-                <div
-                  key={preset.id}
-                  className={cn(
-                    "relative flex cursor-pointer rounded-md border p-3 hover:bg-muted/50 transition-colors",
-                    selectedPreset === preset.id && "border-primary bg-primary/5"
-                  )}
-                >
-                  <RadioGroupItem
-                    value={preset.id}
-                    id={`preset-${preset.id}`}
-                    className="sr-only"
-                  />
-                  <Label
-                    htmlFor={`preset-${preset.id}`}
-                    className="flex cursor-pointer flex-1 items-start gap-2"
-                  >
-                    <span className="text-lg" role="img" aria-label={preset.name}>
-                      {preset.icon}
-                    </span>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{preset.name}</span>
-                        {preset.id === 'high-performance' && (
-                          <Badge variant="secondary" className="text-xs h-5">Recommended</Badge>
-                        )}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {preset.description}
-                      </p>
-                      {preset.id !== 'custom' && preset.settings.dataProcessing && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {preset.settings.dataProcessing.enableSampling 
-                            ? `Max ${preset.settings.dataProcessing.defaultSamplingPoints} points`
-                            : 'All data points'}
-                        </p>
-                      )}
-                    </div>
-                  </Label>
-                </div>
-              ))}
-            </div>
-          </RadioGroup>
-
-          <Separator />
-
-          {/* Performance Impact */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-medium">Performance Impact</span>
-              <span className={cn("font-medium", performanceImpact.color)}>
-                {performanceImpact.level.charAt(0).toUpperCase() + performanceImpact.level.slice(1)}
-              </span>
-            </div>
-            <Progress value={performanceImpact.percentage} className="h-1.5" />
+          <ToggleGroupItem 
+            value="full-detail" 
+            aria-label="Full Detail"
+            className="h-8 px-2 gap-1 text-xs rounded-none rounded-l-md border-0 data-[state=on]:bg-gray-700 data-[state=on]:text-white hover:bg-gray-200 transition-all duration-200"
+          >
+            <Search className="h-3.5 w-3.5" />
+            <span>Full</span>
+          </ToggleGroupItem>
+          
+          <div className="w-px h-5 bg-gray-300" />
+          
+          <ToggleGroupItem 
+            value="balanced" 
+            aria-label="Balanced"
+            className="h-8 px-2 gap-1 text-xs rounded-none border-0 data-[state=on]:bg-gray-700 data-[state=on]:text-white hover:bg-gray-200 transition-all duration-200"
+          >
+            <Scale className="h-3.5 w-3.5" />
+            <span>Bal</span>
+          </ToggleGroupItem>
+          
+          <div className="w-px h-5 bg-gray-300" />
+          
+          <ToggleGroupItem 
+            value="high-performance" 
+            aria-label="High Performance"
+            className="h-8 px-2 gap-1 text-xs rounded-none border-0 data-[state=on]:bg-gray-700 data-[state=on]:text-white hover:bg-gray-200 transition-all duration-200"
+          >
+            <Zap className="h-3.5 w-3.5" />
+            <span>High</span>
+          </ToggleGroupItem>
+          
+          <div className="w-px h-5 bg-gray-300" />
+          
+          <Popover open={customPopoverOpen} onOpenChange={setCustomPopoverOpen}>
+            <PopoverTrigger asChild>
+              <ToggleGroupItem 
+                value="custom" 
+                aria-label="Custom Settings"
+                className="h-8 px-2 rounded-none rounded-r-md border-0 data-[state=on]:bg-gray-700 data-[state=on]:text-white hover:bg-gray-200 transition-all duration-200"
+                data-state={currentPreset === 'custom' ? 'on' : 'off'}
+              >
+                <Settings className="h-3.5 w-3.5" />
+              </ToggleGroupItem>
+            </PopoverTrigger>
             
-            {totalDataPoints > 0 && (
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{totalDataPoints.toLocaleString()} total points</span>
-                <span>
-                  {performanceSettings.dataProcessing.enableSampling
-                    ? `~${Math.min(totalDataPoints, performanceSettings.dataProcessing.defaultSamplingPoints * datasets.size).toLocaleString()} displayed`
-                    : 'All displayed'}
-                </span>
+            <PopoverContent align="end" className="w-80">
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-sm font-medium mb-1">Custom Performance Settings</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Fine-tune performance settings
+                  </p>
+                </div>
+                
+                <div className="space-y-4">
+                  {/* Data Sampling Toggle */}
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="enable-sampling" className="text-sm">
+                      Enable Data Sampling
+                    </Label>
+                    <Switch
+                      id="enable-sampling"
+                      checked={performanceSettings?.dataProcessing?.enableSampling ?? true}
+                      onCheckedChange={(checked) => 
+                        handleCustomSettingChange('dataProcessing.enableSampling', checked)
+                      }
+                    />
+                  </div>
+                  
+                  {/* Sampling Points */}
+                  {performanceSettings?.dataProcessing?.enableSampling && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="sampling-points" className="text-sm">
+                          Max Data Points
+                        </Label>
+                        <Input
+                          id="sampling-points"
+                          type="number"
+                          className="w-20 h-8 text-xs"
+                          value={performanceSettings?.dataProcessing?.defaultSamplingPoints || 1000}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value) || 1000
+                            handleCustomSettingChange('dataProcessing.defaultSamplingPoints', value)
+                          }}
+                        />
+                      </div>
+                      <Slider
+                        value={[performanceSettings?.dataProcessing?.defaultSamplingPoints || 1000]}
+                        onValueChange={([value]) => 
+                          handleCustomSettingChange('dataProcessing.defaultSamplingPoints', value)
+                        }
+                        min={100}
+                        max={10000}
+                        step={100}
+                        className="w-full"
+                      />
+                      
+                      {/* Sampling Method */}
+                      <div className="space-y-2">
+                        <Label htmlFor="sampling-method" className="text-sm">
+                          Sampling Method
+                        </Label>
+                        <Select
+                          value={performanceSettings?.dataProcessing?.samplingMethod || 'auto'}
+                          onValueChange={(value) => 
+                            handleCustomSettingChange('dataProcessing.samplingMethod', value)
+                          }
+                        >
+                          <SelectTrigger id="sampling-method" className="h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="auto">Auto</SelectItem>
+                            <SelectItem value="lttb">LTTB (Largest Triangle Three Buckets)</SelectItem>
+                            <SelectItem value="nth">Nth Point</SelectItem>
+                            <SelectItem value="douglas-peucker">Douglas-Peucker</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="pt-2 border-t">
+                  <Link 
+                    href="/settings" 
+                    className="text-xs text-primary hover:underline inline-block"
+                    onClick={() => setCustomPopoverOpen(false)}
+                  >
+                    Advanced settings →
+                  </Link>
+                </div>
               </div>
-            )}
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
+            </PopoverContent>
+          </Popover>
+        </ToggleGroup>
+      </div>
+    </TooltipProvider>
   )
 }

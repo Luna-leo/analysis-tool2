@@ -299,6 +299,7 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
           "px-6 pt-2",
           currentSettings.pagination ? "flex-1 overflow-hidden" : "pb-6"
         )}>
+          
           {/* Grid */}
           <div
             ref={gridRef}

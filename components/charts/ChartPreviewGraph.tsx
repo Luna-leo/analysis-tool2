@@ -27,6 +27,12 @@ interface ChartPreviewGraphProps {
     showGrid: boolean
     showLegend?: boolean
     showChartTitle?: boolean
+    margins?: {
+      top: number
+      right: number
+      bottom: number
+      left: number
+    }
   }
 }
 
@@ -48,7 +54,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       showTitle: chartSettings.showChartTitle !== undefined ? chartSettings.showChartTitle : editingChart.showTitle,
       showXLabel: chartSettings.showXAxis !== undefined ? chartSettings.showXAxis : editingChart.showXLabel,
       showYLabel: chartSettings.showYAxis !== undefined ? chartSettings.showYAxis : editingChart.showYLabel,
-      showGrid: chartSettings.showGrid !== undefined ? chartSettings.showGrid : editingChart.showGrid
+      showGrid: chartSettings.showGrid !== undefined ? chartSettings.showGrid : editingChart.showGrid,
+      margins: chartSettings.margins !== undefined ? chartSettings.margins : editingChart.margins
     }
   }, [editingChart, chartSettings])
   const svgRef = useRef<SVGSVGElement>(null)
@@ -342,6 +349,13 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       renderingRef.current = false
     }
   }, [renderChart])
+  
+  // Force re-render when chart settings change (including margins)
+  useEffect(() => {
+    if (chartSettings) {
+      renderChart()
+    }
+  }, [JSON.stringify(chartSettings?.margins), renderChart])
 
   // Clean up tooltips on unmount
   useEffect(() => {
