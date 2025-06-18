@@ -55,6 +55,14 @@ export class AxisManager {
     const { editingChart, data, width } = this.options
     const xAxisType = editingChart.xAxisType || 'datetime'
     
+    console.log('🔍 createXScale - Raw data:', {
+      dataLength: data?.length || 0,
+      firstItem: data?.[0],
+      lastItem: data?.[data?.length - 1],
+      xAxisType,
+      xParameter: editingChart.xParameter
+    })
+    
     if (xAxisType === 'datetime') {
       let xDomain: [Date, Date]
       
@@ -62,21 +70,38 @@ export class AxisManager {
         xDomain = [new Date(editingChart.xAxisRange.min), new Date(editingChart.xAxisRange.max)]
       } else if (data && data.length > 0) {
         // Extract datetime values from data
-        // For datetime axis, prioritize timestamp field
+        // For scatter plot data format, use d.x directly if available
         const xParameter = editingChart.xParameter || 'timestamp'
         const dateValues = data.map(d => {
-          // Try multiple fields: timestamp first, then xParameter, then x
-          const val = d.timestamp || d[xParameter] || d.x
+          // For transformed scatter plot data, x is already the correct value
+          if ('x' in d && d.x !== undefined) {
+            console.log('🔍 X datetime extraction - has x property:', d.x)
+            return d.x instanceof Date ? d.x : new Date(d.x)
+          }
+          // Fallback for other data formats
+          const val = d.timestamp || d[xParameter]
+          console.log('🔍 X datetime extraction - using parameter:', xParameter, 'value:', val)
           return val instanceof Date ? val : new Date(val)
         }).filter(d => !isNaN(d.getTime()))
+        
+        console.log('🔍 createXScale - Extracted datetime values:', {
+          count: dateValues.length,
+          first: dateValues[0],
+          last: dateValues[dateValues.length - 1]
+        })
         
         if (dateValues.length > 0) {
           const extent = d3.extent(dateValues) as [Date, Date]
           xDomain = extent
+          console.log('🔍 createXScale - Datetime extent:', {
+            min: extent[0],
+            max: extent[1]
+          })
         } else {
           // Fallback to last hour
           const now = new Date()
           xDomain = [new Date(now.getTime() - 60 * 60 * 1000), now]
+          console.log('⚠️ createXScale - No valid datetime values, using fallback domain')
         }
       } else {
         // Default to last hour
@@ -87,6 +112,11 @@ export class AxisManager {
       this.xScale = d3.scaleTime()
         .domain(xDomain)
         .range([0, width])
+      
+      console.log('✅ createXScale - Created datetime scale:', {
+        domain: xDomain,
+        range: [0, width]
+      })
     } else {
       // Linear scale for numeric/parameter types
       let xDomain: [number, number]
@@ -95,9 +125,38 @@ export class AxisManager {
         xDomain = [Number(editingChart.xAxisRange.min), Number(editingChart.xAxisRange.max)]
       } else if (data && data.length > 0) {
         const xParameter = editingChart.xParameter || 'timestamp'
-        const extent = d3.extent(data, d => Number(d[xParameter] || d.x)) as [number, number]
-        const padding = (extent[1] - extent[0]) * 0.05
-        xDomain = [extent[0] - padding, extent[1] + padding]
+        const values = data.map(d => {
+          // For transformed scatter plot data, use d.x directly
+          if ('x' in d && typeof d.x === 'number') {
+            console.log('🔍 X numeric extraction - has x property:', d.x)
+            return d.x
+          }
+          // Fallback for other data formats
+          const val = Number(d[xParameter])
+          console.log('🔍 X numeric extraction - using parameter:', xParameter, 'value:', val)
+          return val
+        }).filter(v => !isNaN(v))
+        
+        console.log('🔍 createXScale - Extracted numeric values:', {
+          count: values.length,
+          first: values[0],
+          last: values[values.length - 1],
+          sample: values.slice(0, 5)
+        })
+        
+        if (values.length > 0) {
+          const extent = d3.extent(values) as [number, number]
+          const padding = (extent[1] - extent[0]) * 0.05
+          xDomain = [extent[0] - padding, extent[1] + padding]
+          console.log('🔍 createXScale - Numeric extent:', {
+            min: extent[0],
+            max: extent[1],
+            domainWithPadding: xDomain
+          })
+        } else {
+          xDomain = [0, 100]
+          console.log('⚠️ createXScale - No valid numeric values, using default [0, 100]')
+        }
       } else {
         xDomain = [0, 100]
       }
@@ -105,6 +164,11 @@ export class AxisManager {
       this.xScale = d3.scaleLinear()
         .domain(xDomain)
         .range([0, width])
+      
+      console.log('✅ createXScale - Created linear scale:', {
+        domain: xDomain,
+        range: [0, width]
+      })
     }
   }
 
@@ -114,6 +178,13 @@ export class AxisManager {
   private createYScale(): void {
     const { editingChart, data, height } = this.options
     const yParams = editingChart.yAxisParams || []
+    
+    console.log('🔍 createYScale - Raw data:', {
+      dataLength: data?.length || 0,
+      firstItem: data?.[0],
+      lastItem: data?.[data?.length - 1],
+      yParams: yParams
+    })
     
     // Group parameters by axis
     const groupedByAxis: Record<number, typeof yParams> = {}
@@ -134,14 +205,37 @@ export class AxisManager {
     } else if (firstAxisParams[0].range?.auto === false) {
       yDomain = [firstAxisParams[0].range.min || 0, firstAxisParams[0].range.max || 100]
     } else if (data && data.length > 0) {
-      const allValues = data.flatMap(d => 
-        firstAxisParams.map(p => d[p.parameter] || d.y || 0)
-      )
+      // For scatter plot data format, use d.y directly
+      const allValues = data.map(d => {
+        // Check if this is transformed scatter plot data (has y property)
+        if ('y' in d && typeof d.y === 'number') {
+          console.log('🔍 Y extraction - has y property:', d.y)
+          return d.y
+        }
+        // Fallback to parameter-based extraction for other data formats
+        const paramValue = firstAxisParams.map(p => d[p.parameter] || 0)[0] || 0
+        console.log('🔍 Y extraction - using parameter:', firstAxisParams[0]?.parameter, 'value:', paramValue)
+        return paramValue
+      }).filter(v => typeof v === 'number' && !isNaN(v))
+      
+      console.log('🔍 createYScale - Extracted Y values:', {
+        count: allValues.length,
+        first: allValues[0],
+        last: allValues[allValues.length - 1],
+        sample: allValues.slice(0, 5)
+      })
+      
       if (allValues.length === 0) {
         yDomain = [0, 100]
+        console.log('⚠️ createYScale - No valid Y values, using default [0, 100]')
       } else {
         const extent = d3.extent(allValues) as [number, number]
         yDomain = extent[0] !== undefined && extent[1] !== undefined ? extent : [0, 100]
+        console.log('🔍 createYScale - Y extent:', {
+          min: extent[0],
+          max: extent[1],
+          domain: yDomain
+        })
       }
     } else {
       yDomain = [0, 100]
@@ -151,9 +245,15 @@ export class AxisManager {
       .domain(yDomain)
       .range([height, 0])
     
+    console.log('✅ createYScale - Created linear scale (before nice()):', {
+      domain: yDomain,
+      range: [height, 0]
+    })
+    
     // Apply nice() if using auto range
     if (firstAxisParams.length > 0 && firstAxisParams[0].range?.auto !== false && data && data.length > 0) {
       this.yScale.nice()
+      console.log('✅ createYScale - Applied nice(), final domain:', this.yScale.domain())
     }
   }
 
@@ -328,6 +428,120 @@ export class AxisManager {
     return {
       xScale: this.xScale,
       yScale: this.yScale
+    }
+  }
+
+  /**
+   * Redraw axes with existing scales (for zoom/pan)
+   */
+  static redrawAxesWithScales(
+    g: d3.Selection<SVGGElement, unknown, null, undefined>,
+    width: number,
+    height: number,
+    scales: ChartScales,
+    editingChart: ChartComponent
+  ): void {
+    const xAxisType = editingChart.xAxisType || 'datetime'
+    const xAxisTicks = editingChart.xAxisTicks || 5
+    const yAxisTicks = editingChart.yAxisTicks || 5
+    const xAxisTickPrecision = editingChart.xAxisTickPrecision ?? 2
+    const yAxisTickPrecision = editingChart.yAxisTickPrecision ?? 2
+    
+    // Remove existing axes
+    g.selectAll('.x-axis, .y-axis').remove()
+    
+    // Create X-axis
+    let xAxis: d3.Axis<number | Date | { valueOf(): number }>
+    
+    if (xAxisType === 'datetime') {
+      const xDomain = scales.xScale.domain() as [Date, Date]
+      const timeFormat = getTimeFormat(xDomain[0], xDomain[1])
+      xAxis = d3.axisBottom(scales.xScale)
+        .ticks(xAxisTicks)
+        .tickFormat((d) => d3.timeFormat(timeFormat)(d as Date))
+    } else if (xAxisType === 'time') {
+      xAxis = d3.axisBottom(scales.xScale)
+        .ticks(xAxisTicks)
+        .tickFormat(d => {
+          const minutes = Number(d)
+          const hours = Math.floor(minutes / 60)
+          const mins = Math.floor(minutes % 60)
+          return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`
+        })
+    } else {
+      xAxis = d3.axisBottom(scales.xScale)
+        .ticks(xAxisTicks)
+        .tickFormat(d3.format(`.${xAxisTickPrecision}f`))
+    }
+    
+    // Calculate X-axis position
+    const yDomain = scales.yScale.domain() as [number, number]
+    const xAxisY = calculateXAxisPosition(yDomain, scales.yScale, height)
+    
+    // Render X-axis
+    const xAxisGroup = g.append('g')
+      .attr('class', 'x-axis')
+      .attr('transform', `translate(0,${xAxisY})`)
+      .call(xAxis)
+    
+    // Apply x-axis styling
+    xAxisGroup.select('.domain')
+      .style('stroke', '#e5e7eb')
+      .style('stroke-width', 1)
+    xAxisGroup.selectAll('.tick line')
+      .style('stroke', '#e5e7eb')
+      .style('stroke-width', 1)
+    xAxisGroup.selectAll('.tick text')
+      .style('fill', '#6b7280')
+      .style('font-size', '12px')
+    
+    // Create Y-axis
+    const firstYParam = (editingChart.yAxisParams && editingChart.yAxisParams[0]) || {}
+    const yAxisFormat = firstYParam.format || `.${yAxisTickPrecision}f`
+    const yAxis = d3.axisLeft(scales.yScale)
+      .ticks(yAxisTicks)
+      .tickFormat(d3.format(yAxisFormat))
+    
+    // Render Y-axis
+    const yAxisGroup = g.append('g')
+      .attr('class', 'y-axis')
+      .call(yAxis)
+    
+    // Apply y-axis styling
+    yAxisGroup.select('.domain')
+      .style('stroke', '#e5e7eb')
+      .style('stroke-width', 1)
+    yAxisGroup.selectAll('.tick line')
+      .style('stroke', '#e5e7eb')
+      .style('stroke-width', 1)
+    yAxisGroup.selectAll('.tick text')
+      .style('fill', '#6b7280')
+      .style('font-size', '12px')
+    
+    // Add grid if enabled
+    if (editingChart.showGrid) {
+      g.selectAll('.grid').remove()
+      
+      // X grid lines
+      g.insert('g', ':first-child')
+        .attr('class', 'grid')
+        .attr('transform', `translate(0,${height})`)
+        .call(xAxis
+          .tickSize(-height)
+          .tickFormat(() => '')
+        )
+        .style('stroke-dasharray', '3,3')
+        .style('opacity', 0.3)
+      
+      // Y grid lines
+      g.insert('g', ':first-child')
+        .attr('class', 'grid')
+        .call(yAxis
+          .tickSize(-width)
+          .tickFormat(() => '')
+        )
+        .style('stroke-dasharray', '3,3')
+        .style('opacity', 0.3)
     }
   }
 }

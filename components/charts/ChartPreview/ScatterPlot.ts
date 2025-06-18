@@ -71,6 +71,14 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
       })
     }
     
+    console.log('ScatterPlot data before creating scales:', {
+      dataLength: this.data.length,
+      firstItem: this.data[0],
+      lastItem: this.data[this.data.length - 1],
+      isEmptyScale: this.scalesRef.current.isEmptyScale,
+      hasExistingScales: !!(this.scalesRef.current.xScale && this.scalesRef.current.yScale)
+    })
+    
     // Call parent implementation
     super.setupScalesAndAxes()
   }
@@ -214,7 +222,7 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
       const tooltipHandlers = this.createTooltipHandlers()
       
       MarkerRenderer.render({
-        container: this.g,
+        container: this.dataGroup,
         markers,
         ...tooltipHandlers
       })
@@ -337,7 +345,7 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
       .y(d => this.scales.yScale(d[param.parameter] as number))
       .curve(d3.curveMonotoneX)
     
-    this.g.append("path")
+    this.dataGroup.append("path")
       .datum(data)
       .attr("fill", "none")
       .attr("stroke", lineColor)
@@ -381,7 +389,7 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
       })
     
     MarkerRenderer.render({
-      container: this.g,
+      container: this.dataGroup,
       markers,
       ...tooltipHandlers
     })

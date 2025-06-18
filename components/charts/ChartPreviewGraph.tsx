@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useRef, useMemo, useLayoutEffect } from "react"
+import React, { useEffect, useRef, useMemo, useLayoutEffect, useCallback } from "react"
 import * as d3 from "d3"
 import { ChartComponent, EventInfo, DataSourceStyle } from "@/types"
 import {
@@ -14,6 +14,8 @@ import { useOptimizedChart } from "@/hooks/useOptimizedChart"
 import { hideAllTooltips } from "@/utils/chartTooltip"
 import { useThrottle } from "@/hooks/useDebounce"
 import { useSettingsStore } from "@/stores/useSettingsStore"
+import { useChartZoom } from "./ChartPreview/useChartZoom"
+import { ZoomControls } from "./ChartPreview/ZoomControls"
 
 interface ChartPreviewGraphProps {
   editingChart: ChartComponent
@@ -39,10 +41,13 @@ interface ChartPreviewGraphProps {
     autoMarginScale?: number
     marginOverrides?: Record<string, any>
   }
+  enableZoom?: boolean
+  enablePan?: boolean
+  zoomMode?: 'x' | 'xy' | 'auto'
 }
 
 
-export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints, dataSourceStyles, chartSettings }: ChartPreviewGraphProps) => {
+export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints, dataSourceStyles, chartSettings, enableZoom = true, enablePan = true, zoomMode = 'auto' }: ChartPreviewGraphProps) => {
   const { settings } = useSettingsStore()
   const defaultMaxDataPoints = settings.performanceSettings.dataProcessing.enableSampling 
     ? settings.performanceSettings.dataProcessing.defaultSamplingPoints
@@ -82,11 +87,69 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     legendRatioRef.current = mergedChart.legendPosition ?? null
   }, [mergedChart.legendPosition])
   
-  // Store scales in refs to avoid recreation during drag
-  const scalesRef = useRef<{
+  // Base scales (never modified)
+  const baseScalesRef = useRef<{
     xScale: d3.ScaleTime<number, number> | d3.ScaleLinear<number, number> | null,
-    yScale: d3.ScaleLinear<number, number> | null
+    yScale: d3.ScaleLinear<number, number> | null,
+    isEmptyScale?: boolean
   }>({ xScale: null, yScale: null })
+
+  // Current scales (with zoom applied)
+  const currentScalesRef = useRef<{
+    xScale: d3.ScaleTime<number, number> | d3.ScaleLinear<number, number> | null,
+    yScale: d3.ScaleLinear<number, number> | null,
+    isEmptyScale?: boolean
+  }>({ xScale: null, yScale: null })
+
+  // Force update when zoom changes
+  const [zoomVersion, setZoomVersion] = React.useState(0)
+  
+  // Track if initial render is complete
+  const isInitialRenderComplete = useRef(false)
+
+  // Handle zoom transformation
+  const handleZoomTransform = useCallback((transform: d3.ZoomTransform) => {
+    if (!baseScalesRef.current.xScale || !baseScalesRef.current.yScale) return
+
+    // Determine zoom mode based on chart type
+    const effectiveZoomMode = zoomMode === 'auto' 
+      ? (mergedChart.type === 'scatter' ? 'xy' : 'x')
+      : zoomMode
+
+    // Update current scales with zoom transform
+    currentScalesRef.current.xScale = transform.rescaleX(baseScalesRef.current.xScale)
+    
+    if (effectiveZoomMode === 'xy') {
+      // For scatter plots, transform both axes
+      currentScalesRef.current.yScale = transform.rescaleY(baseScalesRef.current.yScale)
+    } else {
+      // For time series, keep Y axis unchanged
+      currentScalesRef.current.yScale = baseScalesRef.current.yScale
+    }
+
+    // Force re-render
+    setZoomVersion(v => v + 1)
+    
+    // Zoom transform applied successfully
+  }, [zoomMode, mergedChart.type])
+
+  // Initialize zoom functionality
+  const {
+    zoomLevel,
+    zoomIn,
+    zoomOut,
+    resetZoom,
+  } = useChartZoom({
+    svgRef,
+    width: dimensions.width,
+    height: dimensions.height,
+    minZoom: 0.5,
+    maxZoom: 10,
+    enablePan,
+    enableZoom,
+    onZoom: handleZoomTransform,
+    margin: mergedChart.margins || { top: 20, right: 40, bottom: 60, left: 60 },
+  })
 
   // Initialize legend position once container and legend are mounted
   useLayoutEffect(() => {
@@ -112,20 +175,19 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       }
       setLegendPos(pos)
     } else {
-      const defaultPos = { x: containerRect.width - legendRect.width - 4, y: 4 }
+      const defaultPos = {
+        x: containerRect.width - legendRect.width - 20,
+        y: 20
+      }
       const defaultRatio = {
-        xRatio: containerRect.width
-          ? defaultPos.x / containerRect.width
-          : 0,
-        yRatio: containerRect.height
-          ? defaultPos.y / containerRect.height
-          : 0
+        xRatio: defaultPos.x / containerRect.width,
+        yRatio: defaultPos.y / containerRect.height
       }
       legendRatioRef.current = defaultRatio
       setLegendPos(defaultPos)
       setEditingChart?.({ ...mergedChart, legendPosition: defaultRatio })
     }
-  }, [legendPos, dimensions, mergedChart.legendPosition, mergedChart.showLegend])
+  }, [mergedChart, setEditingChart])
 
   // Sync legend position if editingChart changes elsewhere
   useEffect(() => {
@@ -187,12 +249,15 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         containerRect.height - legendRect.height
       )
     }
-    setLegendPos(newPos)
-  }, [dimensions, mergedChart.legendPosition])
+    if (legendPos?.x !== newPos.x || legendPos?.y !== newPos.y) {
+      setLegendPos(newPos)
+    }
+  }, [dimensions])
 
-  const handleLegendPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!legendRef.current || !containerRef.current) return
+  const handleLegendPointerDown = (e: React.PointerEvent) => {
+    if (!containerRef.current || !legendRef.current) return
     e.preventDefault()
+    
     const containerRect = containerRef.current.getBoundingClientRect()
     const legendRect = legendRef.current.getBoundingClientRect()
     const offsetX = e.clientX - legendRect.left
@@ -238,9 +303,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     }
   }, [handleResize])
 
-  // Use requestAnimationFrame for smooth rendering
-  const renderChart = useMemo(() => {
-    return () => {
+  // Render chart function (not memoized for zoom updates)
+  const renderChart = () => {
       if (!svgRef.current || renderingRef.current) return
       
       // Cancel any pending animation frame
@@ -269,62 +333,80 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         try {
           const svg = d3.select(svgRef.current)
           
-          // Only clear the main chart group, preserve reference lines layer
-          let mainGroup = svg.select<SVGGElement>(".main-chart-group")
-          if (!mainGroup.empty()) {
-            mainGroup.remove()
-          }
+          // Clear everything
+          svg.selectAll("*").remove()
 
           const margin = mergedChart.margins || { top: 20, right: 40, bottom: 60, left: 60 }
           const width = dimensions.width - margin.left - margin.right
           const height = dimensions.height - margin.top - margin.bottom
 
-          const g = svg.append("g")
-            .attr("class", "main-chart-group")
+          // Main group with margin transform
+          const mainGroup = svg.append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`)
 
-          const renderMethod = getRenderMethod(chartData.length, { width, height })
-
-          if (renderMethod === 'canvas' && containerRef.current) {
-            if (!canvasRef.current) {
-              canvasRef.current = document.createElement('canvas')
-              canvasRef.current.style.position = 'absolute'
-              canvasRef.current.style.pointerEvents = 'none'
-              canvasRef.current.style.zIndex = '0'
-              containerRef.current.appendChild(canvasRef.current)
+          if (chartData && chartData.length > 0) {
+            console.log('ChartPreviewGraph - Rendering with data:', {
+              dataLength: chartData.length,
+              firstItem: chartData[0],
+              lastItem: chartData[chartData.length - 1]
+            })
+            
+            // Check if we're transitioning from empty to data state
+            if (baseScalesRef.current.isEmptyScale) {
+              console.log('ChartPreviewGraph - Clearing empty scales')
+              baseScalesRef.current.xScale = null
+              baseScalesRef.current.yScale = null
+              baseScalesRef.current.isEmptyScale = false
+              currentScalesRef.current.xScale = null
+              currentScalesRef.current.yScale = null
+              currentScalesRef.current.isEmptyScale = false
             }
-            canvasRef.current.style.left = `${margin.left}px`
-            canvasRef.current.style.top = `${margin.top}px`
-            canvasRef.current.width = width
-            canvasRef.current.height = height
-          } else if (canvasRef.current && containerRef.current) {
-            containerRef.current.removeChild(canvasRef.current)
-            canvasRef.current = null
-          }
-
-          if (chartData.length > 0) {
-            // Render chart (ScatterPlot now handles both scatter and line types)
+            
+            // Use baseScalesRef for initial render, currentScalesRef for zoomed state
+            const hasZoomed = isInitialRenderComplete.current && zoomVersion > 0
+            const scalesToUse = hasZoomed ? currentScalesRef : baseScalesRef
+            
+            
+            // Render chart with current scales - pass mainGroup
             renderScatterPlot({ 
-              g, 
+              g: mainGroup, 
               data: chartData, 
               width, 
               height, 
               editingChart: mergedChart, 
-              scalesRef, 
+              scalesRef: scalesToUse, 
               dataSourceStyles, 
               canvas: canvasRef.current ?? undefined,
               plotStyles: mergedChart.plotStyles,
               enableSampling: settings.performanceSettings.dataProcessing.enableSampling
             })
+
+            // On first render, copy base scales to current scales
+            if (!isInitialRenderComplete.current && baseScalesRef.current.xScale) {
+              currentScalesRef.current.xScale = baseScalesRef.current.xScale
+              currentScalesRef.current.yScale = baseScalesRef.current.yScale
+              isInitialRenderComplete.current = true
+            }
           } else {
             // Render empty chart with axes
-            renderEmptyChart({ g, width, height, chartType: mergedChart.type || 'scatter', editingChart: mergedChart, scalesRef })
-          }
-          
-          // Ensure reference lines layer is above main chart
-          const refLinesLayer = svg.select(".reference-lines-layer")
-          if (!refLinesLayer.empty()) {
-            refLinesLayer.raise()
+            renderEmptyChart({ 
+              g: mainGroup, 
+              width, 
+              height, 
+              chartType: mergedChart.type || 'scatter', 
+              editingChart: mergedChart, 
+              scalesRef: baseScalesRef 
+            })
+            
+            // Mark scales as empty
+            baseScalesRef.current.isEmptyScale = true
+            
+            // Copy scales for consistency
+            if (baseScalesRef.current.xScale) {
+              currentScalesRef.current.xScale = baseScalesRef.current.xScale
+              currentScalesRef.current.yScale = baseScalesRef.current.yScale
+              currentScalesRef.current.isEmptyScale = true
+            }
           }
           
           // Store cleanup function
@@ -339,8 +421,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         }
       })
     }
-  }, [chartData, dimensions, isLoadingData, mergedChart, dataSourceStyles])
 
+  // Initial render and updates
   useEffect(() => {
     renderChart()
     
@@ -355,14 +437,14 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       }
       renderingRef.current = false
     }
-  }, [renderChart])
+  }, [chartData, dimensions, isLoadingData, mergedChart, dataSourceStyles, settings.performanceSettings.dataProcessing.enableSampling, zoomVersion])
   
   // Force re-render when chart settings change (including margins)
   useEffect(() => {
     if (chartSettings) {
       renderChart()
     }
-  }, [JSON.stringify(chartSettings?.margins), renderChart])
+  }, [JSON.stringify(chartSettings?.margins)])
 
   // Clean up tooltips on unmount
   useEffect(() => {
@@ -406,8 +488,19 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           svgRef={svgRef}
           editingChart={mergedChart}
           setEditingChart={setEditingChart}
-          scalesRef={scalesRef}
+          scalesRef={currentScalesRef}
           dimensions={dimensions}
+        />
+      )}
+      {enableZoom && (
+        <ZoomControls
+          onZoomIn={zoomIn}
+          onZoomOut={zoomOut}
+          onReset={resetZoom}
+          zoomLevel={zoomLevel}
+          minZoom={0.5}
+          maxZoom={10}
+          showZoomLevel={true}
         />
       )}
     </div>

@@ -14,6 +14,7 @@ interface EmptyChartProps {
   scalesRef: React.MutableRefObject<{
     xScale: d3.ScaleTime<number, number> | d3.ScaleLinear<number, number> | null
     yScale: d3.ScaleLinear<number, number> | null
+    isEmptyScale?: boolean
   }>
 }
 
