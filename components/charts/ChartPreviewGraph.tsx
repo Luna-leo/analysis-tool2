@@ -183,9 +183,6 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     // Add other properties that affect actual rendering
   }), [mergedChart.id, mergedChart.type, mergedChart.margins, mergedChart.showMarkers, mergedChart.plotStyles])
   
-  // Extract quality render options separately to avoid unnecessary re-renders
-  const qualityRenderOptions = qualityState.renderOptions
-  
 
   // Handle zoom transformation
   const handleZoomTransform = useCallback((transform: d3.ZoomTransform) => {
@@ -299,6 +296,14 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     debounceDelay: 150,
   })
   
+  // Extract quality render options separately to avoid unnecessary re-renders
+  const qualityRenderOptions = qualityState.renderOptions
+  
+  // Memoize dataSourceStyles to prevent unnecessary re-renders
+  const memoizedDataSourceStyles = useMemo(() => {
+    return dataSourceStyles || {}
+  }, [JSON.stringify(dataSourceStyles)])
+  
   // Initialize zoom functionality
   const {
     zoomLevel,
@@ -317,8 +322,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     onZoom: handleZoomTransform,
     onZoomStart: startInteraction,
     onZoomEnd: endInteraction,
-    margin: mergedChart.margins || { top: 20, right: 40, bottom: 60, left: 60 },
-    chartId: mergedChart.id,
+    margin: chartRenderProps.margins || { top: 20, right: 40, bottom: 60, left: 60 },
+    chartId: chartRenderProps.id,
     enableRangeSelection: true,
   })
   
@@ -440,7 +445,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           // Clear everything
           svg.selectAll("*").remove()
 
-          const margin = mergedChart.margins || { top: 20, right: 40, bottom: 60, left: 60 }
+          const margin = chartRenderProps.margins || { top: 20, right: 40, bottom: 60, left: 60 }
           const width = dimensions.width - margin.left - margin.right
           const height = dimensions.height - margin.top - margin.bottom
 
@@ -456,7 +461,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
             
             // Only log significant state changes
             if (process.env.NODE_ENV === 'development' && zoomVersion > 0) {
-              console.log(`[Chart ${mergedChart.id}] Rendering with zoom version:`, zoomVersion)
+              console.log(`[Chart ${chartRenderProps.id}] Rendering with zoom version:`, zoomVersion)
             }
             
             
@@ -468,7 +473,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
             // Override chart display options based on quality level
             const optimizedChart = {
               ...mergedChart,
-              showMarkers: qualityRenderOptions.enableMarkers && mergedChart.showMarkers,
+              showMarkers: qualityRenderOptions.enableMarkers && chartRenderProps.showMarkers,
             }
             
             // Render chart with current scales - pass mainGroup
@@ -479,9 +484,9 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               height, 
               editingChart: optimizedChart, 
               scalesRef: scalesToUse, 
-              dataSourceStyles, 
+              dataSourceStyles: memoizedDataSourceStyles, 
               canvas: canvasRef.current ?? undefined,
-              plotStyles: mergedChart.plotStyles,
+              plotStyles: chartRenderProps.plotStyles,
               enableSampling: enableSampling
             })
 
@@ -530,14 +535,14 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   // Initial render and updates
   useEffect(() => {
     // Debug logging in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[Chart ${mergedChart.id}] Render triggered by:`, {
-        hasData: !!chartData,
+    if (process.env.NODE_ENV === 'development' && chartData?.length > 0) {
+      console.log(`[Chart ${chartRenderProps.id}] Render triggered by:`, {
         dataLength: chartData?.length,
-        dimensions,
+        dimensions: `${dimensions.width}x${dimensions.height}`,
         isLoadingData,
         zoomVersion,
-        enableSampling,
+        samplingRate: qualityRenderOptions.samplingRate,
+        enableMarkers: qualityRenderOptions.enableMarkers,
       })
     }
     
@@ -554,9 +559,28 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       }
       renderingRef.current = false
     }
-  }, [chartData, dimensions, isLoadingData, mergedChart, dataSourceStyles, enableSampling, zoomVersion, qualityRenderOptions, chartRenderProps])
+  }, [
+    chartData, 
+    dimensions, 
+    isLoadingData, 
+    enableSampling, 
+    zoomVersion,
+    // Extract individual properties from qualityRenderOptions to avoid object reference changes
+    qualityRenderOptions.samplingRate,
+    qualityRenderOptions.enableMarkers,
+    // Use specific chart render properties instead of whole objects
+    chartRenderProps.id,
+    chartRenderProps.type,
+    chartRenderProps.margins,
+    chartRenderProps.showMarkers,
+    chartRenderProps.plotStyles,
+    // Note: dataSourceStyles removed - will be handled differently
+  ])
   
 
+  // Debug: Track previous render values in development
+  const prevRenderDeps = useRef<any>()
+  
   // Track shift key state for visual feedback - only for this chart
   const [isMouseOver, setIsMouseOver] = React.useState(false)
   
@@ -620,7 +644,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           height={dimensions.height} 
           className="absolute inset-0" 
           style={{ visibility: isLoadingData ? 'hidden' : 'visible' }}
-          data-chart-id={mergedChart.id}
+          data-chart-id={chartRenderProps.id}
         />
         {selectionState.isSelecting && (
           <svg 
@@ -630,8 +654,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
             style={{ zIndex: 10 }}
           >
             <rect
-              x={Math.min(selectionState.startX, selectionState.endX) + (mergedChart.margins?.left || 60)}
-              y={Math.min(selectionState.startY, selectionState.endY) + (mergedChart.margins?.top || 20)}
+              x={Math.min(selectionState.startX, selectionState.endX) + (chartRenderProps.margins?.left || 60)}
+              y={Math.min(selectionState.startY, selectionState.endY) + (chartRenderProps.margins?.top || 20)}
               width={Math.abs(selectionState.endX - selectionState.startX)}
               height={Math.abs(selectionState.endY - selectionState.startY)}
               fill="rgba(59, 130, 246, 0.1)"

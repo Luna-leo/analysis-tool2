@@ -307,6 +307,16 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     return result
   }, [charts, visibleRange])
   
+  // Memoize dataSourceStyles to prevent unnecessary re-renders
+  const memoizedDataSourceStyles = useMemo(() => {
+    return file.dataSourceStyles || {}
+  }, [JSON.stringify(file.dataSourceStyles)])
+  
+  // Memoize selectedDataSources to prevent unnecessary re-renders
+  const memoizedSelectedDataSources = useMemo(() => {
+    return file.selectedDataSources || []
+  }, [JSON.stringify(file.selectedDataSources)])
+  
   return (
     <>
       <div className="h-full flex flex-col" ref={contentRef}>
@@ -346,8 +356,8 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
                       onDragEnd={handleDragEnd}
                       isDragging={draggedIndex === index}
                       dragOverIndex={dragOverIndex}
-                      selectedDataSources={file.selectedDataSources}
-                      dataSourceStyles={file.dataSourceStyles}
+                      selectedDataSources={memoizedSelectedDataSources}
+                      dataSourceStyles={memoizedDataSourceStyles}
                       width={currentSettings.width}
                       height={currentSettings.height}
                     />
