@@ -270,21 +270,6 @@ export interface ChartSettings {
   }
   xLabelOffset?: number
   yLabelOffset?: number
-  marginMode?: 'auto' | 'manual'  // デフォルト: 'auto'
-  autoMarginScale?: number         // 自動マージンのスケール係数（デフォルト: 1.0）
-  // レイアウトごとの手動調整値を記憶
-  marginOverrides?: {
-    [layoutKey: string]: {  // 例: "2x2", "3x3" など
-      margins: {
-        top: number
-        right: number
-        bottom: number
-        left: number
-      }
-      xLabelOffset: number
-      yLabelOffset: number
-    }
-  }
 }
 
 export interface ChartSizes {

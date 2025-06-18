@@ -12,8 +12,8 @@ const GRID_MARGIN_PRESETS: Record<string, { bottom: number; left: number }> = {
   '2x4': { bottom: 77, left: 55 },
   '3x1': { bottom: 50, left: 55 },
   '3x2': { bottom: 50, left: 55 },
-  '3x3': { bottom: 35, left: 50 }, // Optimized for 3x3 layout
-  '3x4': { bottom: 40, left: 50 },
+  '3x3': { bottom: 35, left: 55 }, // Optimized for 3x3 layout
+  '3x4': { bottom: 40, left: 55 },
   '4x1': { bottom: 77, left: 60 },
   '4x2': { bottom: 77, left: 55 },
   '4x3': { bottom: 77, left: 50 },
@@ -23,33 +23,21 @@ const GRID_MARGIN_PRESETS: Record<string, { bottom: number; left: number }> = {
 }
 
 /**
- * Calculate automatic margins based on grid layout
+ * Get margins based on grid layout
  */
-export const calculateAutoMargins = (
+export const getLayoutMargins = (
   columns: number,
-  rows: number,
-  containerWidth: number,
-  containerHeight: number,
-  autoMarginScale: number = 1.0,
-  fixedMargins?: { top?: number; right?: number }
+  rows: number
 ) => {
-  // Fixed margins for top and right (no auto adjustment)
-  const topMargin = fixedMargins?.top ?? 20
-  const rightMargin = fixedMargins?.right ?? 30
-  
   // Get preset margins based on grid size
   const layoutKey = getLayoutKey(columns, rows)
   const preset = GRID_MARGIN_PRESETS[layoutKey] || GRID_MARGIN_PRESETS['default']
   
-  // Apply scale to bottom and left margins only
-  const bottomMargin = Math.round(preset.bottom * autoMarginScale)
-  const leftMargin = Math.round(preset.left * autoMarginScale)
-  
   return {
-    top: topMargin,
-    right: rightMargin,
-    bottom: bottomMargin,
-    left: leftMargin
+    top: 20,
+    right: 30,
+    bottom: preset.bottom,
+    left: preset.left
   }
 }
 
@@ -78,9 +66,9 @@ const GRID_LABEL_OFFSET_PRESETS: Record<string, { xOffset: number; yOffset: numb
 }
 
 /**
- * Calculate automatic label offsets based on grid layout
+ * Get label offsets based on grid layout
  */
-export const calculateAutoLabelOffsets = (
+export const getLayoutLabelOffsets = (
   columns: number,
   rows: number
 ) => {

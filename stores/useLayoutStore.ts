@@ -29,7 +29,7 @@ const defaultChartSettings: ChartSettings = {
   showYAxis: true,
   showGrid: true,
   showLegend: true,
-  showChartTitle: true,
+  showChartTitle: false,
   margins: {
     top: 20,
     right: 40,
@@ -37,10 +37,7 @@ const defaultChartSettings: ChartSettings = {
     left: 55
   },
   xLabelOffset: 35,
-  yLabelOffset: 35,
-  marginMode: 'auto',
-  autoMarginScale: 1.0,
-  marginOverrides: {}
+  yLabelOffset: 35
 }
 
 export const useLayoutStore = create<LayoutStore>()(
