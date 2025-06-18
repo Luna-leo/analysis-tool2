@@ -281,6 +281,12 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     maxDataPoints: effectiveMaxDataPoints
   })
   
+  // Memoize chartData to prevent unnecessary re-renders
+  // Only create new reference when data actually changes
+  const memoizedChartData = useMemo(() => {
+    return chartData
+  }, [JSON.stringify(chartData?.slice(0, 10)), chartData?.length]) // Use first 10 items + length as a fingerprint
+  
   // Initialize quality optimization
   const {
     qualityState,
@@ -288,7 +294,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     endInteraction,
     cleanup: cleanupQuality,
   } = useQualityOptimization({
-    dataCount: chartData?.length || 0,
+    dataCount: memoizedChartData?.length || 0,
     enableOptimization: dynamicQuality,
     qualityThreshold: qualityThreshold,
     debounceDelay: 150,
@@ -451,7 +457,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           const mainGroup = svg.append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`)
 
-          if (chartData && chartData.length > 0) {
+          if (memoizedChartData && memoizedChartData.length > 0) {
             // Use baseScalesRef for initial render, currentScalesRef for zoomed state
             // Check if we have valid current scales (they would be set after zoom)
             const hasValidCurrentScales = currentScalesRef.current.xScale !== null && currentScalesRef.current.yScale !== null
@@ -465,8 +471,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
             
             // Apply quality optimization if enabled
             const dataToRender = qualityRenderOptions.samplingRate < 1
-              ? chartData.filter((_, i) => i % Math.round(1 / qualityRenderOptions.samplingRate) === 0)
-              : chartData
+              ? memoizedChartData.filter((_, i) => i % Math.round(1 / qualityRenderOptions.samplingRate) === 0)
+              : memoizedChartData
               
             // Override chart display options based on quality level
             const optimizedChart = {
@@ -533,9 +539,9 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   // Initial render and updates
   useEffect(() => {
     // Debug logging in development
-    if (process.env.NODE_ENV === 'development' && chartData?.length > 0) {
+    if (process.env.NODE_ENV === 'development' && memoizedChartData?.length > 0) {
       const currentDeps = {
-        chartData,
+        chartData: memoizedChartData,
         dimensions,
         isLoadingData,
         enableSampling,
@@ -580,7 +586,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       renderingRef.current = false
     }
   }, [
-    chartData, 
+    memoizedChartData, 
     dimensions, 
     isLoadingData, 
     enableSampling, 
