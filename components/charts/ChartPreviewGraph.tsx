@@ -308,6 +308,14 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     return dataSourceStyles || {}
   }, [JSON.stringify(dataSourceStyles)])
   
+  // Track when scales are ready
+  const [scalesReady, setScalesReady] = React.useState(false)
+  React.useEffect(() => {
+    if (baseScalesRef.current.xScale && baseScalesRef.current.yScale) {
+      setScalesReady(true)
+    }
+  }, [zoomVersion]) // Update when zoom changes
+  
   // Initialize zoom functionality
   const {
     zoomLevel,
@@ -329,6 +337,10 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     margin: mergedChart.margins || { top: 20, right: 40, bottom: 60, left: 60 },
     chartId: mergedChart.id,
     enableRangeSelection: true,
+    getScales: useCallback(() => ({
+      baseScales: baseScalesRef.current,
+      currentScales: currentScalesRef.current,
+    }), []),
   })
   
 
@@ -491,7 +503,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               dataSourceStyles: memoizedDataSourceStyles, 
               canvas: canvasRef.current ?? undefined,
               plotStyles: mergedChart.plotStyles,
-              enableSampling: enableSampling
+              enableSampling: enableSampling,
+              disableTooltips: selectionState.isSelecting || isShiftPressed
             })
 
             // On first render, copy base scales to current scales
@@ -505,6 +518,38 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               if (pendingZoomTransform.current) {
                 // Apply pending zoom transform
                 handleZoomTransform(pendingZoomTransform.current);
+              }
+            }
+            
+            // Add selection overlay if selecting or shift is pressed
+            if (selectionState.isSelecting || isShiftPressed) {
+              // Create an invisible overlay that captures all mouse events during selection
+              svg.append("rect")
+                .attr("class", "selection-overlay")
+                .attr("x", 0)
+                .attr("y", 0)
+                .attr("width", dimensions.width)
+                .attr("height", dimensions.height)
+                .attr("fill", "transparent")
+                .style("cursor", "crosshair")
+                .style("pointer-events", "all");
+              
+              // Draw selection rectangle within the plot area (only if actively selecting)
+              if (selectionState.isSelecting) {
+                const selectionGroup = mainGroup.append("g")
+                  .attr("class", "selection-rect")
+                  .attr("clip-path", "url(#chart-data-clip)");
+                
+                selectionGroup.append("rect")
+                  .attr("x", Math.min(selectionState.startX, selectionState.endX))
+                  .attr("y", Math.min(selectionState.startY, selectionState.endY))
+                  .attr("width", Math.abs(selectionState.endX - selectionState.startX))
+                  .attr("height", Math.abs(selectionState.endY - selectionState.startY))
+                  .attr("fill", "rgba(59, 130, 246, 0.1)")
+                  .attr("stroke", "rgb(59, 130, 246)")
+                  .attr("stroke-width", "2")
+                  .attr("stroke-dasharray", "4,2")
+                  .style("pointer-events", "none");
               }
             }
           } else {
@@ -599,6 +644,12 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     chartRenderProps.type,
     chartRenderProps.showMarkers,
     // Note: margins and plotStyles are accessed directly from mergedChart in render function
+    selectionState.isSelecting,
+    selectionState.startX,
+    selectionState.startY,
+    selectionState.endX,
+    selectionState.endY,
+    isShiftPressed,
   ])
   
 
@@ -641,6 +692,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     }
   }, [isMouseOver])
 
+  
   // Clean up tooltips on unmount
   useEffect(() => {
     return () => {
@@ -681,25 +733,6 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           style={{ visibility: isLoadingData ? 'hidden' : 'visible' }}
           data-chart-id={chartRenderProps.id}
         />
-        {selectionState.isSelecting && (
-          <svg 
-            width={dimensions.width} 
-            height={dimensions.height} 
-            className="absolute inset-0 pointer-events-none"
-            style={{ zIndex: 10 }}
-          >
-            <rect
-              x={Math.min(selectionState.startX, selectionState.endX) + (mergedChart.margins?.left || 60)}
-              y={Math.min(selectionState.startY, selectionState.endY) + (mergedChart.margins?.top || 20)}
-              width={Math.abs(selectionState.endX - selectionState.startX)}
-              height={Math.abs(selectionState.endY - selectionState.startY)}
-              fill="rgba(59, 130, 246, 0.1)"
-              stroke="rgb(59, 130, 246)"
-              strokeWidth="2"
-              strokeDasharray="4,2"
-            />
-          </svg>
-        )}
       </div>
       {!isLoadingData && mergedChart.showLegend !== false && selectedDataSourceItems.length > 0 && (
         <ChartLegend

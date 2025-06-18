@@ -28,6 +28,7 @@ interface ScatterPlotConfig extends BaseChartConfig {
   canvas?: HTMLCanvasElement
   plotStyles?: ChartComponent['plotStyles']
   enableSampling?: boolean
+  disableTooltips?: boolean
 }
 
 /**
@@ -39,6 +40,7 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
   private canvas?: HTMLCanvasElement
   private plotStyles: ChartComponent['plotStyles']
   private enableSampling: boolean
+  private disableTooltips: boolean
 
   constructor(config: ScatterPlotConfig) {
     super(config)
@@ -51,6 +53,7 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
       byBoth: {}
     }
     this.enableSampling = config.enableSampling ?? true
+    this.disableTooltips = config.disableTooltips ?? false
   }
 
   /**
@@ -368,17 +371,19 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
         }
       }))
     
-      const tooltipHandlers = ChartTooltipManager.createHandlers({
-        xAxisType: this.editingChart.xAxisType || 'datetime',
-        showTimestamp: false,
-        showDataSource: false,
-        customContent: (d: any) => ChartTooltipManager.createLineChartTooltip(
-          d.parameter!,
-          d.value,
-          d.timestamp as Date,
-          d.unit
-        )
-      })
+      const tooltipHandlers = this.disableTooltips 
+        ? {} 
+        : ChartTooltipManager.createHandlers({
+            xAxisType: this.editingChart.xAxisType || 'datetime',
+            showTimestamp: false,
+            showDataSource: false,
+            customContent: (d: any) => ChartTooltipManager.createLineChartTooltip(
+              d.parameter!,
+              d.value,
+              d.timestamp as Date,
+              d.unit
+            )
+          })
     
     MarkerRenderer.render({
       container: this.dataGroup,
