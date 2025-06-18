@@ -1,6 +1,6 @@
 "use client"
 
-import React from "react"
+import React, { useEffect } from "react"
 import { LayoutGrid } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { useLayoutStore } from "@/stores/useLayoutStore"
+import { calculateAutoMargins, calculateAutoLabelOffsets, getLayoutKey } from "@/utils/chart/marginCalculator"
 
 interface LayoutSettingsProps {
   fileId: string
@@ -40,7 +41,12 @@ export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
       right: 40,
       bottom: 60,
       left: 60
-    }
+    },
+    xLabelOffset: 35,
+    yLabelOffset: 35,
+    marginMode: 'auto' as const,
+    autoMarginScale: 1.0,
+    marginOverrides: {}
   }
   
   const currentLayoutSettings = {
@@ -51,6 +57,125 @@ export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
   const currentChartSettings = {
     ...defaultChartSettings,
     ...(chartSettingsMap[fileId] || {})
+  }
+  
+  // Handle grid preset click with auto margin calculation
+  const handleGridPreset = (columns: number, rows: number) => {
+    updateLayoutSettings(fileId, { columns, rows })
+    
+    // If in auto mode, update margins based on new layout
+    if (currentChartSettings.marginMode === 'auto') {
+      // Get container dimensions (approximate)
+      const containerWidth = window.innerWidth * 0.8 // Rough estimate
+      const containerHeight = window.innerHeight * 0.7
+      
+      const autoMargins = calculateAutoMargins(
+        columns,
+        rows,
+        containerWidth,
+        containerHeight,
+        currentChartSettings.autoMarginScale || 1.0,
+        {
+          top: currentChartSettings.margins?.top || defaultChartSettings.margins.top,
+          right: currentChartSettings.margins?.right || defaultChartSettings.margins.right
+        }
+      )
+      
+      const autoOffsets = calculateAutoLabelOffsets(columns, rows)
+      
+      updateChartSettings(fileId, {
+        margins: autoMargins,
+        ...autoOffsets
+      })
+    } else {
+      // In manual mode, check for saved overrides for this layout
+      const layoutKey = getLayoutKey(columns, rows)
+      const overrides = currentChartSettings.marginOverrides as Record<string, any>
+      const override = overrides?.[layoutKey]
+      
+      if (override) {
+        updateChartSettings(fileId, {
+          margins: override.margins,
+          xLabelOffset: override.xLabelOffset,
+          yLabelOffset: override.yLabelOffset
+        })
+      }
+    }
+  }
+  
+  // Save current settings as override when switching to manual mode
+  const handleMarginModeChange = (mode: 'auto' | 'manual') => {
+    if (mode === 'manual' && currentChartSettings.marginMode === 'auto') {
+      // Save current settings as override for current layout
+      const layoutKey = getLayoutKey(currentLayoutSettings.columns, currentLayoutSettings.rows)
+      const currentOverrides = currentChartSettings.marginOverrides || {}
+      
+      updateChartSettings(fileId, {
+        marginMode: mode,
+        marginOverrides: {
+          ...currentOverrides,
+          [layoutKey]: {
+            margins: currentChartSettings.margins || defaultChartSettings.margins,
+            xLabelOffset: currentChartSettings.xLabelOffset || defaultChartSettings.xLabelOffset,
+            yLabelOffset: currentChartSettings.yLabelOffset || defaultChartSettings.yLabelOffset
+          }
+        }
+      })
+    } else {
+      updateChartSettings(fileId, { marginMode: mode })
+    }
+  }
+  
+  // Save margin changes to overrides when in manual mode
+  const handleMarginChange = (marginType: 'top' | 'right' | 'bottom' | 'left', value: number) => {
+    const newMargins = {
+      ...(currentChartSettings.margins || defaultChartSettings.margins),
+      [marginType]: value
+    }
+    
+    updateChartSettings(fileId, { margins: newMargins })
+    
+    // If in manual mode, save to overrides
+    if (currentChartSettings.marginMode === 'manual') {
+      const layoutKey = getLayoutKey(currentLayoutSettings.columns, currentLayoutSettings.rows)
+      const currentOverrides = (currentChartSettings.marginOverrides || {}) as Record<string, any>
+      
+      updateChartSettings(fileId, {
+        marginOverrides: {
+          ...currentOverrides,
+          [layoutKey]: {
+            ...currentOverrides[layoutKey],
+            margins: newMargins
+          }
+        }
+      })
+    }
+  }
+  
+  // Save label offset changes to overrides when in manual mode
+  const handleLabelOffsetChange = (offsetType: 'xLabelOffset' | 'yLabelOffset', value: number) => {
+    updateChartSettings(fileId, { [offsetType]: value })
+    
+    // If in manual mode, save to overrides
+    if (currentChartSettings.marginMode === 'manual') {
+      const layoutKey = getLayoutKey(currentLayoutSettings.columns, currentLayoutSettings.rows)
+      const currentOverrides = (currentChartSettings.marginOverrides || {}) as Record<string, any>
+      const currentOverride = currentOverrides[layoutKey] || {
+        margins: currentChartSettings.margins || defaultChartSettings.margins,
+        xLabelOffset: currentChartSettings.xLabelOffset || defaultChartSettings.xLabelOffset,
+        yLabelOffset: currentChartSettings.yLabelOffset || defaultChartSettings.yLabelOffset
+      }
+      
+      updateChartSettings(fileId, {
+        marginOverrides: {
+          ...currentOverrides,
+          [layoutKey]: {
+            ...currentOverride,
+            [offsetType]: value
+          }
+        }
+      })
+    }
   }
 
   return (
@@ -72,6 +197,47 @@ export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
         <DropdownMenuLabel className="text-xs">Layout Settings</DropdownMenuLabel>
         <DropdownMenuSeparator />
         
+        {/* Quick Grid Presets - At the top in a single row */}
+        <div className="px-3 py-2">
+          <span className="text-xs font-medium">Quick Grid Presets</span>
+          <div className="flex gap-1.5 mt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs flex-1"
+              onClick={() => handleGridPreset(1, 1)}
+            >
+              1×1
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs flex-1"
+              onClick={() => handleGridPreset(2, 2)}
+            >
+              2×2
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs flex-1"
+              onClick={() => handleGridPreset(3, 3)}
+            >
+              3×3
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs flex-1"
+              onClick={() => handleGridPreset(4, 4)}
+            >
+              4×4
+            </Button>
+          </div>
+        </div>
+
+        <DropdownMenuSeparator />
+        
         {/* Grid Layout */}
         <div className="px-3 py-2">
           <div className="flex items-center justify-between gap-3">
@@ -82,9 +248,9 @@ export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
                 className="h-7 w-14 px-1.5 text-xs border rounded"
                 value={currentLayoutSettings.columns || 2}
                 onChange={(e) => {
-                  updateLayoutSettings(fileId, {
-                    columns: parseInt(e.target.value),
-                  })
+                  const columns = parseInt(e.target.value)
+                  updateLayoutSettings(fileId, { columns })
+                  handleGridPreset(columns, currentLayoutSettings.rows)
                 }}
               >
                 {[1, 2, 3, 4].map((n) => (
@@ -98,9 +264,9 @@ export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
                 className="h-7 w-14 px-1.5 text-xs border rounded"
                 value={currentLayoutSettings.rows || 2}
                 onChange={(e) => {
-                  updateLayoutSettings(fileId, {
-                    rows: parseInt(e.target.value),
-                  })
+                  const rows = parseInt(e.target.value)
+                  updateLayoutSettings(fileId, { rows })
+                  handleGridPreset(currentLayoutSettings.columns, rows)
                 }}
               >
                 {[1, 2, 3, 4].map((n) => (
@@ -172,138 +338,194 @@ export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
 
         <DropdownMenuSeparator />
 
-        {/* Chart Margins - Visual Layout */}
-        <div className="px-3 py-2">
-          <span className="text-xs font-medium">Margins (px)</span>
-          <div className="flex flex-col items-center gap-1.5 mt-2">
-            {/* Top margin */}
-            <input
-              id="marginTop"
-              type="number"
-              className="w-14 h-7 px-1.5 text-xs border rounded text-center"
-              value={currentChartSettings.margins?.top || 20}
-              placeholder="Top"
-              onChange={(e) => {
-                const value = parseInt(e.target.value) || 0
-                updateChartSettings(fileId, {
-                  margins: {
-                    ...(currentChartSettings.margins || { top: 20, right: 40, bottom: 60, left: 60 }),
-                    top: value
-                  }
-                })
-              }}
-            />
-            
-            {/* Middle row with left, chart visual, and right */}
-            <div className="flex items-center gap-2 mx-3">
-              <input
-                id="marginLeft"
-                type="number"
-                className="w-14 h-7 px-1.5 text-xs border rounded text-center"
-                value={currentChartSettings.margins?.left || 60}
-                placeholder="Left"
-                onChange={(e) => {
-                  const value = parseInt(e.target.value) || 0
-                  updateChartSettings(fileId, {
-                    margins: {
-                      ...(currentChartSettings.margins || { top: 20, right: 40, bottom: 60, left: 60 }),
-                      left: value
-                    }
-                  })
-                }}
-              />
-              
-              {/* Chart visualization - more compact */}
-              <div className="w-24 h-16 relative bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-md shadow-sm">
-                <svg className="w-full h-full" viewBox="0 0 96 64">
-                  {/* Outer container to show margins */}
-                  <rect x="0" y="0" width="96" height="64" fill="transparent" stroke="#e5e7eb" strokeWidth="0.5" strokeDasharray="2,2"/>
-                  
-                  {/* Chart area with margins */}
-                  <rect x="14" y="10" width="68" height="44" fill="white" stroke="#d1d5db" strokeWidth="1"/>
-                  
-                  {/* Y axis */}
-                  <line x1="14" y1="10" x2="14" y2="54" stroke="#6b7280" strokeWidth="1.5"/>
-                  {/* X axis */}
-                  <line x1="14" y1="54" x2="82" y2="54" stroke="#6b7280" strokeWidth="1.5"/>
-                  
-                  {/* Y axis ticks and labels */}
-                  <line x1="11" y1="10" x2="14" y2="10" stroke="#6b7280" strokeWidth="1"/>
-                  <line x1="11" y1="21" x2="14" y2="21" stroke="#6b7280" strokeWidth="1"/>
-                  <line x1="11" y1="32" x2="14" y2="32" stroke="#6b7280" strokeWidth="1"/>
-                  <line x1="11" y1="43" x2="14" y2="43" stroke="#6b7280" strokeWidth="1"/>
-                  <line x1="11" y1="54" x2="14" y2="54" stroke="#6b7280" strokeWidth="1"/>
-                  
-                  {/* X axis ticks */}
-                  <line x1="14" y1="54" x2="14" y2="57" stroke="#6b7280" strokeWidth="1"/>
-                  <line x1="31" y1="54" x2="31" y2="57" stroke="#6b7280" strokeWidth="1"/>
-                  <line x1="48" y1="54" x2="48" y2="57" stroke="#6b7280" strokeWidth="1"/>
-                  <line x1="65" y1="54" x2="65" y2="57" stroke="#6b7280" strokeWidth="1"/>
-                  <line x1="82" y1="54" x2="82" y2="57" stroke="#6b7280" strokeWidth="1"/>
-                  
-                  {/* Grid lines */}
-                  <line x1="14" y1="21" x2="82" y2="21" stroke="#f3f4f6" strokeWidth="0.5"/>
-                  <line x1="14" y1="32" x2="82" y2="32" stroke="#f3f4f6" strokeWidth="0.5"/>
-                  <line x1="14" y1="43" x2="82" y2="43" stroke="#f3f4f6" strokeWidth="0.5"/>
-                  <line x1="31" y1="10" x2="31" y2="54" stroke="#f3f4f6" strokeWidth="0.5"/>
-                  <line x1="48" y1="10" x2="48" y2="54" stroke="#f3f4f6" strokeWidth="0.5"/>
-                  <line x1="65" y1="10" x2="65" y2="54" stroke="#f3f4f6" strokeWidth="0.5"/>
-                  
-                  {/* Sample line chart */}
-                  <polyline 
-                    points="18,40 28,28 38,32 48,22 58,26 68,18 78,24" 
-                    fill="none" 
-                    stroke="#3b82f6" 
-                    strokeWidth="2"
-                  />
-                  
-                  {/* Data points */}
-                  <circle cx="18" cy="40" r="2" fill="#3b82f6"/>
-                  <circle cx="28" cy="28" r="2" fill="#3b82f6"/>
-                  <circle cx="38" cy="32" r="2" fill="#3b82f6"/>
-                  <circle cx="48" cy="22" r="2" fill="#3b82f6"/>
-                  <circle cx="58" cy="26" r="2" fill="#3b82f6"/>
-                  <circle cx="68" cy="18" r="2" fill="#3b82f6"/>
-                  <circle cx="78" cy="24" r="2" fill="#3b82f6"/>
-                </svg>
+        {/* Margin Mode */}
+        <div className="px-3 py-2 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium">Margin Mode</span>
+            <div className="flex gap-1">
+              <Button
+                variant={currentChartSettings.marginMode === 'auto' ? 'default' : 'outline'}
+                size="sm"
+                className="h-6 text-xs px-2"
+                onClick={() => handleMarginModeChange('auto')}
+              >
+                Auto
+              </Button>
+              <Button
+                variant={currentChartSettings.marginMode === 'manual' ? 'default' : 'outline'}
+                size="sm"
+                className="h-6 text-xs px-2"
+                onClick={() => handleMarginModeChange('manual')}
+              >
+                Manual
+              </Button>
+            </div>
+          </div>
+          
+          {currentChartSettings.marginMode === 'auto' && (
+            <div className="flex items-center justify-between">
+              <label className="text-xs">Label Area Scale</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="0.5"
+                  max="1.5"
+                  step="0.1"
+                  value={currentChartSettings.autoMarginScale || 1.0}
+                  className="w-20 h-4"
+                  onChange={(e) => updateChartSettings(fileId, { 
+                    autoMarginScale: parseFloat(e.target.value) 
+                  })}
+                />
+                <span className="text-xs w-8 text-right">{(currentChartSettings.autoMarginScale || 1.0).toFixed(1)}x</span>
               </div>
-              
+            </div>
+          )}
+          
+          {currentChartSettings.marginMode === 'auto' && (
+            <p className="text-xs text-muted-foreground">
+              Adjusts bottom and left margins for axis labels
+            </p>
+          )}
+        </div>
+
+        <DropdownMenuSeparator />
+
+        {/* Chart Margins */}
+        <div className="px-3 py-2 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium">Chart Margins (px)</span>
+            {currentChartSettings.marginMode === 'auto' && (
+              <span className="text-xs text-muted-foreground">Auto-adjusted: Bottom & Left</span>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="flex items-center justify-between">
+              <label htmlFor="marginTop" className="text-xs">Top</label>
               <input
-                id="marginRight"
+                id="marginTop"
                 type="number"
-                className="w-14 h-7 px-1.5 text-xs border rounded text-center"
-                value={currentChartSettings.margins?.right || 40}
-                placeholder="Right"
+                className={cn(
+                  "w-14 h-7 px-1.5 text-xs border rounded text-center",
+                  currentChartSettings.marginMode === 'auto' && "bg-muted cursor-not-allowed"
+                )}
+                value={currentChartSettings.margins?.top || 20}
+                disabled={currentChartSettings.marginMode === 'auto'}
                 onChange={(e) => {
                   const value = parseInt(e.target.value) || 0
-                  updateChartSettings(fileId, {
-                    margins: {
-                      ...(currentChartSettings.margins || { top: 20, right: 40, bottom: 60, left: 60 }),
-                      right: value
-                    }
-                  })
+                  handleMarginChange('top', value)
                 }}
               />
             </div>
-            
-            {/* Bottom margin */}
-            <input
-              id="marginBottom"
-              type="number"
-              className="w-14 h-7 px-1.5 text-xs border rounded text-center"
-              value={currentChartSettings.margins?.bottom || 60}
-              placeholder="Bottom"
-              onChange={(e) => {
-                const value = parseInt(e.target.value) || 0
-                updateChartSettings(fileId, {
-                  margins: {
-                    ...(currentChartSettings.margins || { top: 20, right: 40, bottom: 60, left: 60 }),
-                    bottom: value
-                  }
-                })
-              }}
-            />
+            <div className="flex items-center justify-between">
+              <label htmlFor="marginRight" className="text-xs">Right</label>
+              <input
+                id="marginRight"
+                type="number"
+                className={cn(
+                  "w-14 h-7 px-1.5 text-xs border rounded text-center",
+                  currentChartSettings.marginMode === 'auto' && "bg-muted cursor-not-allowed"
+                )}
+                value={currentChartSettings.margins?.right || 40}
+                disabled={currentChartSettings.marginMode === 'auto'}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value) || 0
+                  handleMarginChange('right', value)
+                }}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <label htmlFor="marginBottom" className={cn(
+                "text-xs",
+                currentChartSettings.marginMode === 'auto' && "text-foreground font-medium"
+              )}>Bottom</label>
+              <input
+                id="marginBottom"
+                type="number"
+                className={cn(
+                  "w-14 h-7 px-1.5 text-xs border rounded text-center",
+                  currentChartSettings.marginMode === 'auto' && "bg-muted cursor-not-allowed"
+                )}
+                value={currentChartSettings.margins?.bottom || 60}
+                disabled={currentChartSettings.marginMode === 'auto'}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value) || 0
+                  handleMarginChange('bottom', value)
+                }}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <label htmlFor="marginLeft" className={cn(
+                "text-xs",
+                currentChartSettings.marginMode === 'auto' && "text-foreground font-medium"
+              )}>Left</label>
+              <input
+                id="marginLeft"
+                type="number"
+                className={cn(
+                  "w-14 h-7 px-1.5 text-xs border rounded text-center",
+                  currentChartSettings.marginMode === 'auto' && "bg-muted cursor-not-allowed"
+                )}
+                value={currentChartSettings.margins?.left || 60}
+                disabled={currentChartSettings.marginMode === 'auto'}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value) || 0
+                  handleMarginChange('left', value)
+                }}
+              />
+            </div>
           </div>
+        </div>
+
+        <DropdownMenuSeparator />
+
+        {/* Axis Label Distance */}
+        <div className="px-3 py-2 space-y-2">
+          <span className="text-xs font-medium">Axis Label Distance (px)</span>
+          <p className="text-xs text-muted-foreground">
+            Adjust to avoid overlap with tick labels
+          </p>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label htmlFor="xLabelOffset" className="text-xs">X-axis label</label>
+              <input
+                id="xLabelOffset"
+                type="number"
+                className={cn(
+                  "w-14 h-7 px-1.5 text-xs border rounded text-center",
+                  currentChartSettings.marginMode === 'auto' && "bg-muted cursor-not-allowed"
+                )}
+                value={currentChartSettings.xLabelOffset || 35}
+                disabled={currentChartSettings.marginMode === 'auto'}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value) || 0
+                  handleLabelOffsetChange('xLabelOffset', value)
+                }}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <label htmlFor="yLabelOffset" className="text-xs">Y-axis label</label>
+              <input
+                id="yLabelOffset"
+                type="number"
+                className={cn(
+                  "w-14 h-7 px-1.5 text-xs border rounded text-center",
+                  currentChartSettings.marginMode === 'auto' && "bg-muted cursor-not-allowed"
+                )}
+                value={currentChartSettings.yLabelOffset || 35}
+                disabled={currentChartSettings.marginMode === 'auto'}
+                onChange={(e) => {
+                  const value = parseInt(e.target.value) || 0
+                  handleLabelOffsetChange('yLabelOffset', value)
+                }}
+              />
+            </div>
+          </div>
+          {currentChartSettings.marginMode === 'auto' && (
+            <p className="text-xs text-muted-foreground italic">
+              Switch to Manual mode to edit values
+            </p>
+          )}
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

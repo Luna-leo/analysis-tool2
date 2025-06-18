@@ -33,6 +33,11 @@ interface ChartPreviewGraphProps {
       bottom: number
       left: number
     }
+    xLabelOffset?: number
+    yLabelOffset?: number
+    marginMode?: 'auto' | 'manual'
+    autoMarginScale?: number
+    marginOverrides?: Record<string, any>
   }
 }
 
@@ -55,7 +60,9 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       showXLabel: chartSettings.showXAxis !== undefined ? chartSettings.showXAxis : editingChart.showXLabel,
       showYLabel: chartSettings.showYAxis !== undefined ? chartSettings.showYAxis : editingChart.showYLabel,
       showGrid: chartSettings.showGrid !== undefined ? chartSettings.showGrid : editingChart.showGrid,
-      margins: chartSettings.margins !== undefined ? chartSettings.margins : editingChart.margins
+      margins: chartSettings.margins !== undefined ? chartSettings.margins : editingChart.margins,
+      xLabelOffset: chartSettings.xLabelOffset !== undefined ? chartSettings.xLabelOffset : editingChart.xLabelOffset,
+      yLabelOffset: chartSettings.yLabelOffset !== undefined ? chartSettings.yLabelOffset : editingChart.yLabelOffset
     }
   }, [editingChart, chartSettings])
   const svgRef = useRef<SVGSVGElement>(null)

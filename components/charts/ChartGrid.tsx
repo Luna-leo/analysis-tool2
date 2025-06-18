@@ -19,6 +19,7 @@ import { useLayoutStore } from "@/stores/useLayoutStore"
 import { useUIStore } from "@/stores/useUIStore"
 import { SourceSelectionBanner } from "./SourceSelectionBanner"
 import { ChartPagination } from "./ChartPagination"
+import { calculateAutoMargins, calculateAutoLabelOffsets, getLayoutKey } from "@/utils/chart/marginCalculator"
 
 interface ChartGridProps {
   file: FileNode
@@ -38,7 +39,7 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
   const [availableHeight, setAvailableHeight] = useState<number | null>(null)
 
   const { activeTab, updateFileCharts } = useFileStore()
-  const { layoutSettingsMap, chartSettingsMap, updateLayoutSettings } = useLayoutStore()
+  const { layoutSettingsMap, chartSettingsMap, updateLayoutSettings, updateChartSettings } = useLayoutStore()
   const { gridSelectionMode, selectAllGridCharts, clearGridSelectedCharts, sourceSelectionMode } = useUIStore()
 
   const currentSettings = layoutSettingsMap[file.id] || {
@@ -109,6 +110,46 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
             isCompactLayout,
           }
         })
+        
+        // Auto-calculate margins if in auto mode
+        if (currentChartSettings.marginMode === 'auto' && contentRef.current) {
+          const containerWidth = contentRef.current.clientWidth
+          const containerHeight = contentRef.current.clientHeight
+          
+          const autoMargins = calculateAutoMargins(
+            currentSettings.columns,
+            currentSettings.rows,
+            containerWidth,
+            containerHeight,
+            currentChartSettings.autoMarginScale || 1.0,
+            {
+              top: currentChartSettings.margins?.top,
+              right: currentChartSettings.margins?.right
+            }
+          )
+          
+          const autoOffsets = calculateAutoLabelOffsets(
+            currentSettings.columns,
+            currentSettings.rows
+          )
+          
+          // Only update if margins have changed
+          const marginsChanged = !currentChartSettings.margins ||
+            autoMargins.top !== currentChartSettings.margins.top ||
+            autoMargins.right !== currentChartSettings.margins.right ||
+            autoMargins.bottom !== currentChartSettings.margins.bottom ||
+            autoMargins.left !== currentChartSettings.margins.left
+          
+          const offsetsChanged = autoOffsets.xLabelOffset !== currentChartSettings.xLabelOffset ||
+            autoOffsets.yLabelOffset !== currentChartSettings.yLabelOffset
+          
+          if (marginsChanged || offsetsChanged) {
+            updateChartSettings(file.id, {
+              margins: autoMargins,
+              ...autoOffsets
+            })
+          }
+        }
       }
 
       const resizeObserver = new ResizeObserver(() => {
@@ -122,7 +163,7 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
         resizeObserver.disconnect()
       }
     }
-  }, [layoutSettingsMap, activeTab, file.id, currentSettings.rows, currentSettings.columns, currentSettings.pagination])
+  }, [layoutSettingsMap, chartSettingsMap, activeTab, file.id, currentSettings.rows, currentSettings.columns, currentSettings.pagination, currentChartSettings.marginMode, currentChartSettings.autoMarginScale, updateChartSettings])
 
   // Update local charts when file.charts changes
   useEffect(() => {

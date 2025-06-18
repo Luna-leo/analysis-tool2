@@ -33,9 +33,14 @@ const defaultChartSettings: ChartSettings = {
   margins: {
     top: 20,
     right: 40,
-    bottom: 60,
-    left: 60
-  }
+    bottom: 50,
+    left: 55
+  },
+  xLabelOffset: 35,
+  yLabelOffset: 35,
+  marginMode: 'auto',
+  autoMarginScale: 1.0,
+  marginOverrides: {}
 }
 
 export const useLayoutStore = create<LayoutStore>()(
