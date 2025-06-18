@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { devtools, subscribeWithSelector } from 'zustand/middleware'
 import type { LayoutSettings, ChartSettings } from '@/types'
 import { useGraphStateStore } from './useGraphStateStore'
+import { getLayoutMargins, getLayoutLabelOffsets } from '@/utils/chart/marginCalculator'
 
 interface LayoutState {
   layoutSettingsMap: Record<string, LayoutSettings>
@@ -30,14 +31,14 @@ const defaultChartSettings: ChartSettings = {
   showGrid: true,
   showLegend: true,
   showChartTitle: false,
-  margins: {
-    top: 20,
-    right: 40,
-    bottom: 50,
-    left: 55
-  },
-  xLabelOffset: 35,
-  yLabelOffset: 35
+  margins: getLayoutMargins(
+    defaultLayoutSettings.columns,
+    defaultLayoutSettings.rows
+  ),
+  ...getLayoutLabelOffsets(
+    defaultLayoutSettings.columns,
+    defaultLayoutSettings.rows
+  )
 }
 
 export const useLayoutStore = create<LayoutStore>()(
