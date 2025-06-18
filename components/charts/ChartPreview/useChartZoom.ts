@@ -152,39 +152,46 @@ export const useChartZoom = ({
     const currentTransform = d3.zoomTransform(svgRef.current);
     
     // Calculate the bounding box of the selection (in plot area coordinates)
-    // These coordinates are already adjusted for the current zoom
     const x0 = Math.min(startPoint[0], endPoint[0]);
     const x1 = Math.max(startPoint[0], endPoint[0]);
     const y0 = Math.min(startPoint[1], endPoint[1]);
     const y1 = Math.max(startPoint[1], endPoint[1]);
     
+    // Selection size in plot area coordinates
+    const selectionWidth = x1 - x0;
+    const selectionHeight = y1 - y0;
+    
     // Only process if selection is large enough
-    if (Math.abs(x1 - x0) < 10 || Math.abs(y1 - y0) < 10) {
+    if (selectionWidth < 10 || selectionHeight < 10) {
       return;
     }
     
-    // If we're already zoomed, we need to account for the current transform
-    // Convert selection coordinates back to original (unzoomed) coordinates
-    const originalX0 = (x0 + margin.left - currentTransform.x) / currentTransform.k;
-    const originalX1 = (x1 + margin.left - currentTransform.x) / currentTransform.k;
-    const originalY0 = (y0 + margin.top - currentTransform.y) / currentTransform.k;
-    const originalY1 = (y1 + margin.top - currentTransform.y) / currentTransform.k;
+    // Convert plot area coordinates to SVG coordinates
+    const svgX0 = x0 + margin.left;
+    const svgX1 = x1 + margin.left;
+    const svgY0 = y0 + margin.top;
+    const svgY1 = y1 + margin.top;
     
-    // Calculate the zoom scale and translate to fit the selection
+    // Calculate the center of selection in SVG coordinates
+    const svgCenterX = (svgX0 + svgX1) / 2;
+    const svgCenterY = (svgY0 + svgY1) / 2;
+    
+    // Convert to original (unzoomed) SVG coordinates
+    const originalCenterX = (svgCenterX - currentTransform.x) / currentTransform.k;
+    const originalCenterY = (svgCenterY - currentTransform.y) / currentTransform.k;
+    
+    // Calculate the selection size in original coordinates
+    const originalSelectionWidth = selectionWidth / currentTransform.k;
+    const originalSelectionHeight = selectionHeight / currentTransform.k;
+    
+    // Calculate the plot area size
     const plotWidth = width - margin.left - margin.right;
     const plotHeight = height - margin.top - margin.bottom;
     
-    const originalSelectionWidth = originalX1 - originalX0;
-    const originalSelectionHeight = originalY1 - originalY0;
-    
-    // Calculate scale to fit selection (with some padding)
-    const scaleX = plotWidth / originalSelectionWidth / currentTransform.k;
-    const scaleY = plotHeight / originalSelectionHeight / currentTransform.k;
+    // Calculate scale to fit selection in plot area (with some padding)
+    const scaleX = plotWidth / originalSelectionWidth;
+    const scaleY = plotHeight / originalSelectionHeight;
     const newScale = Math.min(scaleX, scaleY, maxZoom) * 0.9; // 90% to add padding
-    
-    // Calculate center of selection in original coordinates
-    const originalCenterX = (originalX0 + originalX1) / 2;
-    const originalCenterY = (originalY0 + originalY1) / 2;
     
     // Calculate translation to center the selection in the SVG viewport
     const svgWidth = width;
@@ -195,8 +202,17 @@ export const useChartZoom = ({
     // Log only in development
     if (process.env.NODE_ENV === 'development') {
       console.log(`[Range Selection ${chartId}] Zoom to selection:`, {
-        scale: newScale.toFixed(2),
-        selection: { width: originalSelectionWidth.toFixed(0), height: originalSelectionHeight.toFixed(0) }
+        plotAreaCoords: { x0, y0, x1, y1 },
+        svgCoords: { svgX0, svgY0, svgX1, svgY1 },
+        selectionSize: { width: selectionWidth.toFixed(0), height: selectionHeight.toFixed(0) },
+        originalSize: { width: originalSelectionWidth.toFixed(2), height: originalSelectionHeight.toFixed(2) },
+        currentTransform: { k: currentTransform.k.toFixed(2), x: currentTransform.x.toFixed(0), y: currentTransform.y.toFixed(0) },
+        newScale: newScale.toFixed(2),
+        center: { 
+          svg: { x: svgCenterX.toFixed(0), y: svgCenterY.toFixed(0) },
+          original: { x: originalCenterX.toFixed(2), y: originalCenterY.toFixed(2) }
+        },
+        translate: { x: translateX.toFixed(0), y: translateY.toFixed(0) }
       });
     }
     
@@ -205,15 +221,11 @@ export const useChartZoom = ({
       .translate(translateX, translateY)
       .scale(newScale);
     
-    // Apply transform
-    
-    // Try without transition first to see if that's the issue
-    svg.call(zoomBehaviorRef.current.transform, transform);
-    
-    // svg.transition()
-    //   .duration(400)
-    //   .ease(d3.easeCubicInOut)
-    //   .call(zoomBehaviorRef.current.transform, transform);
+    // Apply transform with smooth transition
+    svg.transition()
+      .duration(400)
+      .ease(d3.easeCubicInOut)
+      .call(zoomBehaviorRef.current.transform, transform);
   }, [width, height, margin, maxZoom, svgRef]);
 
   useEffect(() => {
