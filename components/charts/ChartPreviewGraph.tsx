@@ -65,6 +65,36 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       yLabelOffset: chartSettings.yLabelOffset !== undefined ? chartSettings.yLabelOffset : editingChart.yLabelOffset
     }
   }, [editingChart, chartSettings])
+
+  // Apply zoomed domains to chart config without mutating original
+  const chartForRender = useMemo(() => {
+    if (!zoomDomains.xDomain && !zoomDomains.yDomain) return mergedChart
+
+    const xRange = zoomDomains.xDomain
+      ? {
+          auto: false,
+          min:
+            mergedChart.xAxisType === 'datetime'
+              ? (zoomDomains.xDomain[0] as Date).toISOString()
+              : zoomDomains.xDomain[0],
+          max:
+            mergedChart.xAxisType === 'datetime'
+              ? (zoomDomains.xDomain[1] as Date).toISOString()
+              : zoomDomains.xDomain[1],
+          unit: mergedChart.xAxisRange?.unit
+        }
+      : mergedChart.xAxisRange
+
+    const yParams = mergedChart.yAxisParams?.map(param => {
+      if (!zoomDomains.yDomain) return param
+      return {
+        ...param,
+        range: { auto: false, min: zoomDomains.yDomain[0], max: zoomDomains.yDomain[1] }
+      }
+    })
+
+    return { ...mergedChart, xAxisRange: xRange, yAxisParams: yParams }
+  }, [mergedChart, zoomDomains])
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -77,6 +107,12 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   const legendRatioRef = useRef<{ xRatio: number; yRatio: number } | null>(
     mergedChart.legendPosition ?? null
   )
+
+  // Zoom state storing current domains
+  const [zoomDomains, setZoomDomains] = React.useState<{
+    xDomain: [any, any] | null
+    yDomain: [number, number] | null
+  }>({ xDomain: null, yDomain: null })
 
   useEffect(() => {
     legendRatioRef.current = mergedChart.legendPosition ?? null
@@ -238,6 +274,33 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     }
   }, [handleResize])
 
+  // Initialize d3 zoom behavior
+  useEffect(() => {
+    if (!svgRef.current) return
+
+    const svg = d3.select(svgRef.current)
+
+    const zoomed = (event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
+      if (!scalesRef.current.xScale || !scalesRef.current.yScale) return
+      const zx = event.transform.rescaleX(scalesRef.current.xScale as any)
+      const zy = event.transform.rescaleY(scalesRef.current.yScale as any)
+      setZoomDomains({ xDomain: zx.domain() as [any, any], yDomain: zy.domain() as [number, number] })
+    }
+
+    const zoom = d3
+      .zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.5, 10])
+      .extent([[0, 0], [dimensions.width, dimensions.height]])
+      .translateExtent([[0, 0], [dimensions.width, dimensions.height]])
+      .on('zoom', zoomed)
+
+    svg.call(zoom as any)
+
+    return () => {
+      svg.on('.zoom', null)
+    }
+  }, [dimensions])
+
   // Use requestAnimationFrame for smooth rendering
   const renderChart = useMemo(() => {
     return () => {
@@ -275,7 +338,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
             mainGroup.remove()
           }
 
-          const margin = mergedChart.margins || { top: 20, right: 40, bottom: 60, left: 60 }
+          const margin = chartForRender.margins || { top: 20, right: 40, bottom: 60, left: 60 }
           const width = dimensions.width - margin.left - margin.right
           const height = dimensions.height - margin.top - margin.bottom
 
@@ -304,21 +367,21 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
 
           if (chartData.length > 0) {
             // Render chart (ScatterPlot now handles both scatter and line types)
-            renderScatterPlot({ 
-              g, 
-              data: chartData, 
-              width, 
-              height, 
-              editingChart: mergedChart, 
-              scalesRef, 
-              dataSourceStyles, 
+            renderScatterPlot({
+              g,
+              data: chartData,
+              width,
+              height,
+              editingChart: chartForRender,
+              scalesRef,
+              dataSourceStyles,
               canvas: canvasRef.current ?? undefined,
-              plotStyles: mergedChart.plotStyles,
+              plotStyles: chartForRender.plotStyles,
               enableSampling: settings.performanceSettings.dataProcessing.enableSampling
             })
           } else {
             // Render empty chart with axes
-            renderEmptyChart({ g, width, height, chartType: mergedChart.type || 'scatter', editingChart: mergedChart, scalesRef })
+            renderEmptyChart({ g, width, height, chartType: chartForRender.type || 'scatter', editingChart: chartForRender, scalesRef })
           }
           
           // Ensure reference lines layer is above main chart
@@ -339,7 +402,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         }
       })
     }
-  }, [chartData, dimensions, isLoadingData, mergedChart, dataSourceStyles])
+  }, [chartData, dimensions, isLoadingData, chartForRender, dataSourceStyles])
 
   useEffect(() => {
     renderChart()
