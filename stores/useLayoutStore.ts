@@ -28,6 +28,14 @@ const defaultChartSettings: ChartSettings = {
   showXAxis: true,
   showYAxis: true,
   showGrid: true,
+  showLegend: true,
+  showChartTitle: true,
+  margins: {
+    top: 20,
+    right: 40,
+    bottom: 60,
+    left: 60
+  }
 }
 
 export const useLayoutStore = create<LayoutStore>()(
@@ -91,12 +99,19 @@ const saveLayoutToStorage = () => {
   const graphStateStore = useGraphStateStore.getState()
   
   graphStateStore.saveState({
-    layoutSettings: state.layoutSettingsMap
+    layoutSettings: state.layoutSettingsMap,
+    chartSettings: state.chartSettingsMap
   })
 }
 
 // Subscribe to layout settings changes
 useLayoutStore.subscribe(
   (state) => state.layoutSettingsMap,
+  saveLayoutToStorage
+)
+
+// Subscribe to chart settings changes
+useLayoutStore.subscribe(
+  (state) => state.chartSettingsMap,
   saveLayoutToStorage
 )

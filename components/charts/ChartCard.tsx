@@ -49,6 +49,19 @@ interface ChartCardProps {
   dataSourceStyles?: { [dataSourceId: string]: DataSourceStyle } // Grid-level styles
   width?: number
   height?: number
+  chartSettings?: {
+    showXAxis: boolean
+    showYAxis: boolean
+    showGrid: boolean
+    showLegend?: boolean
+    showChartTitle?: boolean
+    margins?: {
+      top: number
+      right: number
+      bottom: number
+      left: number
+    }
+  }
 }
 
 const ChartCardComponent = ({ 
@@ -67,7 +80,8 @@ const ChartCardComponent = ({
   selectedDataSources = [],
   dataSourceStyles = {},
   width,
-  height
+  height,
+  chartSettings
 }: ChartCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
@@ -88,6 +102,17 @@ const ChartCardComponent = ({
   const { duplicateChart, deleteChart, updateFileCharts, openTabs } = useFileStore()
   const { settings } = useSettingsStore()
   const [showBulkApplyDialog, setShowBulkApplyDialog] = useState(false)
+  
+  // Handler for updating chart when legend is dragged
+  const handleChartUpdate = useCallback((updatedChart: ChartComponent) => {
+    const currentFile = openTabs.find(tab => tab.id === fileId)
+    if (currentFile && currentFile.charts) {
+      const updatedCharts = currentFile.charts.map(c => 
+        c.id === chart.id ? updatedChart : c
+      )
+      updateFileCharts(fileId, updatedCharts)
+    }
+  }, [chart.id, fileId, openTabs, updateFileCharts])
   
   const handleMouseEnter = useCallback(() => setIsHovered(true), [])
   const handleMouseLeave = useCallback(() => setIsHovered(false), [])
@@ -142,6 +167,15 @@ const ChartCardComponent = ({
       e.preventDefault()
       return
     }
+    
+    // Check if drag started on legend
+    const target = e.target as HTMLElement
+    const legendElement = target.closest('[data-legend="true"]')
+    if (legendElement) {
+      e.preventDefault()
+      return
+    }
+    
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', String(index))
     if (onDragStart) {
@@ -382,18 +416,20 @@ const ChartCardComponent = ({
       )}
 
       <div
-        className="bg-white flex items-center justify-center flex-1 min-h-0 pointer-events-none rounded-sm overflow-hidden"
+        className="bg-white flex items-center justify-center flex-1 min-h-0 rounded-sm overflow-hidden"
         draggable={false}
       >
         <ChartPreviewGraph 
           editingChart={chart} 
           selectedDataSourceItems={selectedDataSources} 
+          setEditingChart={handleChartUpdate}
           maxDataPoints={
             settings.performanceSettings.dataProcessing.enableSampling 
               ? settings.performanceSettings.dataProcessing.defaultSamplingPoints
               : undefined
           }
           dataSourceStyles={dataSourceStyles}
+          chartSettings={chartSettings}
         />
       </div>
 

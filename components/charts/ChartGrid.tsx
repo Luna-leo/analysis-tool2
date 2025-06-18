@@ -38,7 +38,7 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
   const [availableHeight, setAvailableHeight] = useState<number | null>(null)
 
   const { activeTab, updateFileCharts } = useFileStore()
-  const { layoutSettingsMap, updateLayoutSettings } = useLayoutStore()
+  const { layoutSettingsMap, chartSettingsMap, updateLayoutSettings } = useLayoutStore()
   const { gridSelectionMode, selectAllGridCharts, clearGridSelectedCharts, sourceSelectionMode } = useUIStore()
 
   const currentSettings = layoutSettingsMap[file.id] || {
@@ -48,6 +48,14 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
     rows: 2,
     pagination: true,
     currentPage: 0,
+  }
+  
+  const currentChartSettings = chartSettingsMap[file.id] || {
+    showXAxis: true,
+    showYAxis: true,
+    showGrid: true,
+    showLegend: true,
+    showChartTitle: true,
   }
 
   // Calculate pagination values
@@ -291,6 +299,7 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
           "px-6 pt-2",
           currentSettings.pagination ? "flex-1 overflow-hidden" : "pb-6"
         )}>
+          
           {/* Grid */}
           <div
             ref={gridRef}
@@ -329,6 +338,7 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
                   height={currentSettings.pagination && availableHeight 
                     ? Math.floor(availableHeight / currentSettings.rows) - (chartSizes.isCompactLayout ? 2 : 4)
                     : currentSettings.height}
+                  chartSettings={currentChartSettings}
                 />
               )
             })}

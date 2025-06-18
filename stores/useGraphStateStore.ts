@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { devtools } from 'zustand/middleware'
-import type { FileNode, LayoutSettings, ActiveView, ChartComponent } from '@/types'
+import type { FileNode, LayoutSettings, ChartSettings, ActiveView, ChartComponent } from '@/types'
 import { safeLocalStorage, isBrowser } from '@/utils/browserUtils'
 
 interface OpenTab extends FileNode {
@@ -12,6 +12,7 @@ interface GraphState {
   tabs: OpenTab[]
   activeTab: string
   layoutSettings: Record<string, LayoutSettings>
+  chartSettings?: Record<string, ChartSettings>
   uiState: {
     currentPage: number
     sidebarOpen: boolean

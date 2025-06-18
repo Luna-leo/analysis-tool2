@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { ChartGrid, ChartEditModal, SelectionToolbar } from "../charts"
 import { DataSourceStyleDrawer } from "../charts/DataSourceStyleDrawer"
 import { DataSourceBadgePreview } from "../charts/DataSourceBadgePreview"
+import { PerformancePresetPopover } from "../settings/PerformancePresetPopover"
 import { TemplateListDialog, SaveTemplateDialog } from "../charts/PlotStyleTemplate"
 import { usePlotStyleTemplateStore } from "@/stores/usePlotStyleTemplateStore"
 import { PlotStyleApplicator } from "@/utils/plotStyleApplicator"
@@ -42,7 +43,7 @@ export default function AnalysisTool() {
   const { openTabs, activeTab, openFile, fileTree, setActiveTab, toggleFolder, setFileTree, updateFileCharts } = useFileStore()
   const { loadParameters } = useParameterStore()
   const { loadState } = useGraphStateStore()
-  const { updateLayoutSettings } = useLayoutStore()
+  const { updateLayoutSettings, updateChartSettings } = useLayoutStore()
   const { setCurrentPage, gridSelectionMode, setGridSelectionMode, gridSelectedChartIds } = useUIStore()
   const { setActiveView, setSidebarOpen, sidebarOpen } = useViewStore()
   const { loadFromIndexedDB } = useCSVDataStore()
@@ -160,6 +161,13 @@ export default function AnalysisTool() {
         })
       }
       
+      // Restore chart settings
+      if (savedState.chartSettings) {
+        Object.entries(savedState.chartSettings).forEach(([fileId, settings]) => {
+          updateChartSettings(fileId, settings)
+        })
+      }
+      
       // Restore UI state
       if (savedState.uiState) {
         setCurrentPage(savedState.uiState.currentPage)
@@ -271,8 +279,9 @@ export default function AnalysisTool() {
                 <div className="px-6 pt-2 pb-0 flex flex-col justify-center flex-shrink-0">
                   <div className="space-y-2">
                       {selectedDataSources.length > 0 ? (
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {selectedDataSources.map((source: any, index: number) => {
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {selectedDataSources.map((source: any, index: number) => {
                           // Check if all charts have plotStyles.mode === 'datasource'
                           const charts = (currentFile as any).charts || []
                           const allChartsDataSourceMode = charts.length > 0 && 
@@ -309,26 +318,29 @@ export default function AnalysisTool() {
                               </div>
                             </Badge>
                           )
-                        })}
-                        {/* Selection Toolbar - Same line as Data Sources */}
-                        {gridSelectionMode && (
-                          <div className="flex-1 flex justify-end ml-auto">
+                          })}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {/* Performance Preset Button */}
+                          <PerformancePresetPopover />
+                          {/* Selection Toolbar - Same line as Data Sources */}
+                          {gridSelectionMode && (
                             <SelectionToolbar fileId={activeTab} />
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     ) : (
-                      <>
-                        {gridSelectionMode ? (
-                          <div className="flex justify-end">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-sm text-muted-foreground italic">
+                          データソースを追加してください
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <PerformancePresetPopover />
+                          {gridSelectionMode && (
                             <SelectionToolbar fileId={activeTab} />
-                          </div>
-                        ) : (
-                          <div className="text-sm text-muted-foreground italic">
-                            データソースを追加してください
-                          </div>
-                        )}
-                      </>
+                          )}
+                        </div>
+                      </div>
                     )}
                     </div>
                   </div>
