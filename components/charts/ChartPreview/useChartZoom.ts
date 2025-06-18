@@ -10,8 +10,11 @@ interface UseChartZoomProps {
   enablePan?: boolean;
   enableZoom?: boolean;
   onZoom?: (transform: d3.ZoomTransform) => void;
+  onZoomStart?: () => void;
+  onZoomEnd?: () => void;
   margin?: { top: number; right: number; bottom: number; left: number };
   chartId?: string;
+  enableRangeSelection?: boolean;
 }
 
 interface ZoomState {
@@ -19,6 +22,14 @@ interface ZoomState {
   x: number;
   y: number;
   transform: d3.ZoomTransform;
+}
+
+interface SelectionState {
+  isSelecting: boolean;
+  startX: number;
+  startY: number;
+  endX: number;
+  endY: number;
 }
 
 // Debounce function for localStorage writes
@@ -39,8 +50,11 @@ export const useChartZoom = ({
   enablePan = true,
   enableZoom = true,
   onZoom,
+  onZoomStart,
+  onZoomEnd,
   margin = { top: 20, right: 40, bottom: 60, left: 60 },
   chartId,
+  enableRangeSelection = true,
 }: UseChartZoomProps) => {
   // Load initial state from localStorage
   const getInitialZoomState = useCallback((): ZoomState => {
@@ -71,8 +85,17 @@ export const useChartZoom = ({
   }, [chartId]);
 
   const [zoomState, setZoomState] = useState<ZoomState>({ k: 1, x: 0, y: 0, transform: d3.zoomIdentity });
+  const [selectionState, setSelectionState] = useState<SelectionState>({
+    isSelecting: false,
+    startX: 0,
+    startY: 0,
+    endX: 0,
+    endY: 0,
+  });
   const zoomBehaviorRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown>>();
   const hasInitialized = useRef(false);
+  const isShiftPressed = useRef(false);
+  const selectionRectRef = useRef<SVGRectElement | null>(null);
   
   // Debounced save function
   const saveZoomState = useCallback(
@@ -104,6 +127,13 @@ export const useChartZoom = ({
       transform 
     };
     
+    console.log('[Zoom] Transform updated:', {
+      k: transform.k,
+      x: transform.x,
+      y: transform.y,
+      sourceEvent: event.sourceEvent?.type
+    });
+    
     setZoomState(newState);
     saveZoomState(newState);
     
@@ -113,6 +143,80 @@ export const useChartZoom = ({
     }
   }, [onZoom, saveZoomState]);
 
+  // Handle range selection
+  const handleRangeSelection = useCallback((startPoint: [number, number], endPoint: [number, number]) => {
+    if (!svgRef.current || !zoomBehaviorRef.current) return;
+
+    const svg = d3.select(svgRef.current);
+    const currentTransform = d3.zoomTransform(svgRef.current);
+    
+    // Calculate the bounding box of the selection (in plot area coordinates)
+    const x0 = Math.min(startPoint[0], endPoint[0]);
+    const x1 = Math.max(startPoint[0], endPoint[0]);
+    const y0 = Math.min(startPoint[1], endPoint[1]);
+    const y1 = Math.max(startPoint[1], endPoint[1]);
+    
+    // Only process if selection is large enough
+    if (Math.abs(x1 - x0) < 10 || Math.abs(y1 - y0) < 10) {
+      console.log('[Range Selection] Selection too small, ignoring');
+      return;
+    }
+    
+    // Calculate the zoom scale and translate to fit the selection
+    const plotWidth = width - margin.left - margin.right;
+    const plotHeight = height - margin.top - margin.bottom;
+    
+    const selectionWidth = x1 - x0;
+    const selectionHeight = y1 - y0;
+    
+    // Calculate scale to fit selection (with some padding)
+    const scaleX = plotWidth / selectionWidth;
+    const scaleY = plotHeight / selectionHeight;
+    const newScale = Math.min(scaleX, scaleY, maxZoom) * 0.9; // 90% to add padding
+    
+    // Calculate center of selection in plot coordinates
+    const centerX = (x0 + x1) / 2;
+    const centerY = (y0 + y1) / 2;
+    
+    // Convert center from plot coordinates to SVG coordinates
+    const svgCenterX = centerX + margin.left;
+    const svgCenterY = centerY + margin.top;
+    
+    // Calculate translation to center the selection in the SVG viewport
+    // We want to move the scaled center point to the center of the SVG
+    const svgWidth = width;
+    const svgHeight = height;
+    const translateX = svgWidth / 2 - svgCenterX * newScale;
+    const translateY = svgHeight / 2 - svgCenterY * newScale;
+    
+    console.log('[Range Selection] Transform calculation:', {
+      currentTransform: { k: currentTransform.k, x: currentTransform.x, y: currentTransform.y },
+      selection: { x0, y0, x1, y1, width: selectionWidth, height: selectionHeight },
+      plot: { width: plotWidth, height: plotHeight },
+      scale: { scaleX, scaleY, current: currentTransform.k, new: newScale },
+      center: { plotX: centerX, plotY: centerY, svgX: svgCenterX, svgY: svgCenterY },
+      svg: { width: svgWidth, height: svgHeight },
+      translate: { x: translateX, y: translateY }
+    });
+    
+    // Create and apply the transform
+    const transform = d3.zoomIdentity
+      .translate(translateX, translateY)
+      .scale(newScale);
+    
+    // Apply with smooth transition
+    console.log('[Range Selection] Applying transform:', {
+      k: transform.k,
+      x: transform.x,
+      y: transform.y
+    });
+    
+    svg.transition()
+      .duration(400)
+      .ease(d3.easeCubicInOut)
+      .call(zoomBehaviorRef.current.transform, transform);
+  }, [width, height, margin, maxZoom, svgRef]);
+
   useEffect(() => {
     if (!svgRef.current || !enableZoom) return;
 
@@ -121,37 +225,201 @@ export const useChartZoom = ({
     // Clear any existing zoom behavior
     svg.on('.zoom', null);
 
+    // Track shift key state - only when mouse is over this specific SVG
+    let isMouseOverSvg = false;
+    
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Shift' && isMouseOverSvg) {
+        isShiftPressed.current = true;
+        if (enableRangeSelection) {
+          svg.style('cursor', 'crosshair');
+        }
+      }
+    };
+    
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.key === 'Shift') {
+        isShiftPressed.current = false;
+        svg.style('cursor', enablePan ? 'grab' : 'default');
+        // Clear any selection state
+        setSelectionState({
+          isSelecting: false,
+          startX: 0,
+          startY: 0,
+          endX: 0,
+          endY: 0,
+        });
+      }
+    };
+
+    // Track mouse enter/leave for this specific SVG
+    if (enableRangeSelection) {
+      svg.on('mouseenter', function(event: MouseEvent) {
+        isMouseOverSvg = true;
+        // Check if shift is already pressed
+        if (event.shiftKey) {
+          isShiftPressed.current = true;
+          svg.style('cursor', 'crosshair');
+        }
+      });
+      
+      svg.on('mouseleave', () => {
+        isMouseOverSvg = false;
+        isShiftPressed.current = false;
+        svg.style('cursor', enablePan ? 'grab' : 'default');
+        // Clear selection if leaving while selecting
+        setSelectionState({
+          isSelecting: false,
+          startX: 0,
+          startY: 0,
+          endX: 0,
+          endY: 0,
+        });
+      });
+      
+      window.addEventListener('keydown', handleKeyDown);
+      window.addEventListener('keyup', handleKeyUp);
+    }
+
     // Create zoom behavior
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([minZoom, maxZoom])
-      .extent([[margin.left, margin.top], [width - margin.right, height - margin.bottom]])
+      .extent([[0, 0], [width, height]])
       .translateExtent([[-Infinity, -Infinity], [Infinity, Infinity]])
       .filter((event) => {
+        // If shift is pressed and range selection is enabled, don't process normal zoom/pan
+        if (isShiftPressed.current && enableRangeSelection) {
+          return false;
+        }
         // Allow zoom on wheel events and drag, but not on double-click
         return !event.button && !event.ctrlKey && !event.type.includes('dblclick');
       })
-      .on('zoom', handleZoom);
+      .on('start', () => {
+        if (onZoomStart) {
+          onZoomStart();
+        }
+      })
+      .on('zoom', handleZoom)
+      .on('end', () => {
+        if (onZoomEnd) {
+          onZoomEnd();
+        }
+      });
 
     zoomBehaviorRef.current = zoom;
 
     // Apply zoom behavior
     svg.call(zoom);
 
+    // Handle range selection if enabled
+    if (enableRangeSelection) {
+      let selectionStart: [number, number] | null = null;
+      
+      svg.on('mousedown.selection', function(event) {
+        if (!isShiftPressed.current) return;
+        
+        const [x, y] = d3.pointer(event, this);
+        // Get coordinates relative to the plot area (inside margins)
+        selectionStart = [x - margin.left, y - margin.top];
+        
+        console.log('[Range Selection] Start:', { 
+          rawX: x, 
+          rawY: y, 
+          plotX: selectionStart[0], 
+          plotY: selectionStart[1],
+          margins: margin,
+          currentTransform: zoomBehaviorRef.current?.transform ? d3.zoomTransform(this) : null
+        });
+        
+        setSelectionState({
+          isSelecting: true,
+          startX: selectionStart[0],
+          startY: selectionStart[1],
+          endX: selectionStart[0],
+          endY: selectionStart[1],
+        });
+        
+        event.preventDefault();
+      });
+      
+      svg.on('mousemove.selection', function(event) {
+        if (!isShiftPressed.current || !selectionStart) return;
+        
+        const [x, y] = d3.pointer(event, this);
+        // Get coordinates relative to the plot area (inside margins)
+        const currentPoint: [number, number] = [x - margin.left, y - margin.top];
+        
+        setSelectionState(prev => ({
+          ...prev,
+          endX: currentPoint[0],
+          endY: currentPoint[1],
+        }));
+      });
+      
+      svg.on('mouseup.selection', function(event) {
+        if (!isShiftPressed.current || !selectionStart) return;
+        
+        const [x, y] = d3.pointer(event, this);
+        // Get coordinates relative to the plot area (inside margins)
+        const endPoint: [number, number] = [x - margin.left, y - margin.top];
+        
+        // Get current transform before selection
+        const currentTransform = d3.zoomTransform(this);
+        
+        console.log('[Range Selection] End:', {
+          startPoint: selectionStart,
+          endPoint: endPoint,
+          rawEnd: { x, y },
+          currentTransform: { k: currentTransform.k, x: currentTransform.x, y: currentTransform.y }
+        });
+        
+        // Perform zoom to selection
+        handleRangeSelection(selectionStart, endPoint);
+        
+        // Clear selection
+        selectionStart = null;
+        setSelectionState({
+          isSelecting: false,
+          startX: 0,
+          startY: 0,
+          endX: 0,
+          endY: 0,
+        });
+      });
+    }
+
     // Set initial cursor
     svg.style('cursor', enablePan ? 'grab' : 'default');
 
     // Handle cursor changes during pan
     if (enablePan) {
-      svg.on('mousedown.cursor', () => svg.style('cursor', 'grabbing'));
-      svg.on('mouseup.cursor', () => svg.style('cursor', 'grab'));
+      svg.on('mousedown.cursor', () => {
+        if (!isShiftPressed.current) {
+          svg.style('cursor', 'grabbing');
+        }
+      });
+      svg.on('mouseup.cursor', () => {
+        if (!isShiftPressed.current) {
+          svg.style('cursor', 'grab');
+        }
+      });
     }
 
     return () => {
       svg.on('.zoom', null);
       svg.on('mousedown.cursor', null);
       svg.on('mouseup.cursor', null);
+      svg.on('mousedown.selection', null);
+      svg.on('mousemove.selection', null);
+      svg.on('mouseup.selection', null);
+      svg.on('mouseenter', null);
+      svg.on('mouseleave', null);
+      if (enableRangeSelection) {
+        window.removeEventListener('keydown', handleKeyDown);
+        window.removeEventListener('keyup', handleKeyUp);
+      }
     };
-  }, [svgRef, width, height, minZoom, maxZoom, enablePan, enableZoom, handleZoom, margin]);
+  }, [svgRef, width, height, minZoom, maxZoom, enablePan, enableZoom, handleZoom, margin, enableRangeSelection, handleRangeSelection, onZoomStart, onZoomEnd]);
 
   // Load initial state from localStorage when chartId changes
   useEffect(() => {
@@ -255,5 +523,6 @@ export const useChartZoom = ({
     setZoom,
     zoomLevel: zoomState.k,
     currentTransform: zoomState.transform,
+    selectionState,
   };
 };

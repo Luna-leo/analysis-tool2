@@ -14,6 +14,7 @@ import { useThrottle } from "@/hooks/useDebounce"
 import { useSettingsStore } from "@/stores/useSettingsStore"
 import { useChartZoom } from "./ChartPreview/useChartZoom"
 import { ZoomControls } from "./ChartPreview/ZoomControls"
+import { useQualityOptimization } from "./ChartPreview/useQualityOptimization"
 
 interface ChartPreviewGraphProps {
   editingChart: ChartComponent
@@ -46,6 +47,7 @@ interface ChartPreviewGraphProps {
 
 
 export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints, dataSourceStyles, chartSettings, enableZoom = true, enablePan = true, zoomMode = 'auto' }: ChartPreviewGraphProps) => {
+  const [isShiftPressed, setIsShiftPressed] = React.useState(false)
   const { settings } = useSettingsStore()
   const defaultMaxDataPoints = settings.performanceSettings.dataProcessing.enableSampling 
     ? settings.performanceSettings.dataProcessing.defaultSamplingPoints
@@ -109,13 +111,20 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
 
   // Handle zoom transformation
   const handleZoomTransform = useCallback((transform: d3.ZoomTransform) => {
+    console.log('[handleZoomTransform] Called with transform:', {
+      k: transform.k,
+      x: transform.x,
+      y: transform.y,
+      hasBaseScales: !!baseScalesRef.current.xScale && !!baseScalesRef.current.yScale
+    });
+    
     if (!baseScalesRef.current.xScale || !baseScalesRef.current.yScale) {
-      // Base scales not ready, queuing zoom transform
+      console.log('[handleZoomTransform] Base scales not ready, queuing transform');
       pendingZoomTransform.current = transform;
       return;
     }
 
-    // Zoom transform is being handled
+    console.log('[handleZoomTransform] Processing transform');
 
     // Determine zoom mode based on chart type
     const effectiveZoomMode = zoomMode === 'auto' 
@@ -139,28 +148,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     // Force re-render
     setZoomVersion(v => v + 1)
     
-    // Zoom transform applied successfully
+    console.log('[handleZoomTransform] Transform applied, current scales updated')
   }, [zoomMode, mergedChart.type])
-
-  // Initialize zoom functionality
-  
-  const {
-    zoomLevel,
-    zoomIn,
-    zoomOut,
-    resetZoom,
-  } = useChartZoom({
-    svgRef,
-    width: dimensions.width,
-    height: dimensions.height,
-    minZoom: 0.5,
-    maxZoom: 10,
-    enablePan,
-    enableZoom,
-    onZoom: handleZoomTransform,
-    margin: mergedChart.margins || { top: 20, right: 40, bottom: 60, left: 60 },
-    chartId: mergedChart.id,
-  })
 
   // Initialize legend position once container and legend are mounted
   useLayoutEffect(() => {
@@ -228,6 +217,42 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     editingChart: mergedChart,
     selectedDataSourceItems,
     maxDataPoints: effectiveMaxDataPoints
+  })
+  
+  // Initialize quality optimization
+  const {
+    qualityState,
+    startInteraction,
+    endInteraction,
+    cleanup: cleanupQuality,
+  } = useQualityOptimization({
+    dataCount: chartData?.length || 0,
+    enableOptimization: settings.performanceSettings.qualityControl?.dynamicQuality ?? true,
+    qualityThreshold: settings.performanceSettings.qualityControl?.qualityThreshold ?? 5000,
+    debounceDelay: 150,
+  })
+  
+  // Initialize zoom functionality
+  const {
+    zoomLevel,
+    zoomIn,
+    zoomOut,
+    resetZoom,
+    selectionState,
+  } = useChartZoom({
+    svgRef,
+    width: dimensions.width,
+    height: dimensions.height,
+    minZoom: 0.5,
+    maxZoom: 10,
+    enablePan,
+    enableZoom,
+    onZoom: handleZoomTransform,
+    onZoomStart: startInteraction,
+    onZoomEnd: endInteraction,
+    margin: mergedChart.margins || { top: 20, right: 40, bottom: 60, left: 60 },
+    chartId: mergedChart.id,
+    enableRangeSelection: true,
   })
   
 
@@ -358,17 +383,36 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
 
           if (chartData && chartData.length > 0) {
             // Use baseScalesRef for initial render, currentScalesRef for zoomed state
-            const hasZoomed = isInitialRenderComplete.current && zoomVersion > 0
-            const scalesToUse = hasZoomed ? currentScalesRef : baseScalesRef
+            // Check if we have valid current scales (they would be set after zoom)
+            const hasValidCurrentScales = currentScalesRef.current.xScale !== null && currentScalesRef.current.yScale !== null
+            const scalesToUse = isInitialRenderComplete.current && hasValidCurrentScales ? currentScalesRef : baseScalesRef
             
+            console.log('[Chart Render] Scale selection:', {
+              isInitialRenderComplete: isInitialRenderComplete.current,
+              hasValidCurrentScales,
+              usingCurrentScales: scalesToUse === currentScalesRef,
+              zoomVersion
+            })
+            
+            
+            // Apply quality optimization if enabled
+            const dataToRender = qualityState.renderOptions.samplingRate < 1
+              ? chartData.filter((_, i) => i % Math.round(1 / qualityState.renderOptions.samplingRate) === 0)
+              : chartData
+              
+            // Override chart display options based on quality level
+            const optimizedChart = {
+              ...mergedChart,
+              showMarkers: qualityState.renderOptions.enableMarkers && mergedChart.showMarkers,
+            }
             
             // Render chart with current scales - pass mainGroup
             renderScatterPlot({ 
               g: mainGroup, 
-              data: chartData, 
+              data: dataToRender, 
               width, 
               height, 
-              editingChart: mergedChart, 
+              editingChart: optimizedChart, 
               scalesRef: scalesToUse, 
               dataSourceStyles, 
               canvas: canvasRef.current ?? undefined,
@@ -433,23 +477,54 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       }
       renderingRef.current = false
     }
-  }, [chartData, dimensions, isLoadingData, mergedChart, dataSourceStyles, settings.performanceSettings.dataProcessing.enableSampling, zoomVersion, handleZoomTransform])
+  }, [chartData, dimensions, isLoadingData, mergedChart, dataSourceStyles, settings.performanceSettings.dataProcessing.enableSampling, zoomVersion, handleZoomTransform, qualityState])
   
+
+  // Track shift key state for visual feedback - only for this chart
+  const [isMouseOver, setIsMouseOver] = React.useState(false)
+  
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Shift' && isMouseOver) {
+        setIsShiftPressed(true)
+      }
+    }
+    
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') {
+        setIsShiftPressed(false)
+      }
+    }
+    
+    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
+    
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keyup', handleKeyUp)
+    }
+  }, [isMouseOver])
 
   // Clean up tooltips on unmount
   useEffect(() => {
     return () => {
       hideAllTooltips()
+      cleanupQuality()
       if (canvasRef.current && containerRef.current) {
         containerRef.current.removeChild(canvasRef.current)
       }
     }
-  }, [])
+  }, [cleanupQuality])
 
   return (
     <div 
       ref={containerRef} 
       className="w-full h-full relative overflow-hidden"
+      onMouseEnter={() => setIsMouseOver(true)}
+      onMouseLeave={() => {
+        setIsMouseOver(false)
+        setIsShiftPressed(false)
+      }}
     >
       {isLoadingData && (
         <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
@@ -461,7 +536,23 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           <div className="text-sm text-destructive">Error loading data</div>
         </div>
       )}
-      <svg ref={svgRef} width={dimensions.width} height={dimensions.height} className="w-full h-full" style={{ visibility: isLoadingData ? 'hidden' : 'visible' }} />
+      <div className="relative w-full h-full">
+        <svg ref={svgRef} width={dimensions.width} height={dimensions.height} className="absolute inset-0" style={{ visibility: isLoadingData ? 'hidden' : 'visible' }} />
+        {selectionState.isSelecting && (
+          <svg width={dimensions.width} height={dimensions.height} className="absolute inset-0 pointer-events-none">
+            <rect
+              x={Math.min(selectionState.startX, selectionState.endX) + (mergedChart.margins?.left || 60)}
+              y={Math.min(selectionState.startY, selectionState.endY) + (mergedChart.margins?.top || 20)}
+              width={Math.abs(selectionState.endX - selectionState.startX)}
+              height={Math.abs(selectionState.endY - selectionState.startY)}
+              fill="rgba(59, 130, 246, 0.1)"
+              stroke="rgb(59, 130, 246)"
+              strokeWidth="2"
+              strokeDasharray="4,2"
+            />
+          </svg>
+        )}
+      </div>
       {!isLoadingData && mergedChart.showLegend !== false && selectedDataSourceItems.length > 0 && (
         <ChartLegend
           ref={legendRef}
@@ -483,15 +574,27 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         />
       )}
       {enableZoom && (
-        <ZoomControls
-          onZoomIn={zoomIn}
-          onZoomOut={zoomOut}
-          onReset={resetZoom}
-          zoomLevel={zoomLevel}
-          minZoom={0.5}
-          maxZoom={10}
-          showZoomLevel={true}
-        />
+        <>
+          <ZoomControls
+            onZoomIn={zoomIn}
+            onZoomOut={zoomOut}
+            onReset={resetZoom}
+            zoomLevel={zoomLevel}
+            minZoom={0.5}
+            maxZoom={10}
+            showZoomLevel={true}
+          />
+          {isShiftPressed && (
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-blue-500/90 text-white px-3 py-1 rounded-md text-sm font-medium shadow-md backdrop-blur-sm">
+              Range selection mode - Drag to select area
+            </div>
+          )}
+          {qualityState.isTransitioning && qualityState.level !== 'high' && (
+            <div className="absolute bottom-20 right-4 bg-yellow-500/90 text-white px-2 py-1 rounded text-xs font-medium shadow-sm backdrop-blur-sm">
+              Performance mode
+            </div>
+          )}
+        </>
       )}
     </div>
   )
