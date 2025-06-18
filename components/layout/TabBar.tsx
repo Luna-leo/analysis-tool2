@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { LayoutSettings } from "./LayoutSettings"
+import { PerformancePresetPopover } from "@/components/settings/PerformancePresetPopover"
 import { usePlotStyleTemplateStore } from "@/stores/usePlotStyleTemplateStore"
 
 interface TabBarProps {
@@ -268,6 +269,8 @@ export function TabBar({
           </Button>
           
           {activeTabProp && <LayoutSettings fileId={activeTabProp} />}
+          
+          <PerformancePresetPopover size="sm" />
           
           <Button
             variant={gridSelectionMode ? "default" : "outline"}
