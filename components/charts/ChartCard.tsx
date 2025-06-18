@@ -49,6 +49,13 @@ interface ChartCardProps {
   dataSourceStyles?: { [dataSourceId: string]: DataSourceStyle } // Grid-level styles
   width?: number
   height?: number
+  chartSettings?: {
+    showXAxis: boolean
+    showYAxis: boolean
+    showGrid: boolean
+    showLegend?: boolean
+    showChartTitle?: boolean
+  }
 }
 
 const ChartCardComponent = ({ 
@@ -67,7 +74,8 @@ const ChartCardComponent = ({
   selectedDataSources = [],
   dataSourceStyles = {},
   width,
-  height
+  height,
+  chartSettings
 }: ChartCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
@@ -394,6 +402,7 @@ const ChartCardComponent = ({
               : undefined
           }
           dataSourceStyles={dataSourceStyles}
+          chartSettings={chartSettings}
         />
       </div>
 

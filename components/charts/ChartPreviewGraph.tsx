@@ -21,15 +21,36 @@ interface ChartPreviewGraphProps {
   setEditingChart?: (chart: ChartComponent) => void
   maxDataPoints?: number
   dataSourceStyles?: { [dataSourceId: string]: DataSourceStyle }
+  chartSettings?: {
+    showXAxis: boolean
+    showYAxis: boolean
+    showGrid: boolean
+    showLegend?: boolean
+    showChartTitle?: boolean
+  }
 }
 
 
-export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints, dataSourceStyles }: ChartPreviewGraphProps) => {
+export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints, dataSourceStyles, chartSettings }: ChartPreviewGraphProps) => {
   const { settings } = useSettingsStore()
   const defaultMaxDataPoints = settings.performanceSettings.dataProcessing.enableSampling 
     ? settings.performanceSettings.dataProcessing.defaultSamplingPoints
     : Number.MAX_SAFE_INTEGER
   const effectiveMaxDataPoints = maxDataPoints ?? defaultMaxDataPoints
+  
+  // Merge global chart settings with individual chart settings
+  const mergedChart = useMemo(() => {
+    if (!chartSettings) return editingChart
+    
+    return {
+      ...editingChart,
+      showLegend: chartSettings.showLegend !== undefined ? chartSettings.showLegend : editingChart.showLegend,
+      showTitle: chartSettings.showChartTitle !== undefined ? chartSettings.showChartTitle : editingChart.showTitle,
+      showXLabel: chartSettings.showXAxis !== undefined ? chartSettings.showXAxis : editingChart.showXLabel,
+      showYLabel: chartSettings.showYAxis !== undefined ? chartSettings.showYAxis : editingChart.showYLabel,
+      showGrid: chartSettings.showGrid !== undefined ? chartSettings.showGrid : editingChart.showGrid
+    }
+  }, [editingChart, chartSettings])
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -40,12 +61,12 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   const legendRef = useRef<HTMLDivElement>(null)
   const [legendPos, setLegendPos] = React.useState<{ x: number; y: number } | null>(null)
   const legendRatioRef = useRef<{ xRatio: number; yRatio: number } | null>(
-    editingChart.legendPosition ?? null
+    mergedChart.legendPosition ?? null
   )
 
   useEffect(() => {
-    legendRatioRef.current = editingChart.legendPosition ?? null
-  }, [editingChart.legendPosition])
+    legendRatioRef.current = mergedChart.legendPosition ?? null
+  }, [mergedChart.legendPosition])
   
   // Store scales in refs to avoid recreation during drag
   const scalesRef = useRef<{
@@ -61,8 +82,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     const containerRect = containerRef.current.getBoundingClientRect()
     const legendRect = legendRef.current.getBoundingClientRect()
 
-    if (editingChart.legendPosition) {
-      const { xRatio, yRatio } = editingChart.legendPosition
+    if (mergedChart.legendPosition) {
+      const { xRatio, yRatio } = mergedChart.legendPosition
       const ratioX = Number.isFinite(xRatio) ? xRatio : 0
       const ratioY = Number.isFinite(yRatio) ? yRatio : 0
       const pos = {
@@ -88,16 +109,16 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       }
       legendRatioRef.current = defaultRatio
       setLegendPos(defaultPos)
-      setEditingChart?.({ ...editingChart, legendPosition: defaultRatio })
+      setEditingChart?.({ ...mergedChart, legendPosition: defaultRatio })
     }
-  }, [legendPos, dimensions, editingChart.legendPosition, editingChart.showLegend])
+  }, [legendPos, dimensions, mergedChart.legendPosition, mergedChart.showLegend])
 
   // Sync legend position if editingChart changes elsewhere
   useEffect(() => {
-    if (!containerRef.current || !legendRef.current || !editingChart.legendPosition) return
+    if (!containerRef.current || !legendRef.current || !mergedChart.legendPosition) return
     const containerRect = containerRef.current.getBoundingClientRect()
     const legendRect = legendRef.current.getBoundingClientRect()
-    const { xRatio, yRatio } = editingChart.legendPosition
+    const { xRatio, yRatio } = mergedChart.legendPosition
     const ratioX = Number.isFinite(xRatio) ? xRatio : 0
     const ratioY = Number.isFinite(yRatio) ? yRatio : 0
     const newPos = {
@@ -113,11 +134,11 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     if (legendPos?.x !== newPos.x || legendPos?.y !== newPos.y) {
       setLegendPos(newPos)
     }
-  }, [editingChart.legendPosition, dimensions])
+  }, [mergedChart.legendPosition, dimensions])
   
   // Use optimized data loading hook
   const { data: chartData, isLoading: isLoadingData, error } = useOptimizedChart({
-    editingChart,
+    editingChart: mergedChart,
     selectedDataSourceItems,
     maxDataPoints: effectiveMaxDataPoints
   })
@@ -153,7 +174,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       )
     }
     setLegendPos(newPos)
-  }, [dimensions, editingChart.legendPosition])
+  }, [dimensions, mergedChart.legendPosition])
 
   const handleLegendPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!legendRef.current || !containerRef.current) return
@@ -176,14 +197,14 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       }
       legendRatioRef.current = newRatio
       setLegendPos(newPos)
-      setEditingChart?.({ ...editingChart, legendPosition: newRatio })
+      setEditingChart?.({ ...mergedChart, legendPosition: newRatio })
     }
 
     const handleUp = () => {
       window.removeEventListener('pointermove', handleMove)
       window.removeEventListener('pointerup', handleUp)
       if (legendRatioRef.current) {
-        setEditingChart?.({ ...editingChart, legendPosition: legendRatioRef.current })
+        setEditingChart?.({ ...mergedChart, legendPosition: legendRatioRef.current })
       }
     }
 
@@ -240,7 +261,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
             mainGroup.remove()
           }
 
-          const margin = editingChart.margins || { top: 20, right: 40, bottom: 60, left: 60 }
+          const margin = mergedChart.margins || { top: 20, right: 40, bottom: 60, left: 60 }
           const width = dimensions.width - margin.left - margin.right
           const height = dimensions.height - margin.top - margin.bottom
 
@@ -274,16 +295,16 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               data: chartData, 
               width, 
               height, 
-              editingChart, 
+              editingChart: mergedChart, 
               scalesRef, 
               dataSourceStyles, 
               canvas: canvasRef.current ?? undefined,
-              plotStyles: editingChart.plotStyles,
+              plotStyles: mergedChart.plotStyles,
               enableSampling: settings.performanceSettings.dataProcessing.enableSampling
             })
           } else {
             // Render empty chart with axes
-            renderEmptyChart({ g, width, height, chartType: editingChart.type || 'scatter', editingChart, scalesRef })
+            renderEmptyChart({ g, width, height, chartType: mergedChart.type || 'scatter', editingChart: mergedChart, scalesRef })
           }
           
           // Ensure reference lines layer is above main chart
@@ -304,7 +325,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         }
       })
     }
-  }, [chartData, dimensions, isLoadingData, editingChart, dataSourceStyles])
+  }, [chartData, dimensions, isLoadingData, mergedChart, dataSourceStyles])
 
   useEffect(() => {
     renderChart()
@@ -348,13 +369,13 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         </div>
       )}
       <svg ref={svgRef} width={dimensions.width} height={dimensions.height} className="w-full h-full" style={{ visibility: isLoadingData ? 'hidden' : 'visible' }} />
-      {!isLoadingData && editingChart.showLegend !== false && selectedDataSourceItems.length > 0 && (
+      {!isLoadingData && mergedChart.showLegend !== false && selectedDataSourceItems.length > 0 && (
         <ChartLegend
           ref={legendRef}
           onPointerDown={handleLegendPointerDown}
           style={legendPos ? { top: legendPos.y, left: legendPos.x } : undefined}
           className="absolute cursor-move z-20"
-          editingChart={editingChart}
+          editingChart={mergedChart}
           dataSources={selectedDataSourceItems}
           dataSourceStyles={dataSourceStyles}
         />
@@ -362,7 +383,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       {!isLoadingData && (
         <ReferenceLines
           svgRef={svgRef}
-          editingChart={editingChart}
+          editingChart={mergedChart}
           setEditingChart={setEditingChart}
           scalesRef={scalesRef}
           dimensions={dimensions}

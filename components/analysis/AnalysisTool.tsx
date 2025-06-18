@@ -42,7 +42,7 @@ export default function AnalysisTool() {
   const { openTabs, activeTab, openFile, fileTree, setActiveTab, toggleFolder, setFileTree, updateFileCharts } = useFileStore()
   const { loadParameters } = useParameterStore()
   const { loadState } = useGraphStateStore()
-  const { updateLayoutSettings } = useLayoutStore()
+  const { updateLayoutSettings, updateChartSettings } = useLayoutStore()
   const { setCurrentPage, gridSelectionMode, setGridSelectionMode, gridSelectedChartIds } = useUIStore()
   const { setActiveView, setSidebarOpen, sidebarOpen } = useViewStore()
   const { loadFromIndexedDB } = useCSVDataStore()
@@ -157,6 +157,13 @@ export default function AnalysisTool() {
       if (savedState.layoutSettings) {
         Object.entries(savedState.layoutSettings).forEach(([fileId, settings]) => {
           updateLayoutSettings(fileId, settings)
+        })
+      }
+      
+      // Restore chart settings
+      if (savedState.chartSettings) {
+        Object.entries(savedState.chartSettings).forEach(([fileId, settings]) => {
+          updateChartSettings(fileId, settings)
         })
       }
       

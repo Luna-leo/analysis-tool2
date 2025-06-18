@@ -19,9 +19,9 @@ interface LayoutSettingsProps {
 }
 
 export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
-  const { layoutSettingsMap, updateLayoutSettings } = useLayoutStore()
+  const { layoutSettingsMap, chartSettingsMap, updateLayoutSettings, updateChartSettings } = useLayoutStore()
   
-  const defaultSettings = {
+  const defaultLayoutSettings = {
     showFileName: true,
     showDataSources: true,
     columns: 2,
@@ -29,9 +29,22 @@ export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
     pagination: true,
   }
   
-  const currentSettings = {
-    ...defaultSettings,
+  const defaultChartSettings = {
+    showXAxis: true,
+    showYAxis: true,
+    showGrid: true,
+    showLegend: true,
+    showChartTitle: true,
+  }
+  
+  const currentLayoutSettings = {
+    ...defaultLayoutSettings,
     ...(layoutSettingsMap[fileId] || {})
+  }
+  
+  const currentChartSettings = {
+    ...defaultChartSettings,
+    ...(chartSettingsMap[fileId] || {})
   }
 
   return (
@@ -64,7 +77,7 @@ export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
               <select
                 id="columns"
                 className="w-full h-8 px-2 text-sm border rounded"
-                value={currentSettings.columns || 2}
+                value={currentLayoutSettings.columns || 2}
                 onChange={(e) => {
                   updateLayoutSettings(fileId, {
                     columns: parseInt(e.target.value),
@@ -85,7 +98,7 @@ export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
               <select
                 id="rows"
                 className="w-full h-8 px-2 text-sm border rounded"
-                value={currentSettings.rows || 2}
+                value={currentLayoutSettings.rows || 2}
                 onChange={(e) => {
                   updateLayoutSettings(fileId, {
                     rows: parseInt(e.target.value),
@@ -111,7 +124,7 @@ export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
             <input
               type="checkbox"
               id="pagination"
-              checked={currentSettings.pagination ?? true}
+              checked={currentLayoutSettings.pagination ?? true}
               onChange={(e) => {
                 updateLayoutSettings(fileId, {
                   pagination: e.target.checked,
@@ -122,6 +135,47 @@ export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
             <label htmlFor="pagination" className="text-xs">
               Enable pagination
             </label>
+          </div>
+        </div>
+
+        <DropdownMenuSeparator />
+
+        {/* Display Options */}
+        <div className="p-3">
+          <h4 className="text-sm font-medium mb-3">Display Options</h4>
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="showLegend"
+                checked={currentChartSettings.showLegend ?? true}
+                onChange={(e) => {
+                  updateChartSettings(fileId, {
+                    showLegend: e.target.checked,
+                  })
+                }}
+                className="rounded"
+              />
+              <label htmlFor="showLegend" className="text-xs">
+                Show legend
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="showChartTitle"
+                checked={currentChartSettings.showChartTitle ?? true}
+                onChange={(e) => {
+                  updateChartSettings(fileId, {
+                    showChartTitle: e.target.checked,
+                  })
+                }}
+                className="rounded"
+              />
+              <label htmlFor="showChartTitle" className="text-xs">
+                Show chart title
+              </label>
+            </div>
           </div>
         </div>
       </DropdownMenuContent>

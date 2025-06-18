@@ -260,6 +260,8 @@ export interface ChartSettings {
   showXAxis: boolean
   showYAxis: boolean
   showGrid: boolean
+  showLegend?: boolean
+  showChartTitle?: boolean
 }
 
 export interface ChartSizes {
