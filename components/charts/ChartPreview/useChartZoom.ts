@@ -127,12 +127,13 @@ export const useChartZoom = ({
       transform 
     };
     
-    console.log('[Zoom] Transform updated:', {
-      k: transform.k,
-      x: transform.x,
-      y: transform.y,
-      sourceEvent: event.sourceEvent?.type
-    });
+    // Only log significant zoom events
+    if (event.sourceEvent && process.env.NODE_ENV === 'development') {
+      console.log(`[Zoom ${chartId}] Transform updated:`, {
+        k: transform.k.toFixed(2),
+        sourceEvent: event.sourceEvent.type
+      });
+    }
     
     setZoomState(newState);
     saveZoomState(newState);
@@ -151,6 +152,7 @@ export const useChartZoom = ({
     const currentTransform = d3.zoomTransform(svgRef.current);
     
     // Calculate the bounding box of the selection (in plot area coordinates)
+    // These coordinates are already adjusted for the current zoom
     const x0 = Math.min(startPoint[0], endPoint[0]);
     const x1 = Math.max(startPoint[0], endPoint[0]);
     const y0 = Math.min(startPoint[1], endPoint[1]);
@@ -158,63 +160,60 @@ export const useChartZoom = ({
     
     // Only process if selection is large enough
     if (Math.abs(x1 - x0) < 10 || Math.abs(y1 - y0) < 10) {
-      console.log('[Range Selection] Selection too small, ignoring');
       return;
     }
+    
+    // If we're already zoomed, we need to account for the current transform
+    // Convert selection coordinates back to original (unzoomed) coordinates
+    const originalX0 = (x0 + margin.left - currentTransform.x) / currentTransform.k;
+    const originalX1 = (x1 + margin.left - currentTransform.x) / currentTransform.k;
+    const originalY0 = (y0 + margin.top - currentTransform.y) / currentTransform.k;
+    const originalY1 = (y1 + margin.top - currentTransform.y) / currentTransform.k;
     
     // Calculate the zoom scale and translate to fit the selection
     const plotWidth = width - margin.left - margin.right;
     const plotHeight = height - margin.top - margin.bottom;
     
-    const selectionWidth = x1 - x0;
-    const selectionHeight = y1 - y0;
+    const originalSelectionWidth = originalX1 - originalX0;
+    const originalSelectionHeight = originalY1 - originalY0;
     
     // Calculate scale to fit selection (with some padding)
-    const scaleX = plotWidth / selectionWidth;
-    const scaleY = plotHeight / selectionHeight;
+    const scaleX = plotWidth / originalSelectionWidth / currentTransform.k;
+    const scaleY = plotHeight / originalSelectionHeight / currentTransform.k;
     const newScale = Math.min(scaleX, scaleY, maxZoom) * 0.9; // 90% to add padding
     
-    // Calculate center of selection in plot coordinates
-    const centerX = (x0 + x1) / 2;
-    const centerY = (y0 + y1) / 2;
-    
-    // Convert center from plot coordinates to SVG coordinates
-    const svgCenterX = centerX + margin.left;
-    const svgCenterY = centerY + margin.top;
+    // Calculate center of selection in original coordinates
+    const originalCenterX = (originalX0 + originalX1) / 2;
+    const originalCenterY = (originalY0 + originalY1) / 2;
     
     // Calculate translation to center the selection in the SVG viewport
-    // We want to move the scaled center point to the center of the SVG
     const svgWidth = width;
     const svgHeight = height;
-    const translateX = svgWidth / 2 - svgCenterX * newScale;
-    const translateY = svgHeight / 2 - svgCenterY * newScale;
+    const translateX = svgWidth / 2 - originalCenterX * newScale;
+    const translateY = svgHeight / 2 - originalCenterY * newScale;
     
-    console.log('[Range Selection] Transform calculation:', {
-      currentTransform: { k: currentTransform.k, x: currentTransform.x, y: currentTransform.y },
-      selection: { x0, y0, x1, y1, width: selectionWidth, height: selectionHeight },
-      plot: { width: plotWidth, height: plotHeight },
-      scale: { scaleX, scaleY, current: currentTransform.k, new: newScale },
-      center: { plotX: centerX, plotY: centerY, svgX: svgCenterX, svgY: svgCenterY },
-      svg: { width: svgWidth, height: svgHeight },
-      translate: { x: translateX, y: translateY }
-    });
+    // Log only in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Range Selection ${chartId}] Zoom to selection:`, {
+        scale: newScale.toFixed(2),
+        selection: { width: originalSelectionWidth.toFixed(0), height: originalSelectionHeight.toFixed(0) }
+      });
+    }
     
     // Create and apply the transform
     const transform = d3.zoomIdentity
       .translate(translateX, translateY)
       .scale(newScale);
     
-    // Apply with smooth transition
-    console.log('[Range Selection] Applying transform:', {
-      k: transform.k,
-      x: transform.x,
-      y: transform.y
-    });
+    // Apply transform
     
-    svg.transition()
-      .duration(400)
-      .ease(d3.easeCubicInOut)
-      .call(zoomBehaviorRef.current.transform, transform);
+    // Try without transition first to see if that's the issue
+    svg.call(zoomBehaviorRef.current.transform, transform);
+    
+    // svg.transition()
+    //   .duration(400)
+    //   .ease(d3.easeCubicInOut)
+    //   .call(zoomBehaviorRef.current.transform, transform);
   }, [width, height, margin, maxZoom, svgRef]);
 
   useEffect(() => {
@@ -234,14 +233,8 @@ export const useChartZoom = ({
         if (enableRangeSelection) {
           svg.style('cursor', 'crosshair');
         }
-      }
-    };
-    
-    const handleKeyUp = (event: KeyboardEvent) => {
-      if (event.key === 'Shift') {
-        isShiftPressed.current = false;
-        svg.style('cursor', enablePan ? 'grab' : 'default');
-        // Clear any selection state
+      } else if (event.key === 'Escape') {
+        // Cancel any active selection
         setSelectionState({
           isSelecting: false,
           startX: 0,
@@ -249,6 +242,17 @@ export const useChartZoom = ({
           endX: 0,
           endY: 0,
         });
+        // Reset cursor
+        svg.style('cursor', enablePan ? 'grab' : 'default');
+      }
+    };
+    
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.key === 'Shift') {
+        isShiftPressed.current = false;
+        svg.style('cursor', enablePan ? 'grab' : 'default');
+        // Don't clear selection state if we're actively selecting
+        // The selection will be cleared in mouseup handler
       }
     };
 
@@ -268,6 +272,7 @@ export const useChartZoom = ({
         isShiftPressed.current = false;
         svg.style('cursor', enablePan ? 'grab' : 'default');
         // Clear selection if leaving while selecting
+        // This is intentional - we cancel selection if mouse leaves the chart area
         setSelectionState({
           isSelecting: false,
           startX: 0,
@@ -322,15 +327,6 @@ export const useChartZoom = ({
         // Get coordinates relative to the plot area (inside margins)
         selectionStart = [x - margin.left, y - margin.top];
         
-        console.log('[Range Selection] Start:', { 
-          rawX: x, 
-          rawY: y, 
-          plotX: selectionStart[0], 
-          plotY: selectionStart[1],
-          margins: margin,
-          currentTransform: zoomBehaviorRef.current?.transform ? d3.zoomTransform(this) : null
-        });
-        
         setSelectionState({
           isSelecting: true,
           startX: selectionStart[0],
@@ -340,10 +336,12 @@ export const useChartZoom = ({
         });
         
         event.preventDefault();
+        event.stopPropagation();
       });
       
       svg.on('mousemove.selection', function(event) {
-        if (!isShiftPressed.current || !selectionStart) return;
+        // Continue tracking if we have an active selection (even if shift is released)
+        if (!selectionStart) return;
         
         const [x, y] = d3.pointer(event, this);
         // Get coordinates relative to the plot area (inside margins)
@@ -357,7 +355,8 @@ export const useChartZoom = ({
       });
       
       svg.on('mouseup.selection', function(event) {
-        if (!isShiftPressed.current || !selectionStart) return;
+        // Check if we have an active selection (regardless of current shift state)
+        if (!selectionStart) return;
         
         const [x, y] = d3.pointer(event, this);
         // Get coordinates relative to the plot area (inside margins)
@@ -366,12 +365,13 @@ export const useChartZoom = ({
         // Get current transform before selection
         const currentTransform = d3.zoomTransform(this);
         
-        console.log('[Range Selection] End:', {
-          startPoint: selectionStart,
-          endPoint: endPoint,
-          rawEnd: { x, y },
-          currentTransform: { k: currentTransform.k, x: currentTransform.x, y: currentTransform.y }
-        });
+        // Log only in development
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[Range Selection ${chartId}] Completed:`, {
+            width: Math.abs(endPoint[0] - selectionStart[0]).toFixed(0),
+            height: Math.abs(endPoint[1] - selectionStart[1]).toFixed(0)
+          });
+        }
         
         // Perform zoom to selection
         handleRangeSelection(selectionStart, endPoint);
@@ -385,6 +385,9 @@ export const useChartZoom = ({
           endX: 0,
           endY: 0,
         });
+        
+        event.preventDefault();
+        event.stopPropagation();
       });
     }
 

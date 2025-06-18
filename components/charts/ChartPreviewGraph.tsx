@@ -111,20 +111,10 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
 
   // Handle zoom transformation
   const handleZoomTransform = useCallback((transform: d3.ZoomTransform) => {
-    console.log('[handleZoomTransform] Called with transform:', {
-      k: transform.k,
-      x: transform.x,
-      y: transform.y,
-      hasBaseScales: !!baseScalesRef.current.xScale && !!baseScalesRef.current.yScale
-    });
-    
     if (!baseScalesRef.current.xScale || !baseScalesRef.current.yScale) {
-      console.log('[handleZoomTransform] Base scales not ready, queuing transform');
       pendingZoomTransform.current = transform;
       return;
     }
-
-    console.log('[handleZoomTransform] Processing transform');
 
     // Determine zoom mode based on chart type
     const effectiveZoomMode = zoomMode === 'auto' 
@@ -132,23 +122,22 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       : zoomMode
 
     // Update current scales with zoom transform
-    currentScalesRef.current.xScale = transform.rescaleX(baseScalesRef.current.xScale)
-    
-    if (effectiveZoomMode === 'xy') {
-      // For scatter plots, transform both axes
-      currentScalesRef.current.yScale = transform.rescaleY(baseScalesRef.current.yScale)
-    } else {
-      // For time series, keep Y axis unchanged
-      currentScalesRef.current.yScale = baseScalesRef.current.yScale
+    const newXScale = transform.rescaleX(baseScalesRef.current.xScale)
+    const newYScale = effectiveZoomMode === 'xy' 
+      ? transform.rescaleY(baseScalesRef.current.yScale)
+      : baseScalesRef.current.yScale
+
+    // Only update if scales actually changed
+    if (currentScalesRef.current.xScale !== newXScale || currentScalesRef.current.yScale !== newYScale) {
+      currentScalesRef.current.xScale = newXScale
+      currentScalesRef.current.yScale = newYScale
+      
+      // Clear pending transform
+      pendingZoomTransform.current = null;
+
+      // Force re-render
+      setZoomVersion(v => v + 1)
     }
-
-    // Clear pending transform
-    pendingZoomTransform.current = null;
-
-    // Force re-render
-    setZoomVersion(v => v + 1)
-    
-    console.log('[handleZoomTransform] Transform applied, current scales updated')
   }, [zoomMode, mergedChart.type])
 
   // Initialize legend position once container and legend are mounted
@@ -387,12 +376,10 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
             const hasValidCurrentScales = currentScalesRef.current.xScale !== null && currentScalesRef.current.yScale !== null
             const scalesToUse = isInitialRenderComplete.current && hasValidCurrentScales ? currentScalesRef : baseScalesRef
             
-            console.log('[Chart Render] Scale selection:', {
-              isInitialRenderComplete: isInitialRenderComplete.current,
-              hasValidCurrentScales,
-              usingCurrentScales: scalesToUse === currentScalesRef,
-              zoomVersion
-            })
+            // Only log significant state changes
+            if (process.env.NODE_ENV === 'development' && zoomVersion > 0) {
+              console.log(`[Chart ${mergedChart.id}] Rendering with zoom version:`, zoomVersion)
+            }
             
             
             // Apply quality optimization if enabled
@@ -477,7 +464,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       }
       renderingRef.current = false
     }
-  }, [chartData, dimensions, isLoadingData, mergedChart, dataSourceStyles, settings.performanceSettings.dataProcessing.enableSampling, zoomVersion, handleZoomTransform, qualityState])
+  }, [chartData, dimensions, isLoadingData, mergedChart, dataSourceStyles, settings.performanceSettings.dataProcessing.enableSampling, zoomVersion, qualityState])
   
 
   // Track shift key state for visual feedback - only for this chart
@@ -537,9 +524,21 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         </div>
       )}
       <div className="relative w-full h-full">
-        <svg ref={svgRef} width={dimensions.width} height={dimensions.height} className="absolute inset-0" style={{ visibility: isLoadingData ? 'hidden' : 'visible' }} />
+        <svg 
+          ref={svgRef} 
+          width={dimensions.width} 
+          height={dimensions.height} 
+          className="absolute inset-0" 
+          style={{ visibility: isLoadingData ? 'hidden' : 'visible' }}
+          data-chart-id={mergedChart.id}
+        />
         {selectionState.isSelecting && (
-          <svg width={dimensions.width} height={dimensions.height} className="absolute inset-0 pointer-events-none">
+          <svg 
+            width={dimensions.width} 
+            height={dimensions.height} 
+            className="absolute inset-0 pointer-events-none"
+            style={{ zIndex: 10 }}
+          >
             <rect
               x={Math.min(selectionState.startX, selectionState.endX) + (mergedChart.margins?.left || 60)}
               y={Math.min(selectionState.startY, selectionState.endY) + (mergedChart.margins?.top || 20)}
