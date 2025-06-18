@@ -46,11 +46,76 @@ interface ChartPreviewGraphProps {
 }
 
 
+const chartPreviewGraphPropsAreEqual = (prevProps: ChartPreviewGraphProps, nextProps: ChartPreviewGraphProps) => {
+  const isDev = process.env.NODE_ENV === 'development'
+  const chartId = prevProps.editingChart?.id || 'unknown'
+  
+  // Check primitive props
+  if (
+    prevProps.maxDataPoints !== nextProps.maxDataPoints ||
+    prevProps.enableZoom !== nextProps.enableZoom ||
+    prevProps.enablePan !== nextProps.enablePan ||
+    prevProps.zoomMode !== nextProps.zoomMode
+  ) {
+    if (isDev) console.log(`[Chart ${chartId}] Re-render: primitive props changed`)
+    return false
+  }
+  
+  // Check if editingChart reference or relevant properties changed
+  if (prevProps.editingChart !== nextProps.editingChart) {
+    // Deep check only data-relevant properties
+    const prevChart = prevProps.editingChart
+    const nextChart = nextProps.editingChart
+    
+    if (
+      prevChart.id !== nextChart.id ||
+      prevChart.type !== nextChart.type ||
+      prevChart.xAxisType !== nextChart.xAxisType ||
+      prevChart.xParameter !== nextChart.xParameter ||
+      JSON.stringify(prevChart.yAxisParams) !== JSON.stringify(nextChart.yAxisParams) ||
+      JSON.stringify(prevChart.margins) !== JSON.stringify(nextChart.margins)
+    ) {
+      if (isDev) console.log(`[Chart ${chartId}] Re-render: chart data properties changed`)
+      return false
+    }
+  }
+  
+  // Check if selectedDataSourceItems changed
+  if (prevProps.selectedDataSourceItems !== nextProps.selectedDataSourceItems) {
+    if (prevProps.selectedDataSourceItems.length !== nextProps.selectedDataSourceItems.length) {
+      if (isDev) console.log(`[Chart ${chartId}] Re-render: data source items changed`)
+      return false
+    }
+    // Could add deeper comparison if needed
+  }
+  
+  // Check if dataSourceStyles changed (shallow comparison)
+  if (JSON.stringify(prevProps.dataSourceStyles) !== JSON.stringify(nextProps.dataSourceStyles)) {
+    if (isDev) console.log(`[Chart ${chartId}] Re-render: data source styles changed`)
+    return false
+  }
+  
+  // Check if chartSettings changed
+  if (JSON.stringify(prevProps.chartSettings) !== JSON.stringify(nextProps.chartSettings)) {
+    if (isDev) console.log(`[Chart ${chartId}] Re-render: chart settings changed`)
+    return false
+  }
+  
+  return true
+}
+
 export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints, dataSourceStyles, chartSettings, enableZoom = true, enablePan = true, zoomMode = 'auto' }: ChartPreviewGraphProps) => {
   const [isShiftPressed, setIsShiftPressed] = React.useState(false)
   const { settings } = useSettingsStore()
-  const defaultMaxDataPoints = settings.performanceSettings.dataProcessing.enableSampling 
-    ? settings.performanceSettings.dataProcessing.defaultSamplingPoints
+  
+  // Extract only what we need from settings to avoid unnecessary re-renders
+  const enableSampling = settings.performanceSettings.dataProcessing.enableSampling
+  const defaultSamplingPoints = settings.performanceSettings.dataProcessing.defaultSamplingPoints
+  const dynamicQuality = settings.performanceSettings.qualityControl?.dynamicQuality ?? true
+  const qualityThreshold = settings.performanceSettings.qualityControl?.qualityThreshold ?? 5000
+  
+  const defaultMaxDataPoints = enableSampling 
+    ? defaultSamplingPoints
     : Number.MAX_SAFE_INTEGER
   const effectiveMaxDataPoints = maxDataPoints ?? defaultMaxDataPoints
   
@@ -107,6 +172,19 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   
   // Track pending zoom transform
   const pendingZoomTransform = useRef<d3.ZoomTransform | null>(null)
+  
+  // Extract render-critical properties from mergedChart to optimize re-renders
+  const chartRenderProps = useMemo(() => ({
+    id: mergedChart.id,
+    type: mergedChart.type,
+    margins: mergedChart.margins,
+    showMarkers: mergedChart.showMarkers,
+    plotStyles: mergedChart.plotStyles,
+    // Add other properties that affect actual rendering
+  }), [mergedChart.id, mergedChart.type, mergedChart.margins, mergedChart.showMarkers, mergedChart.plotStyles])
+  
+  // Extract quality render options separately to avoid unnecessary re-renders
+  const qualityRenderOptions = qualityState.renderOptions
   
 
   // Handle zoom transformation
@@ -216,8 +294,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     cleanup: cleanupQuality,
   } = useQualityOptimization({
     dataCount: chartData?.length || 0,
-    enableOptimization: settings.performanceSettings.qualityControl?.dynamicQuality ?? true,
-    qualityThreshold: settings.performanceSettings.qualityControl?.qualityThreshold ?? 5000,
+    enableOptimization: dynamicQuality,
+    qualityThreshold: qualityThreshold,
     debounceDelay: 150,
   })
   
@@ -383,14 +461,14 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
             
             
             // Apply quality optimization if enabled
-            const dataToRender = qualityState.renderOptions.samplingRate < 1
-              ? chartData.filter((_, i) => i % Math.round(1 / qualityState.renderOptions.samplingRate) === 0)
+            const dataToRender = qualityRenderOptions.samplingRate < 1
+              ? chartData.filter((_, i) => i % Math.round(1 / qualityRenderOptions.samplingRate) === 0)
               : chartData
               
             // Override chart display options based on quality level
             const optimizedChart = {
               ...mergedChart,
-              showMarkers: qualityState.renderOptions.enableMarkers && mergedChart.showMarkers,
+              showMarkers: qualityRenderOptions.enableMarkers && mergedChart.showMarkers,
             }
             
             // Render chart with current scales - pass mainGroup
@@ -404,7 +482,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               dataSourceStyles, 
               canvas: canvasRef.current ?? undefined,
               plotStyles: mergedChart.plotStyles,
-              enableSampling: settings.performanceSettings.dataProcessing.enableSampling
+              enableSampling: enableSampling
             })
 
             // On first render, copy base scales to current scales
@@ -451,6 +529,18 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
 
   // Initial render and updates
   useEffect(() => {
+    // Debug logging in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Chart ${mergedChart.id}] Render triggered by:`, {
+        hasData: !!chartData,
+        dataLength: chartData?.length,
+        dimensions,
+        isLoadingData,
+        zoomVersion,
+        enableSampling,
+      })
+    }
+    
     renderChart()
     
     return () => {
@@ -464,7 +554,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       }
       renderingRef.current = false
     }
-  }, [chartData, dimensions, isLoadingData, mergedChart, dataSourceStyles, settings.performanceSettings.dataProcessing.enableSampling, zoomVersion, qualityState])
+  }, [chartData, dimensions, isLoadingData, mergedChart, dataSourceStyles, enableSampling, zoomVersion, qualityRenderOptions, chartRenderProps])
   
 
   // Track shift key state for visual feedback - only for this chart
@@ -597,4 +687,4 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       )}
     </div>
   )
-})
+}, chartPreviewGraphPropsAreEqual)

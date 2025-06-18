@@ -43,25 +43,34 @@ export function useOptimizedChart({
   const [data, setData] = React.useState<ChartDataPoint[]>([])
   const loadingRef = useRef(false)
   
+  // Extract only what we need from settings to avoid unnecessary re-renders
+  const enableSampling = settings.performanceSettings.dataProcessing.enableSampling
+  const defaultSamplingPoints = settings.performanceSettings.dataProcessing.defaultSamplingPoints
+  
   // Use settings to determine default max data points
-  const defaultMaxDataPoints = settings.performanceSettings.dataProcessing.enableSampling
-    ? settings.performanceSettings.dataProcessing.defaultSamplingPoints
+  const defaultMaxDataPoints = enableSampling
+    ? defaultSamplingPoints
     : Number.MAX_SAFE_INTEGER
   const effectiveMaxDataPoints = maxDataPoints ?? defaultMaxDataPoints
+  
+  // Extract only data-relevant properties from editingChart
+  const xAxisType = editingChart.xAxisType
+  const xParameter = editingChart.xParameter
+  const yAxisParams = editingChart.yAxisParams
 
   // Memoize parameters
   const allParameters = useMemo(() => {
-    if (!editingChart.yAxisParams?.length) return []
+    if (!yAxisParams?.length) return []
     
     const params: string[] = []
-    if (editingChart.xAxisType !== 'datetime' && editingChart.xParameter) {
-      const cleanXParam = editingChart.xParameter.includes('|') 
-        ? editingChart.xParameter.split('|')[0] 
-        : editingChart.xParameter
+    if (xAxisType !== 'datetime' && xParameter) {
+      const cleanXParam = xParameter.includes('|') 
+        ? xParameter.split('|')[0] 
+        : xParameter
       params.push(cleanXParam)
     }
     
-    editingChart.yAxisParams.forEach(yParam => {
+    yAxisParams.forEach(yParam => {
       if (yParam.parameter) {
         const cleanParam = yParam.parameter.includes('|') 
           ? yParam.parameter.split('|')[0] 
@@ -72,13 +81,13 @@ export function useOptimizedChart({
       }
     })
     return params
-  }, [editingChart.xAxisType, editingChart.xParameter, editingChart.yAxisParams])
+  }, [xAxisType, xParameter, yAxisParams])
 
   // Debounced data loading
   const loadData = useMemo(
     () => debounce(async () => {
       if (selectedDataSourceItems.length === 0 || 
-          (editingChart.xAxisType !== 'datetime' && allParameters.length === 0)) {
+          (xAxisType !== 'datetime' && allParameters.length === 0)) {
         setData([])
         setIsLoading(false)
         loadingRef.current = false
@@ -97,7 +106,7 @@ export function useOptimizedChart({
       const allData: ChartDataPoint[] = []
       
       // Get valid Y parameters
-      const validYParams = editingChart.yAxisParams?.filter(
+      const validYParams = yAxisParams?.filter(
         param => param.parameter && param.parameter.trim() !== ''
       ) || []
       
@@ -113,14 +122,14 @@ export function useOptimizedChart({
             
             if (csvData && csvData.length > 0) {
               csvData.forEach(point => {
-                const cleanXParam = editingChart.xParameter?.includes('|') 
-                  ? editingChart.xParameter.split('|')[0] 
-                  : editingChart.xParameter
+                const cleanXParam = xParameter?.includes('|') 
+                  ? xParameter.split('|')[0] 
+                  : xParameter
                 
                 const rawXValue = cleanXParam ? point[cleanXParam] : undefined
                 let xValue: number | string | Date | undefined
                 
-                if (editingChart.xAxisType === 'datetime') {
+                if (xAxisType === 'datetime') {
                   // Ensure timestamp is a Date object (timestamp is always a string in DataPoint)
                   xValue = new Date(point.timestamp)
                 } else if (rawXValue !== undefined) {
@@ -182,7 +191,7 @@ export function useOptimizedChart({
               : settings.performanceSettings.dataProcessing.samplingMethod,
             targetPoints: effectiveMaxDataPoints,
             chartType: editingChart.type === 'scatter' ? 'scatter' : 'line',
-            isTimeSeries: editingChart.xAxisType === 'datetime'
+            isTimeSeries: xAxisType === 'datetime'
           }
           
           // Use batch sampling for better performance
@@ -194,7 +203,7 @@ export function useOptimizedChart({
           })
           
           // Sort final data by x value if needed
-          if (editingChart.xAxisType === 'datetime') {
+          if (xAxisType === 'datetime') {
             sampledData.sort((a, b) => {
               const aTime = a.x instanceof Date ? a.x.getTime() : new Date(a.x).getTime()
               const bTime = b.x instanceof Date ? b.x.getTime() : new Date(b.x).getTime()
@@ -212,7 +221,7 @@ export function useOptimizedChart({
         setIsLoading(false)
       }
     }, 300),
-    [selectedDataSourceItems, allParameters, editingChart, getParameterData, dataCache, effectiveMaxDataPoints, settings.performanceSettings.dataProcessing.enableSampling]
+    [selectedDataSourceItems, allParameters, xAxisType, xParameter, yAxisParams, getParameterData, dataCache, effectiveMaxDataPoints, enableSampling]
   )
 
   // Trigger data loading when dependencies change
