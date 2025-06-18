@@ -78,8 +78,9 @@ export const ChartLegend = React.memo(
           ref={ref}
           style={style}
           onPointerDown={onPointerDown}
+          data-legend="true"
           className={cn(
-            "bg-white/80 rounded shadow p-1 text-[10px] space-y-1",
+            "bg-white/80 rounded shadow p-1 text-[10px] space-y-1 pointer-events-auto",
             className
           )}
         >

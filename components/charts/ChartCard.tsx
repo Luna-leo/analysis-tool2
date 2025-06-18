@@ -167,6 +167,15 @@ const ChartCardComponent = ({
       e.preventDefault()
       return
     }
+    
+    // Check if drag started on legend
+    const target = e.target as HTMLElement
+    const legendElement = target.closest('[data-legend="true"]')
+    if (legendElement) {
+      e.preventDefault()
+      return
+    }
+    
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('text/plain', String(index))
     if (onDragStart) {
@@ -407,7 +416,7 @@ const ChartCardComponent = ({
       )}
 
       <div
-        className="bg-white flex items-center justify-center flex-1 min-h-0 pointer-events-none rounded-sm overflow-hidden"
+        className="bg-white flex items-center justify-center flex-1 min-h-0 rounded-sm overflow-hidden"
         draggable={false}
       >
         <ChartPreviewGraph 
