@@ -22,24 +22,6 @@ const GRID_MARGIN_PRESETS: Record<string, { bottom: number; left: number }> = {
   'default': { bottom: 77, left: 65 }
 }
 
-/**
- * Get margins based on grid layout
- */
-export const getLayoutMargins = (
-  columns: number,
-  rows: number
-) => {
-  // Get preset margins based on grid size
-  const layoutKey = getLayoutKey(columns, rows)
-  const preset = GRID_MARGIN_PRESETS[layoutKey] || GRID_MARGIN_PRESETS['default']
-  
-  return {
-    top: 20,
-    right: 30,
-    bottom: preset.bottom,
-    left: preset.left
-  }
-}
 
 /**
  * Grid size specific label offset presets
@@ -79,6 +61,25 @@ export const getLayoutLabelOffsets = (
   return {
     xLabelOffset: preset.xOffset,
     yLabelOffset: preset.yOffset
+  }
+}
+
+/**
+ * Get margins based on grid layout and ensure enough space for axis labels
+ */
+export const getLayoutMargins = (
+  columns: number,
+  rows: number
+) => {
+  const layoutKey = getLayoutKey(columns, rows)
+  const preset = GRID_MARGIN_PRESETS[layoutKey] || GRID_MARGIN_PRESETS['default']
+  const offsets = getLayoutLabelOffsets(columns, rows)
+
+  return {
+    top: 20,
+    right: 30,
+    bottom: Math.max(preset.bottom, offsets.xLabelOffset + 20),
+    left: Math.max(preset.left, offsets.yLabelOffset + 20)
   }
 }
 
