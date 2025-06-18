@@ -218,6 +218,26 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     selectedDataSourceItems,
     maxDataPoints: effectiveMaxDataPoints
   })
+  
+  // Clear empty scales when we get real data
+  useEffect(() => {
+    if (chartData && chartData.length > 0) {
+      if (baseScalesRef.current.isEmptyScale) {
+        console.log('useEffect - Clearing empty base scales due to data arrival')
+        baseScalesRef.current.xScale = null
+        baseScalesRef.current.yScale = null
+        baseScalesRef.current.isEmptyScale = false
+        // Reset initial render flag to force scale recreation
+        isInitialRenderComplete.current = false
+      }
+      if (currentScalesRef.current.isEmptyScale) {
+        console.log('useEffect - Clearing empty current scales due to data arrival')
+        currentScalesRef.current.xScale = null
+        currentScalesRef.current.yScale = null
+        currentScalesRef.current.isEmptyScale = false
+      }
+    }
+  }, [chartData])
 
 
   // Throttled resize handler for better performance
@@ -350,17 +370,6 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               firstItem: chartData[0],
               lastItem: chartData[chartData.length - 1]
             })
-            
-            // Check if we're transitioning from empty to data state
-            if (baseScalesRef.current.isEmptyScale) {
-              console.log('ChartPreviewGraph - Clearing empty scales')
-              baseScalesRef.current.xScale = null
-              baseScalesRef.current.yScale = null
-              baseScalesRef.current.isEmptyScale = false
-              currentScalesRef.current.xScale = null
-              currentScalesRef.current.yScale = null
-              currentScalesRef.current.isEmptyScale = false
-            }
             
             // Use baseScalesRef for initial render, currentScalesRef for zoomed state
             const hasZoomed = isInitialRenderComplete.current && zoomVersion > 0
