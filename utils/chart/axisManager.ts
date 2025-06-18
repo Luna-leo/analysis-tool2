@@ -55,14 +55,6 @@ export class AxisManager {
     const { editingChart, data, width } = this.options
     const xAxisType = editingChart.xAxisType || 'datetime'
     
-    console.log('🔍 createXScale - Raw data:', {
-      dataLength: data?.length || 0,
-      firstItem: data?.[0],
-      lastItem: data?.[data?.length - 1],
-      xAxisType,
-      xParameter: editingChart.xParameter
-    })
-    
     if (xAxisType === 'datetime') {
       let xDomain: [Date, Date]
       
@@ -75,33 +67,20 @@ export class AxisManager {
         const dateValues = data.map(d => {
           // For transformed scatter plot data, x is already the correct value
           if ('x' in d && d.x !== undefined) {
-            console.log('🔍 X datetime extraction - has x property:', d.x)
             return d.x instanceof Date ? d.x : new Date(d.x)
           }
           // Fallback for other data formats
           const val = d.timestamp || d[xParameter]
-          console.log('🔍 X datetime extraction - using parameter:', xParameter, 'value:', val)
           return val instanceof Date ? val : new Date(val)
         }).filter(d => !isNaN(d.getTime()))
-        
-        console.log('🔍 createXScale - Extracted datetime values:', {
-          count: dateValues.length,
-          first: dateValues[0],
-          last: dateValues[dateValues.length - 1]
-        })
         
         if (dateValues.length > 0) {
           const extent = d3.extent(dateValues) as [Date, Date]
           xDomain = extent
-          console.log('🔍 createXScale - Datetime extent:', {
-            min: extent[0],
-            max: extent[1]
-          })
         } else {
           // Fallback to last hour
           const now = new Date()
           xDomain = [new Date(now.getTime() - 60 * 60 * 1000), now]
-          console.log('⚠️ createXScale - No valid datetime values, using fallback domain')
         }
       } else {
         // Default to last hour
@@ -112,11 +91,6 @@ export class AxisManager {
       this.xScale = d3.scaleTime()
         .domain(xDomain)
         .range([0, width])
-      
-      console.log('✅ createXScale - Created datetime scale:', {
-        domain: xDomain,
-        range: [0, width]
-      })
     } else {
       // Linear scale for numeric/parameter types
       let xDomain: [number, number]
@@ -128,34 +102,19 @@ export class AxisManager {
         const values = data.map(d => {
           // For transformed scatter plot data, use d.x directly
           if ('x' in d && typeof d.x === 'number') {
-            console.log('🔍 X numeric extraction - has x property:', d.x)
             return d.x
           }
           // Fallback for other data formats
           const val = Number(d[xParameter])
-          console.log('🔍 X numeric extraction - using parameter:', xParameter, 'value:', val)
           return val
         }).filter(v => !isNaN(v))
-        
-        console.log('🔍 createXScale - Extracted numeric values:', {
-          count: values.length,
-          first: values[0],
-          last: values[values.length - 1],
-          sample: values.slice(0, 5)
-        })
         
         if (values.length > 0) {
           const extent = d3.extent(values) as [number, number]
           const padding = (extent[1] - extent[0]) * 0.05
           xDomain = [extent[0] - padding, extent[1] + padding]
-          console.log('🔍 createXScale - Numeric extent:', {
-            min: extent[0],
-            max: extent[1],
-            domainWithPadding: xDomain
-          })
         } else {
           xDomain = [0, 100]
-          console.log('⚠️ createXScale - No valid numeric values, using default [0, 100]')
         }
       } else {
         xDomain = [0, 100]
@@ -164,11 +123,6 @@ export class AxisManager {
       this.xScale = d3.scaleLinear()
         .domain(xDomain)
         .range([0, width])
-      
-      console.log('✅ createXScale - Created linear scale:', {
-        domain: xDomain,
-        range: [0, width]
-      })
     }
   }
 
@@ -178,13 +132,6 @@ export class AxisManager {
   private createYScale(): void {
     const { editingChart, data, height } = this.options
     const yParams = editingChart.yAxisParams || []
-    
-    console.log('🔍 createYScale - Raw data:', {
-      dataLength: data?.length || 0,
-      firstItem: data?.[0],
-      lastItem: data?.[data?.length - 1],
-      yParams: yParams
-    })
     
     // Group parameters by axis
     const groupedByAxis: Record<number, typeof yParams> = {}
@@ -209,33 +156,18 @@ export class AxisManager {
       const allValues = data.map(d => {
         // Check if this is transformed scatter plot data (has y property)
         if ('y' in d && typeof d.y === 'number') {
-          console.log('🔍 Y extraction - has y property:', d.y)
           return d.y
         }
         // Fallback to parameter-based extraction for other data formats
         const paramValue = firstAxisParams.map(p => d[p.parameter] || 0)[0] || 0
-        console.log('🔍 Y extraction - using parameter:', firstAxisParams[0]?.parameter, 'value:', paramValue)
         return paramValue
       }).filter(v => typeof v === 'number' && !isNaN(v))
       
-      console.log('🔍 createYScale - Extracted Y values:', {
-        count: allValues.length,
-        first: allValues[0],
-        last: allValues[allValues.length - 1],
-        sample: allValues.slice(0, 5)
-      })
-      
       if (allValues.length === 0) {
         yDomain = [0, 100]
-        console.log('⚠️ createYScale - No valid Y values, using default [0, 100]')
       } else {
         const extent = d3.extent(allValues) as [number, number]
         yDomain = extent[0] !== undefined && extent[1] !== undefined ? extent : [0, 100]
-        console.log('🔍 createYScale - Y extent:', {
-          min: extent[0],
-          max: extent[1],
-          domain: yDomain
-        })
       }
     } else {
       yDomain = [0, 100]
@@ -245,15 +177,9 @@ export class AxisManager {
       .domain(yDomain)
       .range([height, 0])
     
-    console.log('✅ createYScale - Created linear scale (before nice()):', {
-      domain: yDomain,
-      range: [height, 0]
-    })
-    
     // Apply nice() if using auto range
     if (firstAxisParams.length > 0 && firstAxisParams[0].range?.auto !== false && data && data.length > 0) {
       this.yScale.nice()
-      console.log('✅ createYScale - Applied nice(), final domain:', this.yScale.domain())
     }
   }
 

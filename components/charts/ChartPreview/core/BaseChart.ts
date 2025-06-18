@@ -109,8 +109,7 @@ export abstract class BaseChart<TData = any> {
    */
   protected setupScalesAndAxes(): void {
     // Check if we already have scales (from zoom)
-    if (this.scalesRef.current.xScale && this.scalesRef.current.yScale && !this.scalesRef.current.isEmptyScale) {
-      console.log('BaseChart - Reusing existing scales (zoomed or valid data scales)')
+    if (this.scalesRef.current.xScale && this.scalesRef.current.yScale) {
       // Use existing (zoomed) scales
       this.scales = {
         xScale: this.scalesRef.current.xScale,
@@ -126,11 +125,7 @@ export abstract class BaseChart<TData = any> {
         this.editingChart
       )
     } else {
-      console.log('BaseChart - Creating new scales', {
-        hasData: this.data.length > 0,
-        wasEmptyScale: this.scalesRef.current.isEmptyScale
-      })
-      // Create new scales (initial render or transitioning from empty)
+      // Create new scales (initial render)
       const axisManager = new AxisManager({
         g: this.g,
         width: this.width,

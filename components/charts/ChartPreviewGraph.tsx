@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useMemo, useLayoutEffect, useCallback } from 
 import * as d3 from "d3"
 import { ChartComponent, EventInfo, DataSourceStyle } from "@/types"
 import {
-  renderEmptyChart,
   renderScatterPlot,
   ReferenceLines
 } from "./ChartPreview/index"
@@ -90,15 +89,13 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   // Base scales (never modified)
   const baseScalesRef = useRef<{
     xScale: d3.ScaleTime<number, number> | d3.ScaleLinear<number, number> | null,
-    yScale: d3.ScaleLinear<number, number> | null,
-    isEmptyScale?: boolean
+    yScale: d3.ScaleLinear<number, number> | null
   }>({ xScale: null, yScale: null })
 
   // Current scales (with zoom applied)
   const currentScalesRef = useRef<{
     xScale: d3.ScaleTime<number, number> | d3.ScaleLinear<number, number> | null,
-    yScale: d3.ScaleLinear<number, number> | null,
-    isEmptyScale?: boolean
+    yScale: d3.ScaleLinear<number, number> | null
   }>({ xScale: null, yScale: null })
 
   // Force update when zoom changes
@@ -219,25 +216,6 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     maxDataPoints: effectiveMaxDataPoints
   })
   
-  // Clear empty scales when we get real data
-  useEffect(() => {
-    if (chartData && chartData.length > 0) {
-      if (baseScalesRef.current.isEmptyScale) {
-        console.log('useEffect - Clearing empty base scales due to data arrival')
-        baseScalesRef.current.xScale = null
-        baseScalesRef.current.yScale = null
-        baseScalesRef.current.isEmptyScale = false
-        // Reset initial render flag to force scale recreation
-        isInitialRenderComplete.current = false
-      }
-      if (currentScalesRef.current.isEmptyScale) {
-        console.log('useEffect - Clearing empty current scales due to data arrival')
-        currentScalesRef.current.xScale = null
-        currentScalesRef.current.yScale = null
-        currentScalesRef.current.isEmptyScale = false
-      }
-    }
-  }, [chartData])
 
 
   // Throttled resize handler for better performance
@@ -365,12 +343,6 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
             .attr("transform", `translate(${margin.left},${margin.top})`)
 
           if (chartData && chartData.length > 0) {
-            console.log('ChartPreviewGraph - Rendering with data:', {
-              dataLength: chartData.length,
-              firstItem: chartData[0],
-              lastItem: chartData[chartData.length - 1]
-            })
-            
             // Use baseScalesRef for initial render, currentScalesRef for zoomed state
             const hasZoomed = isInitialRenderComplete.current && zoomVersion > 0
             const scalesToUse = hasZoomed ? currentScalesRef : baseScalesRef
@@ -397,25 +369,19 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               isInitialRenderComplete.current = true
             }
           } else {
-            // Render empty chart with axes
-            renderEmptyChart({ 
-              g: mainGroup, 
-              width, 
-              height, 
-              chartType: mergedChart.type || 'scatter', 
-              editingChart: mergedChart, 
-              scalesRef: baseScalesRef 
-            })
-            
-            // Mark scales as empty
-            baseScalesRef.current.isEmptyScale = true
-            
-            // Copy scales for consistency
-            if (baseScalesRef.current.xScale) {
-              currentScalesRef.current.xScale = baseScalesRef.current.xScale
-              currentScalesRef.current.yScale = baseScalesRef.current.yScale
-              currentScalesRef.current.isEmptyScale = true
+            // Show loading or no data message
+            if (!isLoadingData) {
+              // Only show "No data" message if we're truly not loading
+              mainGroup.append("text")
+                .attr("x", width / 2)
+                .attr("y", height / 2)
+                .attr("text-anchor", "middle")
+                .attr("dominant-baseline", "middle")
+                .style("fill", "#9ca3af")
+                .style("font-size", "14px")
+                .text("No data available")
             }
+            // If loading, the loading indicator in the parent component will show
           }
           
           // Store cleanup function
