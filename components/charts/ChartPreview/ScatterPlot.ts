@@ -71,14 +71,6 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
       })
     }
     
-    console.log('ScatterPlot data before creating scales:', {
-      dataLength: this.data.length,
-      firstItem: this.data[0],
-      lastItem: this.data[this.data.length - 1],
-      isEmptyScale: this.scalesRef.current.isEmptyScale,
-      hasExistingScales: !!(this.scalesRef.current.xScale && this.scalesRef.current.yScale)
-    })
-    
     // Call parent implementation
     super.setupScalesAndAxes()
   }

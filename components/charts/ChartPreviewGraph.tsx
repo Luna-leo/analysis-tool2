@@ -8,7 +8,6 @@ import {
   ReferenceLines
 } from "./ChartPreview/index"
 import { ChartLegend } from "./ChartLegend"
-import { getRenderMethod } from "./ChartPreview/LODRenderer"
 import { useOptimizedChart } from "@/hooks/useOptimizedChart"
 import { hideAllTooltips } from "@/utils/chartTooltip"
 import { useThrottle } from "@/hooks/useDebounce"
@@ -103,10 +102,24 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   
   // Track if initial render is complete
   const isInitialRenderComplete = useRef(false)
+  
+  // Track pending zoom transform
+  const pendingZoomTransform = useRef<d3.ZoomTransform | null>(null)
+  
+  // Debug zoom persistence
+  useEffect(() => {
+    console.log('[ChartPreviewGraph] Component mounted/updated, chartId:', mergedChart.id);
+  }, [mergedChart.id]);
 
   // Handle zoom transformation
   const handleZoomTransform = useCallback((transform: d3.ZoomTransform) => {
-    if (!baseScalesRef.current.xScale || !baseScalesRef.current.yScale) return
+    if (!baseScalesRef.current.xScale || !baseScalesRef.current.yScale) {
+      console.log('[ChartPreviewGraph] Base scales not ready, queuing zoom transform');
+      pendingZoomTransform.current = transform;
+      return;
+    }
+
+    console.log('[ChartPreviewGraph] Handling zoom transform:', { k: transform.k, x: transform.x, y: transform.y });
 
     // Determine zoom mode based on chart type
     const effectiveZoomMode = zoomMode === 'auto' 
@@ -124,6 +137,9 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       currentScalesRef.current.yScale = baseScalesRef.current.yScale
     }
 
+    // Clear pending transform
+    pendingZoomTransform.current = null;
+
     // Force re-render
     setZoomVersion(v => v + 1)
     
@@ -131,6 +147,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   }, [zoomMode, mergedChart.type])
 
   // Initialize zoom functionality
+  
   const {
     zoomLevel,
     zoomIn,
@@ -146,6 +163,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     enableZoom,
     onZoom: handleZoomTransform,
     margin: mergedChart.margins || { top: 20, right: 40, bottom: 60, left: 60 },
+    chartId: mergedChart.id,
   })
 
   // Initialize legend position once container and legend are mounted
@@ -367,6 +385,13 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               currentScalesRef.current.xScale = baseScalesRef.current.xScale
               currentScalesRef.current.yScale = baseScalesRef.current.yScale
               isInitialRenderComplete.current = true
+              console.log('[ChartPreviewGraph] Initial render complete, scales ready');
+              
+              // Apply pending zoom transform if any
+              if (pendingZoomTransform.current) {
+                console.log('[ChartPreviewGraph] Applying pending zoom transform');
+                handleZoomTransform(pendingZoomTransform.current);
+              }
             }
           } else {
             // Show loading or no data message
@@ -412,14 +437,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       }
       renderingRef.current = false
     }
-  }, [chartData, dimensions, isLoadingData, mergedChart, dataSourceStyles, settings.performanceSettings.dataProcessing.enableSampling, zoomVersion])
+  }, [chartData, dimensions, isLoadingData, mergedChart, dataSourceStyles, settings.performanceSettings.dataProcessing.enableSampling, zoomVersion, handleZoomTransform])
   
-  // Force re-render when chart settings change (including margins)
-  useEffect(() => {
-    if (chartSettings) {
-      renderChart()
-    }
-  }, [JSON.stringify(chartSettings?.margins)])
 
   // Clean up tooltips on unmount
   useEffect(() => {
