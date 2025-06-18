@@ -1,27 +1,18 @@
 "use client"
 
 import React, { useRef, useState, useEffect } from "react"
-import { X, ChartLine, Database, Calculator, FunctionSquare, Zap, ArrowLeftRight, Calendar, Gauge, FileUp, Hash, Tag, ChevronLeft, ChevronRight, LineChart, CheckSquare, Layers, ChevronDown } from "lucide-react"
+import { X, ChartLine, Database, Calculator, FunctionSquare, Zap, ArrowLeftRight, Calendar, Gauge, FileUp, Hash, Tag, ChevronLeft, ChevronRight, LineChart, CheckSquare } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { FileNode } from "@/types"
 import { useFileStore } from "@/stores/useFileStore"
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { LayoutSettings } from "./LayoutSettings"
-import { usePlotStyleTemplateStore } from "@/stores/usePlotStyleTemplateStore"
 
 interface TabBarProps {
   openTabs: FileNode[]
   activeTab: string | null
   onChartClick?: () => void
   onSelectClick?: () => void
-  onTemplateAction?: (action: string) => void
   gridSelectionMode?: boolean
   selectedCount?: number
   showActionButtons?: boolean
@@ -32,7 +23,6 @@ export function TabBar({
   activeTab: activeTabProp,
   onChartClick,
   onSelectClick,
-  onTemplateAction,
   gridSelectionMode = false,
   selectedCount = 0,
   showActionButtons = false
@@ -47,8 +37,6 @@ export function TabBar({
     setDragOverTab,
     reorderTabs,
   } = useFileStore()
-  
-  const { templates } = usePlotStyleTemplateStore()
 
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [showLeftButton, setShowLeftButton] = useState(true)
@@ -267,8 +255,6 @@ export function TabBar({
             <span>Chart</span>
           </Button>
           
-          {activeTabProp && <LayoutSettings fileId={activeTabProp} />}
-          
           <Button
             variant={gridSelectionMode ? "default" : "outline"}
             size="sm"
@@ -282,45 +268,7 @@ export function TabBar({
             </span>
           </Button>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 px-3 flex items-center justify-center gap-1.5 text-xs"
-              >
-                <Layers className="h-3.5 w-3.5" />
-                <span>Templates</span>
-                <ChevronDown className="h-3 w-3 ml-0.5" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem onClick={() => onTemplateAction?.("browse")}>
-                Browse Templates...
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => onTemplateAction?.("save")}
-              >
-                Save Current View as Template
-              </DropdownMenuItem>
-              {templates.length > 0 && (
-                <>
-                  <DropdownMenuSeparator />
-                  <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
-                    Recent Templates
-                  </div>
-                  {templates.slice(0, 5).map(template => (
-                    <DropdownMenuItem 
-                      key={template.id}
-                      onClick={() => onTemplateAction?.(`apply:${template.id}`)}
-                    >
-                      {template.name}
-                    </DropdownMenuItem>
-                  ))}
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {activeTabProp && <LayoutSettings fileId={activeTabProp} />}
         </div>
       )}
     </div>

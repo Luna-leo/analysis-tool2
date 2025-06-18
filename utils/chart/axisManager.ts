@@ -244,7 +244,7 @@ export class AxisManager {
     editingChart: ChartComponent
   ): void {
     const xLabelOffset = editingChart.xLabelOffset || 40
-    const yLabelOffset = editingChart.yLabelOffset || 40
+    const yLabelOffset = editingChart.yLabelOffset || 50
     
     // X-axis label
     const showXLabel = editingChart.showXLabel ?? true

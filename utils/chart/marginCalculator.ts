@@ -2,24 +2,24 @@
  * Grid size specific margin presets
  */
 const GRID_MARGIN_PRESETS: Record<string, { bottom: number; left: number }> = {
-  '1x1': { bottom: 60, left: 60 },
-  '1x2': { bottom: 60, left: 60 },
-  '1x3': { bottom: 50, left: 55 },
-  '1x4': { bottom: 77, left: 60 },
-  '2x1': { bottom: 60, left: 60 },
-  '2x2': { bottom: 50, left: 55 },
-  '2x3': { bottom: 50, left: 55 },
-  '2x4': { bottom: 77, left: 55 },
-  '3x1': { bottom: 50, left: 55 },
-  '3x2': { bottom: 50, left: 55 },
-  '3x3': { bottom: 35, left: 55 }, // Optimized for 3x3 layout
-  '3x4': { bottom: 40, left: 55 },
-  '4x1': { bottom: 77, left: 60 },
-  '4x2': { bottom: 77, left: 55 },
-  '4x3': { bottom: 77, left: 50 },
-  '4x4': { bottom: 77, left: 65 },
+  '1x1': { bottom: 60, left: 70 },
+  '1x2': { bottom: 60, left: 70 },
+  '1x3': { bottom: 50, left: 68 },
+  '1x4': { bottom: 77, left: 68 },
+  '2x1': { bottom: 60, left: 70 },
+  '2x2': { bottom: 50, left: 68 },
+  '2x3': { bottom: 50, left: 65 },
+  '2x4': { bottom: 77, left: 65 },
+  '3x1': { bottom: 50, left: 68 },
+  '3x2': { bottom: 50, left: 65 },
+  '3x3': { bottom: 35, left: 62 }, // Optimized for 3x3 layout
+  '3x4': { bottom: 40, left: 62 },
+  '4x1': { bottom: 77, left: 68 },
+  '4x2': { bottom: 77, left: 65 },
+  '4x3': { bottom: 77, left: 62 },
+  '4x4': { bottom: 77, left: 70 },
   // Default for larger grids
-  'default': { bottom: 77, left: 65 }
+  'default': { bottom: 77, left: 70 }
 }
 
 
@@ -27,24 +27,24 @@ const GRID_MARGIN_PRESETS: Record<string, { bottom: number; left: number }> = {
  * Grid size specific label offset presets
  */
 const GRID_LABEL_OFFSET_PRESETS: Record<string, { xOffset: number; yOffset: number }> = {
-  '1x1': { xOffset: 35, yOffset: 35 },
-  '1x2': { xOffset: 35, yOffset: 35 },
-  '1x3': { xOffset: 35, yOffset: 35 },
-  '1x4': { xOffset: 40, yOffset: 35 },
-  '2x1': { xOffset: 35, yOffset: 35 },
-  '2x2': { xOffset: 35, yOffset: 35 },
-  '2x3': { xOffset: 30, yOffset: 30 },
-  '2x4': { xOffset: 40, yOffset: 30 },
-  '3x1': { xOffset: 35, yOffset: 35 },
-  '3x2': { xOffset: 30, yOffset: 30 },
-  '3x3': { xOffset: 30, yOffset: 30 },
-  '3x4': { xOffset: 30, yOffset: 30 },
-  '4x1': { xOffset: 40, yOffset: 35 },
-  '4x2': { xOffset: 40, yOffset: 30 },
-  '4x3': { xOffset: 40, yOffset: 30 },
-  '4x4': { xOffset: 40, yOffset: 40 },
+  '1x1': { xOffset: 35, yOffset: 50 },
+  '1x2': { xOffset: 35, yOffset: 50 },
+  '1x3': { xOffset: 35, yOffset: 48 },
+  '1x4': { xOffset: 40, yOffset: 48 },
+  '2x1': { xOffset: 35, yOffset: 50 },
+  '2x2': { xOffset: 35, yOffset: 48 },
+  '2x3': { xOffset: 30, yOffset: 45 },
+  '2x4': { xOffset: 40, yOffset: 45 },
+  '3x1': { xOffset: 35, yOffset: 48 },
+  '3x2': { xOffset: 30, yOffset: 45 },
+  '3x3': { xOffset: 30, yOffset: 42 },
+  '3x4': { xOffset: 30, yOffset: 42 },
+  '4x1': { xOffset: 40, yOffset: 48 },
+  '4x2': { xOffset: 40, yOffset: 45 },
+  '4x3': { xOffset: 40, yOffset: 42 },
+  '4x4': { xOffset: 40, yOffset: 50 },
   // Default for larger grids
-  'default': { xOffset: 40, yOffset: 40 }
+  'default': { xOffset: 40, yOffset: 50 }
 }
 
 /**
