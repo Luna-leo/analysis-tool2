@@ -395,6 +395,9 @@ export function ChartEditModal() {
                   selectedDataSourceItems={selectedDataSourceItems}
                   setEditingChart={setEditingChart}
                   dataSourceStyles={dataSourceStyles}
+                  enableZoom={true}
+                  enablePan={true}
+                  zoomMode="auto"
                 />
               ) : (
                 <div className="h-full flex flex-col">

@@ -57,6 +57,9 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
     showGrid: true,
     showLegend: true,
     showChartTitle: true,
+    margins: undefined,
+    xLabelOffset: undefined,
+    yLabelOffset: undefined
   }
 
   // Calculate pagination values

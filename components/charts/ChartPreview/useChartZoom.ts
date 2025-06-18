@@ -15,6 +15,7 @@ interface UseChartZoomProps {
   margin?: { top: number; right: number; bottom: number; left: number };
   chartId?: string;
   enableRangeSelection?: boolean;
+  isRangeSelectionMode?: boolean;
   getScales?: () => {
     baseScales: {
       xScale: d3.ScaleTime<number, number> | d3.ScaleLinear<number, number> | null;
@@ -65,22 +66,37 @@ export const useChartZoom = ({
   margin = { top: 20, right: 40, bottom: 60, left: 60 },
   chartId,
   enableRangeSelection = true,
+  isRangeSelectionMode = false,
   getScales,
 }: UseChartZoomProps) => {
   // Load initial state from localStorage
   const getInitialZoomState = useCallback((): ZoomState => {
     if (!chartId) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[useChartZoom] getInitialZoomState: No chartId provided`);
+      }
       return { k: 1, x: 0, y: 0, transform: d3.zoomIdentity };
     }
     
     try {
-      const savedState = localStorage.getItem(`chart-zoom-${chartId}`);
+      const key = `chart-zoom-${chartId}`;
+      const savedState = localStorage.getItem(key);
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[useChartZoom] Checking localStorage for key: ${key}`, {
+          found: !!savedState,
+          value: savedState
+        });
+      }
+      
       if (savedState) {
         const parsed = JSON.parse(savedState);
         const transform = d3.zoomIdentity
           .translate(parsed.x || 0, parsed.y || 0)
           .scale(parsed.k || 1);
-        // console.log(`[useChartZoom] Loaded zoom state for chart ${chartId}:`, parsed);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[useChartZoom] Loaded zoom state for chart ${chartId}:`, parsed);
+        }
         return {
           k: parsed.k || 1,
           x: parsed.x || 0,
@@ -92,10 +108,14 @@ export const useChartZoom = ({
       console.warn('Failed to load zoom state from localStorage:', error);
     }
     
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[useChartZoom] No saved zoom state found for chart ${chartId}, using default`);
+    }
+    
     return { k: 1, x: 0, y: 0, transform: d3.zoomIdentity };
   }, [chartId]);
 
-  const [zoomState, setZoomState] = useState<ZoomState>({ k: 1, x: 0, y: 0, transform: d3.zoomIdentity });
+  const [zoomState, setZoomState] = useState<ZoomState>(getInitialZoomState);
   const [selectionState, setSelectionState] = useState<SelectionState>({
     isSelecting: false,
     startX: 0,
@@ -121,7 +141,9 @@ export const useChartZoom = ({
           timestamp: Date.now()
         };
         localStorage.setItem(`chart-zoom-${chartId}`, JSON.stringify(data));
-        // console.log(`[useChartZoom] Saved zoom state for chart ${chartId}:`, data);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[useChartZoom] Saved zoom state for chart ${chartId}:`, data);
+        }
       } catch (error) {
         console.warn('Failed to save zoom state to localStorage:', error);
       }
@@ -345,14 +367,14 @@ export const useChartZoom = ({
           endY: 0,
         });
         // Reset cursor
-        svg.style('cursor', enablePan ? 'grab' : 'default');
+        svg.style('cursor', isRangeSelectionMode && enableRangeSelection ? 'crosshair' : (enablePan ? 'grab' : 'default'));
       }
     };
     
     const handleKeyUp = (event: KeyboardEvent) => {
       if (event.key === 'Shift') {
         isShiftPressed.current = false;
-        svg.style('cursor', enablePan ? 'grab' : 'default');
+        svg.style('cursor', isRangeSelectionMode && enableRangeSelection ? 'crosshair' : (enablePan ? 'grab' : 'default'));
         // Don't clear selection state if we're actively selecting
         // The selection will be cleared in mouseup handler
       }
@@ -362,11 +384,13 @@ export const useChartZoom = ({
     if (enableRangeSelection) {
       svg.on('mouseenter', function(event: MouseEvent) {
         isMouseOverSvg = true;
-        // Check if shift is already pressed
-        if (event.shiftKey) {
-          isShiftPressed.current = true;
+        // Check if shift is already pressed or range selection mode is active
+        if (event.shiftKey || isRangeSelectionMode) {
+          if (event.shiftKey) {
+            isShiftPressed.current = true;
+          }
           svg.style('cursor', 'crosshair');
-          // Hide all tooltips when entering with shift pressed
+          // Hide all tooltips when entering with shift pressed or in range selection mode
           import('@/utils/chart/chartTooltipManager').then(({ ChartTooltipManager }) => {
             ChartTooltipManager.cleanup();
           });
@@ -376,7 +400,7 @@ export const useChartZoom = ({
       svg.on('mouseleave', () => {
         isMouseOverSvg = false;
         isShiftPressed.current = false;
-        svg.style('cursor', enablePan ? 'grab' : 'default');
+        svg.style('cursor', isRangeSelectionMode && enableRangeSelection ? 'crosshair' : (enablePan ? 'grab' : 'default'));
         // Clear selection if leaving while selecting
         // This is intentional - we cancel selection if mouse leaves the chart area
         setSelectionState({
@@ -398,12 +422,20 @@ export const useChartZoom = ({
       .extent([[0, 0], [width, height]])
       .translateExtent([[-Infinity, -Infinity], [Infinity, Infinity]])
       .filter((event) => {
-        // If shift is pressed and range selection is enabled, don't process normal zoom/pan
-        if (isShiftPressed.current && enableRangeSelection) {
+        // Debug logging for event filtering
+        if (process.env.NODE_ENV === 'development' && event.type === 'dblclick') {
+          console.log(`[useChartZoom] Double-click event in zoom filter for chart ${chartId}`);
+        }
+        
+        // Disable double-click zoom (we handle it separately)
+        if (event.type === 'dblclick') return false;
+        
+        // If shift is pressed or range selection mode is active, don't process normal zoom/pan
+        if ((isShiftPressed.current || isRangeSelectionMode) && enableRangeSelection) {
           return false;
         }
-        // Allow zoom on wheel events and drag, but not on double-click
-        return !event.button && !event.ctrlKey && !event.type.includes('dblclick');
+        // Allow zoom on wheel events and drag
+        return !event.button && !event.ctrlKey;
       })
       .on('start', () => {
         if (onZoomStart) {
@@ -422,12 +454,52 @@ export const useChartZoom = ({
     // Apply zoom behavior
     svg.call(zoom);
 
+    // Debug: Log that we're setting up double-click handler
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[useChartZoom] Setting up double-click handler for chart ${chartId}`);
+    }
+
+    // Handle double-click for reset
+    svg.on('dblclick.reset', (event) => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[useChartZoom] Double-click reset triggered for chart ${chartId}`);
+      }
+      // Prevent default zoom behavior
+      event.preventDefault();
+      event.stopPropagation();
+      
+      // Reset the zoom state immediately
+      const identityState = {
+        k: 1,
+        x: 0,
+        y: 0,
+        transform: d3.zoomIdentity
+      };
+      setZoomState(identityState);
+      
+      // Apply the transform to SVG
+      svg.transition()
+        .duration(400)
+        .ease(d3.easeCubicInOut)
+        .call(
+          zoomBehaviorRef.current.transform,
+          d3.zoomIdentity
+        );
+      
+      // Save the reset state
+      if (chartId) {
+        saveZoomState(identityState);
+        hasAppliedInitialZoom.current = false;
+        hasInitialized.current = false;
+      }
+    });
+
     // Handle range selection if enabled
     if (enableRangeSelection) {
       let selectionStart: [number, number] | null = null;
       
       svg.on('mousedown.selection', function(event) {
-        if (!isShiftPressed.current) return;
+        if (!isShiftPressed.current && !isRangeSelectionMode) return;
         
         // Hide all tooltips when starting selection
         import('@/utils/chart/chartTooltipManager').then(({ ChartTooltipManager }) => {
@@ -503,24 +575,28 @@ export const useChartZoom = ({
     }
 
     // Set initial cursor
-    svg.style('cursor', enablePan ? 'grab' : 'default');
+    svg.style('cursor', isRangeSelectionMode && enableRangeSelection ? 'crosshair' : (enablePan ? 'grab' : 'default'));
+
+    // Handle double-click for reset
+    // We'll set this up after resetZoom is defined
 
     // Handle cursor changes during pan
     if (enablePan) {
       svg.on('mousedown.cursor', () => {
-        if (!isShiftPressed.current) {
+        if (!isShiftPressed.current && !isRangeSelectionMode) {
           svg.style('cursor', 'grabbing');
         }
       });
       svg.on('mouseup.cursor', () => {
-        if (!isShiftPressed.current) {
-          svg.style('cursor', 'grab');
+        if (!isShiftPressed.current && !isRangeSelectionMode) {
+          svg.style('cursor', isRangeSelectionMode && enableRangeSelection ? 'crosshair' : 'grab');
         }
       });
     }
 
     return () => {
       svg.on('.zoom', null);
+      svg.on('dblclick.reset', null);
       svg.on('mousedown.cursor', null);
       svg.on('mouseup.cursor', null);
       svg.on('mousedown.selection', null);
@@ -533,19 +609,20 @@ export const useChartZoom = ({
         window.removeEventListener('keyup', handleKeyUp);
       }
     };
-  }, [svgRef, width, height, minZoom, maxZoom, enablePan, enableZoom, handleZoom, margin, enableRangeSelection, handleRangeSelection, onZoomStart, onZoomEnd]);
+  }, [svgRef, width, height, minZoom, maxZoom, enablePan, enableZoom, handleZoom, margin, enableRangeSelection, isRangeSelectionMode, handleRangeSelection, onZoomStart, onZoomEnd, chartId, saveZoomState]);
 
-  // Load initial state from localStorage when chartId changes
+  // This effect is no longer needed since we initialize state with getInitialZoomState
+  // Keeping it just for logging purposes
   useEffect(() => {
-    if (!chartId) return;
-    
-    const initialState = getInitialZoomState();
-    if (initialState.k !== 1 || initialState.x !== 0 || initialState.y !== 0) {
-      // console.log(`[useChartZoom] Setting initial state from localStorage for chart ${chartId}`);
-      setZoomState(initialState);
-      hasInitialized.current = true;
+    if (process.env.NODE_ENV === 'development' && chartId) {
+      const initialState = getInitialZoomState();
+      console.log(`[useChartZoom] Component mounted with chartId ${chartId}, initial state:`, {
+        chartId,
+        initialState,
+        currentZoomState: zoomState
+      });
     }
-  }, [chartId, getInitialZoomState]);
+  }, [chartId]); // Removed getInitialZoomState from deps as it's stable
 
   // Apply initial zoom state from localStorage after zoom behavior is initialized
   const hasAppliedInitialZoom = useRef(false);
@@ -562,6 +639,9 @@ export const useChartZoom = ({
     // If we don't have a saved zoom state, no need to wait
     if (zoomState.k === 1 && zoomState.x === 0 && zoomState.y === 0) {
       hasAppliedInitialZoom.current = true;
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[useChartZoom] Skipping initial zoom application for chart ${chartId}: zoom state is default`);
+      }
       return;
     }
     
@@ -600,6 +680,44 @@ export const useChartZoom = ({
       clearTimeout(timeoutId);
     };
   }, [chartId, enableZoom, zoomState, svgRef, getScales]); // Use zoomState from state
+
+  // Listen for storage changes from other instances
+  useEffect(() => {
+    if (!chartId) return;
+    
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === `chart-zoom-${chartId}` && e.newValue) {
+        try {
+          const newState = JSON.parse(e.newValue);
+          const transform = d3.zoomIdentity
+            .translate(newState.x || 0, newState.y || 0)
+            .scale(newState.k || 1);
+          
+          setZoomState({
+            k: newState.k || 1,
+            x: newState.x || 0,
+            y: newState.y || 0,
+            transform
+          });
+          
+          // Apply the transform to the SVG if available
+          if (svgRef.current && zoomBehaviorRef.current) {
+            const svg = d3.select(svgRef.current);
+            svg.call(zoomBehaviorRef.current.transform, transform);
+          }
+          
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`[useChartZoom] Storage change detected for chart ${chartId}:`, newState);
+          }
+        } catch (error) {
+          console.warn('Failed to parse zoom state from storage event:', error);
+        }
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [chartId, svgRef]);
 
   const zoomIn = useCallback(() => {
     if (!svgRef.current || !zoomBehaviorRef.current) return;
@@ -645,17 +763,14 @@ export const useChartZoom = ({
         d3.zoomIdentity
       );
     
-    // Clear saved zoom state
+    // Save the reset state instead of clearing it
+    // This ensures consistency between instances
     if (chartId) {
-      try {
-        localStorage.removeItem(`chart-zoom-${chartId}`);
-        hasAppliedInitialZoom.current = false;
-        hasInitialized.current = false;
-      } catch (error) {
-        console.warn('Failed to clear zoom state from localStorage:', error);
-      }
+      saveZoomState(identityState);
+      hasAppliedInitialZoom.current = false;
+      hasInitialized.current = false;
     }
-  }, [svgRef, chartId]);
+  }, [svgRef, chartId, saveZoomState]);
 
   const setZoom = useCallback((scale: number, x = 0, y = 0) => {
     if (!svgRef.current || !zoomBehaviorRef.current) return;
@@ -668,6 +783,8 @@ export const useChartZoom = ({
         d3.zoomIdentity.translate(x, y).scale(scale)
       );
   }, [svgRef]);
+
+  // Double-click handler is now set up in the main zoom setup effect
 
   return {
     zoomState,

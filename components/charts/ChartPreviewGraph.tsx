@@ -43,6 +43,7 @@ interface ChartPreviewGraphProps {
   enableZoom?: boolean
   enablePan?: boolean
   zoomMode?: 'x' | 'xy' | 'auto'
+  showZoomControls?: boolean
 }
 
 
@@ -55,7 +56,8 @@ const chartPreviewGraphPropsAreEqual = (prevProps: ChartPreviewGraphProps, nextP
     prevProps.maxDataPoints !== nextProps.maxDataPoints ||
     prevProps.enableZoom !== nextProps.enableZoom ||
     prevProps.enablePan !== nextProps.enablePan ||
-    prevProps.zoomMode !== nextProps.zoomMode
+    prevProps.zoomMode !== nextProps.zoomMode ||
+    prevProps.showZoomControls !== nextProps.showZoomControls
   ) {
     if (isDev) console.log(`[Chart ${chartId}] Re-render: primitive props changed`)
     return false
@@ -104,8 +106,9 @@ const chartPreviewGraphPropsAreEqual = (prevProps: ChartPreviewGraphProps, nextP
   return true
 }
 
-export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints, dataSourceStyles, chartSettings, enableZoom = true, enablePan = true, zoomMode = 'auto' }: ChartPreviewGraphProps) => {
+export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints, dataSourceStyles, chartSettings, enableZoom = true, enablePan = true, zoomMode = 'auto', showZoomControls = true }: ChartPreviewGraphProps) => {
   const [isShiftPressed, setIsShiftPressed] = React.useState(false)
+  const [isRangeSelectionMode, setIsRangeSelectionMode] = React.useState(false)
   const { settings } = useSettingsStore()
   
   // Extract only what we need from settings to avoid unnecessary re-renders
@@ -335,8 +338,9 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     onZoomStart: startInteraction,
     onZoomEnd: endInteraction,
     margin: mergedChart.margins || { top: 20, right: 40, bottom: 60, left: 60 },
-    chartId: mergedChart.id,
+    chartId: editingChart.id,
     enableRangeSelection: true,
+    isRangeSelectionMode,
     getScales: useCallback(() => ({
       baseScales: baseScalesRef.current,
       currentScales: currentScalesRef.current,
@@ -521,8 +525,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               }
             }
             
-            // Add selection overlay if selecting or shift is pressed
-            if (selectionState.isSelecting || isShiftPressed) {
+            // Add selection overlay if selecting or shift is pressed or in range selection mode
+            if (selectionState.isSelecting || isShiftPressed || isRangeSelectionMode) {
               // Create an invisible overlay that captures all mouse events during selection
               svg.append("rect")
                 .attr("class", "selection-overlay")
@@ -536,9 +540,19 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               
               // Draw selection rectangle within the plot area (only if actively selecting)
               if (selectionState.isSelecting) {
+                // Create a unique clip path for selection
+                const selectionClipId = `selection-clip-${Math.random().toString(36).substr(2, 9)}`;
+                mainGroup.append("clipPath")
+                  .attr("id", selectionClipId)
+                  .append("rect")
+                  .attr("x", 0)
+                  .attr("y", 0)
+                  .attr("width", width)
+                  .attr("height", height);
+                
                 const selectionGroup = mainGroup.append("g")
                   .attr("class", "selection-rect")
-                  .attr("clip-path", "url(#chart-data-clip)");
+                  .attr("clip-path", `url(#${selectionClipId})`);
                 
                 selectionGroup.append("rect")
                   .attr("x", Math.min(selectionState.startX, selectionState.endX))
@@ -672,7 +686,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Shift' && isMouseOver) {
+      if (e.key === 'Shift' && (isMouseOver || isRangeSelectionMode)) {
         setIsShiftPressed(true)
       }
     }
@@ -690,7 +704,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
     }
-  }, [isMouseOver])
+  }, [isMouseOver, isRangeSelectionMode])
 
   
   // Clean up tooltips on unmount
@@ -754,23 +768,52 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           dimensions={dimensions}
         />
       )}
-      {enableZoom && (
+      {enableZoom && showZoomControls && (
         <>
-          <ZoomControls
-            onZoomIn={zoomIn}
-            onZoomOut={zoomOut}
-            onReset={resetZoom}
-            zoomLevel={zoomLevel}
-            minZoom={0.5}
-            maxZoom={10}
-            showZoomLevel={true}
-          />
-          {isShiftPressed && (
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-blue-500/90 text-white px-3 py-1 rounded-md text-sm font-medium shadow-md backdrop-blur-sm">
-              Range selection mode - Drag to select area
+          {/* Check if this is being used in ChartCard (has chartSettings) */}
+          {chartSettings ? (
+            // Compact mode for ChartCard - position in bottom right of plot area
+            <div className="absolute bottom-1 right-1 z-10">
+              <ZoomControls
+                onZoomIn={zoomIn}
+                onZoomOut={zoomOut}
+                onReset={resetZoom}
+                zoomLevel={zoomLevel}
+                minZoom={0.5}
+                maxZoom={10}
+                showZoomLevel={false}
+                isRangeSelectionMode={isRangeSelectionMode}
+                onToggleRangeSelection={() => setIsRangeSelectionMode(!isRangeSelectionMode)}
+                variant="compact"
+                position="static"
+                orientation="horizontal"
+              />
+            </div>
+          ) : (
+            // Default mode for ChartEditModal - also use horizontal layout at bottom right
+            <div className="absolute bottom-4 right-4 z-10">
+              <ZoomControls
+                onZoomIn={zoomIn}
+                onZoomOut={zoomOut}
+                onReset={resetZoom}
+                zoomLevel={zoomLevel}
+                minZoom={0.5}
+                maxZoom={10}
+                showZoomLevel={true}
+                isRangeSelectionMode={isRangeSelectionMode}
+                onToggleRangeSelection={() => setIsRangeSelectionMode(!isRangeSelectionMode)}
+                variant="default"
+                position="static"
+                orientation="horizontal"
+              />
             </div>
           )}
-          {qualityState.isTransitioning && qualityState.level !== 'high' && (
+          {(isShiftPressed || isRangeSelectionMode) && (
+            <div className={`absolute ${chartSettings ? 'top-1' : 'top-4'} left-1/2 transform -translate-x-1/2 bg-blue-500/90 text-white px-3 py-1 rounded-md text-sm font-medium shadow-md backdrop-blur-sm`}>
+              {isRangeSelectionMode ? '範囲選択モード - ドラッグで範囲を選択' : 'Range selection mode - Drag to select area'}
+            </div>
+          )}
+          {qualityState.isTransitioning && qualityState.level !== 'high' && !chartSettings && (
             <div className="absolute bottom-20 right-4 bg-yellow-500/90 text-white px-2 py-1 rounded text-xs font-medium shadow-sm backdrop-blur-sm">
               Performance mode
             </div>

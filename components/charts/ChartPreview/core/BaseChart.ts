@@ -32,6 +32,7 @@ export abstract class BaseChart<TData = any> {
   }>
   protected scales!: ChartScales
   protected dataGroup!: d3.Selection<SVGGElement, unknown, null, undefined>
+  protected clipId: string
 
   constructor(config: BaseChartConfig) {
     this.g = config.g
@@ -40,6 +41,7 @@ export abstract class BaseChart<TData = any> {
     this.height = config.height
     this.editingChart = config.editingChart
     this.scalesRef = config.scalesRef
+    this.clipId = `chart-data-clip-${Math.random().toString(36).substr(2, 9)}`
   }
 
   /**
@@ -58,7 +60,7 @@ export abstract class BaseChart<TData = any> {
     // Create data group with clipping
     this.dataGroup = this.g.append("g")
       .attr("class", "data-group")
-      .attr("clip-path", "url(#chart-data-clip)")
+      .attr("clip-path", `url(#${this.clipId})`)
     
     // Render the chart-specific content
     this.renderContent()
@@ -82,21 +84,10 @@ export abstract class BaseChart<TData = any> {
    */
   protected createClipPath(): void {
     const clipPadding = 1 // Small padding to ensure axis lines are visible
-    const svg = this.g.node()?.ownerSVGElement
-    if (!svg) return
     
-    // Remove existing clip path if any
-    d3.select(svg).select("defs #chart-data-clip").remove()
-    
-    // Create or get defs element
-    let defs = d3.select(svg).select("defs")
-    if (defs.empty()) {
-      defs = d3.select(svg).append("defs")
-    }
-    
-    // Create clip path
-    defs.append("clipPath")
-      .attr("id", "chart-data-clip")
+    // Create clip path within the g element for proper coordinate system
+    this.g.append("clipPath")
+      .attr("id", this.clipId)
       .append("rect")
       .attr("x", -clipPadding)
       .attr("y", -clipPadding)

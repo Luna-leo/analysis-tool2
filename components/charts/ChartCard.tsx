@@ -430,6 +430,9 @@ const ChartCardComponent = ({
           }
           dataSourceStyles={dataSourceStyles}
           chartSettings={chartSettings}
+          enableZoom={true}
+          enablePan={true}
+          showZoomControls={true}
         />
       </div>
 

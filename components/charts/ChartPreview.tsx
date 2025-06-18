@@ -26,6 +26,7 @@ export const ChartPreview = React.memo(({ editingChart, selectedDataSourceItems,
         enableZoom={enableZoom}
         enablePan={enablePan}
         zoomMode={zoomMode}
+        showZoomControls={true}
       />
       <ChartPreviewInfo
         editingChart={editingChart}
