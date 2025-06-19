@@ -5,17 +5,23 @@ import { X, ChartLine, Database, Calculator, FunctionSquare, Zap, ArrowLeftRight
 import { cn } from "@/lib/utils"
 import { FileNode } from "@/types"
 import { useFileStore } from "@/stores/useFileStore"
+import { useLayoutStore } from "@/stores/useLayoutStore"
 import { Button } from "@/components/ui/button"
 import { LayoutSettings } from "./LayoutSettings"
+import { ChartConfigMenu } from "@/components/charts/ChartConfigMenu"
+import type { ChartGridConfig } from "@/types/chart-config"
 
 interface TabBarProps {
   openTabs: FileNode[]
   activeTab: string | null
   onChartClick?: () => void
   onSelectClick?: () => void
+  onTemplateAction?: (action: string) => void
   gridSelectionMode?: boolean
   selectedCount?: number
   showActionButtons?: boolean
+  onConfigImport?: (config: ChartGridConfig, mode?: 'overwrite' | 'new-page') => void
+  onCreateNewPage?: (fileName: string, config: ChartGridConfig) => void
 }
 
 export function TabBar({ 
@@ -23,9 +29,12 @@ export function TabBar({
   activeTab: activeTabProp,
   onChartClick,
   onSelectClick,
+  onTemplateAction,
   gridSelectionMode = false,
   selectedCount = 0,
-  showActionButtons = false
+  showActionButtons = false,
+  onConfigImport,
+  onCreateNewPage
 }: TabBarProps) {
   const {
     activeTab,
@@ -37,6 +46,8 @@ export function TabBar({
     setDragOverTab,
     reorderTabs,
   } = useFileStore()
+  
+  const { layoutSettingsMap, chartSettingsMap } = useLayoutStore()
 
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [showLeftButton, setShowLeftButton] = useState(true)
@@ -243,34 +254,69 @@ export function TabBar({
       </div>
 
       {/* Action Buttons at the right end */}
-      {showActionButtons && (
-        <div className="flex items-center gap-2 px-2 border-l">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onChartClick}
-            className="h-8 px-3 flex items-center justify-center gap-1.5 text-xs"
-          >
-            <LineChart className="h-3.5 w-3.5" />
-            <span>Chart</span>
-          </Button>
+      <div className="flex items-center gap-2 px-2 border-l">
+        {/* Config button - always visible */}
+        {activeTab && (() => {
+          const currentFile = openTabs.find(tab => tab.id === activeTab)
+          if (!currentFile) return null
           
-          <Button
-            variant={gridSelectionMode ? "default" : "outline"}
-            size="sm"
-            onClick={onSelectClick}
-            className="h-8 px-3 flex items-center justify-center gap-1.5 text-xs"
-            title={gridSelectionMode ? "Exit selection mode" : "Enter selection mode"}
-          >
-            <CheckSquare className="h-3.5 w-3.5" />
-            <span>
-              {gridSelectionMode ? `${selectedCount} Selected` : "Select"}
-            </span>
-          </Button>
+          const layoutSettings = layoutSettingsMap[activeTab] || {
+            showFileName: true,
+            showDataSources: true,
+            columns: 2,
+            rows: 2,
+            pagination: true,
+          }
           
-          {activeTabProp && <LayoutSettings fileId={activeTabProp} />}
-        </div>
-      )}
+          const chartSettings = chartSettingsMap[activeTab] || {
+            showXAxis: true,
+            showYAxis: true,
+            showGrid: true,
+          }
+          
+          return (
+            <ChartConfigMenu
+              fileId={activeTab}
+              fileName={currentFile.name}
+              layoutSettings={layoutSettings}
+              chartSettings={chartSettings}
+              charts={currentFile.charts || []}
+              onImport={onConfigImport || (() => {})}
+              onCreateNewPage={onCreateNewPage}
+            />
+          )
+        })()}
+        
+        {/* Other buttons - only when showActionButtons is true */}
+        {showActionButtons && (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onChartClick}
+              className="h-8 px-3 flex items-center justify-center gap-1.5 text-xs"
+            >
+              <LineChart className="h-3.5 w-3.5" />
+              <span>Chart</span>
+            </Button>
+            
+            <Button
+              variant={gridSelectionMode ? "default" : "outline"}
+              size="sm"
+              onClick={onSelectClick}
+              className="h-8 px-3 flex items-center justify-center gap-1.5 text-xs"
+              title={gridSelectionMode ? "Exit selection mode" : "Enter selection mode"}
+            >
+              <CheckSquare className="h-3.5 w-3.5" />
+              <span>
+                {gridSelectionMode ? `${selectedCount} Selected` : "Select"}
+              </span>
+            </Button>
+            
+            {activeTabProp && <LayoutSettings fileId={activeTabProp} />}
+          </>
+        )}
+      </div>
     </div>
   )
 }

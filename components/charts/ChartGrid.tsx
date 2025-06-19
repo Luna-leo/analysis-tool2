@@ -261,6 +261,7 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
           <div className="text-center">
             <div className="text-4xl mb-2">📊</div>
             <p>No charts available for this file</p>
+            <p className="text-sm mt-2">Use the Config button in the toolbar to import a configuration</p>
           </div>
         </div>
       </div>
@@ -296,7 +297,6 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
           "px-6 pt-2",
           currentSettings.pagination ? "flex-1 overflow-hidden" : "pb-6"
         )}>
-          
           {/* Grid */}
           <div
             ref={gridRef}

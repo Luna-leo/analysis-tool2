@@ -25,6 +25,7 @@ import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor"
 import { optimizeMemory } from "@/utils/memoryOptimization"
 import { getDefaultColor } from "@/utils/chartColors"
 import type { FileNode, EventInfo } from "@/types"
+import type { ChartGridConfig } from "@/types/chart-config"
 
 interface SelectedDataSourceInfo {
   dataSource: EventInfo | null
@@ -40,7 +41,7 @@ export default function AnalysisTool() {
   const [templateListOpen, setTemplateListOpen] = React.useState(false)
   const [saveTemplateOpen, setSaveTemplateOpen] = React.useState(false)
   
-  const { openTabs, activeTab, openFile, fileTree, setActiveTab, toggleFolder, setFileTree, updateFileCharts } = useFileStore()
+  const { openTabs, activeTab, openFile, fileTree, setActiveTab, toggleFolder, setFileTree, updateFileCharts, createNewFile } = useFileStore()
   const { loadParameters } = useParameterStore()
   const { loadState } = useGraphStateStore()
   const { updateLayoutSettings, updateChartSettings } = useLayoutStore()
@@ -59,6 +60,65 @@ export default function AnalysisTool() {
     if (result.freedMemory > 0) {
       console.log(`Freed ${result.freedMemory.toFixed(1)} MB of memory`)
     }
+  }
+  
+  // Handle config import
+  const handleConfigImport = (config: ChartGridConfig, mode?: 'overwrite' | 'new-page') => {
+    if (!activeTab || mode !== 'overwrite') return
+    
+    // Apply layout settings
+    updateLayoutSettings(activeTab, config.layoutSettings)
+    
+    // Apply chart settings  
+    updateChartSettings(activeTab, config.chartSettings)
+    
+    // Apply charts
+    updateFileCharts(activeTab, config.charts)
+    
+    toast.success('Configuration imported successfully')
+  }
+  
+  // Handle creating new page from config
+  const handleCreateNewPage = (fileName: string, config: ChartGridConfig) => {
+    // Generate unique file name if it already exists
+    let uniqueFileName = fileName
+    let counter = 1
+    while (fileTree.some(f => f.name === uniqueFileName && f.type === 'file')) {
+      uniqueFileName = `${fileName} (${counter})`
+      counter++
+    }
+    
+    // Create new file with unique ID
+    const newFileId = `file_${Date.now()}`
+    const newFile: FileNode = {
+      id: newFileId,
+      name: uniqueFileName,
+      type: "file",
+      dataSources: [],
+      charts: config.charts
+    }
+    
+    // Create the file
+    createNewFile(null, uniqueFileName)
+    
+    // Open the new file after a short delay
+    setTimeout(() => {
+      // Find the newly created file by name
+      const createdFile = fileTree.find(f => f.name === uniqueFileName && f.type === 'file')
+      if (createdFile) {
+        // Open the file
+        openFile(createdFile)
+        
+        // Apply configuration settings
+        updateLayoutSettings(createdFile.id, config.layoutSettings)
+        updateChartSettings(createdFile.id, config.chartSettings)
+        updateFileCharts(createdFile.id, config.charts)
+        
+        toast.success(`Created new page "${uniqueFileName}" with imported configuration`)
+      } else {
+        toast.error('Failed to create new page')
+      }
+    }, 200)
   }
   
   // Helper function to find a node in the file tree
@@ -255,6 +315,8 @@ export default function AnalysisTool() {
               const currentFile = openTabs.find((tab) => tab.id === activeTab)
               return (currentFile as any)?.charts || (currentFile as any)?.dataSources
             })() : false}
+            onConfigImport={handleConfigImport}
+            onCreateNewPage={handleCreateNewPage}
           />
         </div>
 
