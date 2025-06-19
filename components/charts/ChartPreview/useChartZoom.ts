@@ -127,6 +127,7 @@ export const useChartZoom = ({
   const hasInitialized = useRef(false);
   const isShiftPressed = useRef(false);
   const selectionRectRef = useRef<SVGRectElement | null>(null);
+  const isProgrammaticZoom = useRef(false);
   
   // Debounced save function
   const saveZoomState = useCallback(
@@ -152,6 +153,11 @@ export const useChartZoom = ({
   );
 
   const handleZoom = useCallback((event: d3.D3ZoomEvent<SVGSVGElement, unknown>) => {
+    // Skip if this is a programmatic zoom from storage sync
+    if (isProgrammaticZoom.current) {
+      return;
+    }
+    
     const { transform } = event;
     const newState = { 
       k: transform.k, 
@@ -703,7 +709,12 @@ export const useChartZoom = ({
           // Apply the transform to the SVG if available
           if (svgRef.current && zoomBehaviorRef.current) {
             const svg = d3.select(svgRef.current);
+            isProgrammaticZoom.current = true;
             svg.call(zoomBehaviorRef.current.transform, transform);
+            // Reset the flag after a short delay to ensure the zoom event has been processed
+            setTimeout(() => {
+              isProgrammaticZoom.current = false;
+            }, 0);
           }
           
           if (process.env.NODE_ENV === 'development') {
