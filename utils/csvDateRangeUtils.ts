@@ -21,6 +21,25 @@ export function extractDateRangeFromCSV(
     return extractDateRangeFromColumn(parsedData.rows, 'Datetime')
   }
   
+  // For standard format or if no specific config, use flexible approach
+  if (dataSourceType === 'standard' || !getDataSourceConfig(dataSourceType)) {
+    // Try to find any column that might contain dates
+    // Check first column first (common for time-series data)
+    const firstColumn = parsedData.headers[0]
+    const datePatternColumns = parsedData.headers.filter(header => 
+      /date|time|timestamp|datetime/i.test(header)
+    )
+    
+    // Use the first column if it looks like it contains dates, otherwise use date pattern columns
+    const dateColumnName = datePatternColumns.length > 0 ? datePatternColumns[0] : firstColumn
+    
+    if (!dateColumnName) {
+      return { minDate: null, maxDate: null, dateColumnName: null }
+    }
+    
+    return extractDateRangeFromColumn(parsedData.rows, dateColumnName)
+  }
+  
   const config = getDataSourceConfig(dataSourceType)
   
   // Find the timestamp column

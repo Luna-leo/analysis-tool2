@@ -10,36 +10,101 @@ export interface CSVParseResult {
   error?: string
 }
 
+export interface CSVContentParseOptions {
+  plant: string
+  machineNo: string
+  sourceType: CSVDataSourceType
+  fileName: string
+}
+
+export interface CSVContentParseResult {
+  data: StandardizedCSVData[]
+  parameterInfo?: {
+    parameters: string[]
+    units: string[]
+  }
+  format?: string
+}
+
+export function parseCSVContent(content: string, options: CSVContentParseOptions): CSVContentParseResult | null {
+  try {
+    // Parse the CSV content
+    const parsedData = parseCSV(content, options.fileName)
+    
+    // Validate the structure
+    const validation = validateCSVStructure(
+      parsedData.headers,
+      options.sourceType,
+      parsedData.metadata
+    )
+    
+    if (!validation.valid) {
+      console.error(`Invalid CSV structure for ${options.sourceType}:`, validation.missingColumns)
+      return null
+    }
+    
+    // Map to standardized format
+    const standardizedData = mapCSVDataToStandardFormat(
+      parsedData,
+      options.sourceType,
+      options.plant,
+      options.machineNo
+    )
+    
+    return {
+      data: standardizedData,
+      parameterInfo: parsedData.metadata?.parameterInfo,
+      format: parsedData.metadata?.format
+    }
+  } catch (error) {
+    console.error('Error parsing CSV content:', error)
+    return null
+  }
+}
+
 export async function parseCSVFiles(files: File[]): Promise<CSVParseResult> {
   try {
     const parsedFiles: ParsedCSVData[] = []
 
     for (const file of files) {
+      console.log(`[parseCSVFiles] Processing file: ${file.name}, size: ${file.size} bytes`)
+      
       // First try to read as UTF-8
       let text = await file.text()
+      console.log(`[parseCSVFiles] Initial text length: ${text.length}, first 100 chars:`, text.substring(0, 100))
       
       // Check if the text appears to be garbled (common with Shift-JIS files)
       // If so, try reading as Shift-JIS
       if (containsGarbledText(text)) {
+        console.log(`[parseCSVFiles] Detected garbled text, trying Shift-JIS encoding`)
         try {
           const buffer = await file.arrayBuffer()
           const decoder = new TextDecoder('shift-jis')
           text = decoder.decode(buffer)
+          console.log(`[parseCSVFiles] Successfully decoded as Shift-JIS`)
         } catch (encodingError) {
           // If Shift-JIS decoding fails, fall back to UTF-8
           console.warn('Failed to decode as Shift-JIS, using UTF-8:', encodingError)
         }
       }
       
+      console.log(`[parseCSVFiles] Parsing CSV content...`)
       const parsed = parseCSV(text, file.name)
+      console.log(`[parseCSVFiles] Parsed result:`, {
+        headers: parsed.headers,
+        rowCount: parsed.rows.length,
+        metadata: parsed.metadata
+      })
       parsedFiles.push(parsed)
     }
 
+    console.log(`[parseCSVFiles] Successfully parsed ${parsedFiles.length} files`)
     return {
       success: true,
       data: parsedFiles
     }
   } catch (error) {
+    console.error('[parseCSVFiles] Error:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : "CSV解析中にエラーが発生しました"
@@ -57,16 +122,23 @@ function containsGarbledText(text: string): boolean {
 }
 
 function parseCSV(text: string, fileName: string): ParsedCSVData {
+  console.log(`[parseCSV] Parsing file: ${fileName}`)
+  
   // Remove BOM if present
   const cleanText = removeBOM(text)
   const lines = cleanText.trim().split('\n')
+  console.log(`[parseCSV] Total lines: ${lines.length}, first line:`, lines[0]?.substring(0, 100))
   
   // Check if this is a test data file that should be treated as CHINAMI format
   const isTestDataFile = checkTestDataFile(fileName)
+  console.log(`[parseCSV] Is test data file: ${isTestDataFile}`)
   
   // If it's a test data file, parse it as standard format and mark it as CHINAMI
   if (isTestDataFile) {
-    const parsedData = isCASSFormat(lines) 
+    const isCASSFormatFile = isCASSFormat(lines)
+    console.log(`[parseCSV] Is CASS format: ${isCASSFormatFile}`)
+    
+    const parsedData = isCASSFormatFile 
       ? parseCASSFormat(lines, fileName)
       : parseStandardFormat(lines, fileName)
     
@@ -80,8 +152,10 @@ function parseCSV(text: string, fileName: string): ParsedCSVData {
   
   // Check format and parse accordingly for non-test files
   if (isCASSFormat(lines)) {
+    console.log(`[parseCSV] Parsing as CASS format`)
     return parseCASSFormat(lines, fileName)
   } else {
+    console.log(`[parseCSV] Parsing as standard format`)
     return parseStandardFormat(lines, fileName)
   }
 }
@@ -91,6 +165,11 @@ export function validateCSVStructure(
   dataSourceType: CSVDataSourceType,
   metadata?: ParsedCSVData['metadata']
 ): { valid: boolean; missingColumns?: string[] } {
+  console.log(`[validateCSVStructure] Validating for ${dataSourceType}:`, {
+    headers: headers.slice(0, 10),
+    metadata
+  })
+  
   // For CASS format, validation is different
   if (dataSourceType === 'CASS' && metadata?.format === 'CASS') {
     // CASS format should have Datetime column and at least one parameter
@@ -140,6 +219,25 @@ export function validateCSVStructure(
     
     if (headers.length < 2) {
       return { valid: false, missingColumns: ['At least one data column'] }
+    }
+    
+    return { valid: true }
+  }
+  
+  // For standard format, be more flexible
+  if (dataSourceType === 'standard') {
+    // Just check if we have at least one column that could be a timestamp
+    const hasTimeColumn = headers.some(h => 
+      h.toLowerCase().includes('timestamp') || 
+      h.toLowerCase().includes('datetime') || 
+      h.toLowerCase().includes('time') ||
+      h.toLowerCase().includes('date') ||
+      h === headers[0] // First column is often timestamp
+    )
+    
+    if (!hasTimeColumn && headers.length > 0) {
+      console.log('[validateCSVStructure] Standard format: considering first column as timestamp')
+      return { valid: true } // Accept any format with columns
     }
     
     return { valid: true }
@@ -208,7 +306,41 @@ export function mapCSVDataToStandardFormat(
     })
   }
 
-  // Regular handling for other formats
+  // For standard format or unknown formats, use flexible mapping
+  if (dataSourceType === 'standard' || !getDataSourceConfig(dataSourceType)) {
+    return parsedData.rows.map((row, rowIndex) => {
+      const standardData: StandardizedCSVData = {
+        plant,
+        machineNo,
+        sourceType: dataSourceType,
+        rowNumber: rowIndex + 1
+      }
+      
+      // Find timestamp column (first column or any column with time-related name)
+      const firstKey = Object.keys(row)[0]
+      const timeKey = Object.keys(row).find(key => 
+        key.toLowerCase().includes('datetime') || 
+        key.toLowerCase().includes('time') ||
+        key.toLowerCase().includes('timestamp') ||
+        key.toLowerCase().includes('date')
+      ) || firstKey
+      
+      if (timeKey && row[timeKey] !== null) {
+        standardData.timestamp = String(row[timeKey])
+      }
+      
+      // Include all columns as data
+      Object.entries(row).forEach(([key, value]) => {
+        if (value !== null) {
+          standardData[key] = value as string | number | undefined
+        }
+      })
+      
+      return standardData
+    })
+  }
+
+  // Regular handling for other formats with specific mappings
   const config = getDataSourceConfig(dataSourceType)
   const headerIndexMap = new Map<string, number>()
   
