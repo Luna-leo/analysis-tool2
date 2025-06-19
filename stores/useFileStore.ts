@@ -37,6 +37,7 @@ interface FileActions {
   setRenamingNode: (nodeId: string | null) => void
   createNewFolder: (parentId: string | null, name: string) => void
   createNewFile: (parentId: string | null, name: string) => void
+  createNewFileWithConfig: (parentId: string | null, name: string, config: { charts?: ChartComponent[], selectedDataSources?: EventInfo[] }) => void
   setCreatingNode: (type: "folder" | "file" | null, parentId: string | null) => void
   moveNode: (nodeId: string, targetId: string | null, position: "before" | "after" | "inside") => void
   setDraggedNode: (nodeId: string | null) => void
@@ -204,6 +205,36 @@ export const useFileStore = create<FileStore>()(
           type: "file",
           dataSources: [],
           charts: []
+        }
+
+        if (!parentId) {
+          // Add to root level
+          return { fileTree: [...state.fileTree, newFile] }
+        }
+
+        // Add to specific parent folder
+        const addToParent = (nodes: FileNode[]): FileNode[] => {
+          return addNodeToParent(nodes, parentId, newFile)
+        }
+
+        // Ensure parent folder is expanded
+        const newExpanded = new Set(state.expandedFolders)
+        newExpanded.add(parentId)
+
+        return { 
+          fileTree: addToParent(state.fileTree),
+          expandedFolders: newExpanded
+        }
+      }),
+
+      createNewFileWithConfig: (parentId: string | null, name: string, config: { charts?: ChartComponent[], selectedDataSources?: EventInfo[] }) => set((state) => {
+        const newFile: FileNode = {
+          id: `file_${Date.now()}`,
+          name,
+          type: "file",
+          dataSources: [],
+          charts: config.charts || [],
+          selectedDataSources: config.selectedDataSources
         }
 
         if (!parentId) {

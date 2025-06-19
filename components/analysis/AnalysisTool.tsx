@@ -41,7 +41,7 @@ export default function AnalysisTool() {
   const [templateListOpen, setTemplateListOpen] = React.useState(false)
   const [saveTemplateOpen, setSaveTemplateOpen] = React.useState(false)
   
-  const { openTabs, activeTab, openFile, fileTree, setActiveTab, toggleFolder, setFileTree, updateFileCharts, createNewFile, updateFileDataSources } = useFileStore()
+  const { openTabs, activeTab, openFile, fileTree, setActiveTab, toggleFolder, setFileTree, updateFileCharts, createNewFile, createNewFileWithConfig, updateFileDataSources } = useFileStore()
   const { loadParameters } = useParameterStore()
   const { loadState } = useGraphStateStore()
   const { updateLayoutSettings, updateChartSettings } = useLayoutStore()
@@ -111,55 +111,33 @@ export default function AnalysisTool() {
       counter++
     }
     
-    // Create new file with unique ID
-    const newFileId = `file_${Date.now()}`
-    const newFile: FileNode = {
-      id: newFileId,
-      name: uniqueFileName,
-      type: "file",
-      dataSources: [],
+    // Create new file with charts and data sources
+    createNewFileWithConfig(null, uniqueFileName, {
       charts: config.charts,
       selectedDataSources: config.selectedDataSources
-    }
+    })
     
-    // Create the file
-    createNewFile(null, uniqueFileName)
-    
-    // Open the new file after a short delay
-    setTimeout(() => {
-      // Find the newly created file by name
-      const createdFile = fileTree.find(f => f.name === uniqueFileName && f.type === 'file')
-      if (createdFile) {
-        // Open the file
-        openFile(createdFile)
-        
-        // Apply configuration settings
-        updateLayoutSettings(createdFile.id, config.layoutSettings)
-        updateChartSettings(createdFile.id, config.chartSettings)
-        updateFileCharts(createdFile.id, config.charts)
-        
-        // Apply selected data sources if available
-        if (config.selectedDataSources) {
-          const updatedFile = { ...createdFile, selectedDataSources: config.selectedDataSources }
-          const updateInTree = (nodes: FileNode[]): FileNode[] => {
-            return nodes.map(node => {
-              if (node.id === createdFile.id) {
-                return updatedFile
-              }
-              if (node.children) {
-                return { ...node, children: updateInTree(node.children) }
-              }
-              return node
-            })
-          }
-          setFileTree(updateInTree(fileTree))
+    // Use subscription to wait for the file to be created
+    const unsubscribe = useFileStore.subscribe(
+      (state) => state.fileTree,
+      (fileTree) => {
+        // Find the newly created file
+        const createdFile = fileTree.find(f => f.name === uniqueFileName && f.type === 'file')
+        if (createdFile) {
+          // Unsubscribe immediately
+          unsubscribe()
+          
+          // Open the file
+          openFile(createdFile)
+          
+          // Apply configuration settings
+          updateLayoutSettings(createdFile.id, config.layoutSettings)
+          updateChartSettings(createdFile.id, config.chartSettings)
+          
+          toast.success(`Created new page "${uniqueFileName}" with imported configuration`)
         }
-        
-        toast.success(`Created new page "${uniqueFileName}" with imported configuration`)
-      } else {
-        toast.error('Failed to create new page')
       }
-    }, 200)
+    )
   }
   
   // Helper function to find a node in the file tree
