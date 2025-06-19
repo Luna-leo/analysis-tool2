@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import type { ChartComponent, LayoutSettings, ChartSettings } from '@/types'
+import type { ChartComponent, LayoutSettings, ChartSettings, EventInfo } from '@/types'
 import type { ChartGridConfig, ConfigValidationResult, ImportOptions } from '@/types/chart-config'
 import { toast } from 'sonner'
 
@@ -71,7 +71,8 @@ export function useChartConfigExport() {
     fileName: string,
     layoutSettings: LayoutSettings,
     chartSettings: ChartSettings,
-    charts: ChartComponent[]
+    charts: ChartComponent[],
+    selectedDataSources?: EventInfo[]
   ) => {
     setIsExporting(true)
 
@@ -87,6 +88,7 @@ export function useChartConfigExport() {
         layoutSettings,
         chartSettings,
         charts,
+        selectedDataSources,
         dataSourceInfo: {
           // Extract unique data sources and parameters
           requiredDataSources: [...new Set(charts.map(c => c.dataSource?.name).filter(Boolean) as string[])],

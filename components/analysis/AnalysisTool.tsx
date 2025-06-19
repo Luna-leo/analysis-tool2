@@ -41,7 +41,7 @@ export default function AnalysisTool() {
   const [templateListOpen, setTemplateListOpen] = React.useState(false)
   const [saveTemplateOpen, setSaveTemplateOpen] = React.useState(false)
   
-  const { openTabs, activeTab, openFile, fileTree, setActiveTab, toggleFolder, setFileTree, updateFileCharts, createNewFile } = useFileStore()
+  const { openTabs, activeTab, openFile, fileTree, setActiveTab, toggleFolder, setFileTree, updateFileCharts, createNewFile, updateFileDataSources } = useFileStore()
   const { loadParameters } = useParameterStore()
   const { loadState } = useGraphStateStore()
   const { updateLayoutSettings, updateChartSettings } = useLayoutStore()
@@ -75,6 +75,29 @@ export default function AnalysisTool() {
     // Apply charts
     updateFileCharts(activeTab, config.charts)
     
+    // Apply selected data sources if available
+    if (config.selectedDataSources) {
+      // Find the current file node
+      const currentFile = openTabs.find(tab => tab.id === activeTab)
+      if (currentFile) {
+        // Update the file with selected data sources
+        const updatedFile = { ...currentFile, selectedDataSources: config.selectedDataSources }
+        // Update in the file tree
+        const updateInTree = (nodes: FileNode[]): FileNode[] => {
+          return nodes.map(node => {
+            if (node.id === activeTab) {
+              return updatedFile
+            }
+            if (node.children) {
+              return { ...node, children: updateInTree(node.children) }
+            }
+            return node
+          })
+        }
+        setFileTree(updateInTree(fileTree))
+      }
+    }
+    
     toast.success('Configuration imported successfully')
   }
   
@@ -95,7 +118,8 @@ export default function AnalysisTool() {
       name: uniqueFileName,
       type: "file",
       dataSources: [],
-      charts: config.charts
+      charts: config.charts,
+      selectedDataSources: config.selectedDataSources
     }
     
     // Create the file
@@ -113,6 +137,23 @@ export default function AnalysisTool() {
         updateLayoutSettings(createdFile.id, config.layoutSettings)
         updateChartSettings(createdFile.id, config.chartSettings)
         updateFileCharts(createdFile.id, config.charts)
+        
+        // Apply selected data sources if available
+        if (config.selectedDataSources) {
+          const updatedFile = { ...createdFile, selectedDataSources: config.selectedDataSources }
+          const updateInTree = (nodes: FileNode[]): FileNode[] => {
+            return nodes.map(node => {
+              if (node.id === createdFile.id) {
+                return updatedFile
+              }
+              if (node.children) {
+                return { ...node, children: updateInTree(node.children) }
+              }
+              return node
+            })
+          }
+          setFileTree(updateInTree(fileTree))
+        }
         
         toast.success(`Created new page "${uniqueFileName}" with imported configuration`)
       } else {

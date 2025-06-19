@@ -1,4 +1,4 @@
-import type { ChartComponent, LayoutSettings, ChartSettings } from './index'
+import type { ChartComponent, LayoutSettings, ChartSettings, EventInfo } from './index'
 
 /**
  * ChartGrid configuration export format
@@ -14,6 +14,7 @@ export interface ChartGridConfig {
   layoutSettings: LayoutSettings
   chartSettings: ChartSettings
   charts: ChartComponent[]
+  selectedDataSources?: EventInfo[] // Selected data sources for the charts
   dataSourceInfo?: {
     // Optional metadata about data sources for validation
     requiredDataSources?: string[]

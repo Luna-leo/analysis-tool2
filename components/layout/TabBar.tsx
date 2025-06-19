@@ -281,6 +281,7 @@ export function TabBar({
               layoutSettings={layoutSettings}
               chartSettings={chartSettings}
               charts={currentFile.charts || []}
+              selectedDataSources={currentFile.selectedDataSources}
               onImport={onConfigImport || (() => {})}
               onCreateNewPage={onCreateNewPage}
             />

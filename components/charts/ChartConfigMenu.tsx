@@ -23,7 +23,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useChartConfigExport } from '@/hooks/useChartConfigExport'
-import type { ChartComponent, LayoutSettings, ChartSettings } from '@/types'
+import type { ChartComponent, LayoutSettings, ChartSettings, EventInfo } from '@/types'
 import type { ChartGridConfig } from '@/types/chart-config'
 
 interface ChartConfigMenuProps {
@@ -32,6 +32,7 @@ interface ChartConfigMenuProps {
   layoutSettings: LayoutSettings
   chartSettings: ChartSettings
   charts: ChartComponent[]
+  selectedDataSources?: EventInfo[]
   onImport: (config: ChartGridConfig, mode?: 'overwrite' | 'new-page') => void
   onCreateNewPage?: (fileName: string, config: ChartGridConfig) => void
 }
@@ -42,6 +43,7 @@ export function ChartConfigMenu({
   layoutSettings,
   chartSettings,
   charts,
+  selectedDataSources,
   onImport,
   onCreateNewPage
 }: ChartConfigMenuProps) {
@@ -69,7 +71,7 @@ export function ChartConfigMenu({
   const presetNames = Object.keys(presets)
 
   const handleExport = () => {
-    exportConfig(fileId, fileName, layoutSettings, chartSettings, charts)
+    exportConfig(fileId, fileName, layoutSettings, chartSettings, charts, selectedDataSources)
   }
 
   const handleImportClick = () => {
