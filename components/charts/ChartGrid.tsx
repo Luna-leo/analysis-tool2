@@ -19,7 +19,7 @@ import { useLayoutStore } from "@/stores/useLayoutStore"
 import { useUIStore } from "@/stores/useUIStore"
 import { SourceSelectionBanner } from "./SourceSelectionBanner"
 import { ChartPagination } from "./ChartPagination"
-import { getLayoutMargins, getLayoutLabelOffsets } from "@/utils/chart/marginCalculator"
+import { getLayoutMargins, getLayoutLabelOffsets, getDefaultChartSettings } from "@/utils/chart/marginCalculator"
 
 interface ChartGridProps {
   file: FileNode
@@ -51,16 +51,8 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
     currentPage: 0,
   }
   
-  const currentChartSettings = chartSettingsMap[file.id] || {
-    showXAxis: true,
-    showYAxis: true,
-    showGrid: true,
-    showLegend: true,
-    showChartTitle: true,
-    margins: undefined,
-    xLabelOffset: undefined,
-    yLabelOffset: undefined
-  }
+  const currentChartSettings = chartSettingsMap[file.id] || 
+    getDefaultChartSettings(currentSettings.columns, currentSettings.rows)
 
   // Calculate pagination values
   const itemsPerPage = currentSettings.pagination ? currentSettings.columns * currentSettings.rows : localCharts.length

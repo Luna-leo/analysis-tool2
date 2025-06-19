@@ -10,12 +10,27 @@ interface ChartPreviewProps {
   selectedDataSourceItems: EventInfo[]
   setEditingChart?: (chart: ChartComponent) => void
   dataSourceStyles?: { [dataSourceId: string]: any }
+  chartSettings?: {
+    showXAxis: boolean
+    showYAxis: boolean
+    showGrid: boolean
+    showLegend?: boolean
+    showChartTitle?: boolean
+    margins?: {
+      top: number
+      right: number
+      bottom: number
+      left: number
+    }
+    xLabelOffset?: number
+    yLabelOffset?: number
+  }
   enableZoom?: boolean
   enablePan?: boolean
   zoomMode?: 'x' | 'xy' | 'auto'
 }
 
-export const ChartPreview = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, dataSourceStyles, enableZoom = true, enablePan = true, zoomMode = 'auto' }: ChartPreviewProps) => {
+export const ChartPreview = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, dataSourceStyles, chartSettings, enableZoom = true, enablePan = true, zoomMode = 'auto' }: ChartPreviewProps) => {
   return (
     <div className="w-full h-full flex flex-col">
       <ChartPreviewGraph
@@ -23,6 +38,7 @@ export const ChartPreview = React.memo(({ editingChart, selectedDataSourceItems,
         selectedDataSourceItems={selectedDataSourceItems}
         setEditingChart={setEditingChart}
         dataSourceStyles={dataSourceStyles}
+        chartSettings={chartSettings}
         enableZoom={enableZoom}
         enablePan={enablePan}
         zoomMode={zoomMode}

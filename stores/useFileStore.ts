@@ -3,6 +3,7 @@ import { devtools, subscribeWithSelector } from 'zustand/middleware'
 import type { FileNode, ChartComponent, EventInfo, DataSourceStyle } from '@/types'
 import { mockFileTree } from '@/data/mockData'
 import { useGraphStateStore } from './useGraphStateStore'
+import { useLayoutStore } from './useLayoutStore'
 import { traverseAndUpdate, findNodeById, addNodeToParent } from '@/utils/treeUtils'
 import { ChartOperations } from '@/services/chartOperations'
 
@@ -76,6 +77,10 @@ export const useFileStore = create<FileStore>()(
         if (exists) {
           return { activeTab: file.id }
         }
+        
+        // Initialize layout and chart settings for this file
+        const layoutStore = useLayoutStore.getState()
+        layoutStore.initializeSettings(file.id)
         
         // Check if we have saved chart data for this file
         const graphStateStore = useGraphStateStore.getState()

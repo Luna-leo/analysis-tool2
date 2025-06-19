@@ -89,3 +89,26 @@ export const getLayoutMargins = (
 export const getLayoutKey = (columns: number, rows: number): string => {
   return `${columns}x${rows}`
 }
+
+/**
+ * Get default chart settings based on grid layout
+ * This ensures consistent settings between ChartGrid and ChartPreview
+ */
+export const getDefaultChartSettings = (columns: number, rows: number) => {
+  const margins = getLayoutMargins(columns, rows)
+  const labelOffsets = getLayoutLabelOffsets(columns, rows)
+  
+  return {
+    showXAxis: true,
+    showYAxis: true,
+    showGrid: true,
+    showLegend: true,
+    showChartTitle: true,
+    margins,
+    xLabelOffset: labelOffsets.xLabelOffset,
+    yLabelOffset: labelOffsets.yLabelOffset,
+    marginMode: 'auto' as const,
+    autoMarginScale: 1.0,
+    marginOverrides: {}
+  }
+}

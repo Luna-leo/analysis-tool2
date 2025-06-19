@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { devtools, subscribeWithSelector } from 'zustand/middleware'
 import type { LayoutSettings, ChartSettings } from '@/types'
 import { useGraphStateStore } from './useGraphStateStore'
-import { getLayoutMargins, getLayoutLabelOffsets } from '@/utils/chart/marginCalculator'
+import { getLayoutMargins, getLayoutLabelOffsets, getDefaultChartSettings } from '@/utils/chart/marginCalculator'
 
 interface LayoutState {
   layoutSettingsMap: Record<string, LayoutSettings>
@@ -25,21 +25,10 @@ const defaultLayoutSettings: LayoutSettings = {
   pagination: true,
 }
 
-const defaultChartSettings: ChartSettings = {
-  showXAxis: true,
-  showYAxis: true,
-  showGrid: true,
-  showLegend: true,
-  showChartTitle: false,
-  margins: getLayoutMargins(
-    defaultLayoutSettings.columns,
-    defaultLayoutSettings.rows
-  ),
-  ...getLayoutLabelOffsets(
-    defaultLayoutSettings.columns,
-    defaultLayoutSettings.rows
-  )
-}
+const defaultChartSettings: ChartSettings = getDefaultChartSettings(
+  defaultLayoutSettings.columns,
+  defaultLayoutSettings.rows
+)
 
 export const useLayoutStore = create<LayoutStore>()(
   devtools(
@@ -69,26 +58,38 @@ export const useLayoutStore = create<LayoutStore>()(
         }
       }),
 
-      updateChartSettings: (fileId, settings) => set((state) => ({
-        chartSettingsMap: {
-          ...state.chartSettingsMap,
-          [fileId]: {
-            ...(state.chartSettingsMap[fileId] || defaultChartSettings),
-            ...settings,
+      updateChartSettings: (fileId, settings) => set((state) => {
+        const layoutSettings = state.layoutSettingsMap[fileId] || defaultLayoutSettings
+        const currentChartSettings = state.chartSettingsMap[fileId] || 
+          getDefaultChartSettings(layoutSettings.columns, layoutSettings.rows)
+        
+        return {
+          chartSettingsMap: {
+            ...state.chartSettingsMap,
+            [fileId]: {
+              ...currentChartSettings,
+              ...settings,
+            },
           },
-        },
-      })),
+        }
+      }),
 
-      initializeSettings: (fileId) => set((state) => ({
-        layoutSettingsMap: {
-          ...state.layoutSettingsMap,
-          [fileId]: state.layoutSettingsMap[fileId] || { ...defaultLayoutSettings },
-        },
-        chartSettingsMap: {
-          ...state.chartSettingsMap,
-          [fileId]: state.chartSettingsMap[fileId] || { ...defaultChartSettings },
-        },
-      })),
+      initializeSettings: (fileId) => set((state) => {
+        const layoutSettings = state.layoutSettingsMap[fileId] || { ...defaultLayoutSettings }
+        const chartSettings = state.chartSettingsMap[fileId] || 
+          getDefaultChartSettings(layoutSettings.columns, layoutSettings.rows)
+        
+        return {
+          layoutSettingsMap: {
+            ...state.layoutSettingsMap,
+            [fileId]: layoutSettings,
+          },
+          chartSettingsMap: {
+            ...state.chartSettingsMap,
+            [fileId]: chartSettings,
+          },
+        }
+      }),
     })),
     {
       name: 'layout-store',

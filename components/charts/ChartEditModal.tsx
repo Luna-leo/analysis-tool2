@@ -34,7 +34,7 @@ export function ChartEditModal() {
     clearSelectedCharts
   } = useUIStore()
   const { openTabs, activeTab: activeFileTab, updateFileCharts, updateFileDataSources } = useFileStore()
-  const { layoutSettingsMap } = useLayoutStore()
+  const { layoutSettingsMap, chartSettingsMap } = useLayoutStore()
   const [activeTab, setActiveTab] = useState<TabType>("datasource")
   const [dataSourceStyles, setDataSourceStyles] = useState<{ [dataSourceId: string]: any }>({})
   const [previewMode, setPreviewMode] = useState<'preview' | 'grid'>('preview')
@@ -115,9 +115,11 @@ export function ChartEditModal() {
 
   if (!editingChart) return null
 
+  // Get the target file ID for this chart
+  const targetFileId = editingChart.fileId || activeFileTab
+
   const handleSave = (closeModal = true) => {
     // Find the current file based on fileId from editingChart
-    const targetFileId = editingChart.fileId || activeFileTab
     const currentFile = openTabs.find(tab => tab.id === targetFileId)
     
     if (currentFile) {
@@ -279,7 +281,6 @@ export function ChartEditModal() {
     setActiveTab(newTab)
   }
 
-  const targetFileId = editingChart?.fileId || activeFileTab
   const currentFile = openTabs.find(tab => tab.id === targetFileId)
   const selectedDataSourceItems = currentFile?.selectedDataSources || []
   const allCharts = currentFile?.charts || []
@@ -395,6 +396,7 @@ export function ChartEditModal() {
                   selectedDataSourceItems={selectedDataSourceItems}
                   setEditingChart={setEditingChart}
                   dataSourceStyles={dataSourceStyles}
+                  chartSettings={chartSettingsMap[targetFileId]}
                   enableZoom={true}
                   enablePan={true}
                   zoomMode="auto"
