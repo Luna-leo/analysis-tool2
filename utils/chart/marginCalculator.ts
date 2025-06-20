@@ -16,8 +16,110 @@ export interface MarginConfig {
 }
 
 /**
+ * Unified margin configuration for consistent layout across all grid sizes
+ */
+export interface UnifiedMarginConfig {
+  // Base ratios (percentage of container dimensions)
+  baseRatios: {
+    top: number    // 0.08 (8%)
+    right: number  // 0.05 (5%)
+    bottom: number // 0.12 (12%)
+    left: number   // 0.10 (10%)
+  }
+  
+  // Content-based minimums (pixels)
+  contentMinimums: {
+    top: number    // For title: 20px
+    right: number  // Right padding: 15px
+    bottom: number // For X-axis label: 35px
+    left: number   // For Y-axis label: 45px
+  }
+  
+  // Absolute maximums (pixels)
+  absoluteMaximums: {
+    top: number    // 60px
+    right: number  // 60px
+    bottom: number // 80px
+    left: number   // 80px
+  }
+}
+
+/**
+ * Default unified margin configuration
+ */
+export const DEFAULT_UNIFIED_MARGIN_CONFIG: UnifiedMarginConfig = {
+  baseRatios: {
+    top: 0.08,
+    right: 0.05,
+    bottom: 0.12,
+    left: 0.10
+  },
+  contentMinimums: {
+    top: 20,
+    right: 15,
+    bottom: 35,
+    left: 45
+  },
+  absoluteMaximums: {
+    top: 60,
+    right: 60,
+    bottom: 80,
+    left: 80
+  }
+}
+
+/**
+ * Unified label offsets for consistent positioning
+ */
+export const UNIFIED_LABEL_OFFSETS = {
+  x: 30,  // X-axis label offset from axis
+  y: 35   // Y-axis label offset from axis
+}
+
+/**
+ * Calculate unified margins based on container dimensions
+ * This is the main function for the new margin system
+ */
+export const calculateUnifiedMargins = (
+  containerWidth: number,
+  containerHeight: number,
+  config: UnifiedMarginConfig = DEFAULT_UNIFIED_MARGIN_CONFIG
+): { top: number; right: number; bottom: number; left: number } => {
+  return {
+    top: Math.min(
+      config.absoluteMaximums.top,
+      Math.max(
+        config.contentMinimums.top,
+        Math.round(containerHeight * config.baseRatios.top)
+      )
+    ),
+    right: Math.min(
+      config.absoluteMaximums.right,
+      Math.max(
+        config.contentMinimums.right,
+        Math.round(containerWidth * config.baseRatios.right)
+      )
+    ),
+    bottom: Math.min(
+      config.absoluteMaximums.bottom,
+      Math.max(
+        config.contentMinimums.bottom,
+        Math.round(containerHeight * config.baseRatios.bottom)
+      )
+    ),
+    left: Math.min(
+      config.absoluteMaximums.left,
+      Math.max(
+        config.contentMinimums.left,
+        Math.round(containerWidth * config.baseRatios.left)
+      )
+    )
+  }
+}
+
+/**
  * Get layout size category (legacy - kept for backward compatibility)
- * @deprecated Use getUnifiedLayoutCategory instead
+ * @deprecated Use calculateUnifiedMargins instead
  */
 const getLayoutCategory = (columns: number, rows: number): 'small' | 'medium' | 'large' => {
   const totalCells = columns * rows
@@ -345,25 +447,22 @@ export const getDefaultChartSettings = (
   containerWidth?: number,
   containerHeight?: number
 ) => {
-  // Create layout context if dimensions are provided
-  const context = containerWidth && containerHeight
-    ? createLayoutContext(columns, rows, containerWidth, containerHeight)
-    : null
+  // For the new unified system, we always return percentage-based margins
+  // that will be calculated at render time based on actual container size
+  const margins = {
+    top: '8%',
+    right: '5%',
+    bottom: '12%',
+    left: '10%'
+  }
   
-  // Use unified category if context is available, otherwise fall back to legacy
-  const category = context 
-    ? getUnifiedLayoutCategory(context)
-    : getLayoutCategory(columns, rows)
-    
-  const margins = usePercentageMargins 
-    ? getLayoutMarginsPercentage(columns, rows)
-    : getLayoutMargins(columns, rows)
-  const labelOffsets = getLayoutLabelOffsets(columns, rows)
+  // Use unified label offsets
+  const labelOffsets = UNIFIED_LABEL_OFFSETS
   
-  // Conditionally show elements based on layout size
-  const showChartTitle = category !== 'small' // Hide title for 3x3 and smaller
-  const showLegend = true // Always show legend but position will be optimized
-  const showGrid = category !== 'small' || (columns <= 3 && rows <= 3) // Show grid for 3x3 but not 4x4
+  // Simplified display settings - no special cases for different grid sizes
+  const showChartTitle = true
+  const showLegend = true
+  const showGrid = true
   
   return {
     showXAxis: true,
@@ -372,9 +471,9 @@ export const getDefaultChartSettings = (
     showLegend,
     showChartTitle,
     margins,
-    xLabelOffset: labelOffsets.xLabelOffset,
-    yLabelOffset: labelOffsets.yLabelOffset,
-    marginMode: (usePercentageMargins ? 'percentage' : 'fixed') as 'percentage' | 'fixed',
+    xLabelOffset: labelOffsets.x,
+    yLabelOffset: labelOffsets.y,
+    marginMode: 'unified' as any, // New margin mode
     autoMarginScale: 1.0,
     marginOverrides: {}
   }

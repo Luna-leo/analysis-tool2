@@ -195,7 +195,7 @@ export interface ChartSettings {
   margins?: ChartMargins | { top: string | number; right: string | number; bottom: string | number; left: string | number }
   xLabelOffset?: number
   yLabelOffset?: number
-  marginMode?: 'auto' | 'manual' | 'percentage' | 'fixed' | 'adaptive'
+  marginMode?: 'auto' | 'manual' | 'percentage' | 'fixed' | 'adaptive' | 'unified'
   autoMarginScale?: number
   marginOverrides?: Record<string, any>
 }

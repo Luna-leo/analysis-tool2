@@ -20,7 +20,9 @@ import {
   createLayoutContext, 
   getUnifiedLayoutCategory,
   getUnifiedMinimumMargins,
-  getUnifiedMaximumMargins 
+  getUnifiedMaximumMargins,
+  calculateUnifiedMargins,
+  DEFAULT_UNIFIED_MARGIN_CONFIG
 } from "@/utils/chart/marginCalculator"
 
 interface ChartPreviewGraphProps {
@@ -600,51 +602,15 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           // Clear everything
           svg.selectAll("*").remove()
 
-          // Calculate margins based on mode
+          // Calculate margins using the unified system
           let margin = { top: 20, right: 40, bottom: 60, left: 60 }
           
-          if (chartSettings?.marginMode === 'percentage' && mergedChart.margins) {
-            // Create layout context for individual chart (always 1x1)
-            // Individual charts should not be further divided by grid layout
-            const layoutContext = createLayoutContext(
-              1,  // Individual chart is always 1x1
-              1,  // Individual chart is always 1x1
-              dimensions.width,
-              dimensions.height
-            )
-            
-            // Get unified constraints based on layout context
-            const minMargins = getUnifiedMinimumMargins(layoutContext)
-            const maxMargins = getUnifiedMaximumMargins(layoutContext)
-            
-            // For high-density layouts (3x3, 4x4), apply stricter constraints
-            if (gridLayout && gridLayout.columns >= 3 && gridLayout.rows >= 3) {
-              // Override with even stricter limits for dense grids
-              maxMargins.left = Math.min(maxMargins.left, 40)
-              maxMargins.right = Math.min(maxMargins.right, 20)
-              // Reduce minimum margins for dense layouts
-              minMargins.left = Math.min(minMargins.left, 30)
-              minMargins.right = Math.min(minMargins.right, 15)
-              
-              // Special handling for 4x4 layout - balanced constraints
-              if (gridLayout.columns === 4 && gridLayout.rows === 4) {
-                minMargins.left = 25    // Balanced left margin
-                minMargins.right = 12   // Balanced right margin
-                minMargins.top = 15     // Increased for proper spacing
-                minMargins.bottom = 20   // Increased for axis labels
-                maxMargins.left = 35    // Reasonable max
-                maxMargins.right = 18   // Reasonable max
-              }
-            }
-            
-            margin = {
-              top: calculateMarginInPixels(mergedChart.margins.top, dimensions.height, minMargins.top, maxMargins.top),
-              right: calculateMarginInPixels(mergedChart.margins.right, dimensions.width, minMargins.right, maxMargins.right),
-              bottom: calculateMarginInPixels(mergedChart.margins.bottom, dimensions.height, minMargins.bottom, maxMargins.bottom),
-              left: calculateMarginInPixels(mergedChart.margins.left, dimensions.width, minMargins.left, maxMargins.left)
-            }
-          } else {
-            margin = mergedChart.margins || margin
+          if (chartSettings?.marginMode === 'unified' || chartSettings?.marginMode === 'percentage') {
+            // Use the new unified margin calculation
+            margin = calculateUnifiedMargins(dimensions.width, dimensions.height)
+          } else if (mergedChart.margins) {
+            // Fall back to existing margins if not using unified mode
+            margin = mergedChart.margins
           }
           
           const width = dimensions.width - margin.left - margin.right
