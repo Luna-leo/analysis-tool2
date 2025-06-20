@@ -867,8 +867,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         <>
           {/* Check if this is being used in ChartCard (has chartSettings) */}
           {chartSettings ? (
-            // Compact mode for ChartCard - adjust position and variant based on layout
-            <div className={`absolute ${isCompactLayout ? 'bottom-1 right-1' : 'bottom-1 right-1'} z-10`}>
+            // Compact mode for ChartCard - show on hover
+            <div className={`absolute ${isCompactLayout ? 'bottom-1 right-1' : 'bottom-1 right-1'} z-10 transition-opacity duration-200 ${isMouseOver ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
               <ZoomControls
                 onZoomIn={zoomIn}
                 onZoomOut={zoomOut}

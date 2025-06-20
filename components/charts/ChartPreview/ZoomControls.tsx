@@ -53,7 +53,6 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({
   const containerClass = `
     ${position === 'absolute' ? 'absolute bottom-4 right-4' : ''}
     flex ${isHorizontal ? 'flex-row' : 'flex-col'} ${isUltraCompact ? 'gap-0' : 'gap-0.5'}
-    ${(isCompact || isUltraCompact) ? 'opacity-70 hover:opacity-100 transition-opacity' : ''}
   `.trim();
   
   const buttonSize = isUltraCompact ? 'w-6 h-6' : isCompact ? 'w-6 h-6' : 'w-8 h-8';
