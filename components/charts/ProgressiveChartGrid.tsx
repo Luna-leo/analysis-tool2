@@ -32,8 +32,11 @@ export const ProgressiveChartGrid = React.memo(function ProgressiveChartGrid({
   const [localCharts, setLocalCharts] = useState(file.charts || [])
   
   const { layoutSettingsMap } = useLayoutStore()
-  const { updateFileCharts } = useFileStore()
+  const { updateFileCharts, openTabs } = useFileStore()
   const { gridSelectionMode, sourceSelectionMode } = useUIStore()
+  
+  // Get the current file from openTabs to ensure we have the latest version
+  const currentFile = openTabs.find(tab => tab.id === file.id) || file
   
   const currentSettings = layoutSettingsMap[file.id] || {
     showFileName: true,
@@ -45,9 +48,10 @@ export const ProgressiveChartGrid = React.memo(function ProgressiveChartGrid({
   
   // Update local charts when file.charts changes
   useEffect(() => {
-    setLocalCharts(file.charts || [])
+    // Use currentFile to ensure we have the latest charts
+    setLocalCharts(currentFile.charts || [])
     setRenderedCount(0) // Reset rendered count
-  }, [file.charts])
+  }, [currentFile.charts])
   
   // Progressive rendering effect
   useEffect(() => {
@@ -131,7 +135,7 @@ export const ProgressiveChartGrid = React.memo(function ProgressiveChartGrid({
     setDragOverIndex(null)
   }, [])
   
-  if (!file.charts || file.charts.length === 0) {
+  if (!currentFile.charts || currentFile.charts.length === 0) {
     return (
       <div className="p-6">
         <div className="h-full flex items-center justify-center text-muted-foreground">
@@ -192,8 +196,8 @@ export const ProgressiveChartGrid = React.memo(function ProgressiveChartGrid({
                   onDragEnd={handleDragEnd}
                   isDragging={draggedIndex === index}
                   dragOverIndex={dragOverIndex}
-                  selectedDataSources={file.selectedDataSources}
-                  dataSourceStyles={file.dataSourceStyles}
+                  selectedDataSources={currentFile.selectedDataSources}
+                  dataSourceStyles={currentFile.dataSourceStyles}
                   width={currentSettings.width}
                   height={currentSettings.height}
                 />

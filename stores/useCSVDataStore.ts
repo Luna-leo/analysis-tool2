@@ -63,6 +63,9 @@ interface CSVDataStore {
   
   // Load all datasets from IndexedDB
   loadFromIndexedDB: () => Promise<void>
+  
+  // Check if data exists for a period
+  hasData: (periodId: string) => Promise<boolean>
 }
 
 
@@ -351,6 +354,29 @@ export const useCSVDataStore = create<CSVDataStore>()(
           }
         } catch (error) {
           console.error('Failed to load from IndexedDB:', error)
+        }
+      },
+      
+      hasData: async (periodId) => {
+        const state = get()
+        let datasets = state.datasets
+        
+        // Ensure datasets is a Map
+        datasets = ensureMap<string, CSVDataSet>(datasets)
+        
+        // First check if dataset exists in state
+        if (datasets.has(periodId)) {
+          return true
+        }
+        
+        // Check if data exists in IndexedDB
+        try {
+          const { getCSVDataFromDB } = await import('@/utils/indexedDBUtils')
+          const data = await getCSVDataFromDB(periodId)
+          return data !== null && data.length > 0
+        } catch (error) {
+          console.error('Error checking data existence:', error)
+          return false
         }
       }
     }),

@@ -144,7 +144,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   const renderingRef = useRef<boolean>(false)
   const animationFrameRef = useRef<number | null>(null)
   const cleanupRef = useRef<(() => void) | null>(null)
-  const [dimensions, setDimensions] = React.useState({ width: 400, height: 300 })
+  const [dimensions, setDimensions] = React.useState({ width: 600, height: 400 })
   const legendRef = useRef<HTMLDivElement>(null)
   const [legendPos, setLegendPos] = React.useState<{ x: number; y: number } | null>(null)
   const legendRatioRef = useRef<{ xRatio: number; yRatio: number } | null>(
@@ -175,6 +175,20 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   
   // Track pending zoom transform
   const pendingZoomTransform = useRef<d3.ZoomTransform | null>(null)
+  
+  // Track previous parameters to detect changes
+  const prevParamsRef = useRef<{
+    xParameter?: string
+    yAxisParams?: string
+    xAxisType?: string
+  }>({})
+  
+  // Store reset zoom function ref to use in effect
+  const resetZoomRef = useRef<(() => void) | null>(null)
+  
+  // Track data version to detect actual data changes
+  const dataVersionRef = useRef<string>('')
+  const isWaitingForNewDataRef = useRef(false)
   
   // Extract render-critical properties from mergedChart to optimize re-renders
   const chartRenderProps = useMemo(() => ({
@@ -347,16 +361,95 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     }), []),
   })
   
+  // Store resetZoom in ref for use in effects
+  useEffect(() => {
+    resetZoomRef.current = resetZoom
+  }, [resetZoom])
+  
+  // Reset scales when parameters change
+  useEffect(() => {
+    const currentParams = {
+      xParameter: mergedChart.xParameter,
+      yAxisParams: JSON.stringify(mergedChart.yAxisParams),
+      xAxisType: mergedChart.xAxisType
+    }
+    
+    // Check if any parameter has changed
+    const hasParamsChanged = 
+      prevParamsRef.current.xParameter !== currentParams.xParameter ||
+      prevParamsRef.current.yAxisParams !== currentParams.yAxisParams ||
+      prevParamsRef.current.xAxisType !== currentParams.xAxisType
+    
+    if (hasParamsChanged && prevParamsRef.current.xParameter !== undefined) {
+      
+      // Reset all scale-related state
+      isInitialRenderComplete.current = false
+      baseScalesRef.current = { xScale: null, yScale: null }
+      currentScalesRef.current = { xScale: null, yScale: null }
+      pendingZoomTransform.current = null
+      isWaitingForNewDataRef.current = true // Mark that we're waiting for new data
+      
+      // Reset zoom if available
+      if (resetZoomRef.current) {
+        resetZoomRef.current()
+      }
+      
+      // Force re-render
+      setZoomVersion(v => v + 1)
+    }
+    
+    // Update previous params
+    prevParamsRef.current = currentParams
+  }, [mergedChart.xParameter, mergedChart.yAxisParams, mergedChart.xAxisType])
+  
+  // Track data changes and force scale recreation when new data arrives
+  useEffect(() => {
+    if (!memoizedChartData || isLoadingData) return
+    
+    // Create a data fingerprint to detect actual data changes
+    const dataFingerprint = JSON.stringify({
+      length: memoizedChartData.length,
+      firstItems: memoizedChartData.slice(0, 5).map(d => ({
+        x: d.x instanceof Date ? d.x.getTime() : d.x,
+        y: d.y,
+        series: d.series
+      })),
+      lastItems: memoizedChartData.slice(-5).map(d => ({
+        x: d.x instanceof Date ? d.x.getTime() : d.x,
+        y: d.y,
+        series: d.series
+      }))
+    })
+    
+    const dataChanged = dataFingerprint !== dataVersionRef.current
+    
+    if (dataChanged && isWaitingForNewDataRef.current) {
+      
+      // Force scale recreation with new data
+      isInitialRenderComplete.current = false
+      baseScalesRef.current = { xScale: null, yScale: null }
+      currentScalesRef.current = { xScale: null, yScale: null }
+      isWaitingForNewDataRef.current = false
+      
+      // Force re-render to create new scales with fresh data
+      setZoomVersion(v => v + 1)
+    }
+    
+    dataVersionRef.current = dataFingerprint
+  }, [memoizedChartData, isLoadingData])
 
 
   // Throttled resize handler for better performance
   const handleResize = useThrottle((entries: ResizeObserverEntry[]) => {
     for (const entry of entries) {
       const { width, height } = entry.contentRect
-      setDimensions({ 
-        width: Math.max(300, width), 
-        height: Math.max(250, height - 20) // Subtract some padding
-      })
+      // Only update if we have valid dimensions
+      if (width > 0 && height > 0) {
+        setDimensions({ 
+          width: Math.max(400, width), 
+          height: Math.max(300, height - 20) // Subtract some padding
+        })
+      }
     }
   }, 150)
 

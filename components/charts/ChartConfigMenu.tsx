@@ -55,6 +55,7 @@ export function ChartConfigMenu({
   const [importMode, setImportMode] = useState<'overwrite' | 'new-page'>('overwrite')
   const [newPageName, setNewPageName] = useState('')
   const [pendingImportConfig, setPendingImportConfig] = useState<ChartGridConfig | null>(null)
+  const [presets, setPresets] = useState<Record<string, ChartGridConfig>>({})
   
   const {
     exportConfig,
@@ -67,7 +68,11 @@ export function ChartConfigMenu({
     isImporting
   } = useChartConfigExport()
 
-  const presets = getPresets()
+  // Initialize presets on mount and update when needed
+  React.useEffect(() => {
+    setPresets(getPresets())
+  }, [getPresets])
+
   const presetNames = Object.keys(presets)
 
   const handleExport = () => {
@@ -102,10 +107,13 @@ export function ChartConfigMenu({
       version: '1.0.0',
       layoutSettings,
       chartSettings,
-      charts
+      charts,
+      selectedDataSources
     })
     setSavePresetOpen(false)
     setPresetName('')
+    // Update presets state after saving
+    setPresets(getPresets())
   }
 
   const handleLoadPreset = (name: string) => {
@@ -164,20 +172,25 @@ export function ChartConfigMenu({
                   <DropdownMenuItem
                     key={name}
                     className="justify-between"
-                    onClick={() => handleLoadPreset(name)}
+                    onSelect={() => handleLoadPreset(name)}
                   >
                     <span>{name}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0"
+                    <button
+                      className="h-6 w-6 p-0 hover:bg-muted rounded flex items-center justify-center"
                       onClick={(e) => {
+                        e.preventDefault()
                         e.stopPropagation()
                         deletePreset(name)
+                        // Update presets state after deletion
+                        setPresets(getPresets())
+                      }}
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
                       }}
                     >
                       <Trash2 className="h-3 w-3" />
-                    </Button>
+                    </button>
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuSubContent>

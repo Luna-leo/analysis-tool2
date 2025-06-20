@@ -74,6 +74,7 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
       })
     }
     
+    
     // Call parent implementation
     super.setupScalesAndAxes()
   }

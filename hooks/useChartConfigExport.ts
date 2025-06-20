@@ -77,6 +77,13 @@ export function useChartConfigExport() {
     setIsExporting(true)
 
     try {
+      
+      // Remove fileId from charts to ensure portability
+      const cleanedCharts = charts.map(chart => {
+        const { fileId, ...chartWithoutFileId } = chart
+        return chartWithoutFileId
+      })
+      
       const config: ChartGridConfig = {
         version: CONFIG_VERSION,
         metadata: {
@@ -87,7 +94,7 @@ export function useChartConfigExport() {
         },
         layoutSettings,
         chartSettings,
-        charts,
+        charts: cleanedCharts,
         selectedDataSources,
         dataSourceInfo: {
           // Extract unique data sources and parameters
@@ -148,6 +155,14 @@ export function useChartConfigExport() {
           description: validation.warnings.join(', ')
         })
       }
+      
+      // Debug logging
+      console.log('[importConfig] Imported configuration:', {
+        fileName: config.metadata?.fileName,
+        chartsCount: config.charts?.length || 0,
+        dataSourcesCount: config.selectedDataSources?.length || 0,
+        hasDataSources: !!config.selectedDataSources
+      })
 
       toast.success('Configuration imported successfully')
       return config as ChartGridConfig
@@ -171,8 +186,16 @@ export function useChartConfigExport() {
   ) => {
     try {
       const presets = JSON.parse(localStorage.getItem('chartConfigPresets') || '{}')
+      
+      // Remove fileId from charts to ensure portability
+      const cleanedCharts = config.charts.map(chart => {
+        const { fileId, ...chartWithoutFileId } = chart
+        return chartWithoutFileId
+      })
+      
       presets[name] = {
         ...config,
+        charts: cleanedCharts,
         metadata: {
           exportedAt: new Date().toISOString(),
           fileId: 'preset',

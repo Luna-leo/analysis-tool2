@@ -41,7 +41,7 @@ export default function AnalysisTool() {
   const [templateListOpen, setTemplateListOpen] = React.useState(false)
   const [saveTemplateOpen, setSaveTemplateOpen] = React.useState(false)
   
-  const { openTabs, activeTab, openFile, fileTree, setActiveTab, toggleFolder, setFileTree, updateFileCharts, createNewFile, updateFileDataSources } = useFileStore()
+  const { openTabs, activeTab, openFile, fileTree, setActiveTab, toggleFolder, setFileTree, updateFileCharts, createNewFile, createNewFileWithConfig, updateFileDataSources } = useFileStore()
   const { loadParameters } = useParameterStore()
   const { loadState } = useGraphStateStore()
   const { updateLayoutSettings, updateChartSettings } = useLayoutStore()
@@ -102,7 +102,7 @@ export default function AnalysisTool() {
   }
   
   // Handle creating new page from config
-  const handleCreateNewPage = (fileName: string, config: ChartGridConfig) => {
+  const handleCreateNewPage = async (fileName: string, config: ChartGridConfig) => {
     // Generate unique file name if it already exists
     let uniqueFileName = fileName
     let counter = 1
@@ -111,55 +111,49 @@ export default function AnalysisTool() {
       counter++
     }
     
-    // Create new file with unique ID
-    const newFileId = `file_${Date.now()}`
-    const newFile: FileNode = {
-      id: newFileId,
-      name: uniqueFileName,
-      type: "file",
-      dataSources: [],
-      charts: config.charts,
-      selectedDataSources: config.selectedDataSources
+    // Check if data sources exist in CSV store
+    if (config.selectedDataSources && config.selectedDataSources.length > 0) {
+      const csvStore = useCSVDataStore.getState()
+      const missingDataSources: string[] = []
+      
+      for (const dataSource of config.selectedDataSources) {
+        const hasData = await csvStore.hasData(dataSource.id)
+        if (!hasData) {
+          missingDataSources.push(dataSource.label)
+          console.warn(`Data source not found: ${dataSource.label}`)
+        }
+      }
+      
+      if (missingDataSources.length > 0) {
+        toast.warning(`Some data sources are not available: ${missingDataSources.join(', ')}. Please import the CSV data first.`)
+      }
     }
     
-    // Create the file
-    createNewFile(null, uniqueFileName)
+    // Create new file with config using the store method
+    const fileStore = useFileStore.getState()
     
-    // Open the new file after a short delay
-    setTimeout(() => {
-      // Find the newly created file by name
-      const createdFile = fileTree.find(f => f.name === uniqueFileName && f.type === 'file')
-      if (createdFile) {
-        // Open the file
-        openFile(createdFile)
-        
-        // Apply configuration settings
-        updateLayoutSettings(createdFile.id, config.layoutSettings)
-        updateChartSettings(createdFile.id, config.chartSettings)
-        updateFileCharts(createdFile.id, config.charts)
-        
-        // Apply selected data sources if available
-        if (config.selectedDataSources) {
-          const updatedFile = { ...createdFile, selectedDataSources: config.selectedDataSources }
-          const updateInTree = (nodes: FileNode[]): FileNode[] => {
-            return nodes.map(node => {
-              if (node.id === createdFile.id) {
-                return updatedFile
-              }
-              if (node.children) {
-                return { ...node, children: updateInTree(node.children) }
-              }
-              return node
-            })
-          }
-          setFileTree(updateInTree(fileTree))
-        }
-        
-        toast.success(`Created new page "${uniqueFileName}" with imported configuration`)
-      } else {
-        toast.error('Failed to create new page')
-      }
-    }, 200)
+    // Use createNewFileWithConfig which properly handles chart assignment
+    fileStore.createNewFileWithConfig(null, uniqueFileName, {
+      charts: config.charts,
+      selectedDataSources: config.selectedDataSources
+    })
+    
+    // Get the newly created file from the current state
+    const updatedFileTree = useFileStore.getState().fileTree
+    const newFile = updatedFileTree.find((f: FileNode) => f.name === uniqueFileName && f.type === 'file')
+    
+    if (newFile) {
+      // Apply layout and chart settings
+      await updateLayoutSettings(newFile.id, config.layoutSettings)
+      await updateChartSettings(newFile.id, config.chartSettings)
+      
+      // Open the file immediately
+      openFile(newFile)
+      
+      toast.success(`Created new page "${uniqueFileName}" with imported configuration`)
+    } else {
+      toast.error('Failed to create new page')
+    }
   }
   
   // Helper function to find a node in the file tree
@@ -454,7 +448,7 @@ export default function AnalysisTool() {
 
 
           {/* Main Content - Scrollable */}
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 min-h-0 overflow-hidden">
             {activeTab && openTabs.find((tab) => tab.id === activeTab) ? (
               <ChartGrid file={openTabs.find((tab) => tab.id === activeTab)!} />
             ) : (
@@ -481,59 +475,56 @@ export default function AnalysisTool() {
       />
       
       {/* Data Source Style Drawer */}
-      {activeTab && (() => {
-        const currentFile = openTabs.find((tab) => tab.id === activeTab)
-        if (currentFile && selectedDataSourceInfo.dataSource) {
-          return (
-            <DataSourceStyleDrawer
-              open={styleDrawerOpen}
-              onOpenChange={setStyleDrawerOpen}
-              dataSource={selectedDataSourceInfo.dataSource}
-              dataSourceIndex={selectedDataSourceInfo.index}
-              fileId={activeTab}
-              currentStyle={(currentFile as any).dataSourceStyles?.[selectedDataSourceInfo.dataSource.id]}
-            />
-          )
-        }
-        return null
+      {(() => {
+        const currentFile = activeTab ? openTabs.find((tab) => tab.id === activeTab) : null
+        const hasDataSource = currentFile && selectedDataSourceInfo.dataSource
+        
+        return (
+          <DataSourceStyleDrawer
+            open={styleDrawerOpen && !!hasDataSource}
+            onOpenChange={setStyleDrawerOpen}
+            dataSource={selectedDataSourceInfo.dataSource || null}
+            dataSourceIndex={selectedDataSourceInfo.index}
+            fileId={activeTab || ''}
+            currentStyle={hasDataSource ? (currentFile as any).dataSourceStyles?.[selectedDataSourceInfo.dataSource.id] : undefined}
+          />
+        )
       })()}
       
       
-      {/* Template List Dialog */}
-      {activeTab && (() => {
-        const currentFile = openTabs.find((tab) => tab.id === activeTab)
-        if (currentFile && currentFile.type === 'file') {
-          return (
-            <>
-              <TemplateListDialog
-                open={templateListOpen}
-                onOpenChange={setTemplateListOpen}
-                onSelectTemplate={(template) => {
-                  // Apply template to all charts
-                  if (currentFile.charts && currentFile.charts.length > 0) {
-                    const updatedCharts = currentFile.charts.map(chart => {
-                      const result = PlotStyleApplicator.applyTemplate(chart, template)
-                      return result.updatedChart || chart
-                    })
-                    updateFileCharts(activeTab, updatedCharts)
-                    toast.success(`Applied template "${template.name}" to all charts`)
-                  }
-                }}
-                hasMultipleCharts={currentFile.charts && currentFile.charts.length > 1}
-              />
-              
-              {/* Save Template Dialog */}
-              {currentFile.charts && currentFile.charts.length > 0 && (
-                <SaveTemplateDialog
-                  open={saveTemplateOpen}
-                  onOpenChange={setSaveTemplateOpen}
-                  chart={currentFile.charts[0]}
-                />
-              )}
-            </>
-          )
-        }
-        return null
+      {/* Template List Dialog - Always render but control visibility */}
+      {(() => {
+        const currentFile = activeTab ? openTabs.find((tab) => tab.id === activeTab) : null
+        const isFileType = currentFile && currentFile.type === 'file'
+        const hasCharts = currentFile?.charts && currentFile.charts.length > 0
+        
+        return (
+          <>
+            <TemplateListDialog
+              open={templateListOpen && !!isFileType}
+              onOpenChange={setTemplateListOpen}
+              onSelectTemplate={(template) => {
+                // Apply template to all charts
+                if (currentFile && currentFile.charts && currentFile.charts.length > 0) {
+                  const updatedCharts = currentFile.charts.map(chart => {
+                    const result = PlotStyleApplicator.applyTemplate(chart, template)
+                    return result.updatedChart || chart
+                  })
+                  updateFileCharts(activeTab || '', updatedCharts)
+                  toast.success(`Applied template "${template.name}" to all charts`)
+                }
+              }}
+              hasMultipleCharts={currentFile?.charts && currentFile.charts.length > 1}
+            />
+            
+            {/* Save Template Dialog - Always render but control visibility with open prop */}
+            <SaveTemplateDialog
+              open={saveTemplateOpen && !!hasCharts}
+              onOpenChange={setSaveTemplateOpen}
+              chart={hasCharts && currentFile?.charts ? currentFile.charts[0] : undefined}
+            />
+          </>
+        )
       })()}
     </div>
   )

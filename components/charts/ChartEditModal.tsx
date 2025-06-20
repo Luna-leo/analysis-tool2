@@ -117,6 +117,16 @@ export function ChartEditModal() {
 
   // Get the target file ID for this chart
   const targetFileId = editingChart.fileId || activeFileTab
+  
+  // Debug logging for fileId issues
+  if (!editingChart.fileId) {
+    console.warn('[ChartEditModal] Chart missing fileId:', {
+      chartId: editingChart.id,
+      chartTitle: editingChart.title,
+      activeFileTab,
+      usingFallback: true
+    })
+  }
 
   const handleSave = (closeModal = true) => {
     // Find the current file based on fileId from editingChart
@@ -290,6 +300,14 @@ export function ChartEditModal() {
   }
 
   const handleSetSelectedDataSourceItems = (items: React.SetStateAction<EventInfo[]>) => {
+    console.log('[ChartEditModal] handleSetSelectedDataSourceItems called:', {
+      targetFileId,
+      editingChartId: editingChart.id,
+      editingChartFileId: editingChart.fileId,
+      itemsType: typeof items,
+      itemsCount: Array.isArray(items) ? items.length : 'function'
+    })
+    
     if (typeof items === 'function') {
       const newItems = items(selectedDataSourceItems)
       updateFileDataSources(targetFileId, newItems)

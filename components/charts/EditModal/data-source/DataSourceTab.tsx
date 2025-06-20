@@ -117,6 +117,16 @@ export function DataSourceTab({
       }
     })
     
+    // Debug logging
+    console.log('[DataSourceTab] handleAddToDataSource:', {
+      fileId: file?.fileId,
+      chartId: file?.id,
+      chartTitle: file?.title,
+      selectedPeriodsCount: selectedPeriods.length,
+      newItemsCount: newItems.length,
+      hasSetSelectedDataSourceItems: !!setSelectedDataSourceItems
+    })
+    
     setSelectedDataSourceItems(newItems)
     dataSource.setPeriodPool(dataSource.periodPool.filter(p => !dataSource.selectedPoolIds.has(p.id)))
     dataSource.setSelectedPoolIds(new Set())

@@ -34,6 +34,7 @@ export function TabContent({
           <DataSourceTab
             selectedDataSourceItems={selectedDataSourceItems}
             setSelectedDataSourceItems={setSelectedDataSourceItems}
+            file={editingChart}
           />
         </div>
       )
