@@ -56,8 +56,8 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({
     ${(isCompact || isUltraCompact) ? 'opacity-70 hover:opacity-100 transition-opacity' : ''}
   `.trim();
   
-  const buttonSize = isUltraCompact ? 'w-5 h-5' : isCompact ? 'w-6 h-6' : 'w-8 h-8';
-  const iconSize = isUltraCompact ? 'w-2.5 h-2.5' : isCompact ? 'w-3 h-3' : 'w-4 h-4';
+  const buttonSize = isUltraCompact ? 'w-6 h-6' : isCompact ? 'w-6 h-6' : 'w-8 h-8';
+  const iconSize = isUltraCompact ? 'w-3.5 h-3.5' : isCompact ? 'w-3 h-3' : 'w-4 h-4';
   
   return (
     <div className={containerClass}>
