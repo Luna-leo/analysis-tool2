@@ -21,13 +21,18 @@ import { toast } from "sonner"
 interface SaveTemplateDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  chart: ChartComponent
+  chart?: ChartComponent
 }
 
 export function SaveTemplateDialog({ open, onOpenChange, chart }: SaveTemplateDialogProps) {
   const [templateName, setTemplateName] = useState("")
   const [description, setDescription] = useState("")
   const { addTemplate } = usePlotStyleTemplateStore()
+  
+  // Early return after hooks
+  if (!chart) {
+    return null
+  }
 
   const handleSave = () => {
     if (!templateName.trim()) {

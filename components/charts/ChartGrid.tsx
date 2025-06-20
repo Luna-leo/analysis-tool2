@@ -37,11 +37,16 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
   const [localCharts, setLocalCharts] = useState(file.charts || [])
   const [availableHeight, setAvailableHeight] = useState<number | null>(null)
-  const [dimensionsReady, setDimensionsReady] = useState(true)  // Start with true for immediate render
+  // Start with true if no charts - no need to wait for measurements
+  const [dimensionsReady, setDimensionsReady] = useState(() => (file.charts || []).length === 0)
+  const [hasEverMeasured, setHasEverMeasured] = useState(() => (file.charts || []).length === 0)
 
-  const { activeTab, updateFileCharts } = useFileStore()
+  const { activeTab, updateFileCharts, openTabs } = useFileStore()
   const { layoutSettingsMap, chartSettingsMap, updateLayoutSettings, updateChartSettings } = useLayoutStore()
   const { gridSelectionMode, selectAllGridCharts, clearGridSelectedCharts, sourceSelectionMode } = useUIStore()
+  
+  // Get the current file from openTabs to ensure we have the latest version
+  const currentFile = openTabs.find(tab => tab.id === file.id) || file
 
   const currentSettings = layoutSettingsMap[file.id] || {
     showFileName: true,
@@ -55,6 +60,14 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
   const currentChartSettings = chartSettingsMap[file.id] || 
     getDefaultChartSettings(currentSettings.columns, currentSettings.rows)
 
+  // Initialize settings if they don't exist
+  useEffect(() => {
+    const layoutStore = useLayoutStore.getState()
+    if (!layoutSettingsMap[file.id] && file.id !== 'csv-import') {
+      layoutStore.initializeSettings(file.id)
+    }
+  }, [file.id, layoutSettingsMap])
+
   // Calculate pagination values
   const itemsPerPage = currentSettings.pagination ? currentSettings.columns * currentSettings.rows : localCharts.length
   const totalPages = Math.ceil(localCharts.length / itemsPerPage)
@@ -63,15 +76,23 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
   const endIndex = Math.min(startIndex + itemsPerPage, localCharts.length)
   const paginatedCharts = currentSettings.pagination ? localCharts.slice(startIndex, endIndex) : localCharts
 
+  // Allow dimension measurement to proceed naturally without forced resets
+
   useEffect(() => {
     if (contentRef.current && activeTab === file.id && file.id !== 'csv-import') {
       let retryCount = 0
       const maxRetries = 5
+      let retryTimeout: NodeJS.Timeout | null = null
+      let isMounted = true
       
       const updateChartSizes = () => {
-        if (!contentRef.current) return
+        if (!contentRef.current || !isMounted) return
 
-        const isCompactLayout = currentSettings.rows >= 3 || currentSettings.columns >= 3
+        // Ensure row count has a valid default
+        const rows = currentSettings.rows || 2
+        const columns = currentSettings.columns || 2
+        
+        const isCompactLayout = rows >= 3 || columns >= 3
 
         let cardMinHeight = isCompactLayout ? 250 : 300
         let chartMinHeight = isCompactLayout ? 150 : 200
@@ -79,57 +100,99 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
         // If pagination is enabled, calculate dynamic heights to fit viewport
         if (currentSettings.pagination && gridRef.current) {
           const containerHeight = contentRef.current.clientHeight
+          const containerOffsetHeight = contentRef.current.offsetHeight
           
           // Retry if container height is 0 (DOM not ready)
-          if (containerHeight === 0 && retryCount < maxRetries) {
+          if ((containerHeight === 0 || containerOffsetHeight === 0) && retryCount < maxRetries) {
             retryCount++
-            setDimensionsReady(false)
-            setTimeout(updateChartSizes, 100 * retryCount)
+            // Only set dimensionsReady to false if we've never measured successfully
+            if (!hasEverMeasured) {
+              setDimensionsReady(false)
+            }
+            // Exponential backoff: 50ms, 100ms, 200ms, 400ms, 800ms
+            const delay = Math.min(50 * Math.pow(2, retryCount - 1), 800)
+            console.log(`[ChartGrid] Container not ready, retrying in ${delay}ms (attempt ${retryCount}/${maxRetries})`)
+            retryTimeout = setTimeout(updateChartSizes, delay)
             return
           }
           
-          const paginationHeight = 49 // Height of pagination controls (h-8 button + py-2 + border-t)
-          const padding = 8 // pt-2 from the container
-          const gap = isCompactLayout ? 2 : 4
-          const rowGaps = (currentSettings.rows - 1) * gap
-          
-          const availableGridHeight = containerHeight - paginationHeight - padding
-          const calculatedCardHeight = Math.floor(availableGridHeight / currentSettings.rows)
-          
-          // Ensure minimum heights are respected
-          cardMinHeight = Math.max(calculatedCardHeight, isCompactLayout ? 200 : 250)
-          chartMinHeight = Math.max(cardMinHeight - 60, isCompactLayout ? 100 : 150)
-          
-          setAvailableHeight(availableGridHeight)
+          // If we've exhausted retries, use fallback dimensions
+          if (containerHeight === 0 && retryCount >= maxRetries) {
+            console.warn('[ChartGrid] Failed to measure container after max retries, using fallback dimensions')
+            // Use sensible defaults based on typical viewport
+            const fallbackHeight = 600 // Reasonable default height
+            const paginationHeight = 49
+            const padding = 8
+            const gap = isCompactLayout ? 2 : 4
+            const totalGaps = (rows - 1) * gap
+            
+            const availableGridHeight = fallbackHeight - paginationHeight - padding
+            const calculatedCardHeight = Math.floor((availableGridHeight - totalGaps) / rows)
+            
+            cardMinHeight = Math.max(calculatedCardHeight, 150)
+            chartMinHeight = Math.max(cardMinHeight - 60, isCompactLayout ? 80 : 100)
+            
+            setAvailableHeight(availableGridHeight)
+            setHasEverMeasured(true)
+          } else if (containerHeight > 0) {
+            // Normal calculation when container is measured
+            const paginationHeight = 49 // Height of pagination controls (h-8 button + py-2 + border-t)
+            const padding = 8 // pt-2 from the container
+            const gap = isCompactLayout ? 2 : 4
+            const totalGaps = (rows - 1) * gap
+            
+            const availableGridHeight = containerHeight - paginationHeight - padding
+            const calculatedCardHeight = Math.floor((availableGridHeight - totalGaps) / rows)
+            
+            // Use calculated height with minimum to ensure usability
+            cardMinHeight = Math.max(calculatedCardHeight, 150) // Minimum 150px for usability
+            chartMinHeight = Math.max(cardMinHeight - 60, isCompactLayout ? 80 : 100)
+            
+            setAvailableHeight(availableGridHeight)
+            setHasEverMeasured(true)
+          }
         } else if (!currentSettings.pagination) {
           // When pagination is disabled, use the full container height
           const containerHeight = contentRef.current.clientHeight
+          const containerOffsetHeight = contentRef.current.offsetHeight
           
           // Retry if container height is 0 (DOM not ready)
-          if (containerHeight === 0 && retryCount < maxRetries) {
+          if ((containerHeight === 0 || containerOffsetHeight === 0) && retryCount < maxRetries) {
             retryCount++
-            setDimensionsReady(false)
-            setTimeout(updateChartSizes, 100 * retryCount)
+            // Only set dimensionsReady to false if we've never measured successfully
+            if (!hasEverMeasured) {
+              setDimensionsReady(false)
+            }
+            // Exponential backoff
+            const delay = Math.min(50 * Math.pow(2, retryCount - 1), 800)
+            console.log(`[ChartGrid] Container not ready (non-paginated), retrying in ${delay}ms (attempt ${retryCount}/${maxRetries})`)
+            retryTimeout = setTimeout(updateChartSizes, delay)
             return
           }
           
-          // Calculate based on available space
-          const padding = 32 // pt-2 + pb-6 = 8 + 24 = 32px
-          const gap = isCompactLayout ? 2 : 4
-          const rowGaps = (currentSettings.rows - 1) * gap
-          
-          const availableGridHeight = containerHeight - padding
-          const calculatedCardHeight = Math.floor(availableGridHeight / currentSettings.rows)
-          
-          // Always use calculated heights if container is measured
-          if (containerHeight > 0) {
+          // If we've exhausted retries, use fallback dimensions
+          if (containerHeight === 0 && retryCount >= maxRetries) {
+            console.warn('[ChartGrid] Failed to measure container after max retries, using fallback dimensions')
+            // Use the default min heights as fallback
+            // These are already set at the beginning of the function
+          } else if (containerHeight > 0) {
+            // Calculate based on available space
+            const padding = 32 // pt-2 + pb-6 = 8 + 24 = 32px
+            const gap = isCompactLayout ? 2 : 4
+            const totalGaps = (rows - 1) * gap
+            
+            const availableGridHeight = containerHeight - padding
+            const calculatedCardHeight = Math.floor((availableGridHeight - totalGaps) / rows)
+            
+            // Always use calculated heights if container is measured
             // Ensure minimum reasonable heights
             cardMinHeight = Math.max(calculatedCardHeight, isCompactLayout ? 250 : 300)
             chartMinHeight = Math.max(cardMinHeight - 60, isCompactLayout ? 150 : 200)
+            
+            // Set available height for non-paginated layout too
+            setAvailableHeight(availableGridHeight)
+            setHasEverMeasured(true)
           }
-          
-          // Set available height for non-paginated layout too
-          setAvailableHeight(Math.max(availableGridHeight, currentSettings.rows * cardMinHeight + rowGaps))
         } else {
           setAvailableHeight(null)
         }
@@ -148,9 +211,17 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
           }
         })
         
-        // Reset retry count on successful update and mark dimensions as ready
-        retryCount = 0
+        // Always mark dimensions as ready after processing (even with fallback)
         setDimensionsReady(true)
+        
+        // Mark that we've successfully measured at least once
+        if (contentRef.current && contentRef.current.clientHeight > 0) {
+          setHasEverMeasured(true)
+          retryCount = 0
+        } else if (retryCount >= maxRetries) {
+          // Even with fallback, mark as measured to prevent infinite retries
+          setHasEverMeasured(true)
+        }
       }
 
       const resizeObserver = new ResizeObserver((entries) => {
@@ -163,34 +234,86 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
 
       resizeObserver.observe(contentRef.current)
       
-      // Initial calculation with retry logic
-      // Try immediately first, then with delays if needed
-      updateChartSizes()
+      // Also use IntersectionObserver for better visibility detection
+      const intersectionObserver = new IntersectionObserver(
+        (entries) => {
+          const entry = entries[0]
+          if (entry && entry.isIntersecting && entry.intersectionRatio > 0) {
+            // Component is visible, try to update sizes
+            updateChartSizes()
+          }
+        },
+        { threshold: 0.1 } // Trigger when 10% visible
+      )
+      
+      intersectionObserver.observe(contentRef.current)
+      
+      // Wait for settings to be loaded before initial calculation
+      let settingsRetryCount = 0
+      const maxSettingsRetries = 10  // Maximum 10 retries (500ms total)
+      
+      const checkSettingsAndUpdate = () => {
+        const layoutStore = useLayoutStore.getState()
+        if (layoutStore.layoutSettingsMap[file.id]) {
+          console.log('[ChartGrid] Layout settings ready, updating chart sizes')
+          updateChartSizes()
+        } else if (settingsRetryCount < maxSettingsRetries) {
+          // Retry if settings not ready
+          settingsRetryCount++
+          console.log(`[ChartGrid] Waiting for layout settings (attempt ${settingsRetryCount}/${maxSettingsRetries})`)
+          setTimeout(checkSettingsAndUpdate, 50)
+        } else {
+          // Proceed anyway after max retries to prevent infinite wait
+          console.warn('[ChartGrid] Layout settings not ready after max retries, using defaults')
+          updateChartSizes()
+        }
+      }
+      
+      checkSettingsAndUpdate()
       
       // Force another update after mount to ensure dimensions are calculated
       const initialTimer = setTimeout(() => {
-        updateChartSizes()
-      }, 100)
+        if (isMounted) {
+          updateChartSizes()
+        }
+      }, 200)
+      
+      // Fallback timer to ensure dimensionsReady is eventually set
+      const fallbackTimer = setTimeout(() => {
+        if (isMounted && !dimensionsReady) {
+          console.warn('[ChartGrid] Forcing dimensionsReady after timeout')
+          setDimensionsReady(true)
+          setHasEverMeasured(true)
+        }
+      }, 1500)  // 1.5 seconds should be more than enough
 
       return () => {
+        isMounted = false
         clearTimeout(initialTimer)
+        clearTimeout(fallbackTimer)
+        if (retryTimeout) {
+          clearTimeout(retryTimeout)
+        }
         resizeObserver.disconnect()
+        intersectionObserver.disconnect()
       }
     }
-  }, [layoutSettingsMap, chartSettingsMap, activeTab, file.id, currentSettings.rows, currentSettings.columns, currentSettings.pagination])
+  }, [layoutSettingsMap, chartSettingsMap, activeTab, file.id, currentSettings.rows, currentSettings.columns, currentSettings.pagination, hasEverMeasured])
 
   // Update local charts when file.charts changes
   useEffect(() => {
-    setLocalCharts(file.charts || [])
+    // Use currentFile to ensure we have the latest charts
+    const charts = currentFile.charts || []
+    setLocalCharts(charts)
     
     // Reset to first page if current page is out of bounds
-    if (currentSettings.pagination && file.charts) {
-      const newTotalPages = Math.ceil(file.charts.length / itemsPerPage)
+    if (currentSettings.pagination && charts.length > 0) {
+      const newTotalPages = Math.ceil(charts.length / itemsPerPage)
       if (currentPage >= newTotalPages && newTotalPages > 0) {
         updateLayoutSettings(file.id, { currentPage: newTotalPages - 1 })
       }
     }
-  }, [file.charts, currentSettings.pagination, currentPage, itemsPerPage, file.id, updateLayoutSettings])
+  }, [currentFile.charts, currentSettings.pagination, currentPage, itemsPerPage, file.id, updateLayoutSettings, currentFile])
   
   // Keyboard shortcuts for selection mode
   useEffect(() => {
@@ -322,19 +445,7 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
     return <SettingsPage />
   }
 
-  if (!file.charts || file.charts.length === 0) {
-    return (
-      <div className="p-6">
-        <div className="h-full flex items-center justify-center text-muted-foreground">
-          <div className="text-center">
-            <div className="text-4xl mb-2">📊</div>
-            <p>No charts available for this file</p>
-            <p className="text-sm mt-2">Use the Config button in the toolbar to import a configuration</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  // Remove early return - always render the grid container to allow dimension measurement
 
   if (shouldUseVirtualization) {
     return <VirtualizedChartGrid file={file} />
@@ -355,7 +466,7 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
           currentSettings.pagination ? "flex-1 min-h-0 overflow-hidden" : "pb-6"
         )}>
           {/* Grid */}
-          {!dimensionsReady ? (
+          {!dimensionsReady && !hasEverMeasured ? (
             <div className="flex items-center justify-center h-full">
               <div className="text-sm text-muted-foreground">Loading chart layout...</div>
             </div>
@@ -364,43 +475,57 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
             ref={gridRef}
             className={cn(
               "grid",
-              currentSettings.pagination ? "h-full" : "min-h-full"
+              currentSettings.pagination ? "" : "min-h-full"
             )}
             style={{
               gridTemplateColumns: `repeat(${currentSettings.columns}, 1fr)`,
               gridTemplateRows: `repeat(${currentSettings.rows}, 1fr)`,
-              gap: chartSizes.isCompactLayout ? "2px" : "4px"
+              gap: chartSizes.isCompactLayout ? "2px" : "4px",
+              ...(currentSettings.pagination && availableHeight ? { 
+                height: `${availableHeight}px`,
+                maxHeight: `${availableHeight}px` 
+              } : {})
             }}
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => e.preventDefault()}
             onDragEnd={handleDragEnd}
           >
-            {charts.map((chart, index) => {
-              // Calculate actual index for drag operations when paginated
-              const actualIndex = currentSettings.pagination ? startIndex + index : index
-              return (
-                <ChartCard
-                  key={chart.id}
-                  chart={chart}
-                  index={actualIndex}
-                  isCompactLayout={chartSizes.isCompactLayout}
-                  cardMinHeight={chartSizes.cardMinHeight}
-                  chartMinHeight={chartSizes.chartMinHeight}
-                  fileId={file.id}
-                  onDragStart={handleDragStart}
-                  onDragOver={handleDragOver}
-                  onDrop={handleDrop}
-                  onDragEnd={handleDragEnd}
-                  isDragging={draggedIndex === actualIndex}
-                  dragOverIndex={dragOverIndex}
-                  selectedDataSources={file.selectedDataSources}
-                  dataSourceStyles={file.dataSourceStyles}
-                  width={currentSettings.width}
-                  height={chartSizes.cardMinHeight}
-                  chartSettings={currentChartSettings}
-                />
-              )
-            })}
+            {charts.length === 0 ? (
+              <div className="col-span-full flex items-center justify-center text-muted-foreground">
+                <div className="text-center">
+                  <div className="text-4xl mb-2">📊</div>
+                  <p>No charts available for this file</p>
+                  <p className="text-sm mt-2">Click the + button in the toolbar to add a chart</p>
+                </div>
+              </div>
+            ) : (
+              charts.map((chart, index) => {
+                // Calculate actual index for drag operations when paginated
+                const actualIndex = currentSettings.pagination ? startIndex + index : index
+                return (
+                  <ChartCard
+                    key={chart.id}
+                    chart={chart}
+                    index={actualIndex}
+                    isCompactLayout={chartSizes.isCompactLayout}
+                    cardMinHeight={chartSizes.cardMinHeight}
+                    chartMinHeight={chartSizes.chartMinHeight}
+                    fileId={file.id}
+                    onDragStart={handleDragStart}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    onDragEnd={handleDragEnd}
+                    isDragging={draggedIndex === actualIndex}
+                    dragOverIndex={dragOverIndex}
+                    selectedDataSources={currentFile.selectedDataSources}
+                    dataSourceStyles={currentFile.dataSourceStyles}
+                    width={currentSettings.width}
+                    height={chartSizes.cardMinHeight}
+                    chartSettings={currentChartSettings}
+                  />
+                )
+              })
+            )}
           </div>
           )}
         </div>

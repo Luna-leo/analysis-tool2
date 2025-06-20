@@ -87,6 +87,7 @@ const ChartCardComponent = ({
   const [isHovered, setIsHovered] = useState(false)
   const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false)
   const [showTemplateListDialog, setShowTemplateListDialog] = useState(false)
+  
   const { 
     setEditingChart, 
     setEditingChartWithIndex, 
@@ -145,11 +146,17 @@ const ChartCardComponent = ({
   }, [gridSelectionMode, sourceSelectionMode, chart, isSourceCandidate, toggleGridChartSelection, selectSourceChart, openTabs, fileId])
   
   const handleEdit = useCallback(() => {
-    setEditingChartWithIndex(chart, index)
+    // Ensure chart has fileId before editing
+    const chartWithFileId = {
+      ...chart,
+      fileId: chart.fileId || fileId
+    }
+    setEditingChartWithIndex(chartWithFileId, index)
     setEditModalOpen(true)
-  }, [setEditingChartWithIndex, setEditModalOpen, chart, index])
+  }, [setEditingChartWithIndex, setEditModalOpen, chart, index, fileId])
 
   const handleDuplicate = useCallback(() => {
+    // Always use props fileId to ensure chart is duplicated in the current page
     duplicateChart(fileId, chart.id)
   }, [duplicateChart, fileId, chart.id])
 
@@ -518,4 +525,22 @@ const ChartCardComponent = ({
   )
 }
 
-export const ChartCard = React.memo(ChartCardComponent)
+export const ChartCard = React.memo(ChartCardComponent, (prevProps, nextProps) => {
+  
+  // Default memo comparison
+  return (
+    prevProps.chart === nextProps.chart &&
+    prevProps.isCompactLayout === nextProps.isCompactLayout &&
+    prevProps.cardMinHeight === nextProps.cardMinHeight &&
+    prevProps.chartMinHeight === nextProps.chartMinHeight &&
+    prevProps.fileId === nextProps.fileId &&
+    prevProps.index === nextProps.index &&
+    prevProps.isDragging === nextProps.isDragging &&
+    prevProps.dragOverIndex === nextProps.dragOverIndex &&
+    prevProps.selectedDataSources === nextProps.selectedDataSources &&
+    prevProps.dataSourceStyles === nextProps.dataSourceStyles &&
+    prevProps.width === nextProps.width &&
+    prevProps.height === nextProps.height &&
+    prevProps.chartSettings === nextProps.chartSettings
+  )
+})

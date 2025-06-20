@@ -59,7 +59,32 @@ export class AxisManager {
       let xDomain: [Date, Date]
       
       if (editingChart.xAxisRange?.auto === false && editingChart.xAxisRange.min && editingChart.xAxisRange.max) {
-        xDomain = [new Date(editingChart.xAxisRange.min), new Date(editingChart.xAxisRange.max)]
+        // Ensure we create valid Date objects
+        const minDate = new Date(editingChart.xAxisRange.min)
+        const maxDate = new Date(editingChart.xAxisRange.max)
+        
+        // Validate dates
+        if (isNaN(minDate.getTime()) || isNaN(maxDate.getTime())) {
+          console.warn('Invalid date range in xAxisRange:', editingChart.xAxisRange)
+          // Fall back to data extent
+          const dateValues = data.map(d => {
+            if ('x' in d && d.x !== undefined) {
+              return d.x instanceof Date ? d.x : new Date(d.x)
+            }
+            return new Date()
+          }).filter(d => !isNaN(d.getTime()))
+          
+          if (dateValues.length > 0) {
+            xDomain = d3.extent(dateValues) as [Date, Date]
+          } else {
+            // Default to current date range
+            const now = new Date()
+            const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+            xDomain = [yesterday, now]
+          }
+        } else {
+          xDomain = [minDate, maxDate]
+        }
       } else if (data && data.length > 0) {
         // Extract datetime values from data
         // For scatter plot data format, use d.x directly if available
@@ -163,6 +188,7 @@ export class AxisManager {
         return paramValue
       }).filter(v => typeof v === 'number' && !isNaN(v))
       
+      
       if (allValues.length === 0) {
         yDomain = [0, 100]
       } else {
@@ -199,7 +225,10 @@ export class AxisManager {
     
     if (xAxisType === 'datetime') {
       const xDomain = this.xScale.domain() as [Date, Date]
-      const timeFormat = getTimeFormat(xDomain[0], xDomain[1])
+      // Ensure domain values are Date objects
+      const startDate = xDomain[0] instanceof Date ? xDomain[0] : new Date(xDomain[0])
+      const endDate = xDomain[1] instanceof Date ? xDomain[1] : new Date(xDomain[1])
+      const timeFormat = getTimeFormat(startDate, endDate)
       xAxis = d3.axisBottom(this.xScale)
         .ticks(xAxisTicks)
         .tickFormat((d) => d3.timeFormat(timeFormat)(d as Date))
@@ -381,7 +410,10 @@ export class AxisManager {
     
     if (xAxisType === 'datetime') {
       const xDomain = scales.xScale.domain() as [Date, Date]
-      const timeFormat = getTimeFormat(xDomain[0], xDomain[1])
+      // Ensure domain values are Date objects
+      const startDate = xDomain[0] instanceof Date ? xDomain[0] : new Date(xDomain[0])
+      const endDate = xDomain[1] instanceof Date ? xDomain[1] : new Date(xDomain[1])
+      const timeFormat = getTimeFormat(startDate, endDate)
       xAxis = d3.axisBottom(scales.xScale)
         .ticks(xAxisTicks)
         .tickFormat((d) => d3.timeFormat(timeFormat)(d as Date))

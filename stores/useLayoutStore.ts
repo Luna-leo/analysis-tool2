@@ -75,8 +75,17 @@ export const useLayoutStore = create<LayoutStore>()(
       }),
 
       initializeSettings: (fileId) => set((state) => {
-        const layoutSettings = state.layoutSettingsMap[fileId] || { ...defaultLayoutSettings }
-        const chartSettings = state.chartSettingsMap[fileId] || 
+        // Only initialize if settings don't already exist
+        const existingLayoutSettings = state.layoutSettingsMap[fileId]
+        const existingChartSettings = state.chartSettingsMap[fileId]
+        
+        if (existingLayoutSettings && existingChartSettings) {
+          // Settings already exist, don't override them
+          return state
+        }
+        
+        const layoutSettings = existingLayoutSettings || { ...defaultLayoutSettings }
+        const chartSettings = existingChartSettings || 
           getDefaultChartSettings(layoutSettings.columns, layoutSettings.rows)
         
         return {

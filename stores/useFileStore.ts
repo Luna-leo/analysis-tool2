@@ -79,7 +79,7 @@ export const useFileStore = create<FileStore>()(
           return { activeTab: file.id }
         }
         
-        // Initialize layout and chart settings for this file
+        // Initialize layout and chart settings for this file only if they don't exist
         const layoutStore = useLayoutStore.getState()
         layoutStore.initializeSettings(file.id)
         
@@ -92,7 +92,8 @@ export const useFileStore = create<FileStore>()(
         const openTab: OpenTab = { 
           ...file, 
           source,
-          charts: savedTab?.charts || file.charts
+          charts: savedTab?.charts || file.charts,
+          selectedDataSources: file.selectedDataSources // Ensure selectedDataSources is preserved
         }
         
         return {
@@ -228,12 +229,21 @@ export const useFileStore = create<FileStore>()(
       }),
 
       createNewFileWithConfig: (parentId: string | null, name: string, config: { charts?: ChartComponent[], selectedDataSources?: EventInfo[] }) => set((state) => {
+        
+        const newFileId = `file_${Date.now()}`
+        
+        // Ensure all charts have the correct fileId
+        const chartsWithFileId = (config.charts || []).map(chart => ({
+          ...chart,
+          fileId: newFileId
+        }))
+        
         const newFile: FileNode = {
-          id: `file_${Date.now()}`,
+          id: newFileId,
           name,
           type: "file",
           dataSources: [],
-          charts: config.charts || [],
+          charts: chartsWithFileId,
           selectedDataSources: config.selectedDataSources
         }
 
@@ -441,16 +451,32 @@ export const useFileStore = create<FileStore>()(
       }),
 
       duplicateChart: (fileId, chartId) => set((state) => {
-        // Find the file node
-        const fileNode = findNodeById(state.fileTree, fileId)
-        if (!fileNode || !fileNode.charts) return state
+        // Find the file node from fileTree
+        let fileNode = findNodeById(state.fileTree, fileId)
+        
+        // If not found in fileTree or charts is empty, try openTabs
+        if (!fileNode || !fileNode.charts || fileNode.charts.length === 0) {
+          const openTab = state.openTabs.find(tab => tab.id === fileId)
+          if (openTab) {
+            fileNode = openTab
+          }
+        }
+        
+        if (!fileNode || !fileNode.charts) {
+          return state
+        }
 
         // Find the chart to duplicate
         const chartToDuplicate = ChartOperations.findById(fileNode.charts, chartId)
-        if (!chartToDuplicate) return state
+        if (!chartToDuplicate) {
+          return state
+        }
 
         // Create a new chart
         const newChart = ChartOperations.duplicate(chartToDuplicate)
+        
+        // Ensure the new chart has the correct fileId
+        newChart.fileId = fileId
 
         // Update charts in fileTree
         const newFileTree = traverseAndUpdate(state.fileTree, fileId, (node) => {

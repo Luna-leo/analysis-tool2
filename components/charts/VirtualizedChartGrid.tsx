@@ -122,8 +122,11 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
   const [localCharts, setLocalCharts] = useState(file.charts || [])
   
   const { layoutSettingsMap } = useLayoutStore()
-  const { updateFileCharts } = useFileStore()
+  const { updateFileCharts, openTabs } = useFileStore()
   const { gridSelectionMode, sourceSelectionMode } = useUIStore()
+  
+  // Get the current file from openTabs to ensure we have the latest version
+  const currentFile = openTabs.find(tab => tab.id === file.id) || file
   const currentSettings = layoutSettingsMap[file.id] || {
     showFileName: true,
     showDataSources: true,
@@ -141,8 +144,9 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
   
   // Update local charts when file.charts changes
   useEffect(() => {
-    setLocalCharts(file.charts || [])
-  }, [file.charts])
+    // Use currentFile to ensure we have the latest charts
+    setLocalCharts(currentFile.charts || [])
+  }, [currentFile.charts])
 
   // Drag and drop handlers
   const handleDragStart = useCallback((index: number) => {
@@ -276,7 +280,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     }
   }, [updateVisibleRange])
   
-  if (!file.charts || file.charts.length === 0) {
+  if (!currentFile.charts || currentFile.charts.length === 0) {
     return (
       <div className="p-6">
         <div className="h-full flex items-center justify-center text-muted-foreground">
@@ -309,13 +313,13 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
   
   // Memoize dataSourceStyles to prevent unnecessary re-renders
   const memoizedDataSourceStyles = useMemo(() => {
-    return file.dataSourceStyles || {}
-  }, [JSON.stringify(file.dataSourceStyles)])
+    return currentFile.dataSourceStyles || {}
+  }, [JSON.stringify(currentFile.dataSourceStyles)])
   
   // Memoize selectedDataSources to prevent unnecessary re-renders
   const memoizedSelectedDataSources = useMemo(() => {
-    return file.selectedDataSources || []
-  }, [JSON.stringify(file.selectedDataSources)])
+    return currentFile.selectedDataSources || []
+  }, [JSON.stringify(currentFile.selectedDataSources)])
   
   return (
     <>

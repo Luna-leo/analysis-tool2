@@ -129,47 +129,31 @@ export default function AnalysisTool() {
       }
     }
     
-    // Pre-initialize layout settings for the file that will be created
-    // Generate the file ID that will be used
-    const futureFileId = `file_${Date.now()}`
-    
-    // Apply layout and chart settings before creating the file
-    // This ensures the settings are available when ChartGrid mounts
-    await updateLayoutSettings(futureFileId, config.layoutSettings)
-    await updateChartSettings(futureFileId, config.chartSettings)
-    
-    // Add fileId to each chart
-    const chartsWithFileId = config.charts.map(chart => ({
-      ...chart,
-      fileId: futureFileId
-    }))
-    
-    // Create new file with charts and data sources
+    // Create new file with config using the store method
     const fileStore = useFileStore.getState()
-    const newFile: FileNode = {
-      id: futureFileId,
-      name: uniqueFileName,
-      type: "file",
-      dataSources: [],
-      charts: chartsWithFileId,
+    
+    // Use createNewFileWithConfig which properly handles chart assignment
+    fileStore.createNewFileWithConfig(null, uniqueFileName, {
+      charts: config.charts,
       selectedDataSources: config.selectedDataSources
-    }
+    })
     
-    // Add the file to the tree
-    fileStore.setFileTree([...fileTree, newFile])
+    // Get the newly created file from the current state
+    const updatedFileTree = useFileStore.getState().fileTree
+    const newFile = updatedFileTree.find((f: FileNode) => f.name === uniqueFileName && f.type === 'file')
     
-    // Small delay to ensure state is updated and DOM is ready
-    setTimeout(() => {
-      // Open the file
+    if (newFile) {
+      // Apply layout and chart settings
+      await updateLayoutSettings(newFile.id, config.layoutSettings)
+      await updateChartSettings(newFile.id, config.chartSettings)
+      
+      // Open the file immediately
       openFile(newFile)
       
-      // Ensure data sources are properly set (redundant but safe)
-      if (config.selectedDataSources && config.selectedDataSources.length > 0) {
-        updateFileDataSources(futureFileId, config.selectedDataSources)
-      }
-      
       toast.success(`Created new page "${uniqueFileName}" with imported configuration`)
-    }, 100)
+    } else {
+      toast.error('Failed to create new page')
+    }
   }
   
   // Helper function to find a node in the file tree

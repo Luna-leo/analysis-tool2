@@ -43,6 +43,19 @@ export function useOptimizedChart({
   const [data, setData] = React.useState<ChartDataPoint[]>([])
   const loadingRef = useRef(false)
   
+  // Use refs to maintain stable references
+  const getParameterDataRef = useRef(getParameterData)
+  const dataCacheRef = useRef(dataCache)
+  
+  // Update refs when the actual functions change
+  useEffect(() => {
+    getParameterDataRef.current = getParameterData
+  }, [getParameterData])
+  
+  useEffect(() => {
+    dataCacheRef.current = dataCache
+  }, [dataCache])
+  
   // Extract only what we need from settings to avoid unnecessary re-renders
   const enableSampling = settings.performanceSettings.dataProcessing.enableSampling
   const defaultSamplingPoints = settings.performanceSettings.dataProcessing.defaultSamplingPoints
@@ -86,6 +99,17 @@ export function useOptimizedChart({
   // Debounced data loading
   const loadData = useMemo(
     () => debounce(async () => {
+      // Debug logging disabled to reduce console spam
+      // Uncomment for debugging if needed
+      // if (process.env.NODE_ENV === 'development') {
+      //   console.log(`[useOptimizedChart ${editingChart.id}] Loading data:`, {
+      //     dataSourceCount: selectedDataSourceItems.length,
+      //     dataSources: selectedDataSourceItems.map(ds => ({ id: ds.id, label: ds.label })),
+      //     xAxisType,
+      //     parametersCount: allParameters.length
+      //   })
+      // }
+      
       if (selectedDataSourceItems.length === 0 || 
           (xAxisType !== 'datetime' && allParameters.length === 0)) {
         setData([])
@@ -114,11 +138,21 @@ export function useOptimizedChart({
         // Fetch data with caching
         await Promise.all(
           selectedDataSourceItems.map(async (dataSource, dataSourceIndex) => {
-            const csvData = await dataCache.get(
+            const csvData = await dataCacheRef.current.get(
               dataSource.id,
               allParameters,
-              () => getParameterData(dataSource.id, allParameters)
+              () => getParameterDataRef.current(dataSource.id, allParameters)
             )
+            
+            // Debug logging removed to reduce console spam
+            // Uncomment for debugging if needed
+            // console.log(`[useOptimizedChart] Data fetch for ${dataSource.id}:`, {
+            //   dataSourceId: dataSource.id,
+            //   dataSourceLabel: dataSource.label,
+            //   requestedParams: allParameters,
+            //   dataLength: csvData?.length || 0,
+            //   hasData: !!csvData && csvData.length > 0
+            // })
             
             if (csvData && csvData.length > 0) {
               csvData.forEach(point => {
@@ -221,7 +255,7 @@ export function useOptimizedChart({
         setIsLoading(false)
       }
     }, 300),
-    [selectedDataSourceItems, allParameters, xAxisType, xParameter, yAxisParams, getParameterData, dataCache, effectiveMaxDataPoints, enableSampling]
+    [selectedDataSourceItems, allParameters, xAxisType, xParameter, yAxisParams, effectiveMaxDataPoints, enableSampling]
   )
 
   // Trigger data loading when dependencies change
