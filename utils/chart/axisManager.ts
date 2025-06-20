@@ -42,6 +42,7 @@ export interface ChartScales {
 export class AxisManager {
   private xScale!: d3.ScaleTime<number, number> | d3.ScaleLinear<number, number>
   private yScale!: d3.ScaleLinear<number, number>
+  private yAxisGroup?: d3.Selection<SVGGElement, unknown, null, undefined>
   
   constructor(private options: AxisManagerOptions) {}
 
@@ -51,12 +52,19 @@ export class AxisManager {
   createAxes(): ChartScales {
     this.createXScale()
     this.createYScale()
-    this.renderAxes()
+    this.yAxisGroup = this.renderAxes()
     
     return {
       xScale: this.xScale,
       yScale: this.yScale
     }
+  }
+  
+  /**
+   * Get the Y-axis group for external use
+   */
+  getYAxisGroup(): d3.Selection<SVGGElement, unknown, null, undefined> | undefined {
+    return this.yAxisGroup
   }
 
   /**
@@ -223,7 +231,7 @@ export class AxisManager {
   /**
    * Render X and Y axes with proper formatting
    */
-  private renderAxes(): void {
+  private renderAxes(): d3.Selection<SVGGElement, unknown, null, undefined> | undefined {
     const { g, width, height, editingChart } = this.options
     const xAxisType = editingChart.xAxisType || 'datetime'
     const xAxisTicks = editingChart.xAxisTicks || 5
@@ -300,6 +308,9 @@ export class AxisManager {
         .attr("stroke-opacity", 0.1)
         .attr("class", "grid-line")
     }
+    
+    // Return the Y-axis group for label positioning
+    return yAxisGroup
   }
 
   /**
@@ -309,7 +320,8 @@ export class AxisManager {
     g: d3.Selection<SVGGElement, unknown, null, undefined>,
     width: number,
     height: number,
-    editingChart: ChartComponent
+    editingChart: ChartComponent,
+    yAxisGroup?: d3.Selection<SVGGElement, unknown, null, undefined>
   ): void {
     const xLabelOffset = editingChart.xLabelOffset || 40
     const yLabelOffset = editingChart.yLabelOffset || 50
@@ -342,10 +354,67 @@ export class AxisManager {
     const labelWithUnit = firstYAxisLabel && unit ? `${firstYAxisLabel} [${unit}]` : firstYAxisLabel
     
     if (labelWithUnit && showYLabel) {
+      // Calculate dynamic offset based on tick label widths
+      let dynamicYLabelOffset = yLabelOffset
+      
+      // If yAxisGroup is provided, measure tick label widths
+      if (yAxisGroup) {
+        let maxTickWidth = 0
+        yAxisGroup.selectAll(".tick text").each(function() {
+          const tickElement = this as SVGTextElement
+          try {
+            const bbox = tickElement.getBBox()
+            if (bbox.width > maxTickWidth) {
+              maxTickWidth = bbox.width
+            }
+          } catch (e) {
+            // Fallback if getBBox fails
+            console.warn("Failed to measure tick width:", e)
+          }
+        })
+        
+        // Add padding based on layout size
+        const margin = editingChart.margins || { top: 20, right: 40, bottom: 60, left: 60 }
+        const isCompactLayout = margin.left <= 45 // Detect compact layouts
+        const tickPadding = isCompactLayout ? 8 : 12 // Smaller padding for compact layouts
+        const labelPadding = isCompactLayout ? 20 : 25 // Additional space for the label itself
+        
+        // Calculate dynamic offset: tick width + tick padding + label padding
+        if (maxTickWidth > 0) {
+          dynamicYLabelOffset = maxTickWidth + tickPadding + labelPadding
+        }
+      } else {
+        // If no yAxisGroup, try to find it in the DOM
+        const existingYAxis = g.select(".y-axis")
+        if (!existingYAxis.empty()) {
+          let maxTickWidth = 0
+          existingYAxis.selectAll(".tick text").each(function() {
+            const tickElement = this as SVGTextElement
+            try {
+              const bbox = tickElement.getBBox()
+              if (bbox.width > maxTickWidth) {
+                maxTickWidth = bbox.width
+              }
+            } catch (e) {
+              // Silent fail
+            }
+          })
+          
+          const margin = editingChart.margins || { top: 20, right: 40, bottom: 60, left: 60 }
+          const isCompactLayout = margin.left <= 45
+          const tickPadding = isCompactLayout ? 8 : 12
+          const labelPadding = isCompactLayout ? 20 : 25
+          
+          if (maxTickWidth > 0) {
+            dynamicYLabelOffset = maxTickWidth + tickPadding + labelPadding
+          }
+        }
+      }
+      
       // Ensure label doesn't exceed left margin
       const margin = editingChart.margins || { top: 20, right: 40, bottom: 60, left: 60 }
       const maxXPosition = -margin.left + 15 // Leave 15px safety margin
-      const labelY = Math.max(-yLabelOffset, maxXPosition)
+      const labelY = Math.max(-dynamicYLabelOffset, maxXPosition)
       
       g.append("text")
         .attr("class", "y-axis-label")
@@ -496,7 +565,7 @@ export class AxisManager {
     height: number,
     scales: ChartScales,
     editingChart: ChartComponent
-  ): void {
+  ): d3.Selection<SVGGElement, unknown, null, undefined> | undefined {
     const xAxisType = editingChart.xAxisType || 'datetime'
     const xAxisTicks = editingChart.xAxisTicks || 5
     const yAxisTicks = editingChart.yAxisTicks || 5
@@ -602,5 +671,8 @@ export class AxisManager {
         .style('stroke-dasharray', '3,3')
         .style('opacity', 0.3)
     }
+    
+    // Return the Y-axis group for label positioning
+    return yAxisGroup
   }
 }

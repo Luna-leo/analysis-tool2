@@ -33,6 +33,8 @@ export abstract class BaseChart<TData = any> {
   protected scales!: ChartScales
   protected dataGroup!: d3.Selection<SVGGElement, unknown, null, undefined>
   protected clipId: string
+  protected axisManager?: AxisManager
+  protected yAxisGroup?: d3.Selection<SVGGElement, unknown, null, undefined>
 
   constructor(config: BaseChartConfig) {
     this.g = config.g
@@ -112,7 +114,7 @@ export abstract class BaseChart<TData = any> {
       }
       
       // Redraw axes with existing scales
-      AxisManager.redrawAxesWithScales(
+      this.yAxisGroup = AxisManager.redrawAxesWithScales(
         this.g,
         this.width,
         this.height,
@@ -121,7 +123,7 @@ export abstract class BaseChart<TData = any> {
       )
     } else {
       // Create new scales (initial render)
-      const axisManager = new AxisManager({
+      this.axisManager = new AxisManager({
         g: this.g,
         width: this.width,
         height: this.height,
@@ -129,7 +131,7 @@ export abstract class BaseChart<TData = any> {
         data: this.data
       })
       
-      this.scales = axisManager.createAxes()
+      this.scales = this.axisManager.createAxes()
     }
   }
 
@@ -140,8 +142,11 @@ export abstract class BaseChart<TData = any> {
     // Add chart title
     AxisManager.addChartTitle(this.g, this.width, this.editingChart)
     
-    // Add axis labels
-    AxisManager.addAxisLabels(this.g, this.width, this.height, this.editingChart)
+    // Get Y-axis group from the axis manager or from stored reference
+    const yAxisGroup = this.axisManager?.getYAxisGroup() || this.yAxisGroup
+    
+    // Add axis labels with Y-axis group for dynamic positioning
+    AxisManager.addAxisLabels(this.g, this.width, this.height, this.editingChart, yAxisGroup)
     
     // Add chart border at the correct position (accounting for margins)
     this.addChartBorder()

@@ -41,13 +41,13 @@ const GRID_MARGIN_PERCENTAGE_PRESETS: Record<string, MarginConfig> = {
   '3x1': { bottom: '15%', left: '15%', top: '8%', right: '8%' },
   '3x2': { bottom: '14%', left: '14%', top: '7%', right: '7%' },
   
-  // Small layouts - compact margins
-  '3x3': { bottom: '12%', left: '12%', top: '6%', right: '6%' },
-  '3x4': { bottom: '11%', left: '11%', top: '5%', right: '5%' },
+  // Small layouts - compact margins (increased left margin for Y-axis labels)
+  '3x3': { bottom: '12%', left: '14%', top: '6%', right: '6%' },
+  '3x4': { bottom: '11%', left: '13%', top: '5%', right: '5%' },
   '4x1': { bottom: '13%', left: '13%', top: '7%', right: '7%' },
-  '4x2': { bottom: '12%', left: '12%', top: '6%', right: '6%' },
-  '4x3': { bottom: '11%', left: '11%', top: '5%', right: '5%' },
-  '4x4': { bottom: '10%', left: '10%', top: '5%', right: '5%' },
+  '4x2': { bottom: '12%', left: '14%', top: '6%', right: '6%' },
+  '4x3': { bottom: '11%', left: '13%', top: '5%', right: '5%' },
+  '4x4': { bottom: '10%', left: '12%', top: '5%', right: '5%' },
   
   // Default for larger grids
   'default': { bottom: '10%', left: '10%', top: '5%', right: '5%' }
@@ -71,13 +71,13 @@ const GRID_MARGIN_PRESETS: Record<string, { bottom: number; left: number; top: n
   '3x1': { bottom: 45, left: 58, top: 25, right: 35 },
   '3x2': { bottom: 38, left: 52, top: 23, right: 28 },
   
-  // Small layouts - compact margins
-  '3x3': { bottom: 35, left: 40, top: 20, right: 20 },
-  '3x4': { bottom: 32, left: 38, top: 18, right: 18 },
+  // Small layouts - compact margins (increased left margin for Y-axis labels)
+  '3x3': { bottom: 35, left: 45, top: 20, right: 20 },
+  '3x4': { bottom: 32, left: 42, top: 18, right: 18 },
   '4x1': { bottom: 40, left: 50, top: 22, right: 25 },
-  '4x2': { bottom: 36, left: 45, top: 20, right: 22 },
-  '4x3': { bottom: 32, left: 38, top: 18, right: 18 },
-  '4x4': { bottom: 30, left: 35, top: 15, right: 15 },
+  '4x2': { bottom: 36, left: 48, top: 20, right: 22 },
+  '4x3': { bottom: 32, left: 42, top: 18, right: 18 },
+  '4x4': { bottom: 30, left: 40, top: 15, right: 15 },
   
   // Default for larger grids
   'default': { bottom: 40, left: 50, top: 15, right: 20 }
@@ -217,7 +217,7 @@ const getMinimumMargins = (category: 'small' | 'medium' | 'large') => {
     top: category === 'small' ? 15 : category === 'medium' ? 20 : 25,
     right: category === 'small' ? 15 : category === 'medium' ? 20 : 30,
     bottom: category === 'small' ? 30 : category === 'medium' ? 40 : 50,
-    left: category === 'small' ? 35 : category === 'medium' ? 45 : 55
+    left: category === 'small' ? 40 : category === 'medium' ? 45 : 55  // Increased for Y-axis labels
   }
 }
 
