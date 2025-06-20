@@ -181,24 +181,24 @@ export const calculateUnifiedMargins = (
         adjustedConfig.contentMinimums.left = 55;
         adjustedConfig.absoluteMaximums.left = 95;
         // Reduce vertical margins for horizontal emphasis
-        adjustedConfig.baseRatios.top = 0.05;      // 5% for minimal top margin
-        adjustedConfig.baseRatios.bottom = 0.08;   // 8% for reduced bottom margin
-        adjustedConfig.contentMinimums.top = 15;
-        adjustedConfig.contentMinimums.bottom = 25;
-        adjustedConfig.absoluteMaximums.top = 40;
-        adjustedConfig.absoluteMaximums.bottom = 60;
+        adjustedConfig.baseRatios.top = 0.03;      // 3% for minimal top margin
+        adjustedConfig.baseRatios.bottom = 0.05;   // 5% for reduced bottom margin
+        adjustedConfig.contentMinimums.top = 10;    // Lower minimum
+        adjustedConfig.contentMinimums.bottom = 20; // Lower minimum
+        adjustedConfig.absoluteMaximums.top = 30;   // Lower maximum
+        adjustedConfig.absoluteMaximums.bottom = 40; // Lower maximum
       } else if (gridLayout.rows === 2) {
         // 2x4: Larger increase for left, moderate reduction for top/bottom
         adjustedConfig.baseRatios.left = 0.13;
         adjustedConfig.contentMinimums.left = 60;
         adjustedConfig.absoluteMaximums.left = 110;
         // Moderate vertical margin reduction
-        adjustedConfig.baseRatios.top = 0.06;      // 6% for balanced top margin
-        adjustedConfig.baseRatios.bottom = 0.09;   // 9% for balanced bottom margin
-        adjustedConfig.contentMinimums.top = 18;
-        adjustedConfig.contentMinimums.bottom = 30;
-        adjustedConfig.absoluteMaximums.top = 50;
-        adjustedConfig.absoluteMaximums.bottom = 70;
+        adjustedConfig.baseRatios.top = 0.04;      // 4% for balanced top margin
+        adjustedConfig.baseRatios.bottom = 0.06;   // 6% for balanced bottom margin
+        adjustedConfig.contentMinimums.top = 12;    // Lower minimum
+        adjustedConfig.contentMinimums.bottom = 22; // Lower minimum
+        adjustedConfig.absoluteMaximums.top = 35;   // Lower maximum
+        adjustedConfig.absoluteMaximums.bottom = 50; // Lower maximum
       } else {
         // 3x4, 4x4: Larger increase for left (existing)
         adjustedConfig.baseRatios.left = 0.13;
@@ -209,7 +209,7 @@ export const calculateUnifiedMargins = (
     }
   }
   
-  return {
+  const result = {
     top: Math.min(
       adjustedConfig.absoluteMaximums.top,
       Math.max(
@@ -239,6 +239,8 @@ export const calculateUnifiedMargins = (
       )
     )
   }
+  
+  return result
 }
 
 /**

@@ -490,9 +490,14 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
 
   // Calculate minimum height based on layout
   const getMinHeight = useCallback((currentGridLayout?: { columns: number; rows: number }) => {
-    if (currentGridLayout && currentGridLayout.columns >= 4 && currentGridLayout.rows >= 4) {
-      return 60 // Ultra-compact for 4x4
+    // Special handling for 4-column layouts
+    if (currentGridLayout && currentGridLayout.columns >= 4) {
+      if (currentGridLayout.rows === 1) return 80   // 1x4: Reduced height for horizontal emphasis
+      if (currentGridLayout.rows === 2) return 100  // 2x4: Moderate height
+      if (currentGridLayout.rows === 3) return 80   // 3x4: Compact
+      if (currentGridLayout.rows >= 4) return 60    // 4x4: Ultra-compact
     }
+    // Existing logic for other layouts
     if (currentGridLayout && (currentGridLayout.columns >= 3 || currentGridLayout.rows >= 3)) {
       return 100 // Compact for 3x3
     }
@@ -509,9 +514,11 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       // Only update if we have valid dimensions
       if (width > 0 && height > 0) {
         const minHeight = getMinHeight(gridLayout)
+        // Reduced padding for 4-column layouts
+        const containerPadding = gridLayout && gridLayout.columns >= 4 ? 5 : 20
         setDimensions({ 
           width: Math.max(400, width), 
-          height: Math.max(minHeight, height - 20) // Subtract some padding
+          height: Math.max(minHeight, height - containerPadding)
         })
       }
     }

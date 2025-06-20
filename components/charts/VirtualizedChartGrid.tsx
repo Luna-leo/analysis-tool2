@@ -303,9 +303,20 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
         // Use calculated height with minimum to ensure usability
         // Add extra margin to prevent overflow (reduced for ultra-compact layouts)
         const is4x4 = currentSettings.columns === 4 && currentSettings.rows === 4
+        const is4Column = currentSettings.columns >= 4
         const overflowSafetyMargin = is4x4 ? 2 : (isCompactLayout ? 5 : 10)
         cardMinHeight = Math.max(calculatedCardHeight - overflowSafetyMargin, is4x4 ? 120 : 150)
-        chartMinHeight = Math.max(cardMinHeight - 70, is4x4 ? 50 : (isCompactLayout ? 80 : 100)) // Adjusted for ultra-compact
+        
+        // Reduced padding for 4-column layouts to maximize chart area
+        let chartPadding = 70 // Default padding
+        if (is4Column) {
+          if (currentSettings.rows === 1) chartPadding = 30  // 1x4: Minimal padding
+          else if (currentSettings.rows === 2) chartPadding = 40  // 2x4: Small padding
+          else if (currentSettings.rows === 3) chartPadding = 35  // 3x4: Small padding
+          else chartPadding = 30  // 4x4: Minimal padding
+        }
+        
+        chartMinHeight = Math.max(cardMinHeight - chartPadding, is4x4 ? 50 : (isCompactLayout ? 80 : 100))
       } else if (retryCount >= maxRetries) {
         // Fallback calculation when container measurement fails
         console.warn('[VirtualizedChartGrid] Failed to measure container after max retries, using fallback dimensions')
@@ -320,7 +331,18 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
         const calculatedCardHeight = Math.floor((availableGridHeight - totalGaps) / currentSettings.rows)
         
         cardMinHeight = Math.max(calculatedCardHeight, 150)
-        chartMinHeight = Math.max(cardMinHeight - 60, isCompactLayout ? 80 : 100)
+        
+        // Use same padding logic for fallback calculation
+        const is4Column = currentSettings.columns >= 4
+        let chartPadding = 60 // Default fallback padding
+        if (is4Column) {
+          if (currentSettings.rows === 1) chartPadding = 30
+          else if (currentSettings.rows === 2) chartPadding = 40
+          else if (currentSettings.rows === 3) chartPadding = 35
+          else chartPadding = 30
+        }
+        
+        chartMinHeight = Math.max(cardMinHeight - chartPadding, isCompactLayout ? 80 : 100)
       }
       
       setChartSizes(prev => {
