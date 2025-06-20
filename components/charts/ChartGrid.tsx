@@ -473,12 +473,11 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
   return (
     <>
       <div className={cn(
-        "flex flex-col h-full",
-        !currentSettings.pagination && "overflow-auto"
+        "flex flex-col h-full"
       )} ref={contentRef}>
         <div className={cn(
           "px-6 pt-2",
-          currentSettings.pagination ? "flex-1 min-h-0 overflow-hidden" : "pb-6"
+          currentSettings.pagination ? "flex-1 min-h-0 overflow-hidden" : "pb-6 overflow-auto h-full"
         )}>
           {/* Grid */}
           {!dimensionsReady && !hasEverMeasured ? (
@@ -499,6 +498,9 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
               ...(currentSettings.pagination && availableHeight ? { 
                 height: `${availableHeight}px`,
                 maxHeight: `${availableHeight}px` 
+              } : {}),
+              ...(!currentSettings.pagination ? {
+                maxHeight: `${chartSizes.cardMinHeight * currentSettings.rows + (currentSettings.rows - 1) * (chartSizes.isCompactLayout ? 2 : 4)}px`
               } : {})
             }}
             onDragOver={(e) => e.preventDefault()}
