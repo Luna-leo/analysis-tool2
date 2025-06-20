@@ -12,6 +12,7 @@ import { useFileStore } from "@/stores/useFileStore"
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver"
 import { SourceSelectionBanner } from "./SourceSelectionBanner"
 import { ChartPagination } from "./ChartPagination"
+import { getDefaultChartSettings } from "@/utils/chart/marginCalculator"
 
 interface VirtualizedChartGridProps {
   file: FileNode
@@ -42,6 +43,7 @@ interface VirtualizedChartCardProps {
   dataSourceStyles?: { [dataSourceId: string]: any }
   width?: number
   height?: number
+  chartSettings?: any
 }
 
 const VirtualizedChartCard = React.memo(({ 
@@ -61,7 +63,8 @@ const VirtualizedChartCard = React.memo(({
   selectedDataSources,
   dataSourceStyles,
   width,
-  height
+  height,
+  chartSettings
 }: VirtualizedChartCardProps) => {
   const ref = useRef<HTMLDivElement>(null)
   const [shouldRender, setShouldRender] = useState(isVisible)
@@ -103,6 +106,7 @@ const VirtualizedChartCard = React.memo(({
           dataSourceStyles={dataSourceStyles}
           width={width}
           height={height}
+          chartSettings={chartSettings}
         />
       ) : (
         <ChartSkeleton
@@ -131,7 +135,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
   const [dimensionsReady, setDimensionsReady] = useState(() => (file.charts || []).length === 0)
   const [hasEverMeasured, setHasEverMeasured] = useState(() => (file.charts || []).length === 0)
   
-  const { layoutSettingsMap, updateLayoutSettings } = useLayoutStore()
+  const { layoutSettingsMap, chartSettingsMap, updateLayoutSettings } = useLayoutStore()
   const { updateFileCharts, openTabs } = useFileStore()
   const { gridSelectionMode, sourceSelectionMode } = useUIStore()
   
@@ -145,6 +149,9 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     pagination: true,
     currentPage: 0,
   }
+  
+  const currentChartSettings = chartSettingsMap[file.id] || 
+    getDefaultChartSettings(currentSettings.columns, currentSettings.rows)
   
   // Calculate pagination values
   const itemsPerPage = currentSettings.pagination ? currentSettings.columns * currentSettings.rows : localCharts.length
@@ -520,6 +527,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
                       dataSourceStyles={memoizedDataSourceStyles}
                       width={currentSettings.width}
                       height={chartSizes.cardMinHeight}
+                      chartSettings={currentChartSettings}
                     />
                   ))
                 )}
