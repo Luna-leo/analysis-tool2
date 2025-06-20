@@ -73,7 +73,17 @@ export const DEFAULT_UNIFIED_MARGIN_CONFIG: UnifiedMarginConfig = {
  */
 export const UNIFIED_LABEL_OFFSETS = {
   x: 30,  // X-axis label offset from axis
-  y: 40   // Y-axis label offset from axis - increased from 35 for better spacing
+  y: 40,  // Y-axis label offset from axis - increased from 35 for better spacing
+  // Dynamic X offset based on layout
+  getXOffset: (gridLayout?: { columns: number; rows: number }) => {
+    if (gridLayout && gridLayout.columns >= 4 && gridLayout.rows >= 4) {
+      return 25; // Reduced for 4x4 layouts
+    }
+    if (gridLayout && (gridLayout.columns >= 3 || gridLayout.rows >= 3)) {
+      return 28; // Slightly reduced for 3x3
+    }
+    return 30; // Default
+  }
 }
 
 /**
@@ -153,13 +163,13 @@ export const calculateUnifiedMargins = (
       // Further reduce other margins for ultra-small layouts
       adjustedConfig.baseRatios.top = 0.06;
       adjustedConfig.baseRatios.right = 0.04;
-      adjustedConfig.baseRatios.bottom = 0.10;
+      adjustedConfig.baseRatios.bottom = 0.08;    // Reduced from 0.10 to minimize bottom margin
       adjustedConfig.contentMinimums.top = 15;
       adjustedConfig.contentMinimums.right = 10;
-      adjustedConfig.contentMinimums.bottom = 25;
+      adjustedConfig.contentMinimums.bottom = 20;  // Reduced from 25 for tighter spacing
       adjustedConfig.absoluteMaximums.top = 40;
       adjustedConfig.absoluteMaximums.right = 40;
-      adjustedConfig.absoluteMaximums.bottom = 60;
+      adjustedConfig.absoluteMaximums.bottom = 50; // Reduced from 60 for less bottom space
     }
   }
   
@@ -534,8 +544,11 @@ export const getDefaultChartSettings = (
     left: '10%'
   }
   
-  // Use unified label offsets
-  const labelOffsets = UNIFIED_LABEL_OFFSETS
+  // Use unified label offsets with dynamic X offset
+  const labelOffsets = {
+    x: UNIFIED_LABEL_OFFSETS.getXOffset({ columns, rows }),
+    y: UNIFIED_LABEL_OFFSETS.y
+  }
   
   // Simplified display settings - no special cases for different grid sizes
   const showChartTitle = true

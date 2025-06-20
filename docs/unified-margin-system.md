@@ -98,20 +98,27 @@ For ultra-small layouts (3x4, 4x3, 4x4+), additional optimizations are applied:
 #### Adjusted Base Ratios
 - Top: 6% (reduced from 8%)
 - Right: 4% (reduced from 5%)
-- Bottom: 10% (reduced from 12%)
+- Bottom: 8% (reduced from 12%)
 - Left: 10% (balanced for space constraints)
 
 #### Adjusted Minimums
 - Top: 15px (reduced from 20px)
 - Right: 10px (reduced from 15px)
-- Bottom: 25px (reduced from 35px)
+- Bottom: 20px (reduced from 35px)
 - Left: 45px (maintained for Y-axis labels)
 
 #### Adjusted Maximums
 - Top: 40px (reduced from 60px)
 - Right: 40px (reduced from 60px)
-- Bottom: 60px (reduced from 80px)
+- Bottom: 50px (reduced from 80px)
 - Left: 70px (limited for space optimization)
+
+### Dynamic Label Offsets
+
+The system also adjusts axis label offsets based on layout:
+- **4x4 layouts**: X-axis offset 25px (reduced from 30px)
+- **3x3 layouts**: X-axis offset 28px (slightly reduced)
+- **Other layouts**: X-axis offset 30px (default)
 
 ## Benefits
 
