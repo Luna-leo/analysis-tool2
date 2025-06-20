@@ -83,7 +83,8 @@ export abstract class BaseChart<TData = any> {
    * Create clip path for data area
    */
   protected createClipPath(): void {
-    const clipPadding = 1 // Small padding to ensure axis lines are visible
+    // Increased padding to ensure axis lines and edge markers are visible
+    const clipPadding = 5
     
     // Create clip path within the g element for proper coordinate system
     this.g.append("clipPath")
@@ -139,8 +140,8 @@ export abstract class BaseChart<TData = any> {
     // Add axis labels
     AxisManager.addAxisLabels(this.g, this.width, this.height, this.editingChart)
     
-    // Add chart border
-    AxisManager.addChartBorder(this.g, this.width, this.height)
+    // Add chart border at the correct position (accounting for margins)
+    this.addChartBorder()
   }
 
   /**
@@ -182,5 +183,36 @@ export abstract class BaseChart<TData = any> {
       bottom: 60,
       left: 60
     }
+  }
+  
+  /**
+   * Add chart border with proper positioning
+   */
+  protected addChartBorder(): void {
+    // Get the parent SVG element
+    const svg = this.g.node()?.ownerSVGElement
+    if (!svg) return
+    
+    const svgSelection = d3.select(svg)
+    const margins = this.getMargins()
+    
+    // Create a border group at the SVG level (not inside mainGroup)
+    // First remove any existing border to avoid duplicates
+    svgSelection.select(".chart-border-group").remove()
+    
+    const borderGroup = svgSelection.append("g")
+      .attr("class", "chart-border-group")
+      .attr("transform", `translate(${margins.left},${margins.top})`)
+    
+    // Draw the border at the correct position
+    borderGroup.append("rect")
+      .attr("class", "chart-border")
+      .attr("x", 0)
+      .attr("y", 0)
+      .attr("width", this.width)
+      .attr("height", this.height)
+      .attr("fill", "none")
+      .attr("stroke", "#d1d5db")
+      .attr("stroke-width", 1)
   }
 }

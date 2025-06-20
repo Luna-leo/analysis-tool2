@@ -331,7 +331,8 @@ const ChartCardComponent = ({
         width: width ? `${width}px` : undefined,
         height: height ? `${height}px` : `${cardMinHeight}px`,
         minHeight: `${cardMinHeight}px`,
-        overflow: 'visible'
+        overflow: 'hidden', // Changed to prevent chart overflow
+        contain: 'layout'
       }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -423,8 +424,9 @@ const ChartCardComponent = ({
       )}
 
       <div
-        className="bg-white flex items-center justify-center flex-1 min-h-0 rounded-sm overflow-hidden"
+        className="bg-white flex items-center justify-center flex-1 min-h-0 rounded-sm overflow-hidden relative"
         draggable={false}
+        style={{ contain: 'layout' }} // Add CSS containment
       >
         <ChartPreviewGraph 
           editingChart={chart} 

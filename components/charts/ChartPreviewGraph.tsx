@@ -563,6 +563,10 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           const margin = mergedChart.margins || { top: 20, right: 40, bottom: 60, left: 60 }
           const width = dimensions.width - margin.left - margin.right
           const height = dimensions.height - margin.top - margin.bottom
+          
+          // Set viewBox to ensure content stays within bounds
+          svg.attr("viewBox", `0 0 ${dimensions.width} ${dimensions.height}`)
+            .attr("preserveAspectRatio", "xMidYMid meet")
 
           // Main group with margin transform
           const mainGroup = svg.append("g")
@@ -833,13 +837,17 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           <div className="text-sm text-destructive">Error loading data</div>
         </div>
       )}
-      <div className="relative w-full h-full">
+      <div className="relative w-full h-full overflow-hidden">
         <svg 
           ref={svgRef} 
           width={dimensions.width} 
           height={dimensions.height} 
           className="absolute inset-0" 
-          style={{ visibility: isLoadingData ? 'hidden' : 'visible' }}
+          style={{ 
+            visibility: isLoadingData ? 'hidden' : 'visible',
+            maxWidth: '100%',
+            maxHeight: '100%'
+          }}
           data-chart-id={chartRenderProps.id}
         />
       </div>

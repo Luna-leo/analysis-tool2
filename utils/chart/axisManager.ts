@@ -19,6 +19,17 @@ export interface AxisManagerOptions {
   data?: any[]
 }
 
+export interface BoundsInfo {
+  exceedsLeft: boolean
+  exceedsRight: boolean
+  exceedsTop: boolean
+  exceedsBottom: boolean
+  leftOverflow: number
+  rightOverflow: number
+  topOverflow: number
+  bottomOverflow: number
+}
+
 export interface ChartScales {
   xScale: d3.ScaleTime<number, number> | d3.ScaleLinear<number, number>
   yScale: d3.ScaleLinear<number, number>
@@ -266,6 +277,7 @@ export class AxisManager {
         .clone()
         .attr("y2", -height)
         .attr("stroke-opacity", 0.1)
+        .attr("class", "grid-line")
     }
     
     // Create and render Y-axis
@@ -286,6 +298,7 @@ export class AxisManager {
         .clone()
         .attr("x2", width)
         .attr("stroke-opacity", 0.1)
+        .attr("class", "grid-line")
     }
   }
 
@@ -301,19 +314,24 @@ export class AxisManager {
     const xLabelOffset = editingChart.xLabelOffset || 40
     const yLabelOffset = editingChart.yLabelOffset || 50
     
-    // X-axis label
+    // X-axis label with bounds checking
     const showXLabel = editingChart.showXLabel ?? true
     if (editingChart.xLabel && showXLabel) {
+      // Ensure label doesn't exceed bottom margin
+      const margin = editingChart.margins || { top: 20, right: 40, bottom: 60, left: 60 }
+      const maxYPosition = height + margin.bottom - 10 // Leave 10px safety margin
+      const labelY = Math.min(height + xLabelOffset, maxYPosition)
+      
       g.append("text")
         .attr("class", "x-axis-label")
         .attr("text-anchor", "middle")
         .attr("x", width / 2)
-        .attr("y", height + xLabelOffset)
+        .attr("y", labelY)
         .style("font-size", "12px")
         .text(editingChart.xLabel)
     }
     
-    // Y-axis label
+    // Y-axis label with bounds checking
     const showYLabel = editingChart.showYLabel ?? true
     const yAxisLabels = editingChart.yAxisLabels || {}
     const firstYAxisLabel = yAxisLabels[1] || Object.values(yAxisLabels)[0] || ""
@@ -324,12 +342,17 @@ export class AxisManager {
     const labelWithUnit = firstYAxisLabel && unit ? `${firstYAxisLabel} [${unit}]` : firstYAxisLabel
     
     if (labelWithUnit && showYLabel) {
+      // Ensure label doesn't exceed left margin
+      const margin = editingChart.margins || { top: 20, right: 40, bottom: 60, left: 60 }
+      const maxXPosition = -margin.left + 15 // Leave 15px safety margin
+      const labelY = Math.max(-yLabelOffset, maxXPosition)
+      
       g.append("text")
         .attr("class", "y-axis-label")
         .attr("text-anchor", "middle")
         .attr("transform", "rotate(-90)")
         .attr("x", -height / 2)
-        .attr("y", -yLabelOffset)
+        .attr("y", labelY)
         .style("font-size", "12px")
         .text(labelWithUnit)
     }
@@ -346,11 +369,15 @@ export class AxisManager {
     const showTitle = editingChart.showTitle ?? true
     
     if (editingChart.title && showTitle) {
+      // Ensure title doesn't exceed top margin
+      const margin = editingChart.margins || { top: 20, right: 40, bottom: 60, left: 60 }
+      const titleY = Math.max(-margin.top + 15, -5) // At least 15px from top edge
+      
       g.append("text")
         .attr("class", "chart-title")
         .attr("text-anchor", "middle")
         .attr("x", width / 2)
-        .attr("y", -5)
+        .attr("y", titleY)
         .style("font-size", "14px")
         .style("font-weight", "500")
         .text(editingChart.title)
@@ -384,6 +411,80 @@ export class AxisManager {
       xScale: this.xScale,
       yScale: this.yScale
     }
+  }
+
+  /**
+   * Check if any chart elements exceed the bounds
+   */
+  static checkBounds(
+    g: d3.Selection<SVGGElement, unknown, null, undefined>,
+    width: number,
+    height: number,
+    margin: { top: number; right: number; bottom: number; left: number }
+  ): BoundsInfo {
+    const bounds: BoundsInfo = {
+      exceedsLeft: false,
+      exceedsRight: false,
+      exceedsTop: false,
+      exceedsBottom: false,
+      leftOverflow: 0,
+      rightOverflow: 0,
+      topOverflow: 0,
+      bottomOverflow: 0
+    }
+
+    // Check all text elements for overflow
+    g.selectAll("text").each(function() {
+      const element = this as SVGTextElement
+      const bbox = element.getBBox()
+      const transform = element.getAttribute("transform")
+      
+      let x = +element.getAttribute("x") || 0
+      let y = +element.getAttribute("y") || 0
+      
+      // Account for rotation if present
+      if (transform && transform.includes("rotate")) {
+        // For rotated text (like y-axis label), swap dimensions
+        if (transform.includes("-90")) {
+          const temp = bbox.width
+          bbox.width = bbox.height
+          bbox.height = temp
+        }
+      }
+      
+      // Check bounds
+      const leftEdge = x - bbox.width / 2
+      const rightEdge = x + bbox.width / 2
+      const topEdge = y - bbox.height
+      const bottomEdge = y
+      
+      if (leftEdge < -margin.left) {
+        bounds.exceedsLeft = true
+        bounds.leftOverflow = Math.max(bounds.leftOverflow, -margin.left - leftEdge)
+      }
+      
+      if (rightEdge > width + margin.right) {
+        bounds.exceedsRight = true
+        bounds.rightOverflow = Math.max(bounds.rightOverflow, rightEdge - (width + margin.right))
+      }
+      
+      if (topEdge < -margin.top) {
+        bounds.exceedsTop = true
+        bounds.topOverflow = Math.max(bounds.topOverflow, -margin.top - topEdge)
+      }
+      
+      if (bottomEdge > height + margin.bottom) {
+        bounds.exceedsBottom = true
+        bounds.bottomOverflow = Math.max(bounds.bottomOverflow, bottomEdge - (height + margin.bottom))
+      }
+    })
+    
+    // Log warnings if bounds are exceeded
+    if (bounds.exceedsLeft || bounds.exceedsRight || bounds.exceedsTop || bounds.exceedsBottom) {
+      console.warn("Chart elements exceed bounds:", bounds)
+    }
+    
+    return bounds
   }
 
   /**

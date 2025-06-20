@@ -295,8 +295,10 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
         const calculatedCardHeight = Math.floor((availableGridHeight - totalGaps) / currentSettings.rows)
         
         // Use calculated height with minimum to ensure usability
-        cardMinHeight = Math.max(calculatedCardHeight, 150)
-        chartMinHeight = Math.max(cardMinHeight - 60, isCompactLayout ? 80 : 100)
+        // Add extra margin to prevent overflow
+        const overflowSafetyMargin = 10
+        cardMinHeight = Math.max(calculatedCardHeight - overflowSafetyMargin, 150)
+        chartMinHeight = Math.max(cardMinHeight - 70, isCompactLayout ? 80 : 100) // Increased margin for labels
       } else if (retryCount >= maxRetries) {
         // Fallback calculation when container measurement fails
         console.warn('[VirtualizedChartGrid] Failed to measure container after max retries, using fallback dimensions')
@@ -492,7 +494,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
                   ...(currentSettings.pagination ? {} : {
                     maxHeight: `${chartSizes.cardMinHeight * currentSettings.rows + (currentSettings.rows - 1) * (chartSizes.isCompactLayout ? 2 : 4)}px`
                   }),
-                  overflow: "visible",
+                  overflow: "hidden", // Changed from visible to prevent overflow
                 }}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => e.preventDefault()}

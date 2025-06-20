@@ -617,6 +617,51 @@ export const useChartZoom = ({
     };
   }, [svgRef, width, height, minZoom, maxZoom, enablePan, enableZoom, handleZoom, margin, enableRangeSelection, isRangeSelectionMode, handleRangeSelection, onZoomStart, onZoomEnd, chartId, saveZoomState]);
 
+  // Handle container size changes
+  const previousDimensionsRef = useRef({ width, height });
+  useEffect(() => {
+    if (!svgRef.current || !zoomBehaviorRef.current || !enableZoom) return;
+    
+    const prevWidth = previousDimensionsRef.current.width;
+    const prevHeight = previousDimensionsRef.current.height;
+    
+    // Check if dimensions actually changed
+    if (prevWidth === width && prevHeight === height) return;
+    
+    // If zoom is not at identity, adjust the transform
+    if (zoomState.k !== 1 || zoomState.x !== 0 || zoomState.y !== 0) {
+      // Calculate the center point in the previous dimensions
+      const centerXRatio = (prevWidth / 2 - zoomState.x) / (prevWidth * zoomState.k);
+      const centerYRatio = (prevHeight / 2 - zoomState.y) / (prevHeight * zoomState.k);
+      
+      // Calculate new translation to maintain the same center point
+      const newX = width / 2 - centerXRatio * width * zoomState.k;
+      const newY = height / 2 - centerYRatio * height * zoomState.k;
+      
+      // Create new transform
+      const newTransform = d3.zoomIdentity
+        .translate(newX, newY)
+        .scale(zoomState.k);
+      
+      // Apply the adjusted transform
+      const svg = d3.select(svgRef.current);
+      svg.call(zoomBehaviorRef.current.transform, newTransform);
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[useChartZoom] Adjusted zoom for dimension change:`, {
+          chartId,
+          prevDimensions: { width: prevWidth, height: prevHeight },
+          newDimensions: { width, height },
+          oldTransform: { x: zoomState.x, y: zoomState.y, k: zoomState.k },
+          newTransform: { x: newX, y: newY, k: zoomState.k }
+        });
+      }
+    }
+    
+    // Update the previous dimensions
+    previousDimensionsRef.current = { width, height };
+  }, [width, height, zoomState, enableZoom, chartId]);
+
   // This effect is no longer needed since we initialize state with getInitialZoomState
   // Keeping it just for logging purposes
   useEffect(() => {
