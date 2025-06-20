@@ -171,6 +171,22 @@ export const calculateUnifiedMargins = (
       adjustedConfig.absoluteMaximums.right = 40;
       adjustedConfig.absoluteMaximums.bottom = 50; // Reduced from 60 for less bottom space
     }
+    
+    // Special handling for 4-column layouts to prevent Y-axis label overlap
+    if (gridLayout.columns >= 4) {
+      // Override left margin for 4+ column layouts
+      if (gridLayout.rows === 1) {
+        // 1x4: Moderate increase
+        adjustedConfig.baseRatios.left = 0.12;
+        adjustedConfig.contentMinimums.left = 55;
+        adjustedConfig.absoluteMaximums.left = 95;
+      } else {
+        // 2x4, 3x4, 4x4: Larger increase for denser layouts
+        adjustedConfig.baseRatios.left = 0.13;
+        adjustedConfig.contentMinimums.left = 60;
+        adjustedConfig.absoluteMaximums.left = 110;
+      }
+    }
   }
   
   return {

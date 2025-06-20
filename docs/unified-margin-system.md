@@ -120,6 +120,22 @@ The system also adjusts axis label offsets based on layout:
 - **3x3 layouts**: X-axis offset 28px (slightly reduced)
 - **Other layouts**: X-axis offset 30px (default)
 
+### Special 4-Column Layout Handling
+
+For layouts with 4 or more columns, additional left margin adjustments are applied to prevent Y-axis label overlap:
+
+#### 1x4 Layout
+- Left ratio: 12%
+- Left minimum: 55px
+- Left maximum: 95px
+
+#### 2x4, 3x4, 4x4 Layouts
+- Left ratio: 13%
+- Left minimum: 60px
+- Left maximum: 110px
+
+These overrides ensure sufficient space for Y-axis labels in dense column layouts.
+
 ## Benefits
 
 1. **Adaptive**: Automatically adjusts margins based on grid density
