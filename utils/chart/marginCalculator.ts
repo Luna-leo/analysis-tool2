@@ -20,19 +20,19 @@ const GRID_MARGIN_PRESETS: Record<string, { bottom: number; left: number; top: n
   '2x1': { bottom: 65, left: 72, top: 28, right: 38 },
   
   // Medium layouts - balanced margins
-  '2x2': { bottom: 55, left: 65, top: 25, right: 30 },
-  '2x3': { bottom: 50, left: 62, top: 23, right: 28 },
-  '2x4': { bottom: 48, left: 60, top: 22, right: 27 },
-  '3x1': { bottom: 55, left: 68, top: 25, right: 35 },
-  '3x2': { bottom: 50, left: 62, top: 23, right: 28 },
+  '2x2': { bottom: 40, left: 55, top: 25, right: 30 },
+  '2x3': { bottom: 38, left: 52, top: 23, right: 28 },
+  '2x4': { bottom: 36, left: 50, top: 22, right: 27 },
+  '3x1': { bottom: 45, left: 58, top: 25, right: 35 },
+  '3x2': { bottom: 38, left: 52, top: 23, right: 28 },
   
   // Small layouts - compact margins
-  '3x3': { bottom: 45, left: 55, top: 20, right: 25 },
-  '3x4': { bottom: 42, left: 52, top: 18, right: 23 },
-  '4x1': { bottom: 50, left: 65, top: 22, right: 30 },
-  '4x2': { bottom: 48, left: 60, top: 20, right: 27 },
-  '4x3': { bottom: 42, left: 52, top: 18, right: 23 },
-  '4x4': { bottom: 40, left: 50, top: 15, right: 20 },
+  '3x3': { bottom: 35, left: 40, top: 20, right: 20 },
+  '3x4': { bottom: 32, left: 38, top: 18, right: 18 },
+  '4x1': { bottom: 40, left: 50, top: 22, right: 25 },
+  '4x2': { bottom: 36, left: 45, top: 20, right: 22 },
+  '4x3': { bottom: 32, left: 38, top: 18, right: 18 },
+  '4x4': { bottom: 30, left: 35, top: 15, right: 15 },
   
   // Default for larger grids
   'default': { bottom: 40, left: 50, top: 15, right: 20 }
@@ -99,13 +99,16 @@ export const getLayoutMargins = (
   const category = getLayoutCategory(columns, rows)
 
   // Dynamic safety margin based on layout size
-  const safetyMargin = category === 'small' ? 5 : category === 'medium' ? 7 : 10
+  const safetyMargin = category === 'small' ? 3 : category === 'medium' ? 5 : 8
+  
+  // Dynamic label padding based on layout size
+  const labelPadding = category === 'small' ? 5 : category === 'medium' ? 10 : 15
   
   return {
     top: preset.top + safetyMargin,
     right: preset.right + safetyMargin,
-    bottom: Math.max(preset.bottom, offsets.xLabelOffset + 15) + safetyMargin,
-    left: Math.max(preset.left, offsets.yLabelOffset + 15) + safetyMargin
+    bottom: Math.max(preset.bottom, offsets.xLabelOffset + labelPadding) + safetyMargin,
+    left: Math.max(preset.left, offsets.yLabelOffset + labelPadding) + safetyMargin
   }
 }
 
