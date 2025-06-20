@@ -83,35 +83,63 @@ export const UNIFIED_LABEL_OFFSETS = {
 export const calculateUnifiedMargins = (
   containerWidth: number,
   containerHeight: number,
-  config: UnifiedMarginConfig = DEFAULT_UNIFIED_MARGIN_CONFIG
+  config: UnifiedMarginConfig = DEFAULT_UNIFIED_MARGIN_CONFIG,
+  gridLayout?: { columns: number; rows: number }
 ): { top: number; right: number; bottom: number; left: number } => {
+  // Adjust config for ultra-compact layouts
+  let adjustedConfig = config
+  
+  if (gridLayout && gridLayout.columns >= 4 && gridLayout.rows >= 4) {
+    // Ultra-compact configuration for 4x4
+    adjustedConfig = {
+      baseRatios: {
+        top: 0.06,    // Reduced from 0.08
+        right: 0.04,  // Reduced from 0.05
+        bottom: 0.10, // Reduced from 0.12
+        left: 0.08    // Reduced from 0.10
+      },
+      contentMinimums: {
+        top: 15,      // Reduced from 20
+        right: 10,    // Reduced from 15
+        bottom: 25,   // Reduced from 35
+        left: 35      // Reduced from 45
+      },
+      absoluteMaximums: {
+        top: 40,      // Reduced from 60
+        right: 40,    // Reduced from 60
+        bottom: 60,   // Reduced from 80
+        left: 60      // Reduced from 80
+      }
+    }
+  }
+  
   return {
     top: Math.min(
-      config.absoluteMaximums.top,
+      adjustedConfig.absoluteMaximums.top,
       Math.max(
-        config.contentMinimums.top,
-        Math.round(containerHeight * config.baseRatios.top)
+        adjustedConfig.contentMinimums.top,
+        Math.round(containerHeight * adjustedConfig.baseRatios.top)
       )
     ),
     right: Math.min(
-      config.absoluteMaximums.right,
+      adjustedConfig.absoluteMaximums.right,
       Math.max(
-        config.contentMinimums.right,
-        Math.round(containerWidth * config.baseRatios.right)
+        adjustedConfig.contentMinimums.right,
+        Math.round(containerWidth * adjustedConfig.baseRatios.right)
       )
     ),
     bottom: Math.min(
-      config.absoluteMaximums.bottom,
+      adjustedConfig.absoluteMaximums.bottom,
       Math.max(
-        config.contentMinimums.bottom,
-        Math.round(containerHeight * config.baseRatios.bottom)
+        adjustedConfig.contentMinimums.bottom,
+        Math.round(containerHeight * adjustedConfig.baseRatios.bottom)
       )
     ),
     left: Math.min(
-      config.absoluteMaximums.left,
+      adjustedConfig.absoluteMaximums.left,
       Math.max(
-        config.contentMinimums.left,
-        Math.round(containerWidth * config.baseRatios.left)
+        adjustedConfig.contentMinimums.left,
+        Math.round(containerWidth * adjustedConfig.baseRatios.left)
       )
     )
   }

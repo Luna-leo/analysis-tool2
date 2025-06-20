@@ -55,12 +55,35 @@ const chartSettings = {
 }
 ```
 
+## Special Handling for Ultra-Compact Layouts
+
+For 4x4 grid layouts, the system applies adjusted configurations:
+
+### Adjusted Base Ratios
+- Top: 6% (reduced from 8%)
+- Right: 4% (reduced from 5%)
+- Bottom: 10% (reduced from 12%)
+- Left: 8% (reduced from 10%)
+
+### Adjusted Minimums
+- Top: 15px (reduced from 20px)
+- Right: 10px (reduced from 15px)
+- Bottom: 25px (reduced from 35px)
+- Left: 35px (reduced from 45px)
+
+### Adjusted Maximums
+- Top: 40px (reduced from 60px)
+- Right: 40px (reduced from 60px)
+- Bottom: 60px (reduced from 80px)
+- Left: 60px (reduced from 80px)
+
 ## Benefits
 
 1. **Consistency**: All grid layouts have the same visual proportions
 2. **Simplicity**: Single calculation method for all cases
 3. **Predictability**: Easy to understand and debug
 4. **Maintainability**: No special cases or overrides needed
+5. **Adaptability**: Special handling for extreme layouts like 4x4
 
 ## Migration
 

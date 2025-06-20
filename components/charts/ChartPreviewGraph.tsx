@@ -483,15 +483,30 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   }, [dimensions, chartRenderProps.id])
 
 
+  // Calculate minimum height based on layout
+  const getMinHeight = useCallback((currentGridLayout?: { columns: number; rows: number }) => {
+    if (currentGridLayout && currentGridLayout.columns >= 4 && currentGridLayout.rows >= 4) {
+      return 60 // Ultra-compact for 4x4
+    }
+    if (currentGridLayout && (currentGridLayout.columns >= 3 || currentGridLayout.rows >= 3)) {
+      return 100 // Compact for 3x3
+    }
+    if (isCompactLayout) {
+      return 150 // General compact layout
+    }
+    return 200 // Normal layout
+  }, [isCompactLayout])
+
   // Throttled resize handler for better performance
   const handleResize = useThrottle((entries: ResizeObserverEntry[]) => {
     for (const entry of entries) {
       const { width, height } = entry.contentRect
       // Only update if we have valid dimensions
       if (width > 0 && height > 0) {
+        const minHeight = getMinHeight(gridLayout)
         setDimensions({ 
           width: Math.max(400, width), 
-          height: Math.max(300, height - 20) // Subtract some padding
+          height: Math.max(minHeight, height - 20) // Subtract some padding
         })
       }
     }
@@ -606,8 +621,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           let margin = { top: 20, right: 40, bottom: 60, left: 60 }
           
           if (chartSettings?.marginMode === 'unified' || chartSettings?.marginMode === 'percentage') {
-            // Use the new unified margin calculation
-            margin = calculateUnifiedMargins(dimensions.width, dimensions.height)
+            // Use the new unified margin calculation with grid layout info
+            margin = calculateUnifiedMargins(dimensions.width, dimensions.height, DEFAULT_UNIFIED_MARGIN_CONFIG, gridLayout)
           } else if (mergedChart.margins) {
             // Fall back to existing margins if not using unified mode
             margin = mergedChart.margins
