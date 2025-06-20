@@ -173,8 +173,22 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
           // If we've exhausted retries, use fallback dimensions
           if (containerHeight === 0 && retryCount >= maxRetries) {
             console.warn('[ChartGrid] Failed to measure container after max retries, using fallback dimensions')
-            // Use the default min heights as fallback
-            // These are already set at the beginning of the function
+            // Use viewport-based fallback for better default sizing
+            const viewportHeight = window.innerHeight || 800
+            const estimatedContainerHeight = viewportHeight - 200 // Account for header, toolbar, etc.
+            const padding = 32
+            const gap = isCompactLayout ? 2 : 4
+            const totalGaps = (rows - 1) * gap
+            
+            const availableGridHeight = estimatedContainerHeight - padding
+            const calculatedCardHeight = Math.floor((availableGridHeight - totalGaps) / rows)
+            
+            // Ensure reasonable minimum heights
+            cardMinHeight = Math.max(calculatedCardHeight, isCompactLayout ? 200 : 250)
+            chartMinHeight = Math.max(cardMinHeight - 60, isCompactLayout ? 120 : 150)
+            
+            setAvailableHeight(availableGridHeight)
+            setHasEverMeasured(true)
           } else if (containerHeight > 0) {
             // Calculate based on available space
             const padding = 32 // pt-2 + pb-6 = 8 + 24 = 32px
@@ -182,14 +196,15 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
             const totalGaps = (rows - 1) * gap
             
             const availableGridHeight = containerHeight - padding
+            
+            // Use the same calculation as pagination mode - always use configured rows
             const calculatedCardHeight = Math.floor((availableGridHeight - totalGaps) / rows)
             
-            // Always use calculated heights if container is measured
-            // Ensure minimum reasonable heights
-            cardMinHeight = Math.max(calculatedCardHeight, isCompactLayout ? 250 : 300)
-            chartMinHeight = Math.max(cardMinHeight - 60, isCompactLayout ? 150 : 200)
+            // Use calculated height with minimum to ensure usability
+            cardMinHeight = Math.max(calculatedCardHeight, 150) // Minimum 150px for usability
+            chartMinHeight = Math.max(cardMinHeight - 60, isCompactLayout ? 80 : 100)
             
-            // Set available height for non-paginated layout too
+            // Set available height for non-paginated layout
             setAvailableHeight(availableGridHeight)
             setHasEverMeasured(true)
           }
@@ -481,7 +496,7 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
               gridTemplateColumns: `repeat(${currentSettings.columns}, 1fr)`,
               gridTemplateRows: `repeat(${currentSettings.rows}, 1fr)`,
               gap: chartSizes.isCompactLayout ? "2px" : "4px",
-              ...(currentSettings.pagination && availableHeight ? { 
+              ...(availableHeight ? { 
                 height: `${availableHeight}px`,
                 maxHeight: `${availableHeight}px` 
               } : {})
