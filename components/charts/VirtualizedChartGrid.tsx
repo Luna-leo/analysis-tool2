@@ -121,6 +121,8 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
   const [localCharts, setLocalCharts] = useState(file.charts || [])
+  const [dimensionsReady, setDimensionsReady] = useState(() => (file.charts || []).length === 0)
+  const [hasEverMeasured, setHasEverMeasured] = useState(() => (file.charts || []).length === 0)
   
   const { layoutSettingsMap, updateLayoutSettings } = useLayoutStore()
   const { updateFileCharts, openTabs } = useFileStore()
@@ -255,6 +257,10 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
       // Retry if container height is 0 (DOM not ready)
       if ((containerHeight === 0 || containerOffsetHeight === 0) && retryCount < maxRetries) {
         retryCount++
+        // Only set dimensionsReady to false if we've never measured successfully
+        if (!hasEverMeasured) {
+          setDimensionsReady(false)
+        }
         const delay = Math.min(50 * Math.pow(2, retryCount - 1), 800)
         console.log(`[VirtualizedChartGrid] Container not ready, retrying in ${delay}ms (attempt ${retryCount}/${maxRetries})`)
         retryTimeout = setTimeout(updateChartSizes, delay)
@@ -308,14 +314,41 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
         }
       })
       
-      // Reset retry count on successful measurement
+      // Always mark dimensions as ready after processing
+      setDimensionsReady(true)
+      
+      // Reset retry count and mark as measured on successful measurement
       if (containerHeight > 0) {
         retryCount = 0
+        setHasEverMeasured(true)
+      } else if (retryCount >= maxRetries) {
+        // Even with fallback, mark as measured to prevent infinite retries
+        setHasEverMeasured(true)
       }
     }
     
-    // Initial calculation
-    updateChartSizes()
+    // Wait for settings to be loaded before initial calculation
+    let settingsRetryCount = 0
+    const maxSettingsRetries = 10
+    
+    const checkSettingsAndUpdate = () => {
+      const layoutStore = useLayoutStore.getState()
+      if (layoutStore.layoutSettingsMap[file.id]) {
+        console.log('[VirtualizedChartGrid] Layout settings ready, updating chart sizes')
+        updateChartSizes()
+      } else if (settingsRetryCount < maxSettingsRetries) {
+        // Retry if settings not ready
+        settingsRetryCount++
+        console.log(`[VirtualizedChartGrid] Waiting for layout settings (attempt ${settingsRetryCount}/${maxSettingsRetries})`)
+        setTimeout(checkSettingsAndUpdate, 50)
+      } else {
+        // Proceed anyway after max retries to prevent infinite wait
+        console.warn('[VirtualizedChartGrid] Layout settings not ready after max retries, using defaults')
+        updateChartSizes()
+      }
+    }
+    
+    checkSettingsAndUpdate()
     
     // Observe container size changes
     const resizeObserver = new ResizeObserver(() => {
@@ -336,7 +369,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
       }
       resizeObserver.disconnect()
     }
-  }, [currentSettings.rows, currentSettings.columns, currentSettings.pagination])
+  }, [currentSettings.rows, currentSettings.columns, currentSettings.pagination, hasEverMeasured, file.id])
   
   // Handle scroll with throttle for better performance
   useEffect(() => {
@@ -409,18 +442,6 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     return currentFile.selectedDataSources || []
   }, [JSON.stringify(currentFile.selectedDataSources)])
   
-  if (!currentFile.charts || currentFile.charts.length === 0) {
-    return (
-      <div className="p-6">
-        <div className="h-full flex items-center justify-center text-muted-foreground">
-          <div className="text-center">
-            <div className="text-4xl mb-2">📊</div>
-            <p>No charts available for this file</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
   
   return (
     <>
@@ -463,7 +484,16 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
                 onDrop={(e) => e.preventDefault()}
                 onDragEnd={handleDragEnd}
               >
-                {visibleCharts.map(({ chart, index, isVisible }) => (
+                {charts.length === 0 ? (
+                  <div className="col-span-full flex items-center justify-center text-muted-foreground h-full">
+                    <div className="text-center">
+                      <div className="text-4xl mb-2">📊</div>
+                      <p>No charts available for this file</p>
+                      <p className="text-sm mt-2">Click the + button in the toolbar to add a chart</p>
+                    </div>
+                  </div>
+                ) : (
+                  visibleCharts.map(({ chart, index, isVisible }) => (
                     <VirtualizedChartCard
                       key={chart.id}
                       chart={chart}
@@ -484,7 +514,8 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
                       width={currentSettings.width}
                       height={chartSizes.cardMinHeight}
                     />
-                ))}
+                  ))
+                )}
               </div>
             </div>
           </div>
