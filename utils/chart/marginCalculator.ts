@@ -101,7 +101,7 @@ function getLayoutDensityCategory(columns: number, rows: number): 'large' | 'med
 /**
  * Layout-specific margin configurations
  */
-const LAYOUT_MARGIN_CONFIGS: Record<string, Partial<UnifiedMarginConfig>> = {
+const LAYOUT_MARGIN_CONFIGS: Record<string, { baseRatios?: Partial<UnifiedMarginConfig['baseRatios']>, contentMinimums?: Partial<UnifiedMarginConfig['contentMinimums']>, absoluteMaximums?: Partial<UnifiedMarginConfig['absoluteMaximums']> }> = {
   'large': {
     baseRatios: { left: 0.10 },           // Reduced for larger layouts
     contentMinimums: { left: 45 },        // Standard minimum

@@ -42,10 +42,15 @@ interface ChartPreviewGraphProps {
       right: number
       bottom: number
       left: number
+    } | {
+      top: string | number
+      right: string | number
+      bottom: string | number
+      left: string | number
     }
     xLabelOffset?: number
     yLabelOffset?: number
-    marginMode?: 'auto' | 'manual' | 'percentage' | 'fixed'
+    marginMode?: 'auto' | 'manual' | 'percentage' | 'fixed' | 'adaptive' | 'unified'
     autoMarginScale?: number
     marginOverrides?: Record<string, any>
   }
