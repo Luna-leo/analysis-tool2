@@ -650,6 +650,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
             // Override chart display options based on quality level
             const optimizedChart = {
               ...mergedChart,
+              margins: margin, // Use calculated pixel values instead of percentage strings
               showMarkers: qualityRenderOptions.enableMarkers && mergedChart.showMarkers,
             }
             

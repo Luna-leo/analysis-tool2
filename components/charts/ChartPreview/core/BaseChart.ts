@@ -219,23 +219,9 @@ export abstract class BaseChart<TData = any> {
    * Add chart border with proper positioning
    */
   protected addChartBorder(): void {
-    // Get the parent SVG element
-    const svg = this.g.node()?.ownerSVGElement
-    if (!svg) return
-    
-    const svgSelection = d3.select(svg)
-    const margins = this.getMargins()
-    
-    // Create a border group at the SVG level (not inside mainGroup)
-    // First remove any existing border to avoid duplicates
-    svgSelection.select(".chart-border-group").remove()
-    
-    const borderGroup = svgSelection.append("g")
-      .attr("class", "chart-border-group")
-      .attr("transform", `translate(${margins.left},${margins.top})`)
-    
-    // Draw the border at the correct position
-    borderGroup.append("rect")
+    // Simply draw the border within the current group (this.g)
+    // The group is already transformed with margins, so we just need to draw at (0,0)
+    this.g.append("rect")
       .attr("class", "chart-border")
       .attr("x", 0)
       .attr("y", 0)
