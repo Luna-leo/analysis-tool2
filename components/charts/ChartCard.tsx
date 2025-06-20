@@ -62,6 +62,10 @@ interface ChartCardProps {
       left: number
     }
   }
+  layoutSettings?: {
+    columns: number
+    rows: number
+  }
 }
 
 const ChartCardComponent = ({ 
@@ -81,7 +85,8 @@ const ChartCardComponent = ({
   dataSourceStyles = {},
   width,
   height,
-  chartSettings
+  chartSettings,
+  layoutSettings
 }: ChartCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
@@ -439,6 +444,7 @@ const ChartCardComponent = ({
           }
           dataSourceStyles={dataSourceStyles}
           chartSettings={chartSettings}
+          gridLayout={layoutSettings}
           enableZoom={true}
           enablePan={true}
           showZoomControls={true}

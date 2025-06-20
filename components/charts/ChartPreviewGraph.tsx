@@ -15,7 +15,13 @@ import { useSettingsStore } from "@/stores/useSettingsStore"
 import { useChartZoom } from "./ChartPreview/useChartZoom"
 import { ZoomControls } from "./ChartPreview/ZoomControls"
 import { useQualityOptimization } from "./ChartPreview/useQualityOptimization"
-import { calculateMarginInPixels } from "@/utils/chart/marginCalculator"
+import { 
+  calculateMarginInPixels, 
+  createLayoutContext, 
+  getUnifiedLayoutCategory,
+  getUnifiedMinimumMargins,
+  getUnifiedMaximumMargins 
+} from "@/utils/chart/marginCalculator"
 
 interface ChartPreviewGraphProps {
   editingChart: ChartComponent
@@ -37,7 +43,7 @@ interface ChartPreviewGraphProps {
     }
     xLabelOffset?: number
     yLabelOffset?: number
-    marginMode?: 'auto' | 'manual'
+    marginMode?: 'auto' | 'manual' | 'percentage' | 'fixed'
     autoMarginScale?: number
     marginOverrides?: Record<string, any>
   }
@@ -46,6 +52,10 @@ interface ChartPreviewGraphProps {
   zoomMode?: 'x' | 'xy' | 'auto'
   showZoomControls?: boolean
   isCompactLayout?: boolean
+  gridLayout?: {
+    columns: number
+    rows: number
+  }
 }
 
 
@@ -109,7 +119,7 @@ const chartPreviewGraphPropsAreEqual = (prevProps: ChartPreviewGraphProps, nextP
   return true
 }
 
-export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints, dataSourceStyles, chartSettings, enableZoom = true, enablePan = true, zoomMode = 'auto', showZoomControls = true, isCompactLayout = false }: ChartPreviewGraphProps) => {
+export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints, dataSourceStyles, chartSettings, enableZoom = true, enablePan = true, zoomMode = 'auto', showZoomControls = true, isCompactLayout = false, gridLayout }: ChartPreviewGraphProps) => {
   const [isShiftPressed, setIsShiftPressed] = React.useState(false)
   const [isRangeSelectionMode, setIsRangeSelectionMode] = React.useState(false)
   const { settings } = useSettingsStore()
@@ -594,19 +604,37 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           let margin = { top: 20, right: 40, bottom: 60, left: 60 }
           
           if (chartSettings?.marginMode === 'percentage' && mergedChart.margins) {
-            const category = dimensions.width >= 600 && dimensions.height >= 600 ? 'large' :
-                           dimensions.width >= 400 && dimensions.height >= 400 ? 'medium' : 'small'
-            const minMargins = {
-              top: category === 'small' ? 15 : category === 'medium' ? 20 : 25,
-              right: category === 'small' ? 15 : category === 'medium' ? 20 : 30,
-              bottom: category === 'small' ? 30 : category === 'medium' ? 40 : 50,
-              left: category === 'small' ? 35 : category === 'medium' ? 45 : 55
-            }
-            const maxMargins = {
-              top: category === 'small' ? 40 : category === 'medium' ? 60 : 80,
-              right: category === 'small' ? 40 : category === 'medium' ? 60 : 80,
-              bottom: category === 'small' ? 60 : category === 'medium' ? 80 : 120,
-              left: category === 'small' ? 60 : category === 'medium' ? 80 : 120
+            // Create layout context for individual chart (always 1x1)
+            // Individual charts should not be further divided by grid layout
+            const layoutContext = createLayoutContext(
+              1,  // Individual chart is always 1x1
+              1,  // Individual chart is always 1x1
+              dimensions.width,
+              dimensions.height
+            )
+            
+            // Get unified constraints based on layout context
+            const minMargins = getUnifiedMinimumMargins(layoutContext)
+            const maxMargins = getUnifiedMaximumMargins(layoutContext)
+            
+            // For high-density layouts (3x3, 4x4), apply stricter constraints
+            if (gridLayout && gridLayout.columns >= 3 && gridLayout.rows >= 3) {
+              // Override with even stricter limits for dense grids
+              maxMargins.left = Math.min(maxMargins.left, 40)
+              maxMargins.right = Math.min(maxMargins.right, 20)
+              // Reduce minimum margins for dense layouts
+              minMargins.left = Math.min(minMargins.left, 30)
+              minMargins.right = Math.min(minMargins.right, 15)
+              
+              // Special handling for 4x4 layout - balanced constraints
+              if (gridLayout.columns === 4 && gridLayout.rows === 4) {
+                minMargins.left = 25    // Balanced left margin
+                minMargins.right = 12   // Balanced right margin
+                minMargins.top = 15     // Increased for proper spacing
+                minMargins.bottom = 20   // Increased for axis labels
+                maxMargins.left = 35    // Reasonable max
+                maxMargins.right = 18   // Reasonable max
+              }
             }
             
             margin = {

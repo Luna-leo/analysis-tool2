@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { useLayoutStore } from "@/stores/useLayoutStore"
-import { getLayoutMargins, getLayoutLabelOffsets } from "@/utils/chart/marginCalculator"
+import { getDefaultChartSettings } from "@/utils/chart/marginCalculator"
 
 interface LayoutSettingsProps {
   fileId: string
@@ -60,13 +60,15 @@ export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
   const handleGridPreset = (columns: number, rows: number) => {
     updateLayoutSettings(fileId, { columns, rows })
     
-    // Apply layout-specific margins and offsets
-    const layoutMargins = getLayoutMargins(columns, rows)
-    const layoutOffsets = getLayoutLabelOffsets(columns, rows)
+    // Get default chart settings for the new layout
+    const newChartSettings = getDefaultChartSettings(columns, rows)
     
+    // Update chart settings with the new layout-specific values
     updateChartSettings(fileId, {
-      margins: layoutMargins,
-      ...layoutOffsets
+      margins: newChartSettings.margins,
+      xLabelOffset: newChartSettings.xLabelOffset,
+      yLabelOffset: newChartSettings.yLabelOffset,
+      marginMode: newChartSettings.marginMode
     })
   }
 

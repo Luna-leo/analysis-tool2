@@ -192,7 +192,60 @@ export interface ChartSettings {
   showGrid: boolean
   showLegend?: boolean
   showChartTitle?: boolean
-  margins?: ChartMargins
+  margins?: ChartMargins | { top: string | number; right: string | number; bottom: string | number; left: string | number }
   xLabelOffset?: number
   yLabelOffset?: number
+  marginMode?: 'auto' | 'manual' | 'percentage' | 'fixed' | 'adaptive'
+  autoMarginScale?: number
+  marginOverrides?: Record<string, any>
+}
+
+/**
+ * Layout context for adaptive margin calculation
+ */
+export interface LayoutContext {
+  gridSize: {
+    columns: number
+    rows: number
+  }
+  containerSize: {
+    width: number
+    height: number
+  }
+  contentMetrics?: {
+    maxTickLabelWidth: number
+    maxTickLabelHeight: number
+    titleHeight: number
+    legendSize: {
+      width: number
+      height: number
+    }
+  }
+  deviceContext?: {
+    dpr: number
+    zoomLevel: number
+  }
+}
+
+export type LayoutCategory = 'small' | 'medium' | 'large'
+
+export interface MarginPixels {
+  top: number
+  right: number
+  bottom: number
+  left: number
+}
+
+export interface AdaptiveMargins {
+  base: {
+    top: string | number
+    right: string | number
+    bottom: string | number
+    left: string | number
+  }
+  constraints: {
+    min: MarginPixels
+    max: MarginPixels
+  }
+  calculated: MarginPixels
 }

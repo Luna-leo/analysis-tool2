@@ -1,3 +1,5 @@
+import { LayoutContext, LayoutCategory } from '@/types/chart-types'
+
 /**
  * Margin value type - can be number (px) or string (percentage)
  */
@@ -6,7 +8,7 @@ export type MarginValue = number | string
 /**
  * Margin configuration with support for px and percentage values
  */
-export type MarginConfig = {
+export interface MarginConfig {
   top: MarginValue
   right: MarginValue
   bottom: MarginValue
@@ -14,13 +16,57 @@ export type MarginConfig = {
 }
 
 /**
- * Get layout size category
+ * Get layout size category (legacy - kept for backward compatibility)
+ * @deprecated Use getUnifiedLayoutCategory instead
  */
 const getLayoutCategory = (columns: number, rows: number): 'small' | 'medium' | 'large' => {
   const totalCells = columns * rows
   if (totalCells >= 9) return 'small'   // 3x3, 3x4, 4x3, 4x4, etc.
   if (totalCells >= 4) return 'medium'  // 2x2, 2x3, 3x2, etc.
   return 'large'                         // 1x1, 1x2, 2x1, 1x3, 3x1
+}
+
+/**
+ * Unified layout category determination
+ * Considers both grid size and container dimensions for accurate categorization
+ */
+export const getUnifiedLayoutCategory = (context: LayoutContext): LayoutCategory => {
+  const { gridSize, containerSize } = context
+  const cellCount = gridSize.columns * gridSize.rows
+  
+  // Calculate average cell size
+  const avgCellWidth = containerSize.width / gridSize.columns
+  const avgCellHeight = containerSize.height / gridSize.rows
+  const avgCellSize = Math.min(avgCellWidth, avgCellHeight)
+  
+  // Hybrid determination: consider both cell count and size
+  // Small: high density layouts or small cells
+  if (cellCount >= 9 || avgCellSize < 150) {
+    return 'small'
+  }
+  
+  // Medium: moderate density or medium cells
+  if (cellCount >= 4 || avgCellSize < 250) {
+    return 'medium'
+  }
+  
+  // Large: low density layouts with large cells
+  return 'large'
+}
+
+/**
+ * Create layout context from grid and container information
+ */
+export const createLayoutContext = (
+  columns: number,
+  rows: number,
+  containerWidth: number,
+  containerHeight: number
+): LayoutContext => {
+  return {
+    gridSize: { columns, rows },
+    containerSize: { width: containerWidth, height: containerHeight }
+  }
 }
 
 /**
@@ -41,13 +87,13 @@ const GRID_MARGIN_PERCENTAGE_PRESETS: Record<string, MarginConfig> = {
   '3x1': { bottom: '15%', left: '15%', top: '8%', right: '8%' },
   '3x2': { bottom: '14%', left: '14%', top: '7%', right: '7%' },
   
-  // Small layouts - compact margins (increased left margin for Y-axis labels)
-  '3x3': { bottom: '12%', left: '14%', top: '6%', right: '6%' },
-  '3x4': { bottom: '11%', left: '13%', top: '5%', right: '5%' },
-  '4x1': { bottom: '13%', left: '13%', top: '7%', right: '7%' },
-  '4x2': { bottom: '12%', left: '14%', top: '6%', right: '6%' },
-  '4x3': { bottom: '11%', left: '13%', top: '5%', right: '5%' },
-  '4x4': { bottom: '10%', left: '12%', top: '5%', right: '5%' },
+  // Small layouts - progressive reduction for better space utilization
+  '3x3': { bottom: '10%', left: '8%', top: '5%', right: '4%' },
+  '3x4': { bottom: '9%', left: '7%', top: '4%', right: '3%' },
+  '4x1': { bottom: '10%', left: '8%', top: '5%', right: '4%' },
+  '4x2': { bottom: '8%', left: '7%', top: '4%', right: '3%' },
+  '4x3': { bottom: '7%', left: '6%', top: '4%', right: '3%' },
+  '4x4': { bottom: '9%', left: '6%', top: '6%', right: '3%' },  // Balanced margins for all sides
   
   // Default for larger grids
   'default': { bottom: '10%', left: '10%', top: '5%', right: '5%' }
@@ -210,19 +256,21 @@ export const calculateMarginInPixels = (
 }
 
 /**
- * Get minimum margins to ensure labels are visible
+ * Get minimum margins to ensure labels are visible (legacy)
+ * @deprecated Use getUnifiedMinimumMargins instead
  */
 const getMinimumMargins = (category: 'small' | 'medium' | 'large') => {
   return {
     top: category === 'small' ? 15 : category === 'medium' ? 20 : 25,
     right: category === 'small' ? 15 : category === 'medium' ? 20 : 30,
-    bottom: category === 'small' ? 30 : category === 'medium' ? 40 : 50,
-    left: category === 'small' ? 40 : category === 'medium' ? 45 : 55  // Increased for Y-axis labels
+    bottom: category === 'small' ? 25 : category === 'medium' ? 40 : 50,  // Reduced for small layouts
+    left: category === 'small' ? 35 : category === 'medium' ? 45 : 55  // Reduced for small layouts
   }
 }
 
 /**
- * Get maximum margins to prevent excessive spacing
+ * Get maximum margins to prevent excessive spacing (legacy)
+ * @deprecated Use getUnifiedMaximumMargins instead
  */
 const getMaximumMargins = (category: 'small' | 'medium' | 'large') => {
   return {
@@ -234,15 +282,83 @@ const getMaximumMargins = (category: 'small' | 'medium' | 'large') => {
 }
 
 /**
+ * Get unified minimum margins based on layout context
+ * Considers content metrics if available
+ */
+export const getUnifiedMinimumMargins = (context: LayoutContext) => {
+  const category = getUnifiedLayoutCategory(context)
+  const baseMinimums = getMinimumMargins(category)
+  
+  // If content metrics are available, adjust minimums
+  if (context.contentMetrics) {
+    const { maxTickLabelWidth, maxTickLabelHeight, titleHeight } = context.contentMetrics
+    return {
+      top: Math.max(baseMinimums.top, titleHeight + 10),
+      right: baseMinimums.right,
+      bottom: Math.max(baseMinimums.bottom, maxTickLabelHeight + 20),
+      left: Math.max(baseMinimums.left, maxTickLabelWidth + 15)
+    }
+  }
+  
+  return baseMinimums
+}
+
+/**
+ * Get unified maximum margins based on layout context
+ */
+export const getUnifiedMaximumMargins = (context: LayoutContext) => {
+  const category = getUnifiedLayoutCategory(context)
+  const baseMaximums = getMaximumMargins(category)
+  
+  // Adjust maximums based on container size to prevent excessive margins
+  const { width, height } = context.containerSize
+  const aspectRatio = width / height
+  
+  // For wide screens, apply stricter limits on horizontal margins
+  const isWideScreen = aspectRatio > 1.5
+  const horizontalLimit = isWideScreen ? 0.08 : 0.15  // 8% for wide screens, 15% for normal
+  
+  // For small layouts, apply stricter pixel-based limits based on grid density
+  const isSmallLayout = context.gridSize.columns >= 3 && context.gridSize.rows >= 3
+  const is4x4Layout = context.gridSize.columns === 4 && context.gridSize.rows === 4
+  
+  // Even stricter limits for 4x4
+  const maxLeftPixels = is4x4Layout ? 40 : (isSmallLayout ? 60 : baseMaximums.left)
+  const maxRightPixels = is4x4Layout ? 20 : (isSmallLayout ? 40 : baseMaximums.right)
+  
+  return {
+    top: Math.min(baseMaximums.top, height * 0.15),
+    right: Math.min(maxRightPixels, width * horizontalLimit),
+    bottom: Math.min(baseMaximums.bottom, height * 0.2),
+    left: Math.min(maxLeftPixels, width * horizontalLimit)
+  }
+}
+
+/**
  * Get default chart settings based on grid layout
  * This ensures consistent settings between ChartGrid and ChartPreview
  */
-export const getDefaultChartSettings = (columns: number, rows: number, usePercentageMargins = true) => {
+export const getDefaultChartSettings = (
+  columns: number, 
+  rows: number, 
+  usePercentageMargins = true,
+  containerWidth?: number,
+  containerHeight?: number
+) => {
+  // Create layout context if dimensions are provided
+  const context = containerWidth && containerHeight
+    ? createLayoutContext(columns, rows, containerWidth, containerHeight)
+    : null
+  
+  // Use unified category if context is available, otherwise fall back to legacy
+  const category = context 
+    ? getUnifiedLayoutCategory(context)
+    : getLayoutCategory(columns, rows)
+    
   const margins = usePercentageMargins 
     ? getLayoutMarginsPercentage(columns, rows)
     : getLayoutMargins(columns, rows)
   const labelOffsets = getLayoutLabelOffsets(columns, rows)
-  const category = getLayoutCategory(columns, rows)
   
   // Conditionally show elements based on layout size
   const showChartTitle = category !== 'small' // Hide title for 3x3 and smaller
@@ -258,7 +374,7 @@ export const getDefaultChartSettings = (columns: number, rows: number, usePercen
     margins,
     xLabelOffset: labelOffsets.xLabelOffset,
     yLabelOffset: labelOffsets.yLabelOffset,
-    marginMode: usePercentageMargins ? 'percentage' : 'fixed' as const,
+    marginMode: (usePercentageMargins ? 'percentage' : 'fixed') as 'percentage' | 'fixed',
     autoMarginScale: 1.0,
     marginOverrides: {}
   }

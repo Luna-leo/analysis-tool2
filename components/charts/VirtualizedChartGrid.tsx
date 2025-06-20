@@ -44,6 +44,10 @@ interface VirtualizedChartCardProps {
   width?: number
   height?: number
   chartSettings?: any
+  layoutSettings?: {
+    columns: number
+    rows: number
+  }
 }
 
 const VirtualizedChartCard = React.memo(({ 
@@ -64,7 +68,8 @@ const VirtualizedChartCard = React.memo(({
   dataSourceStyles,
   width,
   height,
-  chartSettings
+  chartSettings,
+  layoutSettings
 }: VirtualizedChartCardProps) => {
   const ref = useRef<HTMLDivElement>(null)
   const [shouldRender, setShouldRender] = useState(isVisible)
@@ -107,6 +112,7 @@ const VirtualizedChartCard = React.memo(({
           width={width}
           height={height}
           chartSettings={chartSettings}
+          layoutSettings={layoutSettings}
         />
       ) : (
         <ChartSkeleton
@@ -530,6 +536,10 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
                       width={currentSettings.width}
                       height={chartSizes.cardMinHeight}
                       chartSettings={currentChartSettings}
+                      layoutSettings={{
+                        columns: currentSettings.columns,
+                        rows: currentSettings.rows
+                      }}
                     />
                   ))
                 )}
