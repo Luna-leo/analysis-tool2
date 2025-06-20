@@ -491,9 +491,12 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
             className="grid"
             style={{
               gridTemplateColumns: `repeat(${currentSettings.columns}, 1fr)`,
-              gridTemplateRows: `repeat(${currentSettings.rows}, 1fr)`,
+              gridTemplateRows: currentSettings.pagination 
+                ? `repeat(${currentSettings.rows}, 1fr)`
+                : `repeat(${currentSettings.rows}, ${chartSizes.cardMinHeight}px)`,
+              gridAutoRows: `${chartSizes.cardMinHeight}px`,
               gap: chartSizes.isCompactLayout ? "2px" : "4px",
-              ...(availableHeight ? { 
+              ...(currentSettings.pagination && availableHeight ? { 
                 height: `${availableHeight}px`,
                 maxHeight: `${availableHeight}px` 
               } : {})
