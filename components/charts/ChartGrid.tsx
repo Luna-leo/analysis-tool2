@@ -418,10 +418,10 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
   const charts = paginatedCharts // Use paginated charts instead of all charts
   const totalItems = localCharts.length // Keep track of total for virtualization threshold
   
-  // Use virtualized grid for large datasets - more aggressive for better performance
+  // Use virtualized grid for all cases for consistency
   // But disable virtualization when pagination is enabled
-  const VIRTUALIZATION_THRESHOLD = 3  // 仮想化をより早く開始
-  const PROGRESSIVE_THRESHOLD = 6
+  const VIRTUALIZATION_THRESHOLD = 0  // 最初から仮想化を使用
+  const PROGRESSIVE_THRESHOLD = 999  // 事実上無効化
   const shouldUseVirtualization = !currentSettings.pagination && totalItems > VIRTUALIZATION_THRESHOLD
   const shouldUseProgressive = !currentSettings.pagination && totalItems > PROGRESSIVE_THRESHOLD && !shouldUseVirtualization
   

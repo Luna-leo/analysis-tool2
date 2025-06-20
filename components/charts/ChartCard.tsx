@@ -329,8 +329,8 @@ const ChartCardComponent = ({
       )}
       style={{
         width: width ? `${width}px` : undefined,
-        height: height ? `${height}px` : undefined,
-        minHeight: height ? undefined : `${cardMinHeight}px`,
+        height: height ? `${height}px` : `${cardMinHeight}px`,
+        minHeight: `${cardMinHeight}px`,
         overflow: 'visible'
       }}
       onMouseEnter={handleMouseEnter}

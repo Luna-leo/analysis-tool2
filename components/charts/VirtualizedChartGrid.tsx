@@ -223,25 +223,61 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     setVisibleRange({ start, end })
   }, [localCharts.length, currentSettings.columns, currentSettings.rows])
   
-  // Update chart sizes
+  // Update chart sizes with dynamic calculation similar to ChartGrid
   useEffect(() => {
-    const isCompactLayout = currentSettings.rows >= 3 || currentSettings.columns >= 3
-    const cardMinHeight = isCompactLayout ? 140 : 180
-    const chartMinHeight = isCompactLayout ? 60 : 80
+    if (!contentRef.current) return
     
-    setChartSizes(prev => {
-      // Only update if values actually changed
-      if (prev.cardMinHeight === cardMinHeight && 
-          prev.chartMinHeight === chartMinHeight && 
-          prev.isCompactLayout === isCompactLayout) {
-        return prev
+    const updateChartSizes = () => {
+      if (!contentRef.current) return
+      
+      const isCompactLayout = currentSettings.rows >= 3 || currentSettings.columns >= 3
+      const containerHeight = contentRef.current.clientHeight
+      
+      let cardMinHeight = isCompactLayout ? 140 : 180
+      let chartMinHeight = isCompactLayout ? 60 : 80
+      
+      // Dynamic height calculation based on container
+      if (containerHeight > 0) {
+        const padding = 32 // pt-2 + pb-6
+        const gap = isCompactLayout ? 2 : 4
+        const totalGaps = (currentSettings.rows - 1) * gap
+        
+        const availableGridHeight = containerHeight - padding
+        const calculatedCardHeight = Math.floor((availableGridHeight - totalGaps) / currentSettings.rows)
+        
+        // Use calculated height with minimum to ensure usability
+        cardMinHeight = Math.max(calculatedCardHeight, 150)
+        chartMinHeight = Math.max(cardMinHeight - 60, isCompactLayout ? 80 : 100)
       }
-      return {
-        cardMinHeight,
-        chartMinHeight,
-        isCompactLayout,
-      }
+      
+      setChartSizes(prev => {
+        // Only update if values actually changed
+        if (prev.cardMinHeight === cardMinHeight && 
+            prev.chartMinHeight === chartMinHeight && 
+            prev.isCompactLayout === isCompactLayout) {
+          return prev
+        }
+        return {
+          cardMinHeight,
+          chartMinHeight,
+          isCompactLayout,
+        }
+      })
+    }
+    
+    // Initial calculation
+    updateChartSizes()
+    
+    // Observe container size changes
+    const resizeObserver = new ResizeObserver(() => {
+      updateChartSizes()
     })
+    
+    resizeObserver.observe(contentRef.current)
+    
+    return () => {
+      resizeObserver.disconnect()
+    }
   }, [currentSettings.rows, currentSettings.columns])
   
   // Handle scroll with throttle for better performance
@@ -337,7 +373,10 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
                 className="grid"
                 style={{
                   gridTemplateColumns: `repeat(${currentSettings.columns}, 1fr)`,
+                  gridTemplateRows: `repeat(${currentSettings.rows}, ${chartSizes.cardMinHeight}px)`,
+                  gridAutoRows: `${chartSizes.cardMinHeight}px`,
                   gap: chartSizes.isCompactLayout ? "2px" : "4px",
+                  maxHeight: `${chartSizes.cardMinHeight * currentSettings.rows + (currentSettings.rows - 1) * (chartSizes.isCompactLayout ? 2 : 4)}px`,
                   overflow: "visible",
                 }}
                 onDragOver={(e) => e.preventDefault()}
@@ -363,7 +402,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
                       selectedDataSources={memoizedSelectedDataSources}
                       dataSourceStyles={memoizedDataSourceStyles}
                       width={currentSettings.width}
-                      height={currentSettings.height}
+                      height={chartSizes.cardMinHeight}
                     />
                 ))}
               </div>
