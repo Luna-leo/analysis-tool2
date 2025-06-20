@@ -52,19 +52,19 @@ export const DEFAULT_UNIFIED_MARGIN_CONFIG: UnifiedMarginConfig = {
     top: 0.08,
     right: 0.05,
     bottom: 0.12,
-    left: 0.10
+    left: 0.10      // Default for large layouts (will be adjusted per layout category)
   },
   contentMinimums: {
     top: 20,
     right: 15,
     bottom: 35,
-    left: 45
+    left: 45        // Default minimum (will be adjusted per layout category)
   },
   absoluteMaximums: {
     top: 60,
     right: 60,
     bottom: 80,
-    left: 80
+    left: 80        // Default maximum (will be adjusted per layout category)
   }
 }
 
@@ -73,7 +73,45 @@ export const DEFAULT_UNIFIED_MARGIN_CONFIG: UnifiedMarginConfig = {
  */
 export const UNIFIED_LABEL_OFFSETS = {
   x: 30,  // X-axis label offset from axis
-  y: 35   // Y-axis label offset from axis
+  y: 40   // Y-axis label offset from axis - increased from 35 for better spacing
+}
+
+/**
+ * Get layout density category for margin adjustments
+ */
+function getLayoutDensityCategory(columns: number, rows: number): 'large' | 'medium' | 'small' | 'ultra-small' {
+  const totalCells = columns * rows;
+  
+  if (totalCells <= 4) return 'large';      // 1x1, 1x2, 2x1, 2x2
+  if (totalCells <= 6) return 'medium';     // 2x3, 3x2
+  if (totalCells <= 9) return 'small';      // 3x3
+  return 'ultra-small';                      // 3x4, 4x3, 4x4+
+}
+
+/**
+ * Layout-specific margin configurations
+ */
+const LAYOUT_MARGIN_CONFIGS: Record<string, Partial<UnifiedMarginConfig>> = {
+  'large': {
+    baseRatios: { left: 0.10 },           // Reduced for larger layouts
+    contentMinimums: { left: 45 },        // Standard minimum
+    absoluteMaximums: { left: 80 }        // Standard maximum
+  },
+  'medium': {
+    baseRatios: { left: 0.11 },           // Slightly increased
+    contentMinimums: { left: 50 },        // Increased minimum
+    absoluteMaximums: { left: 90 }        // Increased maximum
+  },
+  'small': {
+    baseRatios: { left: 0.12 },           // More space for 3x3
+    contentMinimums: { left: 55 },        // Higher minimum for Y-axis labels
+    absoluteMaximums: { left: 100 }       // Higher maximum
+  },
+  'ultra-small': {
+    baseRatios: { left: 0.10 },           // Balanced for space constraints
+    contentMinimums: { left: 45 },        // Moderate minimum
+    absoluteMaximums: { left: 70 }        // Limited maximum
+  }
 }
 
 /**
@@ -86,30 +124,42 @@ export const calculateUnifiedMargins = (
   config: UnifiedMarginConfig = DEFAULT_UNIFIED_MARGIN_CONFIG,
   gridLayout?: { columns: number; rows: number }
 ): { top: number; right: number; bottom: number; left: number } => {
-  // Adjust config for ultra-compact layouts
+  // Start with base config
   let adjustedConfig = config
   
-  if (gridLayout && gridLayout.columns >= 4 && gridLayout.rows >= 4) {
-    // Ultra-compact configuration for 4x4
+  // Apply layout-specific adjustments
+  if (gridLayout) {
+    const category = getLayoutDensityCategory(gridLayout.columns, gridLayout.rows);
+    const layoutConfig = LAYOUT_MARGIN_CONFIGS[category];
+    
+    // Merge layout-specific config with base config
     adjustedConfig = {
       baseRatios: {
-        top: 0.06,    // Reduced from 0.08
-        right: 0.04,  // Reduced from 0.05
-        bottom: 0.10, // Reduced from 0.12
-        left: 0.08    // Reduced from 0.10
+        ...config.baseRatios,
+        ...(layoutConfig.baseRatios || {})
       },
       contentMinimums: {
-        top: 15,      // Reduced from 20
-        right: 10,    // Reduced from 15
-        bottom: 25,   // Reduced from 35
-        left: 35      // Reduced from 45
+        ...config.contentMinimums,
+        ...(layoutConfig.contentMinimums || {})
       },
       absoluteMaximums: {
-        top: 40,      // Reduced from 60
-        right: 40,    // Reduced from 60
-        bottom: 60,   // Reduced from 80
-        left: 60      // Reduced from 80
+        ...config.absoluteMaximums,
+        ...(layoutConfig.absoluteMaximums || {})
       }
+    };
+    
+    // Additional adjustments for specific layouts
+    if (category === 'ultra-small') {
+      // Further reduce other margins for ultra-small layouts
+      adjustedConfig.baseRatios.top = 0.06;
+      adjustedConfig.baseRatios.right = 0.04;
+      adjustedConfig.baseRatios.bottom = 0.10;
+      adjustedConfig.contentMinimums.top = 15;
+      adjustedConfig.contentMinimums.right = 10;
+      adjustedConfig.contentMinimums.bottom = 25;
+      adjustedConfig.absoluteMaximums.top = 40;
+      adjustedConfig.absoluteMaximums.right = 40;
+      adjustedConfig.absoluteMaximums.bottom = 60;
     }
   }
   
