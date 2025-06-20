@@ -241,25 +241,55 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
   useEffect(() => {
     if (!contentRef.current) return
     
+    let retryCount = 0
+    const maxRetries = 5
+    let retryTimeout: NodeJS.Timeout | null = null
+    
     const updateChartSizes = () => {
       if (!contentRef.current) return
       
       const isCompactLayout = currentSettings.rows >= 3 || currentSettings.columns >= 3
       const containerHeight = contentRef.current.clientHeight
+      const containerOffsetHeight = contentRef.current.offsetHeight
+      
+      // Retry if container height is 0 (DOM not ready)
+      if ((containerHeight === 0 || containerOffsetHeight === 0) && retryCount < maxRetries) {
+        retryCount++
+        const delay = Math.min(50 * Math.pow(2, retryCount - 1), 800)
+        console.log(`[VirtualizedChartGrid] Container not ready, retrying in ${delay}ms (attempt ${retryCount}/${maxRetries})`)
+        retryTimeout = setTimeout(updateChartSizes, delay)
+        return
+      }
       
       let cardMinHeight = isCompactLayout ? 140 : 180
       let chartMinHeight = isCompactLayout ? 60 : 80
       
       // Dynamic height calculation based on container
       if (containerHeight > 0) {
-        const padding = 32 // pt-2 + pb-6
+        const padding = currentSettings.pagination ? 8 : 32 // Different padding for pagination mode
+        const paginationHeight = currentSettings.pagination ? 49 : 0 // Height of pagination controls
         const gap = isCompactLayout ? 2 : 4
         const totalGaps = (currentSettings.rows - 1) * gap
         
-        const availableGridHeight = containerHeight - padding
+        const availableGridHeight = containerHeight - padding - paginationHeight
         const calculatedCardHeight = Math.floor((availableGridHeight - totalGaps) / currentSettings.rows)
         
         // Use calculated height with minimum to ensure usability
+        cardMinHeight = Math.max(calculatedCardHeight, 150)
+        chartMinHeight = Math.max(cardMinHeight - 60, isCompactLayout ? 80 : 100)
+      } else if (retryCount >= maxRetries) {
+        // Fallback calculation when container measurement fails
+        console.warn('[VirtualizedChartGrid] Failed to measure container after max retries, using fallback dimensions')
+        const viewportHeight = window.innerHeight || 800
+        const estimatedContainerHeight = viewportHeight - 200 // Account for header, toolbar, etc.
+        const padding = currentSettings.pagination ? 8 : 32
+        const paginationHeight = currentSettings.pagination ? 49 : 0
+        const gap = isCompactLayout ? 2 : 4
+        const totalGaps = (currentSettings.rows - 1) * gap
+        
+        const availableGridHeight = estimatedContainerHeight - padding - paginationHeight
+        const calculatedCardHeight = Math.floor((availableGridHeight - totalGaps) / currentSettings.rows)
+        
         cardMinHeight = Math.max(calculatedCardHeight, 150)
         chartMinHeight = Math.max(cardMinHeight - 60, isCompactLayout ? 80 : 100)
       }
@@ -277,6 +307,11 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
           isCompactLayout,
         }
       })
+      
+      // Reset retry count on successful measurement
+      if (containerHeight > 0) {
+        retryCount = 0
+      }
     }
     
     // Initial calculation
@@ -289,10 +324,19 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     
     resizeObserver.observe(contentRef.current)
     
+    // Force another update after mount to ensure dimensions are calculated
+    const initialTimer = setTimeout(() => {
+      updateChartSizes()
+    }, 200)
+    
     return () => {
+      clearTimeout(initialTimer)
+      if (retryTimeout) {
+        clearTimeout(retryTimeout)
+      }
       resizeObserver.disconnect()
     }
-  }, [currentSettings.rows, currentSettings.columns])
+  }, [currentSettings.rows, currentSettings.columns, currentSettings.pagination])
   
   // Handle scroll with throttle for better performance
   useEffect(() => {
