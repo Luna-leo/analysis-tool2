@@ -102,7 +102,10 @@ export abstract class BaseChart<TData = any> {
   protected setupScalesAndAxes(): void {
     // Check if we already have scales (from zoom)
     if (this.scalesRef.current.xScale && this.scalesRef.current.yScale) {
-      // Use existing (zoomed) scales
+      // Update scale ranges to match new dimensions
+      this.updateScaleRanges()
+      
+      // Use existing (zoomed) scales with updated ranges
       this.scales = {
         xScale: this.scalesRef.current.xScale,
         yScale: this.scalesRef.current.yScale
@@ -182,6 +185,33 @@ export abstract class BaseChart<TData = any> {
       right: 40,
       bottom: 60,
       left: 60
+    }
+  }
+  
+  /**
+   * Update scale ranges when dimensions change
+   */
+  protected updateScaleRanges(): void {
+    if (!this.scalesRef.current.xScale || !this.scalesRef.current.yScale) return
+    
+    // Update X scale range
+    const xScale = this.scalesRef.current.xScale
+    if ('range' in xScale && typeof xScale.range === 'function') {
+      xScale.range([0, this.width])
+    }
+    
+    // Update Y scale range
+    const yScale = this.scalesRef.current.yScale
+    if ('range' in yScale && typeof yScale.range === 'function') {
+      yScale.range([this.height, 0])
+    }
+    
+    // Log the update in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[BaseChart] Updated scale ranges for new dimensions:`, {
+        width: this.width,
+        height: this.height
+      })
     }
   }
   

@@ -192,6 +192,9 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   const dataVersionRef = useRef<string>('')
   const isWaitingForNewDataRef = useRef(false)
   
+  // Track previous dimensions to detect size changes
+  const prevDimensionsRef = useRef<{ width: number; height: number } | null>(null)
+  
   // Extract render-critical properties from mergedChart to optimize re-renders
   const chartRenderProps = useMemo(() => ({
     id: mergedChart.id,
@@ -439,6 +442,32 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     
     dataVersionRef.current = dataFingerprint
   }, [memoizedChartData, isLoadingData])
+  
+  // Track dimension changes and update scales accordingly
+  useEffect(() => {
+    if (!prevDimensionsRef.current) {
+      prevDimensionsRef.current = dimensions
+      return
+    }
+    
+    const prevDims = prevDimensionsRef.current
+    const dimensionsChanged = prevDims.width !== dimensions.width || prevDims.height !== dimensions.height
+    
+    if (dimensionsChanged && isInitialRenderComplete.current) {
+      // Dimensions changed after initial render - need to update scale ranges
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[Chart ${chartRenderProps.id}] Dimensions changed:`, {
+          prev: prevDims,
+          new: dimensions
+        })
+      }
+      
+      // Force a re-render to update scale ranges
+      setZoomVersion(v => v + 1)
+    }
+    
+    prevDimensionsRef.current = dimensions
+  }, [dimensions, chartRenderProps.id])
 
 
   // Throttled resize handler for better performance
