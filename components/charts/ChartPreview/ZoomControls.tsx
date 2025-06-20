@@ -11,7 +11,7 @@ interface ZoomControlsProps {
   showZoomLevel?: boolean;
   isRangeSelectionMode?: boolean;
   onToggleRangeSelection?: () => void;
-  variant?: 'default' | 'compact';
+  variant?: 'default' | 'compact' | 'ultra-compact';
   position?: 'absolute' | 'static';
   orientation?: 'vertical' | 'horizontal';
 }
@@ -47,20 +47,21 @@ export const ZoomControls: React.FC<ZoomControlsProps> = ({
   }, [zoomLevel]);
 
   const isCompact = variant === 'compact';
+  const isUltraCompact = variant === 'ultra-compact';
   const isHorizontal = orientation === 'horizontal';
   
   const containerClass = `
     ${position === 'absolute' ? 'absolute bottom-4 right-4' : ''}
-    flex ${isHorizontal ? 'flex-row' : 'flex-col'} gap-0.5
-    ${isCompact ? 'opacity-70 hover:opacity-100 transition-opacity' : ''}
+    flex ${isHorizontal ? 'flex-row' : 'flex-col'} ${isUltraCompact ? 'gap-0' : 'gap-0.5'}
+    ${(isCompact || isUltraCompact) ? 'opacity-70 hover:opacity-100 transition-opacity' : ''}
   `.trim();
   
-  const buttonSize = isCompact ? 'w-6 h-6' : 'w-8 h-8';
-  const iconSize = isCompact ? 'w-3 h-3' : 'w-4 h-4';
+  const buttonSize = isUltraCompact ? 'w-5 h-5' : isCompact ? 'w-6 h-6' : 'w-8 h-8';
+  const iconSize = isUltraCompact ? 'w-2.5 h-2.5' : isCompact ? 'w-3 h-3' : 'w-4 h-4';
   
   return (
     <div className={containerClass}>
-      {showZoomLevel && !isCompact && (
+      {showZoomLevel && !isCompact && !isUltraCompact && (
         <div 
           className={`
             mb-2 bg-white/90 backdrop-blur-sm rounded-md px-2 py-1 text-xs text-center shadow-sm border

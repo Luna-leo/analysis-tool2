@@ -440,6 +440,7 @@ const ChartCardComponent = ({
           enableZoom={true}
           enablePan={true}
           showZoomControls={true}
+          isCompactLayout={isCompactLayout}
         />
       </div>
 

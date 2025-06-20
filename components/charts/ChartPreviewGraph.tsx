@@ -44,6 +44,7 @@ interface ChartPreviewGraphProps {
   enablePan?: boolean
   zoomMode?: 'x' | 'xy' | 'auto'
   showZoomControls?: boolean
+  isCompactLayout?: boolean
 }
 
 
@@ -57,7 +58,8 @@ const chartPreviewGraphPropsAreEqual = (prevProps: ChartPreviewGraphProps, nextP
     prevProps.enableZoom !== nextProps.enableZoom ||
     prevProps.enablePan !== nextProps.enablePan ||
     prevProps.zoomMode !== nextProps.zoomMode ||
-    prevProps.showZoomControls !== nextProps.showZoomControls
+    prevProps.showZoomControls !== nextProps.showZoomControls ||
+    prevProps.isCompactLayout !== nextProps.isCompactLayout
   ) {
     if (isDev) console.log(`[Chart ${chartId}] Re-render: primitive props changed`)
     return false
@@ -106,7 +108,7 @@ const chartPreviewGraphPropsAreEqual = (prevProps: ChartPreviewGraphProps, nextP
   return true
 }
 
-export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints, dataSourceStyles, chartSettings, enableZoom = true, enablePan = true, zoomMode = 'auto', showZoomControls = true }: ChartPreviewGraphProps) => {
+export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints, dataSourceStyles, chartSettings, enableZoom = true, enablePan = true, zoomMode = 'auto', showZoomControls = true, isCompactLayout = false }: ChartPreviewGraphProps) => {
   const [isShiftPressed, setIsShiftPressed] = React.useState(false)
   const [isRangeSelectionMode, setIsRangeSelectionMode] = React.useState(false)
   const { settings } = useSettingsStore()
@@ -865,8 +867,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         <>
           {/* Check if this is being used in ChartCard (has chartSettings) */}
           {chartSettings ? (
-            // Compact mode for ChartCard - position in bottom right of plot area
-            <div className="absolute bottom-1 right-1 z-10">
+            // Compact mode for ChartCard - adjust position and variant based on layout
+            <div className={`absolute ${isCompactLayout ? 'bottom-1 right-1' : 'bottom-1 right-1'} z-10`}>
               <ZoomControls
                 onZoomIn={zoomIn}
                 onZoomOut={zoomOut}
@@ -877,14 +879,14 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
                 showZoomLevel={false}
                 isRangeSelectionMode={isRangeSelectionMode}
                 onToggleRangeSelection={() => setIsRangeSelectionMode(!isRangeSelectionMode)}
-                variant="compact"
+                variant={isCompactLayout ? "ultra-compact" : "compact"}
                 position="static"
                 orientation="horizontal"
               />
             </div>
           ) : (
-            // Default mode for ChartEditModal - also use horizontal layout at bottom right
-            <div className="absolute bottom-4 right-4 z-10">
+            // Default mode for ChartEditModal - reduce margins
+            <div className="absolute bottom-2 right-2 z-10">
               <ZoomControls
                 onZoomIn={zoomIn}
                 onZoomOut={zoomOut}
