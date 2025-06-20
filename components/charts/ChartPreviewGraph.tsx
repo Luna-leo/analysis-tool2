@@ -879,7 +879,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
                 showZoomLevel={false}
                 isRangeSelectionMode={isRangeSelectionMode}
                 onToggleRangeSelection={() => setIsRangeSelectionMode(!isRangeSelectionMode)}
-                variant={isCompactLayout ? "ultra-compact" : "compact"}
+                variant={isCompactLayout ? "ultra-compact" : "default"}
                 position="static"
                 orientation="horizontal"
               />
