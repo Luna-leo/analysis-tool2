@@ -11,6 +11,7 @@ import { useUIStore } from "@/stores/useUIStore"
 import { useFileStore } from "@/stores/useFileStore"
 import { useIntersectionObserver } from "@/hooks/useIntersectionObserver"
 import { SourceSelectionBanner } from "./SourceSelectionBanner"
+import { ChartPagination } from "./ChartPagination"
 
 interface VirtualizedChartGridProps {
   file: FileNode
@@ -121,7 +122,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
   const [localCharts, setLocalCharts] = useState(file.charts || [])
   
-  const { layoutSettingsMap } = useLayoutStore()
+  const { layoutSettingsMap, updateLayoutSettings } = useLayoutStore()
   const { updateFileCharts, openTabs } = useFileStore()
   const { gridSelectionMode, sourceSelectionMode } = useUIStore()
   
@@ -132,8 +133,17 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     showDataSources: true,
     columns: 2,
     rows: 2,
-    pagination: false, // Disable pagination for virtualized grid
+    pagination: true,
+    currentPage: 0,
   }
+  
+  // Calculate pagination values
+  const itemsPerPage = currentSettings.pagination ? currentSettings.columns * currentSettings.rows : localCharts.length
+  const totalPages = Math.ceil(localCharts.length / itemsPerPage)
+  const currentPage = Math.min(currentSettings.currentPage || 0, totalPages - 1)
+  const startIndex = currentPage * itemsPerPage
+  const endIndex = Math.min(startIndex + itemsPerPage, localCharts.length)
+  const paginatedCharts = currentSettings.pagination ? localCharts.slice(startIndex, endIndex) : localCharts
   
   // Track visible charts - calculate initial range based on viewport
   const [visibleRange, setVisibleRange] = useState(() => {
@@ -197,6 +207,10 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     setDraggedIndex(null)
     setDragOverIndex(null)
   }, [])
+
+  const handlePageChange = useCallback((newPage: number) => {
+    updateLayoutSettings(file.id, { currentPage: newPage })
+  }, [file.id, updateLayoutSettings])
 
   const updateVisibleRange = useCallback(() => {
     if (!gridRef.current || !contentRef.current) return
@@ -329,15 +343,22 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     )
   }
   
-  const charts = localCharts
-  const totalRows = Math.ceil(charts.length / currentSettings.columns)
-  const estimatedTotalHeight = totalRows * (chartSizes.cardMinHeight + (chartSizes.isCompactLayout ? 2 : 4))
+  const charts = paginatedCharts
+  const totalRows = currentSettings.pagination 
+    ? currentSettings.rows 
+    : Math.ceil(localCharts.length / currentSettings.columns)
+  const estimatedTotalHeight = currentSettings.pagination
+    ? chartSizes.cardMinHeight * currentSettings.rows + (currentSettings.rows - 1) * (chartSizes.isCompactLayout ? 2 : 4)
+    : totalRows * (chartSizes.cardMinHeight + (chartSizes.isCompactLayout ? 2 : 4))
   
   // Create placeholder array for virtualization
   const visibleCharts = useMemo(() => {
     const result = []
     for (let i = 0; i < charts.length; i++) {
-      const isInRange = i >= visibleRange.start && i < visibleRange.end
+      // For pagination mode, all charts are visible (no virtualization needed)
+      const isInRange = currentSettings.pagination 
+        ? true 
+        : i >= visibleRange.start && i < visibleRange.end
       result.push({
         chart: charts[i],
         index: i,
@@ -345,7 +366,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
       })
     }
     return result
-  }, [charts, visibleRange])
+  }, [charts, visibleRange, currentSettings.pagination])
   
   // Memoize dataSourceStyles to prevent unnecessary re-renders
   const memoizedDataSourceStyles = useMemo(() => {
@@ -360,23 +381,38 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
   return (
     <>
       <div className="h-full flex flex-col" ref={contentRef}>
-        <div className="flex-1 overflow-auto">
-          <div className="px-6 pt-2 pb-6 relative">
+        <div className={cn(
+          currentSettings.pagination ? "flex-1 overflow-hidden" : "flex-1 overflow-auto"
+        )}>
+          <div className={cn(
+            "px-6 relative",
+            currentSettings.pagination ? "pt-2 h-full" : "pt-2 pb-6"
+          )}>
             
             {/* Virtualized Grid */}
             <div 
               ref={gridRef}
-              className="relative"
-              style={{ minHeight: `${estimatedTotalHeight}px` }}
+              className={cn(
+                "relative",
+                currentSettings.pagination && "h-full"
+              )}
+              style={currentSettings.pagination ? {} : { minHeight: `${estimatedTotalHeight}px` }}
             >
               <div
-                className="grid"
+                className={cn(
+                  "grid",
+                  currentSettings.pagination && "h-full"
+                )}
                 style={{
                   gridTemplateColumns: `repeat(${currentSettings.columns}, 1fr)`,
-                  gridTemplateRows: `repeat(${currentSettings.rows}, ${chartSizes.cardMinHeight}px)`,
-                  gridAutoRows: `${chartSizes.cardMinHeight}px`,
+                  gridTemplateRows: currentSettings.pagination
+                    ? `repeat(${currentSettings.rows}, 1fr)`
+                    : `repeat(${currentSettings.rows}, ${chartSizes.cardMinHeight}px)`,
+                  gridAutoRows: currentSettings.pagination ? undefined : `${chartSizes.cardMinHeight}px`,
                   gap: chartSizes.isCompactLayout ? "2px" : "4px",
-                  maxHeight: `${chartSizes.cardMinHeight * currentSettings.rows + (currentSettings.rows - 1) * (chartSizes.isCompactLayout ? 2 : 4)}px`,
+                  ...(currentSettings.pagination ? {} : {
+                    maxHeight: `${chartSizes.cardMinHeight * currentSettings.rows + (currentSettings.rows - 1) * (chartSizes.isCompactLayout ? 2 : 4)}px`
+                  }),
                   overflow: "visible",
                 }}
                 onDragOver={(e) => e.preventDefault()}
@@ -409,6 +445,16 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
             </div>
           </div>
         </div>
+        
+        {/* Pagination controls */}
+        {currentSettings.pagination && totalPages > 1 && (
+          <ChartPagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            className="border-t bg-background"
+          />
+        )}
       </div>
       
       {sourceSelectionMode && (
