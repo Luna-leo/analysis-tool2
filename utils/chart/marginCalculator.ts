@@ -176,15 +176,35 @@ export const calculateUnifiedMargins = (
     if (gridLayout.columns >= 4) {
       // Override left margin for 4+ column layouts
       if (gridLayout.rows === 1) {
-        // 1x4: Moderate increase
+        // 1x4: Moderate increase for left, reduce top/bottom for horizontal layout
         adjustedConfig.baseRatios.left = 0.12;
         adjustedConfig.contentMinimums.left = 55;
         adjustedConfig.absoluteMaximums.left = 95;
-      } else {
-        // 2x4, 3x4, 4x4: Larger increase for denser layouts
+        // Reduce vertical margins for horizontal emphasis
+        adjustedConfig.baseRatios.top = 0.05;      // 5% for minimal top margin
+        adjustedConfig.baseRatios.bottom = 0.08;   // 8% for reduced bottom margin
+        adjustedConfig.contentMinimums.top = 15;
+        adjustedConfig.contentMinimums.bottom = 25;
+        adjustedConfig.absoluteMaximums.top = 40;
+        adjustedConfig.absoluteMaximums.bottom = 60;
+      } else if (gridLayout.rows === 2) {
+        // 2x4: Larger increase for left, moderate reduction for top/bottom
         adjustedConfig.baseRatios.left = 0.13;
         adjustedConfig.contentMinimums.left = 60;
         adjustedConfig.absoluteMaximums.left = 110;
+        // Moderate vertical margin reduction
+        adjustedConfig.baseRatios.top = 0.06;      // 6% for balanced top margin
+        adjustedConfig.baseRatios.bottom = 0.09;   // 9% for balanced bottom margin
+        adjustedConfig.contentMinimums.top = 18;
+        adjustedConfig.contentMinimums.bottom = 30;
+        adjustedConfig.absoluteMaximums.top = 50;
+        adjustedConfig.absoluteMaximums.bottom = 70;
+      } else {
+        // 3x4, 4x4: Larger increase for left (existing)
+        adjustedConfig.baseRatios.left = 0.13;
+        adjustedConfig.contentMinimums.left = 60;
+        adjustedConfig.absoluteMaximums.left = 110;
+        // Note: 3x4 and 4x4 already handled by ultra-small category above
       }
     }
   }
