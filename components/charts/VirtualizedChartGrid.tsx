@@ -330,19 +330,6 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     }
   }, [updateVisibleRange])
   
-  if (!currentFile.charts || currentFile.charts.length === 0) {
-    return (
-      <div className="p-6">
-        <div className="h-full flex items-center justify-center text-muted-foreground">
-          <div className="text-center">
-            <div className="text-4xl mb-2">📊</div>
-            <p>No charts available for this file</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
-  
   const charts = paginatedCharts
   const totalRows = currentSettings.pagination 
     ? currentSettings.rows 
@@ -377,6 +364,19 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
   const memoizedSelectedDataSources = useMemo(() => {
     return currentFile.selectedDataSources || []
   }, [JSON.stringify(currentFile.selectedDataSources)])
+  
+  if (!currentFile.charts || currentFile.charts.length === 0) {
+    return (
+      <div className="p-6">
+        <div className="h-full flex items-center justify-center text-muted-foreground">
+          <div className="text-center">
+            <div className="text-4xl mb-2">📊</div>
+            <p>No charts available for this file</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
   
   return (
     <>
