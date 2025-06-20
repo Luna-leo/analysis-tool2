@@ -15,6 +15,7 @@ import { useSettingsStore } from "@/stores/useSettingsStore"
 import { useChartZoom } from "./ChartPreview/useChartZoom"
 import { ZoomControls } from "./ChartPreview/ZoomControls"
 import { useQualityOptimization } from "./ChartPreview/useQualityOptimization"
+import { calculateMarginInPixels } from "@/utils/chart/marginCalculator"
 
 interface ChartPreviewGraphProps {
   editingChart: ChartComponent
@@ -589,7 +590,35 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           // Clear everything
           svg.selectAll("*").remove()
 
-          const margin = mergedChart.margins || { top: 20, right: 40, bottom: 60, left: 60 }
+          // Calculate margins based on mode
+          let margin = { top: 20, right: 40, bottom: 60, left: 60 }
+          
+          if (chartSettings?.marginMode === 'percentage' && mergedChart.margins) {
+            const category = dimensions.width >= 600 && dimensions.height >= 600 ? 'large' :
+                           dimensions.width >= 400 && dimensions.height >= 400 ? 'medium' : 'small'
+            const minMargins = {
+              top: category === 'small' ? 15 : category === 'medium' ? 20 : 25,
+              right: category === 'small' ? 15 : category === 'medium' ? 20 : 30,
+              bottom: category === 'small' ? 30 : category === 'medium' ? 40 : 50,
+              left: category === 'small' ? 35 : category === 'medium' ? 45 : 55
+            }
+            const maxMargins = {
+              top: category === 'small' ? 40 : category === 'medium' ? 60 : 80,
+              right: category === 'small' ? 40 : category === 'medium' ? 60 : 80,
+              bottom: category === 'small' ? 60 : category === 'medium' ? 80 : 120,
+              left: category === 'small' ? 60 : category === 'medium' ? 80 : 120
+            }
+            
+            margin = {
+              top: calculateMarginInPixels(mergedChart.margins.top, dimensions.height, minMargins.top, maxMargins.top),
+              right: calculateMarginInPixels(mergedChart.margins.right, dimensions.width, minMargins.right, maxMargins.right),
+              bottom: calculateMarginInPixels(mergedChart.margins.bottom, dimensions.height, minMargins.bottom, maxMargins.bottom),
+              left: calculateMarginInPixels(mergedChart.margins.left, dimensions.width, minMargins.left, maxMargins.left)
+            }
+          } else {
+            margin = mergedChart.margins || margin
+          }
+          
           const width = dimensions.width - margin.left - margin.right
           const height = dimensions.height - margin.top - margin.bottom
           
