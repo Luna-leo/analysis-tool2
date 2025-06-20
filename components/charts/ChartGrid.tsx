@@ -204,8 +204,8 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
             cardMinHeight = Math.max(calculatedCardHeight, 150) // Minimum 150px for usability
             chartMinHeight = Math.max(cardMinHeight - 60, isCompactLayout ? 80 : 100)
             
-            // Don't set available height for non-paginated layout (allow scrolling)
-            setAvailableHeight(null)
+            // Set available height for non-paginated layout to limit display area
+            setAvailableHeight(availableGridHeight)
             setHasEverMeasured(true)
           }
         } else {
@@ -488,15 +488,12 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
           ) : (
           <div
             ref={gridRef}
-            className={cn(
-              "grid",
-              currentSettings.pagination ? "" : "min-h-full"
-            )}
+            className="grid"
             style={{
               gridTemplateColumns: `repeat(${currentSettings.columns}, 1fr)`,
               gridTemplateRows: `repeat(${currentSettings.rows}, 1fr)`,
               gap: chartSizes.isCompactLayout ? "2px" : "4px",
-              ...(currentSettings.pagination && availableHeight ? { 
+              ...(availableHeight ? { 
                 height: `${availableHeight}px`,
                 maxHeight: `${availableHeight}px` 
               } : {})
