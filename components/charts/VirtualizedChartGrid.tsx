@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import { FileNode, ChartSizes, EventInfo } from "@/types"
+import { FileNode, EventInfo } from "@/types"
 import { ChartCard } from "./ChartCard"
 import { ChartSkeleton } from "./ChartSkeleton"
 import { useLayoutStore } from "@/stores/useLayoutStore"
@@ -15,6 +15,13 @@ import { ChartPagination } from "./ChartPagination"
 
 interface VirtualizedChartGridProps {
   file: FileNode
+}
+
+// Local type definition for chart sizes
+interface ChartSizes {
+  cardMinHeight: number
+  chartMinHeight: number
+  isCompactLayout: boolean
 }
 
 interface VirtualizedChartCardProps {

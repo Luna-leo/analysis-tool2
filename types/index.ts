@@ -13,7 +13,7 @@ export type AxisType = "datetime" | "time" | "numeric" | "category" | "parameter
 
 export type TimeUnit = "sec" | "min" | "hr"
 
-export type DurationUnit = "seconds" | "minutes" | "hours"
+// DurationUnit has been removed - use TimeUnit instead for consistency
 
 export type OperatorType = "gt" | "lt" | "eq" | "gte" | "lte" | "ne" | "crossAbove" | "crossBelow" | "isOn" | "isOff" | "switchedOn" | "switchedOff"
 
@@ -77,9 +77,11 @@ export interface ReferenceLine {
   selectedThresholds?: string[]
 }
 
+// Note: DataSourceStyle is deprecated for chart plotting - use PlotStyle from './plot-style' instead
+// This type is kept for backward compatibility with FileNode.dataSourceStyles
 export interface DataSourceStyle {
   // Line settings
-  lineEnabled?: boolean  // Whether to show lines connecting points
+  lineEnabled?: boolean
   lineColor?: string
   lineWidth?: number
   lineStyle?: 'solid' | 'dashed' | 'dotted' | 'dashdot'
@@ -97,187 +99,17 @@ export interface DataSourceStyle {
   interpolation?: 'linear' | 'smooth' | 'step' | 'stepAfter' | 'stepBefore'
 }
 
-export interface ChartComponent {
-  id: string
-  title: string
-  showTitle?: boolean
-  showLegend?: boolean
-  data: Array<{ name: string; value: number }>
-  xLabel?: string
-  yLabel?: string
-  yAxisLabels?: Record<number, string>
-  xParameter?: string
-  yParameters?: string[]
-  verticalLines?: Array<{ value: number; label?: string; color?: string }>
-  horizontalLines?: Array<{ value: number; label?: string; color?: string }>
-  referenceLines?: ReferenceLine[]
-  dataSource?: {
-    name: string
-    table: string
-    columns: string[]
-    lastUpdated: string
-  }
-  xAxisType?: AxisType
-  xAxisRange?: {
-    auto?: boolean
-    min: string | number
-    max: string | number
-    unit?: TimeUnit
-  }
-  yAxisParams?: Array<{
-    parameterType?: "Parameter" | "Formula" | "Interlock"
-    parameter: string
-    axisNo?: number
-    axisName: string
-    range?: {
-      auto?: boolean
-      min: number
-      max: number
-    }
-    marker?: {
-      type: MarkerType
-      size: number
-      borderColor: string
-      fillColor: string
-    }
-    line?: {
-      width: number
-      color: string
-      style: LineStyle
-    }
-    // For Interlock type
-    interlockId?: string
-    interlockSource?: "master" | "custom"
-    interlockDefinition?: InterlockDefinition
-    selectedThresholds?: string[]
-    // For Formula type
-    formulaId?: string
-    formulaDefinition?: FormulaDefinition
-    // Unit conversion
-    unit?: string
-    unitConversionId?: string
-    // Legend text
-    legendText?: string
-  }>
-  fileId?: string
-  type?: string
-  showMarkers?: boolean
-  showLines?: boolean
-  legendPosition?: {
-    xRatio: number
-    yRatio: number
-  }
-  legendMode?: 'datasource' | 'parameter' | 'both'
-  dataSourceLegends?: Record<string, string> // For storing legend text per data source ID
-  plotStyles?: {
-    mode: 'datasource' | 'parameter' | 'both'
-    byDataSource?: Record<string, {
-      marker: {
-        type: MarkerType
-        size: number
-        borderColor: string
-        fillColor: string
-      }
-      line: {
-        width: number
-        color: string
-        style: LineStyle
-      }
-      legendText?: string
-    }>
-    byParameter?: Record<number, {
-      marker: {
-        type: MarkerType
-        size: number
-        borderColor: string
-        fillColor: string
-      }
-      line: {
-        width: number
-        color: string
-        style: LineStyle
-      }
-      legendText?: string
-    }>
-    byBoth?: Record<string, {
-      marker: {
-        type: MarkerType
-        size: number
-        borderColor: string
-        fillColor: string
-      }
-      line: {
-        width: number
-        color: string
-        style: LineStyle
-      }
-      legendText?: string
-    }>
-  }
-  // Chart layout settings
-  margins?: {
-    top: number
-    right: number
-    bottom: number
-    left: number
-  }
-  showGrid?: boolean
-  xAxisTicks?: number
-  yAxisTicks?: number
-  xAxisTickPrecision?: number
-  yAxisTickPrecision?: number
-  // Axis label settings
-  showXLabel?: boolean
-  showYLabel?: boolean
-  xLabelOffset?: number
-  yLabelOffset?: number
-}
+// ChartComponent has been moved to './chart-types' for better organization
 
-export interface FileNode {
-  id: string
-  name: string
-  type: "file" | "folder" | "csv-import" | "event-master" | "interlock-master" | "formula-master" | "trigger-condition-master" | "unit-converter-formula-master" | "sensor-data-master" | "parameter-master" | "tag-master" | "settings"
-  children?: FileNode[]
-  dataSources?: string[]
-  selectedDataSources?: EventInfo[] // Common data sources for all charts in this grid
-  dataSourceStyles?: { [dataSourceId: string]: DataSourceStyle } // Styles for each data source
-  charts?: ChartComponent[]
-  isSystemNode?: boolean // For non-removable nodes like CSV Import
-}
+// FileNode has been moved to './chart-types' for better organization
 
-export interface LayoutSettings {
-  showFileName: boolean
-  showDataSources: boolean
-  columns: number
-  rows: number
-  pagination: boolean
-  width?: number
-  height?: number
-  currentPage?: number  // Current page number (0-indexed)
-}
+// LayoutSettings has been moved to './chart-types' for better organization
 
-export interface ChartSettings {
-  showXAxis: boolean
-  showYAxis: boolean
-  showGrid: boolean
-  showLegend?: boolean
-  showChartTitle?: boolean
-  margins?: {
-    top: number
-    right: number
-    bottom: number
-    left: number
-  }
-  xLabelOffset?: number
-  yLabelOffset?: number
-}
+// ChartSettings has been moved to './chart-types' for better organization
 
-export interface ChartSizes {
-  cardMinHeight: number
-  chartMinHeight: number
-  isCompactLayout: boolean
-}
+// ChartSizes has been removed - rarely used and can be inlined where needed
 
+// Event-related types
 export interface EventInfo {
   id: string
   plant: string
@@ -290,6 +122,16 @@ export interface EventInfo {
   end: string
 }
 
+// EventMaster extends EventInfo with additional fields and flexible indexing
+export interface EventMaster extends Omit<EventInfo, 'labelDescription' | 'eventDetail' | 'start' | 'end'> {
+  labelDescription: string // Required in EventMaster
+  eventDetail: string // Required in EventMaster
+  start: Date | string
+  end: Date | string
+  [key: string]: string | number | boolean | Date | null | undefined
+}
+
+// Search and condition types
 export interface SearchCondition {
   id: string
   type: 'condition' | 'group'
@@ -350,18 +192,11 @@ export interface CSVImportData {
   files: File[]
 }
 
-export interface EventMaster {
-  id: string
-  plant: string
-  machineNo: string
-  label: string
-  labelDescription: string
-  event: string
-  eventDetail: string
-  start: Date | string
-  end: Date | string
-  [key: string]: string | number | boolean | Date | null | undefined
-}
-
 // Re-export sidebar types
 export * from './sidebar'
+
+// Re-export chart types
+export * from './chart-types'
+
+// Re-export plot style types
+export * from './plot-style'
