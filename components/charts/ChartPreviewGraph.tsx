@@ -794,8 +794,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
                   .attr("class", "selection-rect")
                   .attr("clip-path", `url(#${selectionClipId})`);
                 
-                const rectX = Math.min(selectionState.startX, selectionState.endX);
-                const rectY = Math.min(selectionState.startY, selectionState.endY);
+                const rectX = Math.min(selectionState.startX, selectionState.endX) - margin.left;
+                const rectY = Math.min(selectionState.startY, selectionState.endY) - margin.top;
                 const rectWidth = Math.abs(selectionState.endX - selectionState.startX);
                 const rectHeight = Math.abs(selectionState.endY - selectionState.startY);
                 
