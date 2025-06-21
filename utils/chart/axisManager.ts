@@ -438,9 +438,14 @@ export class AxisManager {
     const showTitle = editingChart.showTitle ?? true
     
     if (editingChart.title && showTitle) {
-      // Ensure title doesn't exceed top margin
-      const margin = editingChart.margins || { top: 20, right: 40, bottom: 60, left: 60 }
-      const titleY = Math.max(-margin.top + 15, -5) // At least 15px from top edge
+      // Calculate margin values (handle both number and string types)
+      const marginTop = typeof editingChart.margins?.top === 'number' 
+        ? editingChart.margins.top 
+        : 20
+      
+      // Position title within the chart area, just below the top margin
+      // Use positive Y value to ensure it's within the visible area
+      const titleY = -marginTop + 15
       
       g.append("text")
         .attr("class", "chart-title")
@@ -449,6 +454,7 @@ export class AxisManager {
         .attr("y", titleY)
         .style("font-size", "14px")
         .style("font-weight", "500")
+        .style("fill", "#1f2937") // Explicit color to ensure visibility
         .text(editingChart.title)
     }
   }
