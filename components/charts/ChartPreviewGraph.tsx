@@ -369,8 +369,21 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   const computedMargins = useMemo(() => {
     let margin = { top: 20, right: 40, bottom: 60, left: 60 }
     
-    // 4x4 layout gets priority - always use ultra-compact margins
-    if (gridLayout?.columns === 4 && gridLayout?.rows === 4) {
+    // Priority 1: Grid-wide chart settings margins (from Layout Settings)
+    if (chartSettings?.margins) {
+      margin = {
+        top: Number(chartSettings.margins.top) || 20,
+        right: Number(chartSettings.margins.right) || 40,
+        bottom: Number(chartSettings.margins.bottom) || 50,
+        left: Number(chartSettings.margins.left) || 55
+      }
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[ChartPreviewGraph] Using grid-wide margins from chartSettings:', margin)
+      }
+    }
+    // Priority 2: 4x4 layout gets ultra-compact margins
+    else if (gridLayout?.columns === 4 && gridLayout?.rows === 4) {
       margin = {
         top: Math.round(dimensions.height * 0.03),    // 3%
         right: Math.round(dimensions.width * 0.04),   // 4%
@@ -414,7 +427,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     }
     
     return margin
-  }, [dimensions, gridLayout, mergedChart.margins, chartSettings?.marginMode])
+  }, [dimensions, gridLayout, mergedChart.margins, chartSettings?.marginMode, chartSettings?.margins])
   
   // Initialize zoom functionality
   const {

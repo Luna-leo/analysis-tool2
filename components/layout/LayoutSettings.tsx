@@ -62,6 +62,32 @@ export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
            currentLayoutSettings.rows === presetRows
   }
   
+  // Margin presets
+  const marginPresets = {
+    compact: { top: 10, right: 20, bottom: 30, left: 40 },
+    normal: { top: 20, right: 40, bottom: 50, left: 55 },
+    spacious: { top: 30, right: 50, bottom: 60, left: 70 }
+  }
+  
+  // Check if current margins match a preset
+  const isMarginPresetActive = (presetName: keyof typeof marginPresets) => {
+    const preset = marginPresets[presetName]
+    const current = currentChartSettings.margins
+    return current &&
+      current.top === preset.top &&
+      current.right === preset.right &&
+      current.bottom === preset.bottom &&
+      current.left === preset.left
+  }
+  
+  // Apply margin preset
+  const applyMarginPreset = (presetName: keyof typeof marginPresets) => {
+    const preset = marginPresets[presetName]
+    updateChartSettings(fileId, {
+      margins: preset
+    })
+  }
+  
   // Handle grid preset click and apply layout-specific margins
   const handleGridPreset = (columns: number, rows: number) => {
     updateLayoutSettings(fileId, { columns, rows })
@@ -252,7 +278,50 @@ export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
 
         {/* Chart Margins */}
         <div className="px-3 py-2 space-y-2">
-          <span className="text-xs font-medium">Chart Margins (px)</span>
+          <div>
+            <span className="text-xs font-medium">Grid-wide Chart Margins (px)</span>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Apply to all charts in this grid
+            </p>
+          </div>
+          
+          {/* Margin Presets */}
+          <div className="flex gap-1">
+            <Button
+              variant={isMarginPresetActive('compact') ? 'default' : 'outline'}
+              size="sm"
+              className={cn(
+                "h-6 text-xs flex-1",
+                isMarginPresetActive('compact') && "ring-1 ring-primary ring-offset-1"
+              )}
+              onClick={() => applyMarginPreset('compact')}
+            >
+              Compact
+            </Button>
+            <Button
+              variant={isMarginPresetActive('normal') ? 'default' : 'outline'}
+              size="sm"
+              className={cn(
+                "h-6 text-xs flex-1",
+                isMarginPresetActive('normal') && "ring-1 ring-primary ring-offset-1"
+              )}
+              onClick={() => applyMarginPreset('normal')}
+            >
+              Normal
+            </Button>
+            <Button
+              variant={isMarginPresetActive('spacious') ? 'default' : 'outline'}
+              size="sm"
+              className={cn(
+                "h-6 text-xs flex-1",
+                isMarginPresetActive('spacious') && "ring-1 ring-primary ring-offset-1"
+              )}
+              onClick={() => applyMarginPreset('spacious')}
+            >
+              Spacious
+            </Button>
+          </div>
+          
           <div className="grid grid-cols-2 gap-2">
             <div className="flex items-center justify-between">
               <label htmlFor="marginTop" className="text-xs">Top</label>
