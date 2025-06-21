@@ -313,10 +313,10 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
           if (currentSettings.rows === 1) chartPadding = 30  // 1x4: Minimal padding
           else if (currentSettings.rows === 2) chartPadding = 40  // 2x4: Small padding
           else if (currentSettings.rows === 3) chartPadding = 35  // 3x4: Small padding
-          else chartPadding = 30  // 4x4: Minimal padding
+          else chartPadding = 15  // 4x4: Ultra-minimal padding (reduced from 30)
         }
         
-        chartMinHeight = Math.max(cardMinHeight - chartPadding, is4x4 ? 50 : (isCompactLayout ? 80 : 100))
+        chartMinHeight = Math.max(cardMinHeight - chartPadding, is4x4 ? 80 : (isCompactLayout ? 80 : 100)) // Increased 4x4 minimum from 50 to 80
       } else if (retryCount >= maxRetries) {
         // Fallback calculation when container measurement fails
         console.warn('[VirtualizedChartGrid] Failed to measure container after max retries, using fallback dimensions')
@@ -339,7 +339,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
           if (currentSettings.rows === 1) chartPadding = 30
           else if (currentSettings.rows === 2) chartPadding = 40
           else if (currentSettings.rows === 3) chartPadding = 35
-          else chartPadding = 30
+          else chartPadding = 15  // 4x4: Ultra-minimal padding (reduced from 30)
         }
         
         chartMinHeight = Math.max(cardMinHeight - chartPadding, isCompactLayout ? 80 : 100)

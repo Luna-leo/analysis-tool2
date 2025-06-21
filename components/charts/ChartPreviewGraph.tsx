@@ -22,7 +22,8 @@ import {
   getUnifiedMinimumMargins,
   getUnifiedMaximumMargins,
   calculateUnifiedMargins,
-  DEFAULT_UNIFIED_MARGIN_CONFIG
+  DEFAULT_UNIFIED_MARGIN_CONFIG,
+  MarginValue
 } from "@/utils/chart/marginCalculator"
 
 interface ChartPreviewGraphProps {
@@ -495,7 +496,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       if (currentGridLayout.rows === 1) return 80   // 1x4: Reduced height for horizontal emphasis
       if (currentGridLayout.rows === 2) return 100  // 2x4: Moderate height
       if (currentGridLayout.rows === 3) return 80   // 3x4: Compact
-      if (currentGridLayout.rows >= 4) return 60    // 4x4: Ultra-compact
+      if (currentGridLayout.rows >= 4) return 80    // 4x4: Increased from 60 to 80 for better visibility
     }
     // Existing logic for other layouts
     if (currentGridLayout && (currentGridLayout.columns >= 3 || currentGridLayout.rows >= 3)) {
@@ -514,11 +515,10 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       // Only update if we have valid dimensions
       if (width > 0 && height > 0) {
         const minHeight = getMinHeight(gridLayout)
-        // Reduced padding for 4-column layouts
-        const containerPadding = gridLayout && gridLayout.columns >= 4 ? 5 : 20
+        // Remove container padding to use full height
         setDimensions({ 
           width: Math.max(400, width), 
-          height: Math.max(minHeight, height - containerPadding)
+          height: Math.max(minHeight, height) // Use full container height
         })
       }
     }
@@ -632,12 +632,66 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           // Calculate margins using the unified system
           let margin = { top: 20, right: 40, bottom: 60, left: 60 }
           
-          if (chartSettings?.marginMode === 'unified' || chartSettings?.marginMode === 'percentage') {
-            // Use the new unified margin calculation with grid layout info
-            margin = calculateUnifiedMargins(dimensions.width, dimensions.height, DEFAULT_UNIFIED_MARGIN_CONFIG, gridLayout)
-          } else if (mergedChart.margins) {
-            // Fall back to existing margins if not using unified mode
-            margin = mergedChart.margins
+          // Debug logging
+          if (process.env.NODE_ENV === 'development' && gridLayout?.columns === 4 && gridLayout?.rows === 4) {
+            console.log('[ChartPreviewGraph] 4x4 Layout Debug:', {
+              chartId: mergedChart.id,
+              marginMode: chartSettings?.marginMode,
+              chartSettingsMargins: chartSettings?.margins,
+              mergedChartMargins: mergedChart.margins,
+              gridLayout,
+              dimensions
+            })
+          }
+          
+          // 4x4 layout gets priority - always use ultra-compact margins
+          if (gridLayout?.columns === 4 && gridLayout?.rows === 4) {
+            margin = {
+              top: Math.round(dimensions.height * 0.03),    // 3%
+              right: Math.round(dimensions.width * 0.04),   // 4%
+              bottom: Math.round(dimensions.height * 0.06), // 6% (reduced from 8%)
+              left: Math.round(dimensions.width * 0.10)     // 10% (reduced from 13%)
+            }
+            
+            // Always log for 4x4 to debug
+            console.log('[ChartPreviewGraph] 4x4 Forced margins (priority):', {
+              margin,
+              dimensions,
+              percentages: {
+                top: '3%',
+                right: '4%',
+                bottom: '6%',
+                left: '10%'
+              }
+            })
+          } else {
+            // Check if we have percentage margins
+            const hasPercentageMargins = mergedChart.margins && 
+              typeof mergedChart.margins.top === 'string' && 
+              mergedChart.margins.top.endsWith('%')
+            
+            if ((chartSettings?.marginMode === 'unified' || chartSettings?.marginMode === 'percentage' || hasPercentageMargins) && gridLayout) {
+              // Use the new unified margin calculation with grid layout info
+              margin = calculateUnifiedMargins(dimensions.width, dimensions.height, DEFAULT_UNIFIED_MARGIN_CONFIG, gridLayout)
+            } else if (hasPercentageMargins && mergedChart.margins) {
+              // Convert percentage margins to pixels (for cases without gridLayout)
+              margin = {
+                top: calculateMarginInPixels(mergedChart.margins.top as MarginValue, dimensions.height),
+                right: calculateMarginInPixels(mergedChart.margins.right as MarginValue, dimensions.width),
+                bottom: calculateMarginInPixels(mergedChart.margins.bottom as MarginValue, dimensions.height),
+                left: calculateMarginInPixels(mergedChart.margins.left as MarginValue, dimensions.width)
+              }
+              
+              if (process.env.NODE_ENV === 'development') {
+                console.log('[ChartPreviewGraph] Converted percentage margins:', {
+                  from: mergedChart.margins,
+                  to: margin
+                })
+              }
+            } else if (mergedChart.margins) {
+              // Fall back to existing margins if not using unified mode
+              margin = mergedChart.margins as { top: number; right: number; bottom: number; left: number }
+            }
           }
           
           const width = dimensions.width - margin.left - margin.right

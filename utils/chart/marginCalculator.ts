@@ -161,15 +161,15 @@ export const calculateUnifiedMargins = (
     // Additional adjustments for specific layouts
     if (category === 'ultra-small') {
       // Further reduce other margins for ultra-small layouts
-      adjustedConfig.baseRatios.top = 0.06;
+      adjustedConfig.baseRatios.top = 0.03;      // Reduced from 0.06 to minimize top margin
       adjustedConfig.baseRatios.right = 0.04;
-      adjustedConfig.baseRatios.bottom = 0.08;    // Reduced from 0.10 to minimize bottom margin
-      adjustedConfig.contentMinimums.top = 15;
+      adjustedConfig.baseRatios.bottom = 0.06;    // Reduced from 0.08 for even less bottom margin
+      adjustedConfig.contentMinimums.top = 10;    // Reduced from 15 for tighter spacing
       adjustedConfig.contentMinimums.right = 10;
       adjustedConfig.contentMinimums.bottom = 20;  // Reduced from 25 for tighter spacing
-      adjustedConfig.absoluteMaximums.top = 40;
+      adjustedConfig.absoluteMaximums.top = 25;   // Reduced from 40 for less top space
       adjustedConfig.absoluteMaximums.right = 40;
-      adjustedConfig.absoluteMaximums.bottom = 50; // Reduced from 60 for less bottom space
+      adjustedConfig.absoluteMaximums.bottom = 40; // Reduced from 50 for even less bottom space
     }
     
     // Special handling for 4-column layouts to prevent Y-axis label overlap
@@ -199,12 +199,16 @@ export const calculateUnifiedMargins = (
         adjustedConfig.contentMinimums.bottom = 22; // Lower minimum
         adjustedConfig.absoluteMaximums.top = 35;   // Lower maximum
         adjustedConfig.absoluteMaximums.bottom = 50; // Lower maximum
+      } else if (gridLayout.rows === 3) {
+        // 3x4: Moderate increase for left
+        adjustedConfig.baseRatios.left = 0.12;
+        adjustedConfig.contentMinimums.left = 55;
+        adjustedConfig.absoluteMaximums.left = 100;
       } else {
-        // 3x4, 4x4: Larger increase for left (existing)
-        adjustedConfig.baseRatios.left = 0.13;
-        adjustedConfig.contentMinimums.left = 60;
-        adjustedConfig.absoluteMaximums.left = 110;
-        // Note: 3x4 and 4x4 already handled by ultra-small category above
+        // 4x4: Keep compact margins to maximize chart area
+        adjustedConfig.baseRatios.left = 0.10;
+        adjustedConfig.contentMinimums.left = 45;
+        adjustedConfig.absoluteMaximums.left = 70;
       }
     }
   }
@@ -573,13 +577,59 @@ export const getDefaultChartSettings = (
   containerWidth?: number,
   containerHeight?: number
 ) => {
-  // For the new unified system, we always return percentage-based margins
+  // For the new unified system, we return dynamic percentage-based margins
   // that will be calculated at render time based on actual container size
-  const margins = {
+  let margins = {
     top: '8%',
     right: '5%',
     bottom: '12%',
     left: '10%'
+  }
+  
+  // Adjust margins based on grid layout
+  const totalCells = columns * rows;
+  const category = getLayoutDensityCategory(columns, rows);
+  
+  // Special handling for ultra-small layouts (4x4, 3x4, 4x3, etc.)
+  if (category === 'ultra-small') {
+    margins = {
+      top: '3%',     // Reduced from 8% for ultra-compact layouts
+      right: '4%',
+      bottom: '6%',   // Reduced from 8% for more vertical space
+      left: '10%'
+    }
+  }
+  
+  // Special adjustments for 4-column layouts
+  if (columns >= 4) {
+    if (rows === 1) {
+      // 1x4: Minimize vertical margins for horizontal emphasis
+      margins = {
+        top: '3%',
+        right: '5%',
+        bottom: '5%',
+        left: '12%'  // Increased for Y-axis labels
+      }
+    } else if (rows === 2) {
+      // 2x4: Moderate reduction
+      margins = {
+        top: '4%',
+        right: '5%',
+        bottom: '6%',
+        left: '13%'  // Increased for Y-axis labels
+      }
+    } else if (rows === 3) {
+      // 3x4: Keep compact margins but ensure Y-axis label space
+      margins.left = '12%'
+    } else if (rows === 4) {
+      // 4x4: Explicit handling - keep ultra-compact margins
+      margins = {
+        top: '3%',
+        right: '4%',
+        bottom: '6%',
+        left: '10%'  // Keep smaller for 4x4 to maximize chart area
+      }
+    }
   }
   
   // Use unified label offsets with dynamic X offset
