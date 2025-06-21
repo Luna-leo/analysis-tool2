@@ -1,6 +1,6 @@
 import { PerformanceSettings } from '@/types/settings'
 
-export type PerformancePreset = 'high-performance' | 'balanced' | 'full-detail' | 'custom'
+export type PerformancePreset = 'high-performance' | 'balanced' | 'full-detail'
 
 export interface PerformancePresetConfig {
   id: PerformancePreset
@@ -94,13 +94,6 @@ export const PERFORMANCE_PRESETS: PerformancePresetConfig[] = [
         resizeDebounce: 300
       }
     }
-  },
-  {
-    id: 'custom',
-    name: 'Custom',
-    description: 'Manually configure all settings',
-    icon: '⚙️',
-    settings: {} // Will use current user settings
   }
 ]
 
@@ -111,8 +104,6 @@ export function getPresetById(id: PerformancePreset): PerformancePresetConfig | 
 export function detectCurrentPreset(settings: PerformanceSettings): PerformancePreset {
   // Check if current settings match any preset
   for (const preset of PERFORMANCE_PRESETS) {
-    if (preset.id === 'custom') continue
-    
     // Check if data sampling matches
     if (settings.dataProcessing.enableSampling === preset.settings.dataProcessing?.enableSampling &&
         settings.dataProcessing.defaultSamplingPoints === preset.settings.dataProcessing?.defaultSamplingPoints &&
@@ -121,5 +112,5 @@ export function detectCurrentPreset(settings: PerformanceSettings): PerformanceP
     }
   }
   
-  return 'custom'
+  return 'balanced'
 }
