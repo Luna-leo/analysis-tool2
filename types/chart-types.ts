@@ -136,6 +136,9 @@ export interface ChartComponent {
   margins?: ChartMargins
   legendPosition?: LegendPosition
   legendMode?: 'datasource' | 'parameter' | 'both'
+  titlePosition?: LegendPosition
+  xLabelPosition?: LegendPosition
+  yLabelPosition?: LegendPosition
   
   // Styling
   plotStyles?: PlotStylesConfig

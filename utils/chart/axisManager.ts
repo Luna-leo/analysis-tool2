@@ -321,7 +321,11 @@ export class AxisManager {
     width: number,
     height: number,
     editingChart: ChartComponent,
-    yAxisGroup?: d3.Selection<SVGGElement, unknown, null, undefined>
+    yAxisGroup?: d3.Selection<SVGGElement, unknown, null, undefined>,
+    labelPositions?: {
+      xLabel?: { x: number; y: number }
+      yLabel?: { x: number; y: number }
+    }
   ): void {
     const xLabelOffset = editingChart.xLabelOffset || 40
     const yLabelOffset = editingChart.yLabelOffset || 50
@@ -329,17 +333,28 @@ export class AxisManager {
     // X-axis label with bounds checking
     const showXLabel = editingChart.showXLabel ?? true
     if (editingChart.xLabel && showXLabel) {
-      // Ensure label doesn't exceed bottom margin
-      const margin = editingChart.margins || { top: 20, right: 40, bottom: 60, left: 60 }
-      const maxYPosition = height + margin.bottom - 10 // Leave 10px safety margin
-      const labelY = Math.min(height + xLabelOffset, maxYPosition)
+      let labelX: number
+      let labelY: number
+      
+      if (labelPositions?.xLabel) {
+        // Use provided position
+        labelX = labelPositions.xLabel.x
+        labelY = labelPositions.xLabel.y
+      } else {
+        // Default position
+        const margin = editingChart.margins || { top: 20, right: 40, bottom: 60, left: 60 }
+        const maxYPosition = height + margin.bottom - 10 // Leave 10px safety margin
+        labelX = width / 2
+        labelY = Math.min(height + xLabelOffset, maxYPosition)
+      }
       
       g.append("text")
-        .attr("class", "x-axis-label")
+        .attr("class", "x-axis-label draggable-label")
         .attr("text-anchor", "middle")
-        .attr("x", width / 2)
+        .attr("x", labelX)
         .attr("y", labelY)
         .style("font-size", "12px")
+        .style("cursor", "move")
         .text(editingChart.xLabel)
     }
     
@@ -354,41 +369,21 @@ export class AxisManager {
     const labelWithUnit = firstYAxisLabel && unit ? `${firstYAxisLabel} [${unit}]` : firstYAxisLabel
     
     if (labelWithUnit && showYLabel) {
-      // Calculate dynamic offset based on tick label widths
-      let dynamicYLabelOffset = yLabelOffset
+      let labelX: number
+      let labelY: number
       
-      // If yAxisGroup is provided, measure tick label widths
-      if (yAxisGroup) {
-        let maxTickWidth = 0
-        yAxisGroup.selectAll(".tick text").each(function() {
-          const tickElement = this as SVGTextElement
-          try {
-            const bbox = tickElement.getBBox()
-            if (bbox.width > maxTickWidth) {
-              maxTickWidth = bbox.width
-            }
-          } catch (e) {
-            // Fallback if getBBox fails
-            console.warn("Failed to measure tick width:", e)
-          }
-        })
-        
-        // Add padding based on layout size
-        const margin = editingChart.margins || { top: 20, right: 40, bottom: 60, left: 60 }
-        const isCompactLayout = margin.left <= 45 // Detect compact layouts
-        const tickPadding = isCompactLayout ? 8 : 12 // Smaller padding for compact layouts
-        const labelPadding = isCompactLayout ? 20 : 25 // Additional space for the label itself
-        
-        // Calculate dynamic offset: tick width + tick padding + label padding
-        if (maxTickWidth > 0) {
-          dynamicYLabelOffset = maxTickWidth + tickPadding + labelPadding
-        }
+      if (labelPositions?.yLabel) {
+        // Use provided position (note: for Y label, x and y are swapped due to rotation)
+        labelX = -labelPositions.yLabel.y  // Negative because of rotation
+        labelY = labelPositions.yLabel.x
       } else {
-        // If no yAxisGroup, try to find it in the DOM
-        const existingYAxis = g.select(".y-axis")
-        if (!existingYAxis.empty()) {
+        // Calculate dynamic offset based on tick label widths
+        let dynamicYLabelOffset = yLabelOffset
+        
+        // If yAxisGroup is provided, measure tick label widths
+        if (yAxisGroup) {
           let maxTickWidth = 0
-          existingYAxis.selectAll(".tick text").each(function() {
+          yAxisGroup.selectAll(".tick text").each(function() {
             const tickElement = this as SVGTextElement
             try {
               const bbox = tickElement.getBBox()
@@ -396,33 +391,64 @@ export class AxisManager {
                 maxTickWidth = bbox.width
               }
             } catch (e) {
-              // Silent fail
+              // Fallback if getBBox fails
+              console.warn("Failed to measure tick width:", e)
             }
           })
           
+          // Add padding based on layout size
           const margin = editingChart.margins || { top: 20, right: 40, bottom: 60, left: 60 }
-          const isCompactLayout = margin.left <= 45
-          const tickPadding = isCompactLayout ? 8 : 12
-          const labelPadding = isCompactLayout ? 20 : 25
+          const isCompactLayout = margin.left <= 45 // Detect compact layouts
+          const tickPadding = isCompactLayout ? 8 : 12 // Smaller padding for compact layouts
+          const labelPadding = isCompactLayout ? 20 : 25 // Additional space for the label itself
           
+          // Calculate dynamic offset: tick width + tick padding + label padding
           if (maxTickWidth > 0) {
             dynamicYLabelOffset = maxTickWidth + tickPadding + labelPadding
           }
+        } else {
+          // If no yAxisGroup, try to find it in the DOM
+          const existingYAxis = g.select(".y-axis")
+          if (!existingYAxis.empty()) {
+            let maxTickWidth = 0
+            existingYAxis.selectAll(".tick text").each(function() {
+              const tickElement = this as SVGTextElement
+              try {
+                const bbox = tickElement.getBBox()
+                if (bbox.width > maxTickWidth) {
+                  maxTickWidth = bbox.width
+                }
+              } catch (e) {
+                // Silent fail
+              }
+            })
+            
+            const margin = editingChart.margins || { top: 20, right: 40, bottom: 60, left: 60 }
+            const isCompactLayout = margin.left <= 45
+            const tickPadding = isCompactLayout ? 8 : 12
+            const labelPadding = isCompactLayout ? 20 : 25
+            
+            if (maxTickWidth > 0) {
+              dynamicYLabelOffset = maxTickWidth + tickPadding + labelPadding
+            }
+          }
         }
+        
+        // Ensure label doesn't exceed left margin
+        const margin = editingChart.margins || { top: 20, right: 40, bottom: 60, left: 60 }
+        const maxXPosition = -margin.left + 15 // Leave 15px safety margin
+        labelX = -height / 2
+        labelY = Math.max(-dynamicYLabelOffset, maxXPosition)
       }
       
-      // Ensure label doesn't exceed left margin
-      const margin = editingChart.margins || { top: 20, right: 40, bottom: 60, left: 60 }
-      const maxXPosition = -margin.left + 15 // Leave 15px safety margin
-      const labelY = Math.max(-dynamicYLabelOffset, maxXPosition)
-      
       g.append("text")
-        .attr("class", "y-axis-label")
+        .attr("class", "y-axis-label draggable-label")
         .attr("text-anchor", "middle")
         .attr("transform", "rotate(-90)")
-        .attr("x", -height / 2)
+        .attr("x", labelX)
         .attr("y", labelY)
         .style("font-size", "12px")
+        .style("cursor", "move")
         .text(labelWithUnit)
     }
   }
@@ -433,28 +459,38 @@ export class AxisManager {
   static addChartTitle(
     g: d3.Selection<SVGGElement, unknown, null, undefined>,
     width: number,
-    editingChart: ChartComponent
+    editingChart: ChartComponent,
+    titlePosition?: { x: number; y: number }
   ): void {
     const showTitle = editingChart.showTitle ?? true
     
     if (editingChart.title && showTitle) {
-      // Calculate margin values (handle both number and string types)
-      const marginTop = typeof editingChart.margins?.top === 'number' 
-        ? editingChart.margins.top 
-        : 20
+      let titleX: number
+      let titleY: number
       
-      // Position title within the chart area, just below the top margin
-      // Use positive Y value to ensure it's within the visible area
-      const titleY = -marginTop + 15
+      if (titlePosition) {
+        // Use provided position
+        titleX = titlePosition.x
+        titleY = titlePosition.y
+      } else {
+        // Default position
+        const marginTop = typeof editingChart.margins?.top === 'number' 
+          ? editingChart.margins.top 
+          : 20
+        
+        titleX = width / 2
+        titleY = -marginTop + 15
+      }
       
       g.append("text")
-        .attr("class", "chart-title")
+        .attr("class", "chart-title draggable-label")
         .attr("text-anchor", "middle")
-        .attr("x", width / 2)
+        .attr("x", titleX)
         .attr("y", titleY)
         .style("font-size", "14px")
         .style("font-weight", "500")
         .style("fill", "#1f2937") // Explicit color to ensure visibility
+        .style("cursor", "move")
         .text(editingChart.title)
     }
   }

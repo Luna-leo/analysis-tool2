@@ -13,6 +13,11 @@ export interface BaseChartConfig {
     yScale: d3.ScaleLinear<number, number> | null
     isEmptyScale?: boolean
   }>
+  labelPositions?: {
+    title?: { x: number; y: number }
+    xLabel?: { x: number; y: number }
+    yLabel?: { x: number; y: number }
+  }
 }
 
 /**
@@ -35,6 +40,7 @@ export abstract class BaseChart<TData = any> {
   protected clipId: string
   protected axisManager?: AxisManager
   protected yAxisGroup?: d3.Selection<SVGGElement, unknown, null, undefined>
+  protected labelPositions?: BaseChartConfig['labelPositions']
 
   constructor(config: BaseChartConfig) {
     this.g = config.g
@@ -44,6 +50,7 @@ export abstract class BaseChart<TData = any> {
     this.editingChart = config.editingChart
     this.scalesRef = config.scalesRef
     this.clipId = `chart-data-clip-${Math.random().toString(36).substr(2, 9)}`
+    this.labelPositions = config.labelPositions
   }
 
   /**
@@ -140,13 +147,16 @@ export abstract class BaseChart<TData = any> {
    */
   protected addCommonElements(): void {
     // Add chart title
-    AxisManager.addChartTitle(this.g, this.width, this.editingChart)
+    AxisManager.addChartTitle(this.g, this.width, this.editingChart, this.labelPositions?.title)
     
     // Get Y-axis group from the axis manager or from stored reference
     const yAxisGroup = this.axisManager?.getYAxisGroup() || this.yAxisGroup
     
     // Add axis labels with Y-axis group for dynamic positioning
-    AxisManager.addAxisLabels(this.g, this.width, this.height, this.editingChart, yAxisGroup)
+    AxisManager.addAxisLabels(this.g, this.width, this.height, this.editingChart, yAxisGroup, {
+      xLabel: this.labelPositions?.xLabel,
+      yLabel: this.labelPositions?.yLabel
+    })
     
     // Add chart border at the correct position (accounting for margins)
     this.addChartBorder()

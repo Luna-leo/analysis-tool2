@@ -179,10 +179,30 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   const legendRatioRef = useRef<{ xRatio: number; yRatio: number } | null>(
     mergedChart.legendPosition ?? null
   )
+  
+  // States for draggable labels
+  const [titlePos, setTitlePos] = React.useState<{ x: number; y: number } | null>(null)
+  const [xLabelPos, setXLabelPos] = React.useState<{ x: number; y: number } | null>(null)
+  const [yLabelPos, setYLabelPos] = React.useState<{ x: number; y: number } | null>(null)
+  const titleRatioRef = useRef<{ xRatio: number; yRatio: number } | null>(
+    mergedChart.titlePosition ?? null
+  )
+  const xLabelRatioRef = useRef<{ xRatio: number; yRatio: number } | null>(
+    mergedChart.xLabelPosition ?? null
+  )
+  const yLabelRatioRef = useRef<{ xRatio: number; yRatio: number } | null>(
+    mergedChart.yLabelPosition ?? null
+  )
 
   useEffect(() => {
     legendRatioRef.current = mergedChart.legendPosition ?? null
   }, [mergedChart.legendPosition])
+  
+  useEffect(() => {
+    titleRatioRef.current = mergedChart.titlePosition ?? null
+    xLabelRatioRef.current = mergedChart.xLabelPosition ?? null
+    yLabelRatioRef.current = mergedChart.yLabelPosition ?? null
+  }, [mergedChart.titlePosition, mergedChart.xLabelPosition, mergedChart.yLabelPosition])
   
   // Base scales (never modified)
   const baseScalesRef = useRef<{
@@ -655,6 +675,105 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     window.addEventListener('pointermove', handleMove)
     window.addEventListener('pointerup', handleUp)
   }
+  
+  // Add drag handlers for chart labels
+  const addLabelDragHandlers = useCallback(() => {
+    if (!svgRef.current || !containerRef.current) return
+    
+    const svg = d3.select(svgRef.current)
+    const containerRect = containerRef.current.getBoundingClientRect()
+    
+    // Helper function to setup drag behavior for a label
+    const setupLabelDrag = (
+      selector: string,
+      posRef: React.MutableRefObject<{ xRatio: number; yRatio: number } | null>,
+      setPos: React.Dispatch<React.SetStateAction<{ x: number; y: number } | null>>,
+      updateKey: 'titlePosition' | 'xLabelPosition' | 'yLabelPosition',
+      isRotated: boolean = false
+    ) => {
+      const label = svg.select(selector)
+      if (label.empty()) return
+      
+      label.on('pointerdown', function(event: PointerEvent) {
+        event.preventDefault()
+        event.stopPropagation()
+        
+        const element = this as SVGTextElement
+        const transform = element.getAttribute('transform')
+        const currentX = +(element.getAttribute('x') || 0) || 0
+        const currentY = +(element.getAttribute('y') || 0) || 0
+        
+        // Get the group transform to calculate absolute position
+        const mainGroup = svg.select('g')
+        const groupTransform = mainGroup.attr('transform')
+        const translateMatch = groupTransform?.match(/translate\(([^,]+),([^)]+)\)/)
+        const groupX = translateMatch ? +translateMatch[1] : 0
+        const groupY = translateMatch ? +translateMatch[2] : 0
+        
+        let startX: number, startY: number
+        if (isRotated) {
+          // For rotated Y-label, swap coordinates
+          startX = groupX - currentY  // Y becomes X (negated)
+          startY = groupY - currentX  // X becomes Y (negated) 
+        } else {
+          startX = groupX + currentX
+          startY = groupY + currentY
+        }
+        
+        const initialMouseX = event.clientX
+        const initialMouseY = event.clientY
+        
+        const handleMove = (ev: PointerEvent) => {
+          const deltaX = ev.clientX - initialMouseX
+          const deltaY = ev.clientY - initialMouseY
+          
+          let newX: number, newY: number
+          if (isRotated) {
+            // For rotated label, apply deltas inversely
+            newX = startX + deltaX
+            newY = startY + deltaY
+            
+            // Update element position (swap back for rotated element)
+            element.setAttribute('x', String(-(newY - groupY)))
+            element.setAttribute('y', String(newX - groupX))
+          } else {
+            newX = startX + deltaX
+            newY = startY + deltaY
+            
+            // Update element position
+            element.setAttribute('x', String(newX - groupX))
+            element.setAttribute('y', String(newY - groupY))
+          }
+          
+          // Calculate and store ratio
+          const ratio = {
+            xRatio: containerRect.width ? newX / containerRect.width : 0.5,
+            yRatio: containerRect.height ? newY / containerRect.height : 0.5
+          }
+          
+          posRef.current = ratio
+          setPos({ x: newX, y: newY })
+        }
+        
+        const handleUp = () => {
+          document.removeEventListener('pointermove', handleMove)
+          document.removeEventListener('pointerup', handleUp)
+          
+          if (posRef.current) {
+            setEditingChart?.({ ...mergedChart, [updateKey]: posRef.current })
+          }
+        }
+        
+        document.addEventListener('pointermove', handleMove)
+        document.addEventListener('pointerup', handleUp)
+      })
+    }
+    
+    // Setup drag for each label
+    setupLabelDrag('.chart-title', titleRatioRef, setTitlePos, 'titlePosition')
+    setupLabelDrag('.x-axis-label', xLabelRatioRef, setXLabelPos, 'xLabelPosition')
+    setupLabelDrag('.y-axis-label', yLabelRatioRef, setYLabelPos, 'yLabelPosition', true)
+  }, [mergedChart, setEditingChart])
 
   // Handle resize with throttle
   useEffect(() => {
@@ -751,6 +870,33 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               showMarkers: qualityRenderOptions.enableMarkers && mergedChart.showMarkers,
             }
             
+            // Calculate label positions from ratios
+            const labelPositions: any = {}
+            
+            if (titleRatioRef.current && containerRef.current) {
+              const containerRect = containerRef.current.getBoundingClientRect()
+              labelPositions.title = {
+                x: titleRatioRef.current.xRatio * containerRect.width - margin.left,
+                y: titleRatioRef.current.yRatio * containerRect.height - margin.top
+              }
+            }
+            
+            if (xLabelRatioRef.current && containerRef.current) {
+              const containerRect = containerRef.current.getBoundingClientRect()
+              labelPositions.xLabel = {
+                x: xLabelRatioRef.current.xRatio * containerRect.width - margin.left,
+                y: xLabelRatioRef.current.yRatio * containerRect.height - margin.top
+              }
+            }
+            
+            if (yLabelRatioRef.current && containerRef.current) {
+              const containerRect = containerRef.current.getBoundingClientRect()
+              labelPositions.yLabel = {
+                x: yLabelRatioRef.current.xRatio * containerRect.width - margin.left,
+                y: yLabelRatioRef.current.yRatio * containerRect.height - margin.top
+              }
+            }
+            
             // Render chart with current scales - pass mainGroup
             renderScatterPlot({ 
               g: mainGroup, 
@@ -763,7 +909,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               canvas: canvasRef.current ?? undefined,
               plotStyles: mergedChart.plotStyles,
               enableSampling: enableSampling,
-              disableTooltips: selectionState.isSelecting || isShiftPressed
+              disableTooltips: selectionState.isSelecting || isShiftPressed,
+              labelPositions: Object.keys(labelPositions).length > 0 ? labelPositions : undefined
             })
 
             // On first render, copy base scales to current scales
@@ -863,6 +1010,11 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           cleanupRef.current = () => {
             hideAllTooltips()
           }
+          
+          // Add drag handlers for labels after rendering
+          setTimeout(() => {
+            addLabelDragHandlers()
+          }, 50)
           
           // Use double requestAnimationFrame to wait for browser paint
           requestAnimationFrame(() => {
