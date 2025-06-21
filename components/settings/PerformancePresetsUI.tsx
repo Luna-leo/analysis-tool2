@@ -35,10 +35,9 @@ export function PerformancePresetsUI({
   onUpdate, 
   onReset 
 }: PerformancePresetsUIProps) {
-  const [selectedPreset, setSelectedPreset] = React.useState<PerformancePreset>(
-    detectCurrentPreset(performanceSettings)
-  )
-  const [isAdvancedOpen, setIsAdvancedOpen] = React.useState(selectedPreset === 'custom')
+  const detectedPreset = detectCurrentPreset(performanceSettings)
+  const [selectedPreset, setSelectedPreset] = React.useState<PerformancePreset | 'custom'>(detectedPreset)
+  const [isAdvancedOpen, setIsAdvancedOpen] = React.useState(false)
   
   // Get current data info from store
   const datasets = useCSVDataStore((state) => state.datasets)
@@ -68,7 +67,7 @@ export function PerformancePresetsUI({
 
   const performanceImpact = calculatePerformanceImpact()
 
-  const handlePresetChange = (preset: PerformancePreset) => {
+  const handlePresetChange = (preset: PerformancePreset | 'custom') => {
     setSelectedPreset(preset)
     
     if (preset === 'custom') {
@@ -141,7 +140,7 @@ export function PerformancePresetsUI({
                     <p className="text-sm text-muted-foreground mt-1">
                       {preset.description}
                     </p>
-                    {preset.id !== 'custom' && preset.settings.dataProcessing && (
+                    {preset.settings.dataProcessing && (
                       <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                         <span>
                           {preset.settings.dataProcessing.enableSampling 

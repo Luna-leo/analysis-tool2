@@ -8,7 +8,7 @@ export interface DataPoint {
   [key: string]: any
 }
 
-export type SamplingMethod = 'lttb' | 'nth-point' | 'adaptive' | 'douglas-peucker' | 'none'
+export type SamplingMethod = 'lttb' | 'nth-point' | 'adaptive' | 'douglas-peucker' | 'auto' | 'none'
 
 export interface SamplingOptions {
   method: SamplingMethod

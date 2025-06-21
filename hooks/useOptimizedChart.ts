@@ -3,7 +3,7 @@ import { debounce } from 'lodash'
 import { ChartComponent, EventInfo } from '@/types'
 import { useCSVDataStore } from '@/stores/useCSVDataStore'
 import { useSharedDataCache } from './useSharedDataCache'
-import { sampleMultipleSeries, SamplingOptions } from '@/utils/sampling'
+import { sampleMultipleSeries, SamplingOptions, SamplingMethod } from '@/utils/sampling'
 import { useSettingsStore } from '@/stores/useSettingsStore'
 import { useChartLoadingStore } from '@/stores/useChartLoadingStore'
 

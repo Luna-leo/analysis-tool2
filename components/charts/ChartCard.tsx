@@ -216,7 +216,7 @@ const ChartCardComponent = ({
       if (currentFile && currentFile.charts) {
         const updatedCharts = currentFile.charts.map(c => 
           c.id === chart.id ? result.updatedChart : c
-        )
+        ).filter((c): c is ChartComponent => c !== undefined)
         updateFileCharts(fileId, updatedCharts)
         toast.success(`Applied template "${template.name}"`)
       }

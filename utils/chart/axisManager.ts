@@ -86,7 +86,7 @@ export class AxisManager {
         if (isNaN(minDate.getTime()) || isNaN(maxDate.getTime())) {
           console.warn('Invalid date range in xAxisRange:', editingChart.xAxisRange)
           // Fall back to data extent
-          const dateValues = data.map(d => {
+          const dateValues = (data || []).map(d => {
             if ('x' in d && d.x !== undefined) {
               return d.x instanceof Date ? d.x : new Date(d.x)
             }
@@ -508,8 +508,8 @@ export class AxisManager {
       const bbox = element.getBBox()
       const transform = element.getAttribute("transform")
       
-      let x = +element.getAttribute("x") || 0
-      let y = +element.getAttribute("y") || 0
+      let x = +(element.getAttribute("x") || 0) || 0
+      let y = +(element.getAttribute("y") || 0) || 0
       
       // Account for rotation if present
       if (transform && transform.includes("rotate")) {
@@ -624,8 +624,8 @@ export class AxisManager {
       .style('font-size', '12px')
     
     // Create Y-axis
-    const firstYParam = (editingChart.yAxisParams && editingChart.yAxisParams[0]) || {}
-    const yAxisFormat = firstYParam.format || `.${yAxisTickPrecision}f`
+    const firstYParam = (editingChart.yAxisParams && editingChart.yAxisParams[0]) || null
+    const yAxisFormat = (firstYParam && 'format' in firstYParam && typeof firstYParam.format === 'string' ? firstYParam.format : null) || `.${yAxisTickPrecision}f`
     const yAxis = d3.axisLeft(scales.yScale)
       .ticks(yAxisTicks)
       .tickFormat(d3.format(yAxisFormat))

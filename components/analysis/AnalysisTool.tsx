@@ -486,7 +486,7 @@ export default function AnalysisTool() {
             dataSource={selectedDataSourceInfo.dataSource || null}
             dataSourceIndex={selectedDataSourceInfo.index}
             fileId={activeTab || ''}
-            currentStyle={hasDataSource ? (currentFile as any).dataSourceStyles?.[selectedDataSourceInfo.dataSource.id] : undefined}
+            currentStyle={hasDataSource && selectedDataSourceInfo.dataSource ? (currentFile as any).dataSourceStyles?.[selectedDataSourceInfo.dataSource.id] : undefined}
           />
         )
       })()}

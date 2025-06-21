@@ -12,13 +12,12 @@ const generateTestData = () => {
   for (let i = 0; i < 100; i++) {
     data.push({
       id: `point-${i}`,
-      timestamp: new Date(now - i * 60000), // 1 minute intervals
-      value: Math.sin(i / 10) * 50 + 50 + Math.random() * 10,
-      dataSourceId: 'test-source',
-      dataSourceLabel: 'Test Data',
-      eventName: 'test-event',
-      paramName: 'value',
-      paramValue: Math.sin(i / 10) * 50 + 50 + Math.random() * 10,
+      plant: 'TestPlant',
+      machineNo: 'M001',
+      label: 'Test Data',
+      event: 'test-event',
+      start: new Date(now - i * 60000).toISOString(), // 1 minute intervals
+      end: new Date(now - i * 60000 + 60000).toISOString()
     })
   }
   
@@ -40,7 +39,7 @@ export default function TestZoomPage() {
     xLabel: 'Time',
     yLabel: 'Value',
     xAxisType: 'datetime',
-    yAxisType: 'value',
+    data: [],
     margins: { top: 40, right: 40, bottom: 60, left: 60 },
   }
   

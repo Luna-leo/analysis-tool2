@@ -137,8 +137,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   // Extract only what we need from settings to avoid unnecessary re-renders
   const enableSampling = settings.performanceSettings.dataProcessing.enableSampling
   const defaultSamplingPoints = settings.performanceSettings.dataProcessing.defaultSamplingPoints
-  const dynamicQuality = settings.performanceSettings.qualityControl?.dynamicQuality ?? true
-  const qualityThreshold = settings.performanceSettings.qualityControl?.qualityThreshold ?? 5000
+  const dynamicQuality = true // Default to dynamic quality
+  const qualityThreshold = 5000 // Default threshold
   
   const defaultMaxDataPoints = enableSampling 
     ? defaultSamplingPoints
@@ -156,7 +156,13 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       showXLabel: chartSettings.showXAxis !== undefined ? chartSettings.showXAxis : editingChart.showXLabel,
       showYLabel: chartSettings.showYAxis !== undefined ? chartSettings.showYAxis : editingChart.showYLabel,
       showGrid: chartSettings.showGrid !== undefined ? chartSettings.showGrid : editingChart.showGrid,
-      margins: chartSettings.margins !== undefined ? chartSettings.margins : editingChart.margins,
+      margins: chartSettings.margins !== undefined ? 
+        (typeof chartSettings.margins === 'object' && chartSettings.margins ? {
+          top: typeof chartSettings.margins.top === 'number' ? chartSettings.margins.top : 20,
+          right: typeof chartSettings.margins.right === 'number' ? chartSettings.margins.right : 20,
+          bottom: typeof chartSettings.margins.bottom === 'number' ? chartSettings.margins.bottom : 40,
+          left: typeof chartSettings.margins.left === 'number' ? chartSettings.margins.left : 40
+        } : editingChart.margins) : editingChart.margins,
       xLabelOffset: chartSettings.xLabelOffset !== undefined ? chartSettings.xLabelOffset : editingChart.xLabelOffset,
       yLabelOffset: chartSettings.yLabelOffset !== undefined ? chartSettings.yLabelOffset : editingChart.yLabelOffset
     }
@@ -388,7 +394,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       // Check if we have percentage margins
       const hasPercentageMargins = mergedChart.margins && 
         typeof mergedChart.margins.top === 'string' && 
-        mergedChart.margins.top.endsWith('%')
+        (mergedChart.margins.top as string).endsWith('%')
       
       if ((chartSettings?.marginMode === 'unified' || chartSettings?.marginMode === 'percentage' || hasPercentageMargins) && gridLayout) {
         // Use the new unified margin calculation with grid layout info
@@ -879,8 +885,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         samplingRate: qualityRenderOptions.samplingRate,
         enableMarkers: qualityRenderOptions.enableMarkers,
         chartId: chartRenderProps.id,
-        chartType: chartRenderProps.type,
-        showMarkers: chartRenderProps.showMarkers,
+        chartType: chartRenderProps.type || 'scatter',
+        showMarkers: chartRenderProps.showMarkers || false,
         computedMargins,
       }
       
@@ -957,7 +963,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     chartType: string,
     showMarkers: boolean,
     computedMargins: { top: number; right: number; bottom: number; left: number },
-  }>()
+  } | null>(null)
   
   // Track shift key state for visual feedback - only for this chart
   const [isMouseOver, setIsMouseOver] = React.useState(false)

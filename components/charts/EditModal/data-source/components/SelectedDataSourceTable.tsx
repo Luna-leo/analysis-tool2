@@ -15,7 +15,7 @@ import {
 import { EventInfo } from "@/types"
 import { formatDateTimeForDisplay } from "@/utils/dateUtils"
 import { DataSourceBadgePreview } from "../../../DataSourceBadgePreview"
-import { getDefaultColor } from "@/utils/chartColors"
+import { getDefaultColor as getChartDefaultColor } from "@/utils/chartColors"
 
 interface SelectedDataSourceTableProps {
   selectedDataSourceItems: EventInfo[]
@@ -85,7 +85,7 @@ export function SelectedDataSourceTable({
                     <div className="flex items-center gap-1.5">
                       <DataSourceBadgePreview
                         dataSourceStyle={file.dataSourceStyles?.[item.id]}
-                        defaultColor={getDefaultColor(index)}
+                        defaultColor={getChartDefaultColor(index)}
                       />
                       <Palette className="h-3 w-3" />
                     </div>

@@ -9,6 +9,7 @@ export default function TestDoubleClickPage() {
   const [editingChart, setEditingChart] = React.useState<ChartComponent>({
     id: "test-chart",
     title: "Test Chart for Double-Click",
+    data: [], // Required property
     type: "scatter",
     showXLabel: true,
     showYLabel: true,
@@ -20,24 +21,20 @@ export default function TestDoubleClickPage() {
     xAxisType: "time",
     xParameter: "time",
     yAxisParams: [{
-      id: "param1",
-      name: "Test Parameter",
-      color: "#3b82f6"
+      parameter: "param1",
+      axisName: "Test Parameter"
     }],
     margins: { top: 20, right: 40, bottom: 60, left: 60 }
   })
 
   const testData: EventInfo[] = [{
     id: "test-datasource",
-    name: "Test Data Source",
-    parameters: [{
-      id: "param1",
-      name: "Test Parameter",
-      data: Array.from({ length: 100 }, (_, i) => ({
-        timestamp: new Date(Date.now() - (100 - i) * 1000 * 60).toISOString(),
-        value: Math.sin(i / 10) * 50 + 50 + Math.random() * 10
-      }))
-    }]
+    plant: "TestPlant",
+    machineNo: "M001",
+    label: "Test Data Source",
+    event: "Test Event",
+    start: new Date(Date.now() - 100 * 1000 * 60).toISOString(),
+    end: new Date().toISOString()
   }]
 
   return (

@@ -123,7 +123,7 @@ export const useChartZoom = ({
     endX: 0,
     endY: 0,
   });
-  const zoomBehaviorRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown>>();
+  const zoomBehaviorRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const hasInitialized = useRef(false);
   const isShiftPressed = useRef(false);
   const selectionRectRef = useRef<SVGRectElement | null>(null);
@@ -407,7 +407,7 @@ export const useChartZoom = ({
         .duration(400)
         .ease(d3.easeCubicInOut)
         .call(
-          zoomBehaviorRef.current.transform,
+          zoomBehaviorRef.current!.transform,
           d3.zoomIdentity
         );
       

@@ -88,6 +88,7 @@ export function parseStandardFormat(lines: string[], fileName: string): ParsedCS
       fileName,
       format: 'standard',
       parameterInfo: units.length > 0 ? {
+        ids: headers, // Use headers as IDs for standard format
         parameters: headers,
         units: units
       } : undefined

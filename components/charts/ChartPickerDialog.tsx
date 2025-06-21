@@ -92,7 +92,6 @@ export function ChartPickerDialog({
                     editingChart={chart}
                     selectedDataSourceItems={selectedDataSources}
                     dataSourceStyles={dataSourceStyles}
-                    isCompact={true}
                   />
                 </div>
                 

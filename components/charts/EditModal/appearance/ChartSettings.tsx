@@ -40,7 +40,7 @@ export function ChartSettings({ editingChart, setEditingChart }: ChartSettingsPr
               onCheckedChange={(checked) => {
                 setEditingChart({
                   ...editingChart,
-                  showTitle: checked,
+                  showTitle: checked === true,
                 })
               }}
             />
@@ -53,7 +53,7 @@ export function ChartSettings({ editingChart, setEditingChart }: ChartSettingsPr
               onCheckedChange={(checked) => {
                 setEditingChart({
                   ...editingChart,
-                  showLegend: checked,
+                  showLegend: checked === true,
                 })
               }}
             />
@@ -66,7 +66,7 @@ export function ChartSettings({ editingChart, setEditingChart }: ChartSettingsPr
               onCheckedChange={(checked) => {
                 setEditingChart({
                   ...editingChart,
-                  showGrid: checked,
+                  showGrid: checked === true,
                 })
               }}
             />
@@ -79,7 +79,7 @@ export function ChartSettings({ editingChart, setEditingChart }: ChartSettingsPr
               onCheckedChange={(checked) => {
                 setEditingChart({
                   ...editingChart,
-                  showXLabel: checked,
+                  showXLabel: checked === true,
                 })
               }}
             />
@@ -92,7 +92,7 @@ export function ChartSettings({ editingChart, setEditingChart }: ChartSettingsPr
               onCheckedChange={(checked) => {
                 setEditingChart({
                   ...editingChart,
-                  showYLabel: checked,
+                  showYLabel: checked === true,
                 })
               }}
             />

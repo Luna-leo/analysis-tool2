@@ -39,7 +39,7 @@ export const useQualityOptimization = ({
     },
   });
 
-  const transitionTimerRef = useRef<NodeJS.Timeout>();
+  const transitionTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Determine quality level based on data count and state
   const getQualityLevel = useCallback((isInteracting: boolean): QualityLevel => {

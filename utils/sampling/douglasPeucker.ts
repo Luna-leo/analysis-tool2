@@ -4,7 +4,12 @@
  * Commonly used in geographic data and line chart optimization
  */
 
-import { DataPoint, NumericDataPoint } from './types'
+import { DataPoint } from './types'
+
+interface NumericDataPoint extends DataPoint {
+  x: number
+  y: number
+}
 
 /**
  * Convert data point to numeric values for calculation

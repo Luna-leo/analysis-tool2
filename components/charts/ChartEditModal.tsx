@@ -201,7 +201,7 @@ export function ChartEditModal() {
     
     if (!currentFile) return
 
-    const updatedCharts = currentFile.charts.map(chart => {
+    const updatedCharts = (currentFile.charts || []).map(chart => {
       // Skip if not selected or if it's the source chart
       if (!selectedChartIds.has(chart.id) || chart.id === editingChart.id) {
         return chart
@@ -378,7 +378,7 @@ export function ChartEditModal() {
                     </span>
                     {selectedChartIds.size === 1 && (
                       <Button
-                        size="xs"
+                        size="sm"
                         variant="ghost"
                         onClick={() => {
                           const selectedId = Array.from(selectedChartIds)[0]
@@ -414,7 +414,15 @@ export function ChartEditModal() {
                   selectedDataSourceItems={selectedDataSourceItems}
                   setEditingChart={setEditingChart}
                   dataSourceStyles={dataSourceStyles}
-                  chartSettings={chartSettingsMap[targetFileId]}
+                  chartSettings={chartSettingsMap[targetFileId] ? {
+                    ...chartSettingsMap[targetFileId],
+                    margins: chartSettingsMap[targetFileId].margins && typeof chartSettingsMap[targetFileId].margins === 'object' ? {
+                      top: typeof chartSettingsMap[targetFileId].margins!.top === 'number' ? chartSettingsMap[targetFileId].margins!.top : 20,
+                      right: typeof chartSettingsMap[targetFileId].margins!.right === 'number' ? chartSettingsMap[targetFileId].margins!.right : 20,
+                      bottom: typeof chartSettingsMap[targetFileId].margins!.bottom === 'number' ? chartSettingsMap[targetFileId].margins!.bottom : 40,
+                      left: typeof chartSettingsMap[targetFileId].margins!.left === 'number' ? chartSettingsMap[targetFileId].margins!.left : 40
+                    } : undefined
+                  } : undefined}
                   enableZoom={true}
                   enablePan={true}
                   zoomMode="auto"

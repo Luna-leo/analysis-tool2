@@ -1,6 +1,16 @@
 import { DataPoint, SamplingFunction } from './types'
 
 /**
+ * Convert x value to number for calculations
+ */
+function toNumericX(x: number | Date | string): number {
+  if (typeof x === 'number') return x
+  if (x instanceof Date) return x.getTime()
+  if (typeof x === 'string') return Date.parse(x)
+  return 0
+}
+
+/**
  * LTTB (Largest Triangle Three Buckets) algorithm for data sampling
  * This algorithm preserves the visual characteristics of the data while reducing points
  * Best for time series data where maintaining visual fidelity is important
@@ -34,9 +44,7 @@ export const lttbSample: SamplingFunction<any> = <T extends DataPoint>(
     let avgCount = 0
     
     for (let j = bucketEnd; j < Math.min(data.length, Math.floor((i + 3) * bucketSize) + 1); j++) {
-      const x = typeof data[j].x === 'number' ? data[j].x : 
-                data[j].x instanceof Date ? data[j].x.getTime() : 
-                Date.parse(data[j].x as string)
+      const x = toNumericX(data[j].x)
       avgX += x
       avgY += data[j].y
       avgCount++
@@ -51,15 +59,11 @@ export const lttbSample: SamplingFunction<any> = <T extends DataPoint>(
     let maxArea = -1
     let maxAreaIndex = bucketStart
     
-    const aX = typeof data[a].x === 'number' ? data[a].x : 
-              data[a].x instanceof Date ? data[a].x.getTime() : 
-              Date.parse(data[a].x as string)
+    const aX = toNumericX(data[a].x)
     const aY = data[a].y
     
     for (let j = bucketStart; j < bucketEnd && j < data.length; j++) {
-      const x = typeof data[j].x === 'number' ? data[j].x : 
-                data[j].x instanceof Date ? data[j].x.getTime() : 
-                Date.parse(data[j].x as string)
+      const x = toNumericX(data[j].x)
       
       // Calculate triangle area
       const area = Math.abs(

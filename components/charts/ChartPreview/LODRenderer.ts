@@ -1,5 +1,6 @@
 import * as d3 from 'd3'
 import { ChartComponent } from '@/types'
+import { douglasPeuckerWithTarget } from '@/utils/sampling/douglasPeucker'
 
 export interface LODConfig {
   level: 'low' | 'medium' | 'high'

@@ -149,8 +149,8 @@ export class ChartRegistry {
         'pan'
       ],
       renderer: async (config) => {
-        const { renderLineChart } = await import('@/components/charts/ChartPreview/LineChart')
-        renderLineChart(config)
+        // TODO: Implement LineChart component
+        console.warn('LineChart renderer not implemented')
       }
     })
     

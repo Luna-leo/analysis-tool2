@@ -357,7 +357,7 @@ export const useCSVDataStore = create<CSVDataStore>()(
         }
       },
       
-      hasData: async (periodId) => {
+      hasData: async (periodId): Promise<boolean> => {
         const state = get()
         let datasets = state.datasets
         
@@ -373,12 +373,12 @@ export const useCSVDataStore = create<CSVDataStore>()(
         try {
           const { getCSVDataFromDB } = await import('@/utils/indexedDBUtils')
           const data = await getCSVDataFromDB(periodId)
-          return data !== null && data.length > 0
+          return !!(data && data.data && data.data.length > 0)
         } catch (error) {
           console.error('Error checking data existence:', error)
           return false
         }
-      }
+      },
     }),
     {
       name: 'csv-data-storage',

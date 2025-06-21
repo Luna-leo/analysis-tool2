@@ -126,7 +126,9 @@ export function useLimitedMemo<T>(
   // Limit cache size
   if (cache.current.size >= maxSize) {
     const firstKey = cache.current.keys().next().value
-    cache.current.delete(firstKey)
+    if (firstKey !== undefined) {
+      cache.current.delete(firstKey)
+    }
   }
   
   cache.current.set(key, value)

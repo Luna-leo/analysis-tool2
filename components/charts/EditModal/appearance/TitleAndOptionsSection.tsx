@@ -40,7 +40,7 @@ export function TitleAndOptionsSection({ editingChart, setEditingChart }: TitleA
               onCheckedChange={(checked) => {
                 setEditingChart({
                   ...editingChart,
-                  showMarkers: checked,
+                  showMarkers: checked === true,
                 })
               }}
             />
@@ -53,7 +53,7 @@ export function TitleAndOptionsSection({ editingChart, setEditingChart }: TitleA
               onCheckedChange={(checked) => {
                 setEditingChart({
                   ...editingChart,
-                  showLines: checked,
+                  showLines: checked === true,
                 })
               }}
             />
@@ -66,7 +66,7 @@ export function TitleAndOptionsSection({ editingChart, setEditingChart }: TitleA
               onCheckedChange={(checked) => {
                 setEditingChart({
                   ...editingChart,
-                  showTitle: checked,
+                  showTitle: checked === true,
                 })
               }}
             />
@@ -79,7 +79,7 @@ export function TitleAndOptionsSection({ editingChart, setEditingChart }: TitleA
               onCheckedChange={(checked) => {
                 setEditingChart({
                   ...editingChart,
-                  showLegend: checked,
+                  showLegend: checked === true,
                 })
               }}
             />
@@ -92,7 +92,7 @@ export function TitleAndOptionsSection({ editingChart, setEditingChart }: TitleA
               onCheckedChange={(checked) => {
                 setEditingChart({
                   ...editingChart,
-                  showGrid: checked,
+                  showGrid: checked === true,
                 })
               }}
             />

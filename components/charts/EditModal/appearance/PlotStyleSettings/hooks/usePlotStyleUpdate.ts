@@ -64,7 +64,7 @@ export const usePlotStyleUpdate = (
     marker: MarkerSettings
   ) => {
     const mode = editingChart.plotStyles?.mode || editingChart.legendMode || 'datasource'
-    const plotStyles = { ...editingChart.plotStyles } || { mode, byDataSource: {}, byParameter: {}, byBoth: {} }
+    const plotStyles = editingChart.plotStyles ? { ...editingChart.plotStyles } : { mode, byDataSource: {}, byParameter: {}, byBoth: {} }
 
     if (mode === 'datasource') {
       plotStyles.byDataSource = plotStyles.byDataSource || {}
@@ -87,7 +87,7 @@ export const usePlotStyleUpdate = (
       }
     }
 
-    setEditingChart({ ...editingChart, plotStyles })
+    setEditingChart({ ...editingChart, plotStyles: { ...plotStyles, mode } })
   }, [editingChart, setEditingChart])
 
   // Update line style
@@ -98,7 +98,7 @@ export const usePlotStyleUpdate = (
     line: LineSettings
   ) => {
     const mode = editingChart.plotStyles?.mode || editingChart.legendMode || 'datasource'
-    const plotStyles = { ...editingChart.plotStyles } || { mode, byDataSource: {}, byParameter: {}, byBoth: {} }
+    const plotStyles = editingChart.plotStyles ? { ...editingChart.plotStyles } : { mode, byDataSource: {}, byParameter: {}, byBoth: {} }
 
     if (mode === 'datasource') {
       plotStyles.byDataSource = plotStyles.byDataSource || {}
@@ -121,7 +121,7 @@ export const usePlotStyleUpdate = (
       }
     }
 
-    setEditingChart({ ...editingChart, plotStyles })
+    setEditingChart({ ...editingChart, plotStyles: { ...plotStyles, mode } })
   }, [editingChart, setEditingChart])
 
   // Update legend text
@@ -132,7 +132,7 @@ export const usePlotStyleUpdate = (
     legendText: string
   ) => {
     const mode = editingChart.plotStyles?.mode || editingChart.legendMode || 'datasource'
-    const plotStyles = { ...editingChart.plotStyles } || { mode, byDataSource: {}, byParameter: {}, byBoth: {} }
+    const plotStyles = editingChart.plotStyles ? { ...editingChart.plotStyles } : { mode, byDataSource: {}, byParameter: {}, byBoth: {} }
 
     if (mode === 'datasource') {
       plotStyles.byDataSource = plotStyles.byDataSource || {}
@@ -155,7 +155,7 @@ export const usePlotStyleUpdate = (
       }
     }
 
-    setEditingChart({ ...editingChart, plotStyles })
+    setEditingChart({ ...editingChart, plotStyles: { ...plotStyles, mode } })
   }, [editingChart, setEditingChart])
 
   // Initialize default styles for a mode
@@ -256,7 +256,7 @@ export const usePlotStyleUpdate = (
     visible: boolean
   ) => {
     const mode = editingChart.plotStyles?.mode || editingChart.legendMode || 'datasource'
-    const plotStyles = { ...editingChart.plotStyles } || { mode, byDataSource: {}, byParameter: {}, byBoth: {} }
+    const plotStyles = editingChart.plotStyles ? { ...editingChart.plotStyles } : { mode, byDataSource: {}, byParameter: {}, byBoth: {} }
 
     if (mode === 'datasource') {
       plotStyles.byDataSource = plotStyles.byDataSource || {}
@@ -279,7 +279,7 @@ export const usePlotStyleUpdate = (
       }
     }
 
-    setEditingChart({ ...editingChart, plotStyles })
+    setEditingChart({ ...editingChart, plotStyles: { ...plotStyles, mode } })
   }, [editingChart, setEditingChart])
 
   return {

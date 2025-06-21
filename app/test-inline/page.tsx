@@ -8,16 +8,12 @@ import { ChartComponent, EventInfo } from '@/types'
 const testData: EventInfo[] = [
   {
     id: 'test-1',
-    name: 'Test Data',
-    type: 'test',
-    unit: 'units',
-    data: [
-      { timestamp: new Date('2024-01-01T10:00:00').toISOString(), value: 10 },
-      { timestamp: new Date('2024-01-01T11:00:00').toISOString(), value: 20 },
-      { timestamp: new Date('2024-01-01T12:00:00').toISOString(), value: 30 },
-      { timestamp: new Date('2024-01-01T13:00:00').toISOString(), value: 25 },
-      { timestamp: new Date('2024-01-01T14:00:00').toISOString(), value: 35 }
-    ]
+    plant: 'TestPlant',
+    machineNo: 'M001',
+    label: 'Test Data',
+    event: 'Test Event',
+    start: new Date('2024-01-01T10:00:00').toISOString(),
+    end: new Date('2024-01-01T14:00:00').toISOString()
   }
 ]
 
@@ -25,13 +21,14 @@ export default function TestInlinePage() {
   const [showData, setShowData] = useState(false)
   const [chartConfig] = useState<ChartComponent>({
     id: 'test-chart',
-    name: 'Test Chart',
+    title: 'Inline Test Chart',
+    data: [], // Required property
     type: 'scatter',
     xParameter: 'timestamp',
-    yParameter: 'value',
     yAxisParams: [{
       parameter: 'value',
       axisNo: 1,
+      axisName: 'Value',
       unit: 'units'
     }],
     showLegend: true,
@@ -39,7 +36,6 @@ export default function TestInlinePage() {
     showXLabel: true,
     showYLabel: true,
     showGrid: true,
-    title: 'Inline Test Chart',
     xLabel: 'Time',
     yLabel: 'Value'
   })
