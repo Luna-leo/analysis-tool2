@@ -56,6 +56,12 @@ export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
     ...(chartSettingsMap[fileId] || {})
   }
   
+  // Check if current layout matches a preset
+  const isPresetActive = (presetColumns: number, presetRows: number) => {
+    return currentLayoutSettings.columns === presetColumns && 
+           currentLayoutSettings.rows === presetRows
+  }
+  
   // Handle grid preset click and apply layout-specific margins
   const handleGridPreset = (columns: number, rows: number) => {
     updateLayoutSettings(fileId, { columns, rows })
@@ -96,33 +102,45 @@ export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
           <span className="text-xs font-medium">Quick Grid Presets</span>
           <div className="flex gap-1.5 mt-2">
             <Button
-              variant="outline"
+              variant={isPresetActive(1, 1) ? "default" : "outline"}
               size="sm"
-              className="h-7 text-xs flex-1"
+              className={cn(
+                "h-7 text-xs flex-1",
+                isPresetActive(1, 1) && "ring-2 ring-primary ring-offset-1"
+              )}
               onClick={() => handleGridPreset(1, 1)}
             >
               1×1
             </Button>
             <Button
-              variant="outline"
+              variant={isPresetActive(2, 2) ? "default" : "outline"}
               size="sm"
-              className="h-7 text-xs flex-1"
+              className={cn(
+                "h-7 text-xs flex-1",
+                isPresetActive(2, 2) && "ring-2 ring-primary ring-offset-1"
+              )}
               onClick={() => handleGridPreset(2, 2)}
             >
               2×2
             </Button>
             <Button
-              variant="outline"
+              variant={isPresetActive(3, 3) ? "default" : "outline"}
               size="sm"
-              className="h-7 text-xs flex-1"
+              className={cn(
+                "h-7 text-xs flex-1",
+                isPresetActive(3, 3) && "ring-2 ring-primary ring-offset-1"
+              )}
               onClick={() => handleGridPreset(3, 3)}
             >
               3×3
             </Button>
             <Button
-              variant="outline"
+              variant={isPresetActive(4, 4) ? "default" : "outline"}
               size="sm"
-              className="h-7 text-xs flex-1"
+              className={cn(
+                "h-7 text-xs flex-1",
+                isPresetActive(4, 4) && "ring-2 ring-primary ring-offset-1"
+              )}
               onClick={() => handleGridPreset(4, 4)}
             >
               4×4
