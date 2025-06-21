@@ -3,7 +3,7 @@ import { debounce } from 'lodash'
 import { ChartComponent, EventInfo } from '@/types'
 import { useCSVDataStore } from '@/stores/useCSVDataStore'
 import { useSharedDataCache } from './useSharedDataCache'
-import { sampleData, sampleMultipleSeries, SamplingOptions } from '@/utils/sampling'
+import { sampleMultipleSeries, SamplingOptions } from '@/utils/sampling'
 import { useSettingsStore } from '@/stores/useSettingsStore'
 
 interface UseOptimizedChartProps {
@@ -41,7 +41,7 @@ export function useOptimizedChart({
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState<Error | null>(null)
   const [data, setData] = React.useState<ChartDataPoint[]>([])
-  const loadingRef = useRef(false)
+  // loadingRef removed - debounce handles duplicate request prevention
   
   // Use refs to maintain stable references
   const getParameterDataRef = useRef(getParameterData)
@@ -71,11 +71,14 @@ export function useOptimizedChart({
   const xParameter = editingChart.xParameter
   const yAxisParams = editingChart.yAxisParams
 
-  // Memoize parameters
+  // Memoize parameters - include all parameters without deduplication
+  // This ensures that changes to any Y parameter trigger data reload
   const allParameters = useMemo(() => {
     if (!yAxisParams?.length) return []
     
     const params: string[] = []
+    
+    // Add X parameter if not datetime
     if (xAxisType !== 'datetime' && xParameter) {
       const cleanXParam = xParameter.includes('|') 
         ? xParameter.split('|')[0] 
@@ -83,18 +86,25 @@ export function useOptimizedChart({
       params.push(cleanXParam)
     }
     
+    // Add all Y parameters without deduplication
+    // This ensures each parameter change triggers data reload
     yAxisParams.forEach(yParam => {
       if (yParam.parameter) {
         const cleanParam = yParam.parameter.includes('|') 
           ? yParam.parameter.split('|')[0] 
           : yParam.parameter
-        if (!params.includes(cleanParam)) {
-          params.push(cleanParam)
-        }
+        params.push(cleanParam)
       }
     })
-    return params
+    
+    // Return unique parameters for data fetching
+    return [...new Set(params)]
   }, [xAxisType, xParameter, yAxisParams])
+
+  // Create a stable key from yAxisParams to trigger reloads on parameter changes
+  const yAxisParamsKey = useMemo(() => {
+    return yAxisParams?.map(param => `${param.parameterType}:${param.parameter}`).join('|') || ''
+  }, [yAxisParams])
 
   // Debounced data loading
   const loadData = useMemo(
@@ -106,7 +116,8 @@ export function useOptimizedChart({
       //     dataSourceCount: selectedDataSourceItems.length,
       //     dataSources: selectedDataSourceItems.map(ds => ({ id: ds.id, label: ds.label })),
       //     xAxisType,
-      //     parametersCount: allParameters.length
+      //     parametersCount: allParameters.length,
+      //     yAxisParamsKey
       //   })
       // }
       
@@ -114,16 +125,10 @@ export function useOptimizedChart({
           (xAxisType !== 'datetime' && allParameters.length === 0)) {
         setData([])
         setIsLoading(false)
-        loadingRef.current = false
         return
       }
       
-      // Prevent concurrent loads
-      if (loadingRef.current) {
-        return
-      }
-      
-      loadingRef.current = true
+      // Set loading state
       setIsLoading(true)
       setError(null)
       
@@ -219,10 +224,18 @@ export function useOptimizedChart({
           })
           
           // Prepare sampling options
+          let samplingMethod: SamplingMethod = 'adaptive' // default
+          if (settings.performanceSettings.dataProcessing.samplingMethod === 'none') {
+            samplingMethod = 'none'
+          } else if (settings.performanceSettings.dataProcessing.samplingMethod === 'auto') {
+            // Auto selects method based on chart type and data
+            samplingMethod = editingChart.type === 'scatter' ? 'douglas-peucker' : 'lttb'
+          } else if (['lttb', 'nth-point', 'adaptive', 'douglas-peucker'].includes(settings.performanceSettings.dataProcessing.samplingMethod)) {
+            samplingMethod = settings.performanceSettings.dataProcessing.samplingMethod as SamplingMethod
+          }
+          
           const samplingOptions: SamplingOptions = {
-            method: settings.performanceSettings.dataProcessing.samplingMethod === 'none' 
-              ? 'none' 
-              : settings.performanceSettings.dataProcessing.samplingMethod,
+            method: samplingMethod,
             targetPoints: effectiveMaxDataPoints,
             chartType: editingChart.type === 'scatter' ? 'scatter' : 'line',
             isTimeSeries: xAxisType === 'datetime'
@@ -251,11 +264,10 @@ export function useOptimizedChart({
         console.error('Error loading chart data:', error)
         setError(error as Error)
       } finally {
-        loadingRef.current = false
         setIsLoading(false)
       }
     }, 300),
-    [selectedDataSourceItems, allParameters, xAxisType, xParameter, yAxisParams, effectiveMaxDataPoints, enableSampling]
+    [selectedDataSourceItems, allParameters, xAxisType, xParameter, yAxisParamsKey, effectiveMaxDataPoints, enableSampling]
   )
 
   // Trigger data loading when dependencies change
