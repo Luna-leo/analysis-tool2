@@ -12,6 +12,7 @@ import { useOptimizedChart } from "@/hooks/useOptimizedChart"
 import { hideAllTooltips } from "@/utils/chartTooltip"
 import { useThrottle } from "@/hooks/useDebounce"
 import { useSettingsStore } from "@/stores/useSettingsStore"
+import { useChartLoadingStore } from "@/stores/useChartLoadingStore"
 import { useChartZoom } from "./ChartPreview/useChartZoom"
 import { ZoomControls } from "./ChartPreview/ZoomControls"
 import { useQualityOptimization } from "./ChartPreview/useQualityOptimization"
@@ -131,6 +132,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   const [isShiftPressed, setIsShiftPressed] = React.useState(false)
   const [isRangeSelectionMode, setIsRangeSelectionMode] = React.useState(false)
   const { settings } = useSettingsStore()
+  const { registerRendering, unregisterRendering } = useChartLoadingStore()
   
   // Extract only what we need from settings to avoid unnecessary re-renders
   const enableSampling = settings.performanceSettings.dataProcessing.enableSampling
@@ -667,10 +669,12 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       if (isLoadingData) return
       
       renderingRef.current = true
+      registerRendering(editingChart.id)  // Register rendering start
       
       animationFrameRef.current = requestAnimationFrame(() => {
         if (!svgRef.current) {
           renderingRef.current = false
+          unregisterRendering(editingChart.id)  // Unregister if aborted
           return
         }
 
@@ -840,11 +844,24 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           cleanupRef.current = () => {
             hideAllTooltips()
           }
+          
+          // Use double requestAnimationFrame to wait for browser paint
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              renderingRef.current = false
+              animationFrameRef.current = null
+              unregisterRendering(editingChart.id)  // Unregister after paint
+              
+              if (process.env.NODE_ENV === 'development') {
+                console.log(`[Chart ${editingChart.id}] Rendering complete (after paint)`)
+              }
+            })
+          })
         } catch (error) {
           console.error('Error rendering chart:', error)
-        } finally {
           renderingRef.current = false
           animationFrameRef.current = null
+          unregisterRendering(editingChart.id)  // Unregister on error
         }
       })
     }
@@ -898,7 +915,10 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         cleanupRef.current()
         cleanupRef.current = null
       }
-      renderingRef.current = false
+      if (renderingRef.current) {
+        renderingRef.current = false
+        unregisterRendering(editingChart.id)  // Clean up if render was in progress
+      }
     }
   }, [
     memoizedChartData, 
@@ -970,11 +990,12 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     return () => {
       hideAllTooltips()
       cleanupQuality()
+      unregisterRendering(editingChart.id)  // Clean up rendering state
       if (canvasRef.current && containerRef.current) {
         containerRef.current.removeChild(canvasRef.current)
       }
     }
-  }, [cleanupQuality])
+  }, [cleanupQuality, editingChart.id, unregisterRendering])
 
   return (
     <div 

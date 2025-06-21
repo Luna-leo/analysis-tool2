@@ -5,6 +5,7 @@ import { useCSVDataStore } from '@/stores/useCSVDataStore'
 import { useSharedDataCache } from './useSharedDataCache'
 import { sampleMultipleSeries, SamplingOptions } from '@/utils/sampling'
 import { useSettingsStore } from '@/stores/useSettingsStore'
+import { useChartLoadingStore } from '@/stores/useChartLoadingStore'
 
 interface UseOptimizedChartProps {
   editingChart: ChartComponent
@@ -38,6 +39,7 @@ export function useOptimizedChart({
   const { getParameterData } = useCSVDataStore()
   const dataCache = useSharedDataCache()
   const { settings } = useSettingsStore()
+  const { registerLoading, unregisterLoading } = useChartLoadingStore()
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState<Error | null>(null)
   const [data, setData] = React.useState<ChartDataPoint[]>([])
@@ -277,6 +279,20 @@ export function useOptimizedChart({
       loadData.cancel()
     }
   }, [loadData])
+
+  // Register loading state in global store
+  useEffect(() => {
+    if (isLoading) {
+      registerLoading(editingChart.id)
+    } else {
+      unregisterLoading(editingChart.id)
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      unregisterLoading(editingChart.id)
+    }
+  }, [isLoading, editingChart.id, registerLoading, unregisterLoading])
 
   return {
     data,
