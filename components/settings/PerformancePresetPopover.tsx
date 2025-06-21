@@ -136,7 +136,7 @@ export function PerformancePresetPopover({}: PerformancePresetPopoverProps) {
             {transitioningPreset === 'full-detail' ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                <span className="opacity-60">Loading</span>
+                <span>Full</span>
               </>
             ) : appliedPreset === 'full-detail' ? (
               <>
@@ -162,7 +162,7 @@ export function PerformancePresetPopover({}: PerformancePresetPopoverProps) {
             {transitioningPreset === 'balanced' ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                <span className="opacity-60">Loading</span>
+                <span>Bal</span>
               </>
             ) : appliedPreset === 'balanced' ? (
               <>
@@ -188,7 +188,7 @@ export function PerformancePresetPopover({}: PerformancePresetPopoverProps) {
             {transitioningPreset === 'high-performance' ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                <span className="opacity-60">Loading</span>
+                <span>High</span>
               </>
             ) : appliedPreset === 'high-performance' ? (
               <>
