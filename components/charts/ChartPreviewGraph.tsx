@@ -357,6 +357,57 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     }
   }, [zoomVersion]) // Update when zoom changes
   
+  // Calculate margins based on current state
+  const computedMargins = useMemo(() => {
+    let margin = { top: 20, right: 40, bottom: 60, left: 60 }
+    
+    // 4x4 layout gets priority - always use ultra-compact margins
+    if (gridLayout?.columns === 4 && gridLayout?.rows === 4) {
+      margin = {
+        top: Math.round(dimensions.height * 0.03),    // 3%
+        right: Math.round(dimensions.width * 0.04),   // 4%
+        bottom: Math.round(dimensions.height * 0.06), // 6%
+        left: Math.round(dimensions.width * 0.10)     // 10%
+      }
+      
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[ChartPreviewGraph] Computed 4x4 margins:', {
+          margin,
+          dimensions,
+          percentages: {
+            top: '3%',
+            right: '4%',
+            bottom: '6%',
+            left: '10%'
+          }
+        })
+      }
+    } else {
+      // Check if we have percentage margins
+      const hasPercentageMargins = mergedChart.margins && 
+        typeof mergedChart.margins.top === 'string' && 
+        mergedChart.margins.top.endsWith('%')
+      
+      if ((chartSettings?.marginMode === 'unified' || chartSettings?.marginMode === 'percentage' || hasPercentageMargins) && gridLayout) {
+        // Use the new unified margin calculation with grid layout info
+        margin = calculateUnifiedMargins(dimensions.width, dimensions.height, DEFAULT_UNIFIED_MARGIN_CONFIG, gridLayout)
+      } else if (hasPercentageMargins && mergedChart.margins) {
+        // Convert percentage margins to pixels (for cases without gridLayout)
+        margin = {
+          top: calculateMarginInPixels(mergedChart.margins.top as MarginValue, dimensions.height),
+          right: calculateMarginInPixels(mergedChart.margins.right as MarginValue, dimensions.width),
+          bottom: calculateMarginInPixels(mergedChart.margins.bottom as MarginValue, dimensions.height),
+          left: calculateMarginInPixels(mergedChart.margins.left as MarginValue, dimensions.width)
+        }
+      } else if (mergedChart.margins) {
+        // Fall back to existing margins if not using unified mode
+        margin = mergedChart.margins as { top: number; right: number; bottom: number; left: number }
+      }
+    }
+    
+    return margin
+  }, [dimensions, gridLayout, mergedChart.margins, chartSettings?.marginMode])
+  
   // Initialize zoom functionality
   const {
     zoomLevel,
@@ -375,7 +426,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     onZoom: handleZoomTransform,
     onZoomStart: startInteraction,
     onZoomEnd: endInteraction,
-    margin: mergedChart.margins || { top: 20, right: 40, bottom: 60, left: 60 },
+    margin: computedMargins,
     chartId: editingChart.id,
     enableRangeSelection: true,
     isRangeSelectionMode,
@@ -629,69 +680,17 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           // Clear everything
           svg.selectAll("*").remove()
 
-          // Calculate margins using the unified system
-          let margin = { top: 20, right: 40, bottom: 60, left: 60 }
+          // Use the pre-computed margins
+          const margin = computedMargins
           
           // Debug logging
           if (process.env.NODE_ENV === 'development' && gridLayout?.columns === 4 && gridLayout?.rows === 4) {
-            console.log('[ChartPreviewGraph] 4x4 Layout Debug:', {
+            console.log('[ChartPreviewGraph] Using pre-computed margins:', {
               chartId: mergedChart.id,
-              marginMode: chartSettings?.marginMode,
-              chartSettingsMargins: chartSettings?.margins,
-              mergedChartMargins: mergedChart.margins,
-              gridLayout,
-              dimensions
-            })
-          }
-          
-          // 4x4 layout gets priority - always use ultra-compact margins
-          if (gridLayout?.columns === 4 && gridLayout?.rows === 4) {
-            margin = {
-              top: Math.round(dimensions.height * 0.03),    // 3%
-              right: Math.round(dimensions.width * 0.04),   // 4%
-              bottom: Math.round(dimensions.height * 0.06), // 6% (reduced from 8%)
-              left: Math.round(dimensions.width * 0.10)     // 10% (reduced from 13%)
-            }
-            
-            // Always log for 4x4 to debug
-            console.log('[ChartPreviewGraph] 4x4 Forced margins (priority):', {
               margin,
               dimensions,
-              percentages: {
-                top: '3%',
-                right: '4%',
-                bottom: '6%',
-                left: '10%'
-              }
+              gridLayout
             })
-          } else {
-            // Check if we have percentage margins
-            const hasPercentageMargins = mergedChart.margins && 
-              typeof mergedChart.margins.top === 'string' && 
-              mergedChart.margins.top.endsWith('%')
-            
-            if ((chartSettings?.marginMode === 'unified' || chartSettings?.marginMode === 'percentage' || hasPercentageMargins) && gridLayout) {
-              // Use the new unified margin calculation with grid layout info
-              margin = calculateUnifiedMargins(dimensions.width, dimensions.height, DEFAULT_UNIFIED_MARGIN_CONFIG, gridLayout)
-            } else if (hasPercentageMargins && mergedChart.margins) {
-              // Convert percentage margins to pixels (for cases without gridLayout)
-              margin = {
-                top: calculateMarginInPixels(mergedChart.margins.top as MarginValue, dimensions.height),
-                right: calculateMarginInPixels(mergedChart.margins.right as MarginValue, dimensions.width),
-                bottom: calculateMarginInPixels(mergedChart.margins.bottom as MarginValue, dimensions.height),
-                left: calculateMarginInPixels(mergedChart.margins.left as MarginValue, dimensions.width)
-              }
-              
-              if (process.env.NODE_ENV === 'development') {
-                console.log('[ChartPreviewGraph] Converted percentage margins:', {
-                  from: mergedChart.margins,
-                  to: margin
-                })
-              }
-            } else if (mergedChart.margins) {
-              // Fall back to existing margins if not using unified mode
-              margin = mergedChart.margins as { top: number; right: number; bottom: number; left: number }
-            }
           }
           
           const width = dimensions.width - margin.left - margin.right
@@ -773,6 +772,14 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               
               // Draw selection rectangle within the plot area (only if actively selecting)
               if (selectionState.isSelecting) {
+                if (process.env.NODE_ENV === 'development') {
+                  console.log(`[ChartPreviewGraph ${editingChart.id}] Drawing selection rect:`, {
+                    selectionState,
+                    plotDimensions: { width, height },
+                    margin
+                  });
+                }
+                
                 // Create a unique clip path for selection
                 const selectionClipId = `selection-clip-${Math.random().toString(36).substr(2, 9)}`;
                 mainGroup.append("clipPath")
@@ -787,11 +794,25 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
                   .attr("class", "selection-rect")
                   .attr("clip-path", `url(#${selectionClipId})`);
                 
+                const rectX = Math.min(selectionState.startX, selectionState.endX);
+                const rectY = Math.min(selectionState.startY, selectionState.endY);
+                const rectWidth = Math.abs(selectionState.endX - selectionState.startX);
+                const rectHeight = Math.abs(selectionState.endY - selectionState.startY);
+                
+                if (process.env.NODE_ENV === 'development') {
+                  console.log(`[ChartPreviewGraph ${editingChart.id}] Selection rect attributes:`, {
+                    x: rectX,
+                    y: rectY,
+                    width: rectWidth,
+                    height: rectHeight
+                  });
+                }
+                
                 selectionGroup.append("rect")
-                  .attr("x", Math.min(selectionState.startX, selectionState.endX))
-                  .attr("y", Math.min(selectionState.startY, selectionState.endY))
-                  .attr("width", Math.abs(selectionState.endX - selectionState.startX))
-                  .attr("height", Math.abs(selectionState.endY - selectionState.startY))
+                  .attr("x", rectX)
+                  .attr("y", rectY)
+                  .attr("width", rectWidth)
+                  .attr("height", rectHeight)
                   .attr("fill", "rgba(59, 130, 246, 0.1)")
                   .attr("stroke", "rgb(59, 130, 246)")
                   .attr("stroke-width", "2")
@@ -843,6 +864,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         chartId: chartRenderProps.id,
         chartType: chartRenderProps.type,
         showMarkers: chartRenderProps.showMarkers,
+        computedMargins,
       }
       
       if (prevRenderDeps.current) {
@@ -857,6 +879,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         if (prevRenderDeps.current.chartId !== currentDeps.chartId) changes.push('chartId')
         if (prevRenderDeps.current.chartType !== currentDeps.chartType) changes.push('chartType')
         if (prevRenderDeps.current.showMarkers !== currentDeps.showMarkers) changes.push('showMarkers')
+        if (JSON.stringify(prevRenderDeps.current.computedMargins) !== JSON.stringify(currentDeps.computedMargins)) changes.push('computedMargins')
         
         console.log(`[Chart ${chartRenderProps.id}] Render triggered by changes in:`, changes)
       }
@@ -897,6 +920,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     selectionState.endX,
     selectionState.endY,
     isShiftPressed,
+    computedMargins,
   ])
   
 
@@ -912,6 +936,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     chartId: string,
     chartType: string,
     showMarkers: boolean,
+    computedMargins: { top: number; right: number; bottom: number; left: number },
   }>()
   
   // Track shift key state for visual feedback - only for this chart

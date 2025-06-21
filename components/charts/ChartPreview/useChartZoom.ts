@@ -190,13 +190,13 @@ export const useChartZoom = ({
     const svg = d3.select(svgRef.current);
     const currentTransform = d3.zoomTransform(svgRef.current);
     
-    // Calculate the bounding box of the selection (in plot area coordinates)
+    // Calculate the bounding box of the selection (in SVG coordinates)
     const x0 = Math.min(startPoint[0], endPoint[0]);
     const x1 = Math.max(startPoint[0], endPoint[0]);
     const y0 = Math.min(startPoint[1], endPoint[1]);
     const y1 = Math.max(startPoint[1], endPoint[1]);
     
-    // Selection size in plot area coordinates
+    // Selection size in SVG coordinates
     const selectionWidth = x1 - x0;
     const selectionHeight = y1 - y0;
     
@@ -221,126 +221,44 @@ export const useChartZoom = ({
       });
     }
     
-    // If scales are provided, use data-coordinate based zoom
-    if (baseScales?.xScale && baseScales?.yScale) {
-      // Use current scales if available, otherwise use base scales
-      const activeXScale = currentScales?.xScale || baseScales.xScale;
-      const activeYScale = currentScales?.yScale || baseScales.yScale;
-      
-      // Use active scales to convert mouse coordinates to data coordinates
-      // Mouse coordinates are in plot area coordinates
-      const dataX0 = activeXScale.invert(x0);
-      const dataX1 = activeXScale.invert(x1);
-      const dataY0 = activeYScale.invert(y1); // SVG Y is inverted
-      const dataY1 = activeYScale.invert(y0);
-      
-      // Get the original (unzoomed) data domain from base scales
-      const originalXDomain = baseScales.xScale.domain();
-      const originalYDomain = baseScales.yScale.domain();
-      
-      // Calculate the scale needed to fit the selected data range in the viewport
-      const xDomainSpan = originalXDomain[1].valueOf() - originalXDomain[0].valueOf();
-      const yDomainSpan = originalYDomain[1] - originalYDomain[0];
-      const selectedXSpan = dataX1.valueOf() - dataX0.valueOf();
-      const selectedYSpan = dataY1 - dataY0;
-      
-      const scaleX = xDomainSpan / selectedXSpan;
-      const scaleY = yDomainSpan / selectedYSpan;
-      const newScale = Math.min(scaleX, scaleY, maxZoom) * 0.9; // 90% to add padding
-      
-      // Calculate the center of the selected data range
-      const dataCenterX = (dataX0.valueOf() + dataX1.valueOf()) / 2;
-      const dataCenterY = (dataY0 + dataY1) / 2;
-      
-      // Convert data center to pixel coordinates using base scales
-      const pixelCenterX = baseScales.xScale(dataCenterX);
-      const pixelCenterY = baseScales.yScale(dataCenterY);
-      
-      // Calculate translation to center the selection
-      const plotWidth = width - margin.left - margin.right;
-      const plotHeight = height - margin.top - margin.bottom;
-      const translateX = plotWidth / 2 - pixelCenterX * newScale + margin.left;
-      const translateY = plotHeight / 2 - pixelCenterY * newScale + margin.top;
-      
-      // Log only in development
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[Range Selection ${chartId}] Data-based zoom:`, {
-          pixelCoords: { x0, y0, x1, y1 },
-          dataCoords: { 
-            x: [dataX0, dataX1], 
-            y: [dataY0, dataY1] 
-          },
-          originalDomain: {
-            x: originalXDomain,
-            y: originalYDomain
-          },
-          selectedSpan: { x: selectedXSpan, y: selectedYSpan },
-          currentTransform: { k: currentTransform.k, x: currentTransform.x, y: currentTransform.y },
-          newScale: newScale.toFixed(2),
-          dataCenter: { x: dataCenterX, y: dataCenterY },
-          pixelCenter: { x: pixelCenterX.toFixed(0), y: pixelCenterY.toFixed(0) },
-          translate: { x: translateX.toFixed(0), y: translateY.toFixed(0) },
-          plotSize: { width: plotWidth, height: plotHeight }
-        });
-      }
-      
-      // Create and apply the transform
-      const transform = d3.zoomIdentity
-        .translate(translateX, translateY)
-        .scale(newScale);
-      
-      // Apply transform with smooth transition
-      svg.transition()
-        .duration(400)
-        .ease(d3.easeCubicInOut)
-        .call(zoomBehaviorRef.current.transform, transform);
-    } else {
-      // Fallback to original pixel-based logic
-      // Convert plot area coordinates to SVG coordinates
-      const svgX0 = x0 + margin.left;
-      const svgX1 = x1 + margin.left;
-      const svgY0 = y0 + margin.top;
-      const svgY1 = y1 + margin.top;
-      
-      // Calculate the center of selection in SVG coordinates
-      const svgCenterX = (svgX0 + svgX1) / 2;
-      const svgCenterY = (svgY0 + svgY1) / 2;
-      
-      // Convert to original (unzoomed) SVG coordinates
-      const originalCenterX = (svgCenterX - currentTransform.x) / currentTransform.k;
-      const originalCenterY = (svgCenterY - currentTransform.y) / currentTransform.k;
-      
-      // Calculate the selection size in original coordinates
-      const originalSelectionWidth = selectionWidth / currentTransform.k;
-      const originalSelectionHeight = selectionHeight / currentTransform.k;
-      
-      // Calculate the plot area size
-      const plotWidth = width - margin.left - margin.right;
-      const plotHeight = height - margin.top - margin.bottom;
-      
-      // Calculate scale to fit selection in plot area (with some padding)
-      const scaleX = plotWidth / originalSelectionWidth;
-      const scaleY = plotHeight / originalSelectionHeight;
-      const newScale = Math.min(scaleX, scaleY, maxZoom) * 0.9; // 90% to add padding
-      
-      // Calculate translation to center the selection in the SVG viewport
-      const svgWidth = width;
-      const svgHeight = height;
-      const translateX = svgWidth / 2 - originalCenterX * newScale;
-      const translateY = svgHeight / 2 - originalCenterY * newScale;
-      
-      // Create and apply the transform
-      const transform = d3.zoomIdentity
-        .translate(translateX, translateY)
-        .scale(newScale);
-      
-      // Apply transform with smooth transition
-      svg.transition()
-        .duration(400)
-        .ease(d3.easeCubicInOut)
-        .call(zoomBehaviorRef.current.transform, transform);
+    // Use simple pixel-based approach similar to test-zoom/debug-page.tsx
+    // Work in SVG coordinates throughout
+    
+    // Calculate scale to fit selection in viewport (with some padding)
+    const scaleX = width / selectionWidth;
+    const scaleY = height / selectionHeight;
+    const newScale = Math.min(scaleX, scaleY, maxZoom) * 0.9; // 90% to add padding
+    
+    // Calculate center of selection in SVG coordinates
+    const centerX = (x0 + x1) / 2;
+    const centerY = (y0 + y1) / 2;
+    
+    // Calculate translation to center the selection in the SVG viewport
+    const translateX = width / 2 - centerX * newScale;
+    const translateY = height / 2 - centerY * newScale;
+    
+    // Debug log
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Range Selection ${chartId}] Transform calculation:`, {
+        selection: { x0, y0, x1, y1, width: selectionWidth, height: selectionHeight },
+        svgSize: { width, height },
+        center: { x: centerX, y: centerY },
+        scale: { scaleX, scaleY, final: newScale },
+        translate: { x: translateX, y: translateY }
+      });
     }
-  }, [width, height, margin, maxZoom, svgRef, getScales, chartId]);
+    
+    // Create and apply the transform
+    const transform = d3.zoomIdentity
+      .translate(translateX, translateY)
+      .scale(newScale);
+    
+    // Apply transform with smooth transition
+    svg.transition()
+      .duration(400)
+      .ease(d3.easeCubicInOut)
+      .call(zoomBehaviorRef.current.transform, transform);
+  }, [width, height, maxZoom, svgRef, getScales, chartId]);
 
   useEffect(() => {
     if (!svgRef.current || !enableZoom) return;
@@ -436,8 +354,9 @@ export const useChartZoom = ({
         // Disable double-click zoom (we handle it separately)
         if (event.type === 'dblclick') return false;
         
-        // If shift is pressed or range selection mode is active, don't process normal zoom/pan
+        // If shift is pressed or range selection mode is active, don't process ANY zoom/pan events
         if ((isShiftPressed.current || isRangeSelectionMode) && enableRangeSelection) {
+          // This includes mousedown, mousemove, and mouseup
           return false;
         }
         // Allow zoom on wheel events and drag
@@ -513,8 +432,8 @@ export const useChartZoom = ({
         });
         
         const [x, y] = d3.pointer(event, this);
-        // Get coordinates relative to the plot area (inside margins)
-        selectionStart = [x - margin.left, y - margin.top];
+        // Keep coordinates in SVG space
+        selectionStart = [x, y];
         
         setSelectionState({
           isSelecting: true,
@@ -533,8 +452,8 @@ export const useChartZoom = ({
         if (!selectionStart) return;
         
         const [x, y] = d3.pointer(event, this);
-        // Get coordinates relative to the plot area (inside margins)
-        const currentPoint: [number, number] = [x - margin.left, y - margin.top];
+        // Keep coordinates in SVG space
+        const currentPoint: [number, number] = [x, y];
         
         setSelectionState(prev => ({
           ...prev,
@@ -548,8 +467,8 @@ export const useChartZoom = ({
         if (!selectionStart) return;
         
         const [x, y] = d3.pointer(event, this);
-        // Get coordinates relative to the plot area (inside margins)
-        const endPoint: [number, number] = [x - margin.left, y - margin.top];
+        // Keep coordinates in SVG space
+        const endPoint: [number, number] = [x, y];
         
         // Get current transform before selection
         const currentTransform = d3.zoomTransform(this);
@@ -583,19 +502,16 @@ export const useChartZoom = ({
     // Set initial cursor
     svg.style('cursor', isRangeSelectionMode && enableRangeSelection ? 'crosshair' : (enablePan ? 'grab' : 'default'));
 
-    // Handle double-click for reset
-    // We'll set this up after resetZoom is defined
-
-    // Handle cursor changes during pan
+    // Handle cursor changes during pan (use non-conflicting namespace)
     if (enablePan) {
-      svg.on('mousedown.cursor', () => {
+      svg.on('mousedown.cursor', function(event) {
         if (!isShiftPressed.current && !isRangeSelectionMode) {
           svg.style('cursor', 'grabbing');
         }
       });
-      svg.on('mouseup.cursor', () => {
+      svg.on('mouseup.cursor', function(event) {
         if (!isShiftPressed.current && !isRangeSelectionMode) {
-          svg.style('cursor', isRangeSelectionMode && enableRangeSelection ? 'crosshair' : 'grab');
+          svg.style('cursor', 'grab');
         }
       });
     }
@@ -603,11 +519,11 @@ export const useChartZoom = ({
     return () => {
       svg.on('.zoom', null);
       svg.on('dblclick.reset', null);
-      svg.on('mousedown.cursor', null);
-      svg.on('mouseup.cursor', null);
       svg.on('mousedown.selection', null);
       svg.on('mousemove.selection', null);
       svg.on('mouseup.selection', null);
+      svg.on('mousedown.cursor', null);
+      svg.on('mouseup.cursor', null);
       svg.on('mouseenter', null);
       svg.on('mouseleave', null);
       if (enableRangeSelection) {
