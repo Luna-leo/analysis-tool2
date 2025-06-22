@@ -124,6 +124,21 @@ export function RegularParameterRow({
         .filter((p, idx) => idx < index && (p.axisNo || 1) === axisNo && p.parameter)
         .length === 0
       
+      // Update plot style legend if in parameter mode
+      let updatedPlotStyles = editingChart.plotStyles
+      if (editingChart.plotStyles?.mode === 'parameter' && editingChart.plotStyles.byParameter) {
+        updatedPlotStyles = {
+          ...editingChart.plotStyles,
+          byParameter: {
+            ...editingChart.plotStyles.byParameter,
+            [index]: {
+              ...editingChart.plotStyles.byParameter[index],
+              legendText: parsedParam.name
+            }
+          }
+        }
+      }
+      
       // Set Y-axis label to parameter name if label is empty OR if auto-update is enabled (default: true)
       const currentLabel = editingChart.yAxisLabels?.[axisNo]
       if (isFirstParamOnAxis && (!currentLabel || (editingChart.autoUpdateYLabels ?? true))) {
@@ -138,14 +153,30 @@ export function RegularParameterRow({
           yAxisLabels: {
             ...editingChart.yAxisLabels,
             [axisNo]: label
-          }
+          },
+          plotStyles: updatedPlotStyles
         })
         setOpen(false)
         return
       }
     }
     
-    setEditingChart({ ...editingChart, yAxisParams: newParams })
+    // Update plot style legend if in parameter mode (for cases where Y-axis label was not updated)
+    let updatedPlotStyles = editingChart.plotStyles
+    if (parsedParam && editingChart.plotStyles?.mode === 'parameter' && editingChart.plotStyles.byParameter) {
+      updatedPlotStyles = {
+        ...editingChart.plotStyles,
+        byParameter: {
+          ...editingChart.plotStyles.byParameter,
+          [index]: {
+            ...editingChart.plotStyles.byParameter[index],
+            legendText: parsedParam.name
+          }
+        }
+      }
+    }
+    
+    setEditingChart({ ...editingChart, yAxisParams: newParams, plotStyles: updatedPlotStyles })
     setOpen(false)
   }
 

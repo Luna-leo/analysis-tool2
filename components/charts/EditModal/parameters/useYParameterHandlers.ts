@@ -53,6 +53,21 @@ export function useYParameterHandlers({
       ?.filter((p, idx) => idx !== index && (p.axisNo || 1) === axisNo && p.parameter)
       .length === 0
     
+    // Update plot style legend if in parameter mode
+    let updatedPlotStyles = editingChart.plotStyles
+    if (editingChart.plotStyles?.mode === 'parameter' && editingChart.plotStyles.byParameter) {
+      updatedPlotStyles = {
+        ...editingChart.plotStyles,
+        byParameter: {
+          ...editingChart.plotStyles.byParameter,
+          [index]: {
+            ...editingChart.plotStyles.byParameter[index],
+            legendText: formula.name
+          }
+        }
+      }
+    }
+    
     const currentLabel = editingChart.yAxisLabels?.[axisNo]
     if (isFirstParamOnAxis && (!currentLabel || (editingChart.autoUpdateYLabels ?? true))) {
       setEditingChart({ 
@@ -61,10 +76,11 @@ export function useYParameterHandlers({
         yAxisLabels: {
           ...editingChart.yAxisLabels,
           [axisNo]: formula.name
-        }
+        },
+        plotStyles: updatedPlotStyles
       })
     } else {
-      setEditingChart({ ...editingChart, yAxisParams: newParams })
+      setEditingChart({ ...editingChart, yAxisParams: newParams, plotStyles: updatedPlotStyles })
     }
     
     // Use the Formula Store instead of mockFormulaMaster
@@ -135,6 +151,21 @@ export function useYParameterHandlers({
         ?.filter((p, idx) => idx !== index && (p.axisNo || 1) === axisNo && p.parameter)
         .length === 0
       
+      // Update plot style legend if in parameter mode
+      let updatedPlotStyles = editingChart.plotStyles
+      if (editingChart.plotStyles?.mode === 'parameter' && editingChart.plotStyles.byParameter) {
+        updatedPlotStyles = {
+          ...editingChart.plotStyles,
+          byParameter: {
+            ...editingChart.plotStyles.byParameter,
+            [index]: {
+              ...editingChart.plotStyles.byParameter[index],
+              legendText: interlockDefinition.name
+            }
+          }
+        }
+      }
+      
       const currentLabel = editingChart.yAxisLabels?.[axisNo]
       if (isFirstParamOnAxis && (!currentLabel || (editingChart.autoUpdateYLabels ?? true))) {
         setEditingChart({ 
@@ -143,10 +174,11 @@ export function useYParameterHandlers({
           yAxisLabels: {
             ...editingChart.yAxisLabels,
             [axisNo]: interlockDefinition.name
-          }
+          },
+          plotStyles: updatedPlotStyles
         })
       } else {
-        setEditingChart({ ...editingChart, yAxisParams: newParams })
+        setEditingChart({ ...editingChart, yAxisParams: newParams, plotStyles: updatedPlotStyles })
       }
       setEditingInterlockIndex(null)
       return
@@ -170,6 +202,21 @@ export function useYParameterHandlers({
       ?.filter((p, idx) => idx !== index && (p.axisNo || 1) === axisNo && p.parameter)
       .length === 0
     
+    // Update plot style legend if in parameter mode
+    let updatedPlotStyles = editingChart.plotStyles
+    if (editingChart.plotStyles?.mode === 'parameter' && editingChart.plotStyles.byParameter) {
+      updatedPlotStyles = {
+        ...editingChart.plotStyles,
+        byParameter: {
+          ...editingChart.plotStyles.byParameter,
+          [index]: {
+            ...editingChart.plotStyles.byParameter[index],
+            legendText: interlockDefinition.name
+          }
+        }
+      }
+    }
+    
     const currentLabel = editingChart.yAxisLabels?.[axisNo]
     if (isFirstParamOnAxis && (!currentLabel || (editingChart.autoUpdateYLabels ?? true))) {
       setEditingChart({ 
@@ -178,10 +225,11 @@ export function useYParameterHandlers({
         yAxisLabels: {
           ...editingChart.yAxisLabels,
           [axisNo]: interlockDefinition.name
-        }
+        },
+        plotStyles: updatedPlotStyles
       })
     } else {
-      setEditingChart({ ...editingChart, yAxisParams: newParams })
+      setEditingChart({ ...editingChart, yAxisParams: newParams, plotStyles: updatedPlotStyles })
     }
     setEditingInterlockIndex(null)
   }
@@ -251,6 +299,21 @@ export function useYParameterHandlers({
           ?.filter((p, idx) => idx !== index && (p.axisNo || 1) === axisNo && p.parameter)
           .length === 0
         
+        // Update plot style legend if in parameter mode
+        let updatedPlotStyles = editingChart.plotStyles
+        if (editingChart.plotStyles?.mode === 'parameter' && editingChart.plotStyles.byParameter) {
+          updatedPlotStyles = {
+            ...editingChart.plotStyles,
+            byParameter: {
+              ...editingChart.plotStyles.byParameter,
+              [index]: {
+                ...editingChart.plotStyles.byParameter[index],
+                legendText: selectedFormula.name
+              }
+            }
+          }
+        }
+        
         const currentLabel = editingChart.yAxisLabels?.[axisNo]
         if (isFirstParamOnAxis && (!currentLabel || (editingChart.autoUpdateYLabels ?? true))) {
           setEditingChart({ 
@@ -259,10 +322,11 @@ export function useYParameterHandlers({
             yAxisLabels: {
               ...editingChart.yAxisLabels,
               [axisNo]: selectedFormula.name
-            }
+            },
+            plotStyles: updatedPlotStyles
           })
         } else {
-          setEditingChart({ ...editingChart, yAxisParams: newParams })
+          setEditingChart({ ...editingChart, yAxisParams: newParams, plotStyles: updatedPlotStyles })
         }
       }
     }
@@ -332,6 +396,21 @@ export function useYParameterHandlers({
           ?.filter((p, idx) => idx !== index && (p.axisNo || 1) === axisNo && p.parameter)
           .length === 0
         
+        // Update plot style legend if in parameter mode
+        let updatedPlotStyles = editingChart.plotStyles
+        if (editingChart.plotStyles?.mode === 'parameter' && editingChart.plotStyles.byParameter) {
+          updatedPlotStyles = {
+            ...editingChart.plotStyles,
+            byParameter: {
+              ...editingChart.plotStyles.byParameter,
+              [index]: {
+                ...editingChart.plotStyles.byParameter[index],
+                legendText: selectedMaster.name
+              }
+            }
+          }
+        }
+        
         const currentLabel = editingChart.yAxisLabels?.[axisNo]
         if (isFirstParamOnAxis && (!currentLabel || (editingChart.autoUpdateYLabels ?? true))) {
           setEditingChart({ 
@@ -340,10 +419,11 @@ export function useYParameterHandlers({
             yAxisLabels: {
               ...editingChart.yAxisLabels,
               [axisNo]: selectedMaster.name
-            }
+            },
+            plotStyles: updatedPlotStyles
           })
         } else {
-          setEditingChart({ ...editingChart, yAxisParams: newParams })
+          setEditingChart({ ...editingChart, yAxisParams: newParams, plotStyles: updatedPlotStyles })
         }
       }
     }
