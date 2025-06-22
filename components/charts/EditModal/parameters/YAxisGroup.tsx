@@ -97,7 +97,11 @@ export function YAxisGroup({
     }
     
     const parsed = parseParameterKey(firstParam.parameter)
-    return parsed ? parsed.name : firstParam.parameter
+    if (parsed) {
+      // Include unit if available (matching X-axis behavior)
+      return parsed.unit ? `${parsed.name} [${parsed.unit}]` : parsed.name
+    }
+    return firstParam.parameter
   }
 
   const handleResetLabel = () => {
@@ -109,7 +113,7 @@ export function YAxisGroup({
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         {/* Header with collapse trigger */}
         <div className="p-2">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <CollapsibleTrigger className="flex items-center gap-1 hover:bg-muted/50 transition-colors p-1 rounded -ml-1">
               {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
               <h5 className="font-medium text-sm">Y-Axis {axisNo}</h5>
@@ -118,49 +122,6 @@ export function YAxisGroup({
               </span>
             </CollapsibleTrigger>
 
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-7 text-xs px-2">
-                  {axisRange.auto ? `Range: Auto` : `Range: ${axisRange.min} - ${axisRange.max}`}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80">
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`y-auto-axis-${axisNo}`}
-                      checked={axisRange.auto}
-                      onCheckedChange={(checked) => updateAxisRange(axisNo, { auto: checked === true })}
-                    />
-                    <Label htmlFor={`y-auto-axis-${axisNo}`} className="text-sm">
-                      Auto Range
-                    </Label>
-                  </div>
-                  <div className="space-y-2">
-                    <div>
-                      <Label className="text-xs">Min Value</Label>
-                      <Input
-                        type="number"
-                        value={axisRange.min}
-                        onChange={(e) => updateAxisRange(axisNo, { auto: false, min: parseFloat(e.target.value) || 0 })}
-                        disabled={axisRange.auto}
-                        className="h-8"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Max Value</Label>
-                      <Input
-                        type="number"
-                        value={axisRange.max}
-                        onChange={(e) => updateAxisRange(axisNo, { auto: false, max: parseFloat(e.target.value) || 100 })}
-                        disabled={axisRange.auto}
-                        className="h-8"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
 
             <div className="flex items-center gap-1 ml-auto">
               <Label className="text-xs">Axis No:</Label>
@@ -198,68 +159,112 @@ export function YAxisGroup({
         {/* Collapsible parameter table */}
         <CollapsibleContent>
           <div className="px-2 pb-2">
-            {/* Y-axis label row */}
+            {/* Y-axis label and range row */}
             <div className="flex gap-2 items-center mb-2 px-1">
               <Label htmlFor={`y-axis-label-${axisNo}`} className="text-sm w-24">Y-axis Label</Label>
-              <div className="flex-1 flex items-center gap-2">
-                <Input
-                  id={`y-axis-label-${axisNo}`}
-                  ref={(el) => {
-                    if (axisLabelInputRef) {
-                      axisLabelInputRef.current[axisNo] = el
-                    }
-                  }}
-                  value={axisLabel}
-                  onChange={(e) => updateAxisLabel(axisNo, e.target.value)}
-                  placeholder={axisLabel ? `Y-axis ${axisNo} label` : `Auto: ${getAutoLabelForAxis() || "Add parameters first"}`}
-                  className="h-7 text-sm flex-1"
-                />
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex items-center">
-                        <Checkbox
-                          id={`auto-update-y-label-${axisNo}`}
-                          checked={editingChart.autoUpdateYLabels ?? true}
-                          onCheckedChange={(checked) => {
-                            setEditingChart({
-                              ...editingChart,
-                              autoUpdateYLabels: checked === true,
-                            })
-                          }}
-                          className="h-4 w-4"
-                        />
-                        <Label
-                          htmlFor={`auto-update-y-label-${axisNo}`}
-                          className="text-xs font-normal cursor-pointer ml-1.5"
-                        >
-                          Auto-update
-                        </Label>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Auto-update label when parameters change</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleResetLabel}
-                        className="h-7 w-7 p-0"
+              <Input
+                id={`y-axis-label-${axisNo}`}
+                ref={(el) => {
+                  if (axisLabelInputRef) {
+                    axisLabelInputRef.current[axisNo] = el
+                  }
+                }}
+                value={axisLabel}
+                onChange={(e) => updateAxisLabel(axisNo, e.target.value)}
+                placeholder={axisLabel ? `Y-axis ${axisNo} label` : `Auto: ${getAutoLabelForAxis() || "Add parameters first"}`}
+                disabled={editingChart.autoUpdateYLabels ?? true}
+                className="h-7 text-sm flex-1"
+              />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center">
+                      <Checkbox
+                        id={`auto-update-y-label-${axisNo}`}
+                        checked={editingChart.autoUpdateYLabels ?? true}
+                        onCheckedChange={(checked) => {
+                          setEditingChart({
+                            ...editingChart,
+                            autoUpdateYLabels: checked === true,
+                          })
+                        }}
+                        className="h-4 w-4"
+                      />
+                      <Label
+                        htmlFor={`auto-update-y-label-${axisNo}`}
+                        className="text-xs font-normal cursor-pointer ml-1.5"
                       >
-                        <RotateCcw className="h-3 w-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Reset to auto-generated label</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
+                        Auto-update
+                      </Label>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Auto-update label when parameters change</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleResetLabel}
+                      className="h-7 w-7 p-0"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Reset to auto-generated label</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              
+              {/* Range button */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 text-xs px-2">
+                    {axisRange.auto ? `Range: Auto` : `Range: ${axisRange.min} - ${axisRange.max}`}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80">
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`y-auto-axis-${axisNo}`}
+                        checked={axisRange.auto}
+                        onCheckedChange={(checked) => updateAxisRange(axisNo, { auto: checked === true })}
+                      />
+                      <Label htmlFor={`y-auto-axis-${axisNo}`} className="text-sm">
+                        Auto Range
+                      </Label>
+                    </div>
+                    <div className="space-y-2">
+                      <div>
+                        <Label className="text-xs">Min Value</Label>
+                        <Input
+                          type="number"
+                          value={axisRange.min}
+                          onChange={(e) => updateAxisRange(axisNo, { auto: false, min: parseFloat(e.target.value) || 0 })}
+                          disabled={axisRange.auto}
+                          className="h-8"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Max Value</Label>
+                        <Input
+                          type="number"
+                          value={axisRange.max}
+                          onChange={(e) => updateAxisRange(axisNo, { auto: false, max: parseFloat(e.target.value) || 100 })}
+                          disabled={axisRange.auto}
+                          className="h-8"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
             
             <div className="pt-1 border-t">

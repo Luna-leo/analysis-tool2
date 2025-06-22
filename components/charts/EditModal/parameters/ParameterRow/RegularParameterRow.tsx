@@ -122,12 +122,17 @@ export function RegularParameterRow({
       // Set Y-axis label to parameter name if label is empty OR if auto-update is enabled (default: true)
       const currentLabel = editingChart.yAxisLabels?.[axisNo]
       if (!currentLabel || (editingChart.autoUpdateYLabels ?? true)) {
+        // Include unit if available (matching X-axis behavior)
+        const label = parsedParam.unit 
+          ? `${parsedParam.name} [${parsedParam.unit}]`
+          : parsedParam.name
+          
         setEditingChart({ 
           ...editingChart, 
           yAxisParams: newParams,
           yAxisLabels: {
             ...editingChart.yAxisLabels,
-            [axisNo]: parsedParam.name
+            [axisNo]: label
           }
         })
         setOpen(false)

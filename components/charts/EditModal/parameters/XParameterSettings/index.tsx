@@ -222,6 +222,7 @@ export function XParameterSettings({ editingChart, setEditingChart, selectedData
                     })
                   }}
                   placeholder={editingChart.xLabel ? "X-axis label" : `Auto: ${getAutoLabel() || "Select parameter first"}`}
+                  disabled={editingChart.autoUpdateXLabel ?? true}
                   className="h-8 text-sm flex-1"
                 />
                 <TooltipProvider>
