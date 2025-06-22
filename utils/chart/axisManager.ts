@@ -120,7 +120,39 @@ export class AxisManager {
         
         if (dateValues.length > 0) {
           const extent = d3.extent(dateValues) as [Date, Date]
-          xDomain = extent
+          
+          // Apply nice rounding for datetime AutoRange
+          const rangeMs = extent[1].getTime() - extent[0].getTime()
+          const msPerMinute = 60 * 1000
+          const msPerHour = 60 * msPerMinute
+          const msPerDay = 24 * msPerHour
+          
+          let roundedMin: Date
+          let roundedMax: Date
+          
+          if (rangeMs <= msPerHour) {
+            // Less than 1 hour: round to 5 or 15 minutes
+            const roundTo = rangeMs <= 30 * msPerMinute ? 5 : 15
+            roundedMin = new Date(Math.floor(extent[0].getTime() / (roundTo * msPerMinute)) * (roundTo * msPerMinute))
+            roundedMax = new Date(Math.ceil(extent[1].getTime() / (roundTo * msPerMinute)) * (roundTo * msPerMinute))
+          } else if (rangeMs <= 6 * msPerHour) {
+            // 1-6 hours: round to 30 minutes or 1 hour
+            const roundTo = rangeMs <= 3 * msPerHour ? 30 : 60
+            roundedMin = new Date(Math.floor(extent[0].getTime() / (roundTo * msPerMinute)) * (roundTo * msPerMinute))
+            roundedMax = new Date(Math.ceil(extent[1].getTime() / (roundTo * msPerMinute)) * (roundTo * msPerMinute))
+          } else if (rangeMs <= msPerDay) {
+            // 6-24 hours: round to 1 or 3 hours
+            const roundTo = rangeMs <= 12 * msPerHour ? 1 : 3
+            roundedMin = new Date(Math.floor(extent[0].getTime() / (roundTo * msPerHour)) * (roundTo * msPerHour))
+            roundedMax = new Date(Math.ceil(extent[1].getTime() / (roundTo * msPerHour)) * (roundTo * msPerHour))
+          } else {
+            // More than 1 day: round to 6 hours or 1 day
+            const roundTo = rangeMs <= 7 * msPerDay ? 6 : 24
+            roundedMin = new Date(Math.floor(extent[0].getTime() / (roundTo * msPerHour)) * (roundTo * msPerHour))
+            roundedMax = new Date(Math.ceil(extent[1].getTime() / (roundTo * msPerHour)) * (roundTo * msPerHour))
+          }
+          
+          xDomain = [roundedMin, roundedMax]
         } else {
           // Fallback to last hour
           const now = new Date()
