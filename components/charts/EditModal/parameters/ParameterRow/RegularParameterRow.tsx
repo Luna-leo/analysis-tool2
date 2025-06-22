@@ -119,9 +119,9 @@ export function RegularParameterRow({
     if (parsedParam && newParams[index]) {
       const axisNo = newParams[index].axisNo || 1
       
-      // Set Y-axis label to parameter name if label is empty
+      // Set Y-axis label to parameter name if label is empty OR if auto-update is enabled
       const currentLabel = editingChart.yAxisLabels?.[axisNo]
-      if (!currentLabel) {
+      if (!currentLabel || editingChart.autoUpdateYLabels) {
         setEditingChart({ 
           ...editingChart, 
           yAxisParams: newParams,

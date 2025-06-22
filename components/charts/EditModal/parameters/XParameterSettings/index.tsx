@@ -128,7 +128,8 @@ export function XParameterSettings({ editingChart, setEditingChart, selectedData
                         xParameter: value,
                       }
                       
-                      if (parsedParam && !editingChart.xLabel) {
+                      // Set X-axis label if it's empty OR if auto-update is enabled
+                      if (parsedParam && (!editingChart.xLabel || editingChart.autoUpdateXLabel)) {
                         newChart.xLabel = parsedParam.unit 
                           ? `${parsedParam.name} [${parsedParam.unit}]`
                           : parsedParam.name

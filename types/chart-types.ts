@@ -132,6 +132,10 @@ export interface ChartComponent {
   yLabelOffset?: number
   yAxisLabels?: Record<number, string>
   
+  // Label update preferences
+  autoUpdateXLabel?: boolean
+  autoUpdateYLabels?: boolean
+  
   // Layout
   margins?: ChartMargins
   legendPosition?: LegendPosition

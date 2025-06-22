@@ -45,10 +45,10 @@ export function useYParameterHandlers({
       unitConversionId: undefined  // Clear conversion
     }
     
-    // Set Y-axis label to formula name if label is empty
+    // Set Y-axis label to formula name if label is empty OR if auto-update is enabled
     const axisNo = newParams[index].axisNo || 1
     const currentLabel = editingChart.yAxisLabels?.[axisNo]
-    if (!currentLabel) {
+    if (!currentLabel || editingChart.autoUpdateYLabels) {
       setEditingChart({ 
         ...editingChart, 
         yAxisParams: newParams,
@@ -121,10 +121,10 @@ export function useYParameterHandlers({
         unitConversionId: undefined  // Clear conversion
       }
       
-      // Set Y-axis label to interlock name if label is empty
+      // Set Y-axis label to interlock name if label is empty OR if auto-update is enabled
       const axisNo = newParams[index].axisNo || 1
       const currentLabel = editingChart.yAxisLabels?.[axisNo]
-      if (!currentLabel) {
+      if (!currentLabel || editingChart.autoUpdateYLabels) {
         setEditingChart({ 
           ...editingChart, 
           yAxisParams: newParams,
@@ -150,10 +150,10 @@ export function useYParameterHandlers({
       unitConversionId: undefined  // Clear conversion
     }
     
-    // Set Y-axis label to interlock name if label is empty
+    // Set Y-axis label to interlock name if label is empty OR if auto-update is enabled
     const axisNo = newParams[index].axisNo || 1
     const currentLabel = editingChart.yAxisLabels?.[axisNo]
-    if (!currentLabel) {
+    if (!currentLabel || editingChart.autoUpdateYLabels) {
       setEditingChart({ 
         ...editingChart, 
         yAxisParams: newParams,
@@ -225,10 +225,10 @@ export function useYParameterHandlers({
           unitConversionId: undefined  // Clear conversion
         }
         
-        // Set Y-axis label to formula name if label is empty
+        // Set Y-axis label to formula name if label is empty OR if auto-update is enabled
         const axisNo = newParams[index].axisNo || 1
         const currentLabel = editingChart.yAxisLabels?.[axisNo]
-        if (!currentLabel) {
+        if (!currentLabel || editingChart.autoUpdateYLabels) {
           setEditingChart({ 
             ...editingChart, 
             yAxisParams: newParams,
@@ -300,10 +300,10 @@ export function useYParameterHandlers({
           unitConversionId: undefined  // Clear conversion
         }
         
-        // Set Y-axis label to interlock name if label is empty
+        // Set Y-axis label to interlock name if label is empty OR if auto-update is enabled
         const axisNo = newParams[index].axisNo || 1
         const currentLabel = editingChart.yAxisLabels?.[axisNo]
-        if (!currentLabel) {
+        if (!currentLabel || editingChart.autoUpdateYLabels) {
           setEditingChart({ 
             ...editingChart, 
             yAxisParams: newParams,

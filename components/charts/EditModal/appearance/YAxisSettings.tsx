@@ -3,9 +3,12 @@
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Settings } from "lucide-react"
+import { Settings, RotateCcw } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ChartComponent } from "@/types"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { parseParameterKey } from "@/utils/parameterUtils"
 
 interface YAxisSettingsProps {
   editingChart: ChartComponent
@@ -13,9 +16,65 @@ interface YAxisSettingsProps {
 }
 
 export function YAxisSettings({ editingChart, setEditingChart }: YAxisSettingsProps) {
+  // Generate auto label for a specific axis
+  const getAutoLabelForAxis = (axisNo: number) => {
+    const params = editingChart.yAxisParams?.filter(p => (p.axisNo || 1) === axisNo) || []
+    if (params.length === 0) return ""
+    
+    // Use the first parameter name for that axis
+    const firstParam = params[0]
+    if (firstParam.parameterType === "Formula" || firstParam.parameterType === "Interlock") {
+      return firstParam.parameter
+    }
+    
+    const parsed = parseParameterKey(firstParam.parameter)
+    return parsed ? parsed.name : firstParam.parameter
+  }
+
+  const handleResetLabel = (axisNo: number) => {
+    setEditingChart({
+      ...editingChart,
+      yAxisLabels: {
+        ...editingChart.yAxisLabels,
+        [axisNo]: getAutoLabelForAxis(axisNo),
+      },
+    })
+  }
+
   return (
     <div>
-      <Label className="text-sm">Y-axis Labels</Label>
+      <div className="flex items-center justify-between mb-1">
+        <Label className="text-sm">Y-axis Labels</Label>
+        <div className="flex items-center gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="auto-update-y-labels"
+                    checked={editingChart.autoUpdateYLabels ?? false}
+                    onCheckedChange={(checked) => {
+                      setEditingChart({
+                        ...editingChart,
+                        autoUpdateYLabels: checked === true,
+                      })
+                    }}
+                  />
+                  <Label
+                    htmlFor="auto-update-y-labels"
+                    className="text-xs font-normal cursor-pointer"
+                  >
+                    Auto-update
+                  </Label>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>When enabled, labels will automatically update when you change Y parameters</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      </div>
       <div className="mt-1 max-h-24 overflow-y-auto border rounded-md p-2">
         <div className="space-y-2">
           {(() => {
@@ -47,9 +106,26 @@ export function YAxisSettings({ editingChart, setEditingChart }: YAxisSettingsPr
                         },
                       })
                     }}
-                    placeholder={`Y-axis ${axisNo} label`}
+                    placeholder={editingChart.yAxisLabels?.[axisNo] ? `Y-axis ${axisNo} label` : `Auto: ${getAutoLabelForAxis(axisNo) || "Add parameters first"}`}
                     className="h-8 text-sm flex-1"
                   />
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleResetLabel(axisNo)}
+                          className="h-8 px-2"
+                        >
+                          <RotateCcw className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Reset to auto-generated label</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   <div className="min-w-0">
                     <Popover>
                       <PopoverTrigger asChild>
