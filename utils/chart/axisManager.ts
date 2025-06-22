@@ -448,12 +448,9 @@ export class AxisManager {
     const yAxisLabels = editingChart.yAxisLabels || {}
     const firstYAxisLabel = yAxisLabels[1] || Object.values(yAxisLabels)[0] || ""
     
-    // Get unit from the first Y parameter
-    const firstYParam = editingChart.yAxisParams?.find(param => (param.axisNo || 1) === 1)
-    const unit = firstYParam?.unit
-    const labelWithUnit = firstYAxisLabel && unit ? `${firstYAxisLabel} [${unit}]` : firstYAxisLabel
+    // Use Y-axis label as-is (unit is already included in the label)
     
-    if (labelWithUnit && showYLabel) {
+    if (firstYAxisLabel && showYLabel) {
       let labelX: number
       let labelY: number
       
@@ -534,7 +531,7 @@ export class AxisManager {
         .attr("y", labelY)
         .style("font-size", "12px")
         .style("cursor", "move")
-        .text(labelWithUnit)
+        .text(firstYAxisLabel)
     }
   }
 
