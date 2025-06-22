@@ -85,10 +85,72 @@ export function XParameterSettings({ editingChart, setEditingChart, selectedData
     <div className="border rounded-lg bg-muted/30">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <div className="p-3">
-          <CollapsibleTrigger className="flex items-center gap-2 text-left hover:bg-muted/50 transition-colors p-1 rounded">
-            {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-            <h4 className="font-medium text-sm">X Parameter Settings</h4>
-          </CollapsibleTrigger>
+          <div className="flex items-center justify-between">
+            <CollapsibleTrigger className="flex items-center gap-2 text-left hover:bg-muted/50 transition-colors p-1 rounded">
+              {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              <h4 className="font-medium text-sm">X Parameter Settings</h4>
+            </CollapsibleTrigger>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="x-axis-label" className="text-xs text-muted-foreground">X Label:</Label>
+              <Input
+                id="x-axis-label"
+                value={editingChart.xLabel || ""}
+                onChange={(e) => {
+                  setEditingChart({
+                    ...editingChart,
+                    xLabel: e.target.value,
+                  })
+                }}
+                placeholder={editingChart.xLabel ? "X-axis label" : `Auto: ${getAutoLabel() || "Select parameter first"}`}
+                className="h-7 text-sm w-48"
+              />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center">
+                      <Checkbox
+                        id="auto-update-x-label"
+                        checked={editingChart.autoUpdateXLabel ?? true}
+                        onCheckedChange={(checked) => {
+                          setEditingChart({
+                            ...editingChart,
+                            autoUpdateXLabel: checked === true,
+                          })
+                        }}
+                        className="h-3 w-3"
+                      />
+                      <Label
+                        htmlFor="auto-update-x-label"
+                        className="text-xs font-normal cursor-pointer ml-1"
+                      >
+                        Auto
+                      </Label>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Auto-update label when parameter changes</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleResetLabel}
+                      className="h-7 w-7 p-0"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Reset to auto-generated label</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+          </div>
         </div>
         <CollapsibleContent>
           <div className="px-3 pb-3">
@@ -150,8 +212,8 @@ export function XParameterSettings({ editingChart, setEditingChart, selectedData
                         xParameter: value,
                       }
                       
-                      // Set X-axis label if it's empty OR if auto-update is enabled
-                      if (parsedParam && (!editingChart.xLabel || editingChart.autoUpdateXLabel)) {
+                      // Set X-axis label if it's empty OR if auto-update is enabled (default: true)
+                      if (parsedParam && (!editingChart.xLabel || (editingChart.autoUpdateXLabel ?? true))) {
                         newChart.xLabel = parsedParam.unit 
                           ? `${parsedParam.name} [${parsedParam.unit}]`
                           : parsedParam.name
@@ -165,70 +227,6 @@ export function XParameterSettings({ editingChart, setEditingChart, selectedData
                 )}
               </div>
 
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
-                  <Label htmlFor="x-axis-label" className="text-sm">X-axis Label</Label>
-                  <div className="flex items-center gap-1">
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="flex items-center">
-                            <Checkbox
-                              id="auto-update-x-label"
-                              checked={editingChart.autoUpdateXLabel ?? false}
-                              onCheckedChange={(checked) => {
-                                setEditingChart({
-                                  ...editingChart,
-                                  autoUpdateXLabel: checked === true,
-                                })
-                              }}
-                              className="h-3 w-3"
-                            />
-                            <Label
-                              htmlFor="auto-update-x-label"
-                              className="text-[10px] font-normal cursor-pointer ml-1"
-                            >
-                              Auto
-                            </Label>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Auto-update label when parameter changes</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={handleResetLabel}
-                            className="h-5 w-5 p-0"
-                          >
-                            <RotateCcw className="h-3 w-3" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Reset to auto-generated label</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                </div>
-                <Input
-                  id="x-axis-label"
-                  value={editingChart.xLabel || ""}
-                  onChange={(e) => {
-                    setEditingChart({
-                      ...editingChart,
-                      xLabel: e.target.value,
-                    })
-                  }}
-                  placeholder={editingChart.xLabel ? "X-axis label" : `Auto: ${getAutoLabel() || "Select parameter first"}`}
-                  className="h-8 text-sm"
-                />
-              </div>
 
               <div className="w-36">
                 <Label className="text-sm mb-1 block">Range</Label>

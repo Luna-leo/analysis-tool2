@@ -48,7 +48,7 @@ export function useYParameterHandlers({
     // Set Y-axis label to formula name if label is empty OR if auto-update is enabled
     const axisNo = newParams[index].axisNo || 1
     const currentLabel = editingChart.yAxisLabels?.[axisNo]
-    if (!currentLabel || editingChart.autoUpdateYLabels) {
+    if (!currentLabel || (editingChart.autoUpdateYLabels ?? true)) {
       setEditingChart({ 
         ...editingChart, 
         yAxisParams: newParams,
@@ -124,7 +124,7 @@ export function useYParameterHandlers({
       // Set Y-axis label to interlock name if label is empty OR if auto-update is enabled
       const axisNo = newParams[index].axisNo || 1
       const currentLabel = editingChart.yAxisLabels?.[axisNo]
-      if (!currentLabel || editingChart.autoUpdateYLabels) {
+      if (!currentLabel || (editingChart.autoUpdateYLabels ?? true)) {
         setEditingChart({ 
           ...editingChart, 
           yAxisParams: newParams,
@@ -153,7 +153,7 @@ export function useYParameterHandlers({
     // Set Y-axis label to interlock name if label is empty OR if auto-update is enabled
     const axisNo = newParams[index].axisNo || 1
     const currentLabel = editingChart.yAxisLabels?.[axisNo]
-    if (!currentLabel || editingChart.autoUpdateYLabels) {
+    if (!currentLabel || (editingChart.autoUpdateYLabels ?? true)) {
       setEditingChart({ 
         ...editingChart, 
         yAxisParams: newParams,
@@ -228,7 +228,7 @@ export function useYParameterHandlers({
         // Set Y-axis label to formula name if label is empty OR if auto-update is enabled
         const axisNo = newParams[index].axisNo || 1
         const currentLabel = editingChart.yAxisLabels?.[axisNo]
-        if (!currentLabel || editingChart.autoUpdateYLabels) {
+        if (!currentLabel || (editingChart.autoUpdateYLabels ?? true)) {
           setEditingChart({ 
             ...editingChart, 
             yAxisParams: newParams,
@@ -303,7 +303,7 @@ export function useYParameterHandlers({
         // Set Y-axis label to interlock name if label is empty OR if auto-update is enabled
         const axisNo = newParams[index].axisNo || 1
         const currentLabel = editingChart.yAxisLabels?.[axisNo]
-        if (!currentLabel || editingChart.autoUpdateYLabels) {
+        if (!currentLabel || (editingChart.autoUpdateYLabels ?? true)) {
           setEditingChart({ 
             ...editingChart, 
             yAxisParams: newParams,

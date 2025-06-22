@@ -109,21 +109,20 @@ export function YAxisGroup({
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         {/* Header with collapse trigger */}
         <div className="p-2">
-          <div className="flex items-center gap-4">
-            <div className="w-32">
-              <div className="flex items-center gap-1">
-                <CollapsibleTrigger className="flex items-center gap-1 hover:bg-muted/50 transition-colors p-1 rounded -ml-1">
-                  {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                  <h5 className="font-medium text-sm">Y-Axis {axisNo}</h5>
-                </CollapsibleTrigger>
-                <span className="text-xs text-muted-foreground">
-                  ({paramIndexes.length} param{paramIndexes.length !== 1 ? "s" : ""})
-                </span>
-              </div>
-            </div>
-
-            <div className="flex-1 flex items-center gap-1">
+          {/* First row: Title and Y Label */}
+          <div className="flex items-center justify-between mb-2">
+            <CollapsibleTrigger className="flex items-center gap-1 hover:bg-muted/50 transition-colors p-1 rounded -ml-1">
+              {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+              <h5 className="font-medium text-sm">Y-Axis {axisNo}</h5>
+              <span className="text-xs text-muted-foreground">
+                ({paramIndexes.length} param{paramIndexes.length !== 1 ? "s" : ""})
+              </span>
+            </CollapsibleTrigger>
+            
+            <div className="flex items-center gap-2">
+              <Label htmlFor={`y-axis-label-${axisNo}`} className="text-xs text-muted-foreground">Y Label:</Label>
               <Input
+                id={`y-axis-label-${axisNo}`}
                 ref={(el) => {
                   if (axisLabelInputRef) {
                     axisLabelInputRef.current[axisNo] = el
@@ -132,7 +131,7 @@ export function YAxisGroup({
                 value={axisLabel}
                 onChange={(e) => updateAxisLabel(axisNo, e.target.value)}
                 placeholder={axisLabel ? `Y-axis ${axisNo} label` : `Auto: ${getAutoLabelForAxis() || "Add parameters first"}`}
-                className="h-7 text-sm flex-1"
+                className="h-7 text-sm w-48"
               />
               <TooltipProvider>
                 <Tooltip>
@@ -140,7 +139,7 @@ export function YAxisGroup({
                     <div className="flex items-center">
                       <Checkbox
                         id={`auto-update-y-label-${axisNo}`}
-                        checked={editingChart.autoUpdateYLabels ?? false}
+                        checked={editingChart.autoUpdateYLabels ?? true}
                         onCheckedChange={(checked) => {
                           setEditingChart({
                             ...editingChart,
@@ -151,7 +150,7 @@ export function YAxisGroup({
                       />
                       <Label
                         htmlFor={`auto-update-y-label-${axisNo}`}
-                        className="text-[10px] font-normal cursor-pointer ml-1"
+                        className="text-xs font-normal cursor-pointer ml-1"
                       >
                         Auto
                       </Label>
@@ -169,7 +168,7 @@ export function YAxisGroup({
                       variant="ghost"
                       size="sm"
                       onClick={handleResetLabel}
-                      className="h-6 w-6 p-0"
+                      className="h-7 w-7 p-0"
                     >
                       <RotateCcw className="h-3 w-3" />
                     </Button>
@@ -180,6 +179,10 @@ export function YAxisGroup({
                 </Tooltip>
               </TooltipProvider>
             </div>
+          </div>
+          
+          {/* Second row: Range and Axis controls */}
+          <div className="flex items-center gap-4">
 
             <Popover>
               <PopoverTrigger asChild>
@@ -225,7 +228,7 @@ export function YAxisGroup({
               </PopoverContent>
             </Popover>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 ml-auto">
               <Label className="text-xs">Axis No:</Label>
               <Input
                 type="number"
