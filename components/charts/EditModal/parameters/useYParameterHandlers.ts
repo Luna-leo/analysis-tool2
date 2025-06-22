@@ -47,8 +47,14 @@ export function useYParameterHandlers({
     
     // Set Y-axis label to formula name if label is empty OR if auto-update is enabled
     const axisNo = newParams[index].axisNo || 1
+    
+    // Only update label if this is the first parameter on this axis
+    const isFirstParamOnAxis = editingChart.yAxisParams
+      ?.filter((p, idx) => idx !== index && (p.axisNo || 1) === axisNo && p.parameter)
+      .length === 0
+    
     const currentLabel = editingChart.yAxisLabels?.[axisNo]
-    if (!currentLabel || (editingChart.autoUpdateYLabels ?? true)) {
+    if (isFirstParamOnAxis && (!currentLabel || (editingChart.autoUpdateYLabels ?? true))) {
       setEditingChart({ 
         ...editingChart, 
         yAxisParams: newParams,
@@ -123,8 +129,14 @@ export function useYParameterHandlers({
       
       // Set Y-axis label to interlock name if label is empty OR if auto-update is enabled
       const axisNo = newParams[index].axisNo || 1
+      
+      // Only update label if this is the first parameter on this axis
+      const isFirstParamOnAxis = editingChart.yAxisParams
+        ?.filter((p, idx) => idx !== index && (p.axisNo || 1) === axisNo && p.parameter)
+        .length === 0
+      
       const currentLabel = editingChart.yAxisLabels?.[axisNo]
-      if (!currentLabel || (editingChart.autoUpdateYLabels ?? true)) {
+      if (isFirstParamOnAxis && (!currentLabel || (editingChart.autoUpdateYLabels ?? true))) {
         setEditingChart({ 
           ...editingChart, 
           yAxisParams: newParams,
@@ -152,8 +164,14 @@ export function useYParameterHandlers({
     
     // Set Y-axis label to interlock name if label is empty OR if auto-update is enabled
     const axisNo = newParams[index].axisNo || 1
+    
+    // Only update label if this is the first parameter on this axis
+    const isFirstParamOnAxis = editingChart.yAxisParams
+      ?.filter((p, idx) => idx !== index && (p.axisNo || 1) === axisNo && p.parameter)
+      .length === 0
+    
     const currentLabel = editingChart.yAxisLabels?.[axisNo]
-    if (!currentLabel || (editingChart.autoUpdateYLabels ?? true)) {
+    if (isFirstParamOnAxis && (!currentLabel || (editingChart.autoUpdateYLabels ?? true))) {
       setEditingChart({ 
         ...editingChart, 
         yAxisParams: newParams,
@@ -227,8 +245,14 @@ export function useYParameterHandlers({
         
         // Set Y-axis label to formula name if label is empty OR if auto-update is enabled
         const axisNo = newParams[index].axisNo || 1
+        
+        // Only update label if this is the first parameter on this axis
+        const isFirstParamOnAxis = editingChart.yAxisParams
+          ?.filter((p, idx) => idx !== index && (p.axisNo || 1) === axisNo && p.parameter)
+          .length === 0
+        
         const currentLabel = editingChart.yAxisLabels?.[axisNo]
-        if (!currentLabel || (editingChart.autoUpdateYLabels ?? true)) {
+        if (isFirstParamOnAxis && (!currentLabel || (editingChart.autoUpdateYLabels ?? true))) {
           setEditingChart({ 
             ...editingChart, 
             yAxisParams: newParams,
@@ -302,8 +326,14 @@ export function useYParameterHandlers({
         
         // Set Y-axis label to interlock name if label is empty OR if auto-update is enabled
         const axisNo = newParams[index].axisNo || 1
+        
+        // Only update label if this is the first parameter on this axis
+        const isFirstParamOnAxis = editingChart.yAxisParams
+          ?.filter((p, idx) => idx !== index && (p.axisNo || 1) === axisNo && p.parameter)
+          .length === 0
+        
         const currentLabel = editingChart.yAxisLabels?.[axisNo]
-        if (!currentLabel || (editingChart.autoUpdateYLabels ?? true)) {
+        if (isFirstParamOnAxis && (!currentLabel || (editingChart.autoUpdateYLabels ?? true))) {
           setEditingChart({ 
             ...editingChart, 
             yAxisParams: newParams,

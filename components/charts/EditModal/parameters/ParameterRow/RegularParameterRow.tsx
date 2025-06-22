@@ -119,9 +119,14 @@ export function RegularParameterRow({
     if (parsedParam && newParams[index]) {
       const axisNo = newParams[index].axisNo || 1
       
+      // Only update label if this is the first parameter on this axis
+      const isFirstParamOnAxis = newParams
+        .filter((p, idx) => idx < index && (p.axisNo || 1) === axisNo && p.parameter)
+        .length === 0
+      
       // Set Y-axis label to parameter name if label is empty OR if auto-update is enabled (default: true)
       const currentLabel = editingChart.yAxisLabels?.[axisNo]
-      if (!currentLabel || (editingChart.autoUpdateYLabels ?? true)) {
+      if (isFirstParamOnAxis && (!currentLabel || (editingChart.autoUpdateYLabels ?? true))) {
         // Include unit if available (matching X-axis behavior)
         const label = parsedParam.unit 
           ? `${parsedParam.name} [${parsedParam.unit}]`
