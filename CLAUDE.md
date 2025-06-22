@@ -89,3 +89,64 @@ This is "Chinami's Analysis App" - an advanced data analysis and visualization t
 - Console logs (except errors/warnings) are removed in production
 - React Strict Mode is disabled to prevent double rendering
 - Bundle is optimized for d3 and lodash imports
+
+## Documentation Rules
+
+### When to Create Documentation
+Documentation must be created for the following cases:
+- **Feature Addition** - When implementing new functionality
+- **Bug Fix** - When fixing existing issues
+- **Refactoring** - When making significant code improvements
+- **Breaking Change** - When changing existing behavior
+
+### Documentation Format
+All documentation should follow this standard format:
+
+```markdown
+# [Implementation Title]
+
+## Meta Information
+- **Created**: YYYY-MM-DD
+- **Updated**: YYYY-MM-DD
+- **Category**: Feature | Bug Fix | Refactoring | Breaking Change
+- **Related Commits**: [commit hash]
+- **Affected Components**: [list of affected files]
+
+## Overview
+[Brief description of the implementation]
+
+## Details
+### Background/Problem
+[Why this implementation was necessary]
+
+### Implementation
+[What was specifically implemented]
+
+### Technical Details
+[Technical details, architecture changes, etc.]
+
+## Usage
+[How to use new features, if applicable]
+
+## Impact
+[Impact on other components]
+
+## Testing
+[How to verify the implementation works]
+
+## Future Improvements
+[Remaining tasks or improvements]
+```
+
+### Documentation Storage
+- Store in `/docs/` directory
+- Filename format: `[date]-[category]-[brief-title].md`
+  - Example: `2025-06-22-bugfix-x-axis-parameter-range.md`
+
+### Implementation Workflow
+1. Complete implementation
+2. Commit code changes
+3. Create documentation
+4. Commit documentation
+
+This ensures all significant changes are properly documented for future reference.
