@@ -62,18 +62,39 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
   protected setupScalesAndAxes(): void {
     // For scatter plots, we need to handle data transformation before creating scales
     // Transform data based on x-axis type
-    if ((this.editingChart.xAxisType || 'datetime') === 'datetime' && this.data.length > 0) {
-      // Ensure x values are Date objects and timestamp field exists
-      this.data = this.data.map(d => {
-        const xValue = d.x instanceof Date ? d.x : new Date(d.x as string)
-        return {
-          ...d,
-          x: xValue,
-          timestamp: d.timestamp || xValue // Ensure timestamp field exists
-        }
+    const xAxisType = this.editingChart.xAxisType || 'datetime'
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[ScatterPlot ${this.editingChart.id}] setupScalesAndAxes called:`, {
+        xAxisType,
+        dataLength: this.data.length,
+        sampleData: this.data.slice(0, 3).map(d => ({
+          x: d.x,
+          xType: typeof d.x,
+          xIsDate: d.x instanceof Date,
+          y: d.y,
+          series: d.series
+        }))
       })
     }
     
+    if (this.data.length > 0) {
+      if (xAxisType === 'datetime') {
+        // Ensure x values are Date objects and timestamp field exists
+        this.data = this.data.map(d => {
+          const xValue = d.x instanceof Date ? d.x : new Date(d.x as string)
+          return {
+            ...d,
+            x: xValue,
+            timestamp: d.timestamp || xValue // Ensure timestamp field exists
+          }
+        })
+      } else if (xAxisType === 'parameter') {
+        // For parameter type, x values should already be numbers from useOptimizedChart
+        // Filter out any non-numeric values just in case
+        this.data = this.data.filter(d => typeof d.x === 'number')
+      }
+    }
     
     // Call parent implementation
     super.setupScalesAndAxes()

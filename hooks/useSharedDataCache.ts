@@ -12,17 +12,20 @@ const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 export function useSharedDataCache() {
   const cacheRef = useRef<Map<string, CacheEntry>>(new Map())
 
-  const getCacheKey = useCallback((periodId: string, parameters: string[]): string => {
-    return `${periodId}:${parameters.sort().join(',')}`
+  const getCacheKey = useCallback((periodId: string, parameters: string[], xAxisType?: string): string => {
+    // Include xAxisType in cache key to force refetch when axis type changes
+    const axisTypePrefix = xAxisType ? `${xAxisType}:` : ''
+    return `${axisTypePrefix}${periodId}:${parameters.sort().join(',')}`
   }, [])
 
   const get = useCallback(
     async (
       periodId: string,
       parameters: string[],
-      fetchFn: () => Promise<CSVDataPoint[] | undefined>
+      fetchFn: () => Promise<CSVDataPoint[] | undefined>,
+      xAxisType?: string
     ): Promise<CSVDataPoint[] | undefined> => {
-      const key = getCacheKey(periodId, parameters)
+      const key = getCacheKey(periodId, parameters, xAxisType)
       const now = Date.now()
       
       // Check if we have a valid cache entry

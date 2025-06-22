@@ -175,21 +175,74 @@ export class AxisManager {
         xDomain = [Number(editingChart.xAxisRange.min), Number(editingChart.xAxisRange.max)]
       } else if (data && data.length > 0) {
         const xParameter = editingChart.xParameter || 'timestamp'
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[AxisManager] Creating parameter scale:`, {
+            chartId: editingChart.id,
+            xParameter,
+            dataLength: data.length,
+            sampleData: data.slice(0, 3).map(d => ({
+              hasX: 'x' in d,
+              x: 'x' in d ? d.x : undefined,
+              xType: 'x' in d ? typeof d.x : undefined,
+              xIsDate: 'x' in d ? d.x instanceof Date : undefined,
+              paramValue: d[xParameter],
+              paramType: typeof d[xParameter]
+            }))
+          })
+        }
+        
         const values = data.map(d => {
           // For transformed scatter plot data, use d.x directly
           if ('x' in d && typeof d.x === 'number') {
             return d.x
           }
           // Fallback for other data formats
-          const val = Number(d[xParameter])
-          return val
-        }).filter(v => !isNaN(v))
+          const val = d[xParameter]
+          if (val !== undefined && val !== null) {
+            const numVal = Number(val)
+            return isNaN(numVal) ? null : numVal
+          }
+          return null
+        }).filter(v => v !== null && !isNaN(v)) as number[]
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[AxisManager] Extracted values:`, {
+            chartId: editingChart.id,
+            valuesLength: values.length,
+            values: values.slice(0, 10),
+            allValues: values.length <= 20 ? values : undefined
+          })
+        }
         
         if (values.length > 0) {
           const extent = d3.extent(values) as [number, number]
-          const padding = (extent[1] - extent[0]) * 0.05
-          xDomain = [extent[0] - padding, extent[1] + padding]
+          // Add padding only if the range is not zero
+          const range = extent[1] - extent[0]
+          if (range > 0) {
+            const padding = range * 0.05
+            xDomain = [extent[0] - padding, extent[1] + padding]
+          } else {
+            // If all values are the same, create a reasonable range around that value
+            const value = extent[0]
+            const padding = Math.abs(value) * 0.1 || 1 // 10% of value or 1 if value is 0
+            xDomain = [value - padding, value + padding]
+          }
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`[AxisManager] Calculated domain:`, {
+              chartId: editingChart.id,
+              extent,
+              xDomain
+            })
+          }
         } else {
+          // No valid numeric values found
+          if (process.env.NODE_ENV === 'development') {
+            console.warn(`[AxisManager] No valid numeric values found for parameter x-axis, using default range [0, 100]`, {
+              chartId: editingChart.id,
+              xParameter,
+              dataLength: data.length
+            })
+          }
           xDomain = [0, 100]
         }
       } else {

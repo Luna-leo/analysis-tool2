@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useEffect } from 'react'
+import React, { useRef, useMemo, useEffect, useCallback } from 'react'
 import { debounce } from 'lodash'
 import { ChartComponent, EventInfo } from '@/types'
 import { useCSVDataStore } from '@/stores/useCSVDataStore'
@@ -6,6 +6,9 @@ import { useSharedDataCache } from './useSharedDataCache'
 import { sampleMultipleSeries, SamplingOptions, SamplingMethod } from '@/utils/sampling'
 import { useSettingsStore } from '@/stores/useSettingsStore'
 import { useChartLoadingStore } from '@/stores/useChartLoadingStore'
+
+// Constants
+const DATA_LOAD_DEBOUNCE_MS = 300
 
 interface UseOptimizedChartProps {
   editingChart: ChartComponent
@@ -72,6 +75,25 @@ export function useOptimizedChart({
   const xAxisType = editingChart.xAxisType
   const xParameter = editingChart.xParameter
   const yAxisParams = editingChart.yAxisParams
+  
+  // Track previous xAxisType to detect changes
+  const prevXAxisTypeRef = useRef(xAxisType)
+  
+  // Clear cache when xAxisType changes
+  useEffect(() => {
+    if (prevXAxisTypeRef.current !== undefined && prevXAxisTypeRef.current !== xAxisType) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[useOptimizedChart ${editingChart.id}] X-axis type changed from ${prevXAxisTypeRef.current} to ${xAxisType}, clearing cache`)
+      }
+      dataCache.clear()
+      prevXAxisTypeRef.current = xAxisType
+      // Force immediate data reload
+      setData([])
+      setIsLoading(true)
+    } else if (prevXAxisTypeRef.current === undefined) {
+      prevXAxisTypeRef.current = xAxisType
+    }
+  }, [xAxisType, dataCache, editingChart.id])
 
   // Memoize parameters - include all parameters without deduplication
   // This ensures that changes to any Y parameter trigger data reload
@@ -108,23 +130,32 @@ export function useOptimizedChart({
     return yAxisParams?.map(param => `${param.parameterType}:${param.parameter}`).join('|') || ''
   }, [yAxisParams])
 
+  // Create debounced function with cancel capability
+  const debouncedLoadDataRef = useRef<ReturnType<typeof debounce> | null>(null)
+  
   // Debounced data loading
-  const loadData = useMemo(
-    () => debounce(async () => {
-      // Debug logging disabled to reduce console spam
-      // Uncomment for debugging if needed
-      // if (process.env.NODE_ENV === 'development') {
-      //   console.log(`[useOptimizedChart ${editingChart.id}] Loading data:`, {
-      //     dataSourceCount: selectedDataSourceItems.length,
-      //     dataSources: selectedDataSourceItems.map(ds => ({ id: ds.id, label: ds.label })),
-      //     xAxisType,
-      //     parametersCount: allParameters.length,
-      //     yAxisParamsKey
-      //   })
-      // }
+  const loadData = useCallback(async () => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[useOptimizedChart ${editingChart.id}] Loading data:`, {
+          dataSourceCount: selectedDataSourceItems.length,
+          xAxisType,
+          xParameter,
+          parametersCount: allParameters.length,
+          yAxisParamsKey
+        })
+      }
       
-      if (selectedDataSourceItems.length === 0 || 
-          (xAxisType !== 'datetime' && allParameters.length === 0)) {
+      if (selectedDataSourceItems.length === 0) {
+        setData([])
+        setIsLoading(false)
+        return
+      }
+      
+      // For non-datetime axis types, we need at least the x parameter
+      if (xAxisType !== 'datetime' && !xParameter) {
+        if (process.env.NODE_ENV === 'development') {
+        console.warn(`[useOptimizedChart ${editingChart.id}] No x parameter for ${xAxisType} axis type`)
+      }
         setData([])
         setIsLoading(false)
         return
@@ -148,7 +179,8 @@ export function useOptimizedChart({
             const csvData = await dataCacheRef.current.get(
               dataSource.id,
               allParameters,
-              () => getParameterDataRef.current(dataSource.id, allParameters)
+              () => getParameterDataRef.current(dataSource.id, allParameters),
+              xAxisType
             )
             
             // Debug logging removed to reduce console spam
@@ -173,9 +205,16 @@ export function useOptimizedChart({
                 if (xAxisType === 'datetime') {
                   // Ensure timestamp is a Date object (timestamp is always a string in DataPoint)
                   xValue = new Date(point.timestamp)
-                } else if (rawXValue !== undefined) {
+                } else if (xAxisType === 'parameter' && rawXValue !== undefined) {
+                  // For parameter type, ensure we get numeric values
                   const numValue = Number(rawXValue)
                   // Only use the value if it's a valid number
+                  if (!isNaN(numValue)) {
+                    xValue = numValue
+                  }
+                } else if (xAxisType === 'time' && rawXValue !== undefined) {
+                  // For time type, also convert to numeric
+                  const numValue = Number(rawXValue)
                   if (!isNaN(numValue)) {
                     xValue = numValue
                   }
@@ -213,6 +252,21 @@ export function useOptimizedChart({
             }
           })
         )
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[useOptimizedChart ${editingChart.id}] Generated data:`, {
+            totalPoints: allData.length,
+            xAxisType,
+            xParameter,
+            sampleData: allData.slice(0, 5).map(d => ({
+              x: d.x,
+              xType: typeof d.x,
+              xIsDate: d.x instanceof Date,
+              y: d.y,
+              series: d.series
+            }))
+          })
+        }
         
         // Apply data sampling if needed
         let sampledData = allData
@@ -268,15 +322,28 @@ export function useOptimizedChart({
       } finally {
         setIsLoading(false)
       }
-    }, 300),
-    [selectedDataSourceItems, allParameters, xAxisType, xParameter, yAxisParamsKey, effectiveMaxDataPoints, enableSampling]
+    },
+    [selectedDataSourceItems, allParameters, xAxisType, xParameter, yAxisParamsKey, effectiveMaxDataPoints, enableSampling, editingChart.id]
   )
 
-  // Trigger data loading when dependencies change
+  // Create debounced version of loadData
   useEffect(() => {
-    loadData()
+    // Cancel previous debounced function
+    if (debouncedLoadDataRef.current) {
+      debouncedLoadDataRef.current.cancel()
+    }
+    
+    // Create new debounced function
+    debouncedLoadDataRef.current = debounce(loadData, DATA_LOAD_DEBOUNCE_MS)
+    
+    // Call it immediately
+    debouncedLoadDataRef.current()
+    
+    // Cleanup
     return () => {
-      loadData.cancel()
+      if (debouncedLoadDataRef.current) {
+        debouncedLoadDataRef.current.cancel()
+      }
     }
   }, [loadData])
 

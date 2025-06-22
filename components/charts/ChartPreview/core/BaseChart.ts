@@ -130,6 +130,15 @@ export abstract class BaseChart<TData = any> {
       )
     } else {
       // Create new scales (initial render)
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[BaseChart ${this.editingChart.id}] Creating AxisManager with data:`, {
+          dataLength: this.data.length,
+          xAxisType: this.editingChart.xAxisType,
+          xParameter: this.editingChart.xParameter,
+          sampleData: this.data.slice(0, 3)
+        })
+      }
+      
       this.axisManager = new AxisManager({
         g: this.g,
         width: this.width,

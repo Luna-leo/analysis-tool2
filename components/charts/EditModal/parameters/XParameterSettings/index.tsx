@@ -79,11 +79,21 @@ export function XParameterSettings({ editingChart, setEditingChart, selectedData
                   value={editingChart.xAxisType || "datetime"}
                   onChange={(e) => {
                     const newAxisType = e.target.value as "datetime" | "time" | "parameter"
+                    let newXParameter = editingChart.xParameter || ""
+                    
+                    if (newAxisType === "datetime") {
+                      // Always use timestamp for datetime
+                      newXParameter = "timestamp"
+                    } else if (editingChart.xAxisType === "datetime" && newAxisType !== "datetime") {
+                      // Switching from datetime to parameter/time - clear timestamp parameter
+                      newXParameter = ""
+                    }
+                    // Otherwise keep existing parameter
+                    
                     setEditingChart({
                       ...editingChart,
                       xAxisType: newAxisType,
-                      // Set xParameter to timestamp for datetime type, empty for others
-                      xParameter: newAxisType === "datetime" ? "timestamp" : "",
+                      xParameter: newXParameter,
                     })
                   }}
                 >
