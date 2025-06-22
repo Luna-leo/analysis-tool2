@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useMemo } from "react"
+import React, { useState, useMemo, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -98,8 +98,9 @@ export function YAxisGroup({
     
     const parsed = parseParameterKey(firstParam.parameter)
     if (parsed) {
-      // Include unit if available (matching X-axis behavior)
-      return parsed.unit ? `${parsed.name} [${parsed.unit}]` : parsed.name
+      // Use converted unit if specified, otherwise use original unit
+      const displayUnit = firstParam.unit || parsed.unit
+      return displayUnit ? `${parsed.name} [${displayUnit}]` : parsed.name
     }
     return firstParam.parameter
   }
@@ -107,6 +108,21 @@ export function YAxisGroup({
   const handleResetLabel = () => {
     updateAxisLabel(axisNo, getAutoLabelForAxis())
   }
+
+  // Watch for unit changes and update label if auto-update is enabled
+  useEffect(() => {
+    if (editingChart.autoUpdateYLabels ?? true) {
+      const autoLabel = getAutoLabelForAxis()
+      if (autoLabel) {
+        updateAxisLabel(axisNo, autoLabel)
+      }
+    }
+  }, [
+    // Watch for changes in parameters' units
+    editingChart.yAxisParams?.filter((_, idx) => paramIndexes.includes(idx))
+      .map(p => p.unit)
+      .join(',')
+  ])
 
   return (
     <div className="border rounded-lg bg-muted/10">
