@@ -7,12 +7,14 @@ import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ChevronDown, ChevronRight, Trash2, Plus } from "lucide-react"
+import { ChevronDown, ChevronRight, Trash2, Plus, RotateCcw } from "lucide-react"
 import { ChartComponent, InterlockMaster, EventInfo } from "@/types"
 import { FormulaMaster } from "@/data/formulaMaster"
 import { ParameterRow } from "./ParameterRow"
 import { useUnitValidation } from "@/hooks/useUnitValidation"
 import { UnitMismatchAlert } from "./UnitMismatchAlert"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { parseParameterKey } from "@/utils/parameterUtils"
 
 interface YAxisGroupProps {
   axisNo: number
@@ -83,6 +85,25 @@ export function YAxisGroup({
     chartParams: editingChart.yAxisParams,
   })
 
+  // Generate auto label for this axis
+  const getAutoLabelForAxis = () => {
+    const params = editingChart.yAxisParams?.filter((_, idx) => paramIndexes.includes(idx)) || []
+    if (params.length === 0) return ""
+    
+    // Use the first parameter name for that axis
+    const firstParam = params[0]
+    if (firstParam.parameterType === "Formula" || firstParam.parameterType === "Interlock") {
+      return firstParam.parameter
+    }
+    
+    const parsed = parseParameterKey(firstParam.parameter)
+    return parsed ? parsed.name : firstParam.parameter
+  }
+
+  const handleResetLabel = () => {
+    updateAxisLabel(axisNo, getAutoLabelForAxis())
+  }
+
   return (
     <div className="border rounded-lg bg-muted/10">
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -101,7 +122,7 @@ export function YAxisGroup({
               </div>
             </div>
 
-            <div className="flex-1">
+            <div className="flex-1 flex items-center gap-1">
               <Input
                 ref={(el) => {
                   if (axisLabelInputRef) {
@@ -110,9 +131,54 @@ export function YAxisGroup({
                 }}
                 value={axisLabel}
                 onChange={(e) => updateAxisLabel(axisNo, e.target.value)}
-                placeholder={`Y-axis ${axisNo} label`}
-                className="h-7 text-sm"
+                placeholder={axisLabel ? `Y-axis ${axisNo} label` : `Auto: ${getAutoLabelForAxis() || "Add parameters first"}`}
+                className="h-7 text-sm flex-1"
               />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center">
+                      <Checkbox
+                        id={`auto-update-y-label-${axisNo}`}
+                        checked={editingChart.autoUpdateYLabels ?? false}
+                        onCheckedChange={(checked) => {
+                          setEditingChart({
+                            ...editingChart,
+                            autoUpdateYLabels: checked === true,
+                          })
+                        }}
+                        className="h-3 w-3"
+                      />
+                      <Label
+                        htmlFor={`auto-update-y-label-${axisNo}`}
+                        className="text-[10px] font-normal cursor-pointer ml-1"
+                      >
+                        Auto
+                      </Label>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Auto-update label when parameters change</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleResetLabel}
+                      className="h-6 w-6 p-0"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Reset to auto-generated label</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
 
             <Popover>
