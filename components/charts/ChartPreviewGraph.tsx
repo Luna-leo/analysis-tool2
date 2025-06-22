@@ -97,7 +97,15 @@ const chartPreviewGraphPropsAreEqual = (prevProps: ChartPreviewGraphProps, nextP
       prevChart.xAxisType !== nextChart.xAxisType ||
       prevChart.xParameter !== nextChart.xParameter ||
       JSON.stringify(prevChart.yAxisParams) !== JSON.stringify(nextChart.yAxisParams) ||
-      JSON.stringify(prevChart.margins) !== JSON.stringify(nextChart.margins)
+      JSON.stringify(prevChart.margins) !== JSON.stringify(nextChart.margins) ||
+      prevChart.xLabel !== nextChart.xLabel ||
+      JSON.stringify(prevChart.yAxisLabels) !== JSON.stringify(nextChart.yAxisLabels) ||
+      prevChart.autoUpdateXLabel !== nextChart.autoUpdateXLabel ||
+      prevChart.autoUpdateYLabels !== nextChart.autoUpdateYLabels ||
+      prevChart.showXLabel !== nextChart.showXLabel ||
+      prevChart.showYLabel !== nextChart.showYLabel ||
+      prevChart.title !== nextChart.title ||
+      prevChart.showTitle !== nextChart.showTitle
     ) {
       if (isDev) console.log(`[Chart ${chartId}] Re-render: chart data properties changed`)
       return false
