@@ -52,12 +52,12 @@ export function ParametersTab({ editingChart, setEditingChart, selectedDataSourc
         xValue: line.type === "vertical" ? (typeof line.value === 'string' ? line.value : line.value?.toString()) : undefined,
         yValue: line.type === "horizontal" ? line.value?.toString() : undefined,
         axisNo: 1,
-        yRange: {
+        yRange: line.yRange || {
           auto: true,
           min: "0",
           max: "100"
         },
-        xRange: {
+        xRange: line.xRange || {
           auto: true,
           min: "0",
           max: "100"
@@ -101,7 +101,9 @@ export function ParametersTab({ editingChart, setEditingChart, selectedDataSourc
         label: line.label,
         color: line.color || "#ff0000",
         style: line.style || "solid" as const,
-        labelOffset: line.labelOffset
+        labelOffset: line.labelOffset,
+        xRange: line.xRange,
+        yRange: line.yRange
       }
     })
 

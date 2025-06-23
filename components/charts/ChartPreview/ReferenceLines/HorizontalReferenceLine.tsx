@@ -65,9 +65,13 @@ export function HorizontalReferenceLine({
       mainLine = group.append("line")
         .attr("class", "main-line")
     }
+    // Extend line beyond chart area if auto range is enabled
+    const x1 = line.xRange?.auto ? -1000 : 0
+    const x2 = line.xRange?.auto ? width + 1000 : width
+    
     mainLine
-      .attr("x1", 0)
-      .attr("x2", width)
+      .attr("x1", x1)
+      .attr("x2", x2)
       .attr("y1", yPos)
       .attr("y2", yPos)
       .attr("stroke", color)
@@ -141,8 +145,8 @@ export function HorizontalReferenceLine({
       interactiveLine.call(drag)
       
       interactiveLine
-        .attr("x1", 0)
-        .attr("x2", width)
+        .attr("x1", x1)
+        .attr("x2", x2)
         .attr("y1", yPos)
         .attr("y2", yPos)
     }

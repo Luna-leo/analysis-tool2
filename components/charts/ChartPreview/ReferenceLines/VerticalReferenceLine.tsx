@@ -92,11 +92,16 @@ export function VerticalReferenceLine({
       mainLine = group.append("line")
         .attr("class", "main-line")
     }
+    
+    // Extend line beyond chart area if auto range is enabled
+    const y1 = line.yRange?.auto ? -1000 : 0
+    const y2 = line.yRange?.auto ? height + 1000 : height
+    
     mainLine
       .attr("x1", xPos)
       .attr("x2", xPos)
-      .attr("y1", 0)
-      .attr("y2", height)
+      .attr("y1", y1)
+      .attr("y2", y2)
       .attr("stroke", color)
       .attr("stroke-width", 1)
       .attr("stroke-dasharray", strokeDasharray)
@@ -179,8 +184,8 @@ export function VerticalReferenceLine({
       interactiveLine
         .attr("x1", xPos)
         .attr("x2", xPos)
-        .attr("y1", 0)
-        .attr("y2", height)
+        .attr("y1", y1)
+        .attr("y2", y2)
     }
     
     // Update or create label - ensure it's always on top

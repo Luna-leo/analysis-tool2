@@ -70,6 +70,17 @@ export interface ReferenceLine {
     x: number
     y: number
   }
+  // Range settings for the line
+  xRange?: {
+    auto: boolean
+    min: string
+    max: string
+  }
+  yRange?: {
+    auto: boolean
+    min: string
+    max: string
+  }
   // For interlock type
   interlockId?: string
   interlockSource?: "master" | "custom"

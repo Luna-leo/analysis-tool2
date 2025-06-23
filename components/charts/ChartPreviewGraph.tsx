@@ -871,8 +871,24 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         try {
           const svg = d3.select(svgRef.current)
           
-          // Clear everything
-          svg.selectAll("*").remove()
+          // Clear everything except reference lines layer and defs
+          // Get all direct children of the SVG
+          const svgNode = svgRef.current;
+          if (svgNode) {
+            const children = Array.from(svgNode.children);
+            children.forEach(child => {
+              const elem = d3.select(child);
+              const tagName = child.tagName?.toLowerCase();
+              
+              // Keep defs (for clipPaths) and reference-lines-layer
+              if (tagName === 'defs' || elem.classed('reference-lines-layer')) {
+                return; // Keep these elements
+              }
+              
+              // Remove everything else
+              child.remove();
+            });
+          }
 
           // Use the pre-computed margins
           const margin = computedMargins
