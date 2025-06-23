@@ -765,9 +765,10 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         
         let startX: number, startY: number
         if (isRotated) {
-          // For rotated Y-label, swap coordinates
-          startX = groupX - currentY  // Y becomes X (negated)
-          startY = groupY - currentX  // X becomes Y (negated) 
+          // For rotated Y-label (-90 degrees), the element's x,y are in rotated space
+          // After -90 rotation: element at (x,y) appears at screen position (y, -x)
+          startX = groupX + currentY  // Screen X = rotated Y
+          startY = groupY - currentX  // Screen Y = -rotated X
         } else {
           startX = groupX + currentX
           startY = groupY + currentY
@@ -782,13 +783,18 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           
           let newX: number, newY: number
           if (isRotated) {
-            // For rotated label, apply deltas inversely
+            // For rotated label, calculate new screen position
             newX = startX + deltaX
             newY = startY + deltaY
             
-            // Update element position (swap back for rotated element)
-            element.setAttribute('x', String(-(newY - groupY)))
-            element.setAttribute('y', String(newX - groupX))
+            // Convert screen position to rotated coordinate system
+            // For -90 rotation: to move right on screen (deltaX), increase Y in rotated space
+            // For -90 rotation: to move down on screen (deltaY), decrease X in rotated space
+            const rotatedX = currentX - deltaY  // Screen Y movement -> rotated -X
+            const rotatedY = currentY + deltaX  // Screen X movement -> rotated Y
+            
+            element.setAttribute('x', String(rotatedX))
+            element.setAttribute('y', String(rotatedY))
           } else {
             newX = startX + deltaX
             newY = startY + deltaY
