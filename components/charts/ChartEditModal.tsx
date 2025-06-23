@@ -113,10 +113,31 @@ export function ChartEditModal() {
     }
   }, [editModalOpen, clearSelectedCharts])
 
-  if (!editingChart) return null
+  // Get the target file ID for this chart (before early return to maintain hooks order)
+  const targetFileId = editingChart?.fileId || activeFileTab
+  const currentFile = openTabs.find(tab => tab.id === targetFileId)
+  
+  // Create a version of allCharts that includes the current editing state
+  // This must be called before any conditional returns to maintain hooks order
+  const allChartsWithEditing = useMemo(() => {
+    if (!currentFile?.charts || !editingChart) return []
+    
+    return currentFile.charts.map(chart => 
+      chart.id === editingChart.id ? { ...editingChart } : chart
+    )
+  }, [
+    currentFile?.charts, 
+    editingChart,
+    // Include display-related properties explicitly to ensure re-computation
+    editingChart?.title,
+    editingChart?.showTitle,
+    editingChart?.showGrid,
+    editingChart?.showXLabel,
+    editingChart?.showYLabel,
+    editingChart?.showLegend
+  ])
 
-  // Get the target file ID for this chart
-  const targetFileId = editingChart.fileId || activeFileTab
+  if (!editingChart) return null
   
   // Debug logging for fileId issues
   if (!editingChart.fileId) {
@@ -291,19 +312,8 @@ export function ChartEditModal() {
     setActiveTab(newTab)
   }
 
-  const currentFile = openTabs.find(tab => tab.id === targetFileId)
   const selectedDataSourceItems = currentFile?.selectedDataSources || []
   const allCharts = currentFile?.charts || []
-  
-  // Create a version of allCharts that includes the current editing state
-  const allChartsWithEditing = useMemo(() => {
-    if (!currentFile?.charts) return []
-    
-    return currentFile.charts.map(chart => 
-      chart.id === editingChart.id ? editingChart : chart
-    )
-  }, [currentFile?.charts, editingChart])
-  
   const currentLayoutSettings = layoutSettingsMap[targetFileId] || {
     columns: 2,
     rows: 2
