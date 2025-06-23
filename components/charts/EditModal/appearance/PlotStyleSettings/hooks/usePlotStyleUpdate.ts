@@ -2,6 +2,7 @@ import { useCallback } from "react"
 import { ChartComponent } from "@/types"
 import { MarkerSettings, LineSettings, LegendMode, PlotStyle } from "@/types/plot-style"
 import { getDefaultColor } from "@/utils/chartColors"
+import { cleanParameterName } from "@/utils/parameterUtils"
 
 export const usePlotStyleUpdate = (
   editingChart: ChartComponent,
@@ -37,8 +38,8 @@ export const usePlotStyleUpdate = (
       }
     } else if (mode === 'parameter') {
       plotStyles.byParameter = plotStyles.byParameter || {}
-      plotStyles.byParameter[key] = {
-        ...plotStyles.byParameter[key],
+      plotStyles.byParameter[paramIndex] = {
+        ...plotStyles.byParameter[paramIndex],
         ...property
       }
     } else {
@@ -179,7 +180,7 @@ export const usePlotStyleUpdate = (
             width: 2,
             color: defaultColor
           },
-          legendText: param.parameter || 'Unnamed',
+          legendText: cleanParameterName(param.parameter) || 'Unnamed',
           visible: true
         }
       })
@@ -201,7 +202,7 @@ export const usePlotStyleUpdate = (
               width: 2,
               color: defaultColor
             },
-            legendText: `${ds.label}-${param.parameter || 'Unnamed'}`,
+            legendText: `${ds.label}-${cleanParameterName(param.parameter) || 'Unnamed'}`,
             visible: true
           }
         })

@@ -1,6 +1,7 @@
 import { useMemo } from "react"
 import { ChartComponent } from "@/types"
 import { PlotStyleRow, LegendMode } from "@/types/plot-style"
+import { cleanParameterName } from "@/utils/parameterUtils"
 
 interface DataSourceItem {
   id: string
@@ -50,7 +51,7 @@ export const usePlotStyleRows = (
           id: `param-${paramIndex}`,
           parameter: param,
           paramIndex,
-          legendText: plotStyle.legendText || param.parameter || "Unnamed",
+          legendText: plotStyle.legendText || cleanParameterName(param.parameter) || "Unnamed",
           colorIndex: paramIndex
         })
       })
@@ -59,7 +60,7 @@ export const usePlotStyleRows = (
       selectedDataSourceItems.forEach((dataSource, dataSourceIndex) => {
         editingChart.yAxisParams?.forEach((param, paramIndex) => {
           const plotStyle = getPlotStyle(dataSource.id, dataSourceIndex, paramIndex)
-          const defaultLegend = `${dataSource.label}-${param.parameter || "Unnamed"}`
+          const defaultLegend = `${dataSource.label}-${cleanParameterName(param.parameter) || "Unnamed"}`
           
           rows.push({
             id: `${dataSource.id}-${paramIndex}`,

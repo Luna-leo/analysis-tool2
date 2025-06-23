@@ -6,6 +6,7 @@ import { DataSourceBadgePreview } from "./DataSourceBadgePreview"
 import { PlotStyleBadge } from "./PlotStyleBadge"
 import { getDefaultColor } from "@/utils/chartColors"
 import { cn } from "@/lib/utils"
+import { cleanParameterName } from "@/utils/parameterUtils"
 
 interface ChartLegendProps {
   editingChart: ChartComponent
@@ -117,7 +118,7 @@ export const ChartLegend = React.memo(
         editingChart.yAxisParams?.forEach((param, idx) => {
           const plotStyle = editingChart.plotStyles?.byParameter?.[idx]
           const customLabel = plotStyle?.legendText
-          const defaultLabel = param.parameter || 'Unnamed'
+          const defaultLabel = cleanParameterName(param.parameter) || 'Unnamed'
           const finalLabel = customLabel || defaultLabel
           
           
@@ -134,7 +135,7 @@ export const ChartLegend = React.memo(
             const key = `${ds.id}-${pIdx}`
             const plotStyle = editingChart.plotStyles?.byBoth?.[key]
             const customLabel = plotStyle?.legendText
-            const defaultLabel = `${ds.label}-${param.parameter || 'Unnamed'}`
+            const defaultLabel = `${ds.label}-${cleanParameterName(param.parameter) || 'Unnamed'}`
             items.push({
               key,
               label: customLabel || defaultLabel,
