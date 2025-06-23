@@ -65,9 +65,9 @@ export function HorizontalReferenceLine({
       mainLine = group.append("line")
         .attr("class", "main-line")
     }
-    // Extend line beyond chart area to reach SVG edges
-    const x1 = -1000
-    const x2 = width + 1000
+    // Draw line within plot area only
+    const x1 = 0
+    const x2 = width
     
     mainLine
       .attr("x1", x1)
