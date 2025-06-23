@@ -135,6 +135,7 @@ export interface ChartComponent {
   // Label update preferences
   autoUpdateXLabel?: boolean
   autoUpdateYLabels?: boolean
+  autoUpdateTitle?: boolean
   
   // Layout
   margins?: ChartMargins
