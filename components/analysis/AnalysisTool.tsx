@@ -313,7 +313,14 @@ export default function AnalysisTool() {
                 xParameter: "timestamp",
                 data: [],
                 referenceLines: [],
-                fileId: activeTab
+                fileId: activeTab,
+                // Initialize plotStyles with default values
+                plotStyles: {
+                  mode: 'datasource',
+                  byDataSource: {},
+                  byParameter: {},
+                  byBoth: {}
+                }
               })
               uiStore.setEditModalOpen(true)
             }}

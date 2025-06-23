@@ -8,7 +8,8 @@ export class ChartOperations {
       title: `${chart.title} (コピー)`,
       type: chart.type || "scatter",
       xAxisType: chart.xAxisType || "datetime",
-      xParameter: chart.xParameter
+      xParameter: chart.xParameter,
+      plotStyles: chart.plotStyles  // Preserve plotStyles when duplicating
     }
   }
   

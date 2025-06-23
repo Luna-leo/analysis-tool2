@@ -28,6 +28,16 @@ export function PlotStyleTable({
   setEditingChart, 
   selectedDataSourceItems 
 }: PlotStyleTableProps) {
+  // Debug hook to track plotStyles changes
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[PlotStyleTable] editingChart.plotStyles changed:', {
+        chartId: editingChart.id,
+        plotStyles: editingChart.plotStyles,
+        mode: editingChart.plotStyles?.mode || editingChart.legendMode || 'datasource'
+      })
+    }
+  }, [editingChart.plotStyles])
   const mode = editingChart.plotStyles?.mode || editingChart.legendMode || "datasource"
   
   const {
@@ -51,7 +61,7 @@ export function PlotStyleTable({
   // Initialize plotStyles on mount
   useEffect(() => {
     initializePlotStyles()
-  }, [])
+  }, [initializePlotStyles])
 
   const handleModeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newMode = e.target.value as LegendMode

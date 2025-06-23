@@ -67,9 +67,20 @@ export const useUIStore = create<UIStore>()(
       // Actions
       setCurrentPage: (page) => set({ currentPage: page }),
       setHoveredChart: (chartId) => set({ hoveredChart: chartId }),
-      setEditingChart: (chart) => set({ editingChart: chart }),
+      setEditingChart: (chart) => {
+        if (process.env.NODE_ENV === 'development' && chart) {
+          console.log('[UIStore] setEditingChart called with:', {
+            chartId: chart.id,
+            hasPlotStyles: !!chart.plotStyles,
+            plotStylesMode: chart.plotStyles?.mode || chart.legendMode || 'datasource'
+          })
+        }
+        // Force a new object reference to ensure React detects the change
+        set({ editingChart: chart ? { ...chart } : null })
+      },
       setEditingChartWithIndex: (chart, index) => set({ 
-        editingChart: chart, 
+        // Force a new object reference to ensure React detects the change
+        editingChart: chart ? { ...chart } : null, 
         editingChartIndex: index 
       }),
       navigateToNextChart: (charts) => {
@@ -78,7 +89,8 @@ export const useUIStore = create<UIStore>()(
         if (currentIndex < charts.length - 1) {
           const nextChart = charts[currentIndex + 1]
           set({ 
-            editingChart: nextChart, 
+            // Force a new object reference to ensure React detects the change
+            editingChart: { ...nextChart }, 
             editingChartIndex: currentIndex + 1 
           })
         }
@@ -89,7 +101,8 @@ export const useUIStore = create<UIStore>()(
         if (currentIndex > 0) {
           const prevChart = charts[currentIndex - 1]
           set({ 
-            editingChart: prevChart, 
+            // Force a new object reference to ensure React detects the change
+            editingChart: { ...prevChart }, 
             editingChartIndex: currentIndex - 1 
           })
         }

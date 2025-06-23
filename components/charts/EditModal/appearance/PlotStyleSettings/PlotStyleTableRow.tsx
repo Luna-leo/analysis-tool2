@@ -59,7 +59,7 @@ export const PlotStyleTableRow = React.memo(({
       <TableCell className="text-xs">
         <div className="space-y-1">
           <LegendInput
-            value={row.legendText}
+            value={plotStyle.legendText || row.legendText}
             onChange={onUpdateLegend}
             disabled={!isVisible}
           />

@@ -155,7 +155,22 @@ export const usePlotStyleUpdate = (
       }
     }
 
-    setEditingChart({ ...editingChart, plotStyles: { ...plotStyles, mode } })
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[usePlotStyleUpdate] Updating legend text:', { 
+        mode, 
+        dataSourceId, 
+        paramIndex, 
+        legendText, 
+        currentPlotStyles: editingChart.plotStyles,
+        newPlotStyles: plotStyles,
+        willUpdate: mode === 'datasource' ? plotStyles.byDataSource[dataSourceId] :
+                    mode === 'parameter' ? plotStyles.byParameter[paramIndex] :
+                    plotStyles.byBoth[`${dataSourceId}-${paramIndex}`]
+      })
+    }
+    const newChart = { ...editingChart, plotStyles: { ...plotStyles, mode } }
+    console.log('[usePlotStyleUpdate] Calling setEditingChart with:', newChart)
+    setEditingChart(newChart)
   }, [editingChart, setEditingChart])
 
   // Initialize default styles for a mode
@@ -279,6 +294,9 @@ export const usePlotStyleUpdate = (
       }
     }
 
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[usePlotStyleUpdate] Updating visibility:', { mode, dataSourceId, paramIndex, visible, plotStyles })
+    }
     setEditingChart({ ...editingChart, plotStyles: { ...plotStyles, mode } })
   }, [editingChart, setEditingChart])
 

@@ -26,6 +26,7 @@ import {
   DEFAULT_UNIFIED_MARGIN_CONFIG,
   MarginValue
 } from "@/utils/chart/marginCalculator"
+import { arePlotStylesEqual } from "@/utils/plotStylesComparison"
 
 interface ChartPreviewGraphProps {
   editingChart: ChartComponent
@@ -72,6 +73,16 @@ const chartPreviewGraphPropsAreEqual = (prevProps: ChartPreviewGraphProps, nextP
   const isDev = process.env.NODE_ENV === 'development'
   const chartId = prevProps.editingChart?.id || 'unknown'
   
+  if (isDev) {
+    const referenceChanged = prevProps.editingChart !== nextProps.editingChart
+    console.log(`[ChartPreviewGraph ${chartId}] Comparing props:`, {
+      referenceChanged,
+      prevChartId: prevProps.editingChart?.id,
+      nextChartId: nextProps.editingChart?.id,
+      plotStylesEqual: arePlotStylesEqual(prevProps.editingChart?.plotStyles, nextProps.editingChart?.plotStyles)
+    })
+  }
+  
   // Check primitive props
   if (
     prevProps.maxDataPoints !== nextProps.maxDataPoints ||
@@ -85,31 +96,39 @@ const chartPreviewGraphPropsAreEqual = (prevProps: ChartPreviewGraphProps, nextP
     return false
   }
   
-  // Check if editingChart reference or relevant properties changed
+  // Check if editingChart reference changed
   if (prevProps.editingChart !== nextProps.editingChart) {
-    // Deep check only data-relevant properties
-    const prevChart = prevProps.editingChart
-    const nextChart = nextProps.editingChart
-    
-    if (
-      prevChart.id !== nextChart.id ||
-      prevChart.type !== nextChart.type ||
-      prevChart.xAxisType !== nextChart.xAxisType ||
-      prevChart.xParameter !== nextChart.xParameter ||
-      JSON.stringify(prevChart.yAxisParams) !== JSON.stringify(nextChart.yAxisParams) ||
-      JSON.stringify(prevChart.margins) !== JSON.stringify(nextChart.margins) ||
-      prevChart.xLabel !== nextChart.xLabel ||
-      JSON.stringify(prevChart.yAxisLabels) !== JSON.stringify(nextChart.yAxisLabels) ||
-      prevChart.autoUpdateXLabel !== nextChart.autoUpdateXLabel ||
-      prevChart.autoUpdateYLabels !== nextChart.autoUpdateYLabels ||
-      prevChart.showXLabel !== nextChart.showXLabel ||
-      prevChart.showYLabel !== nextChart.showYLabel ||
-      prevChart.title !== nextChart.title ||
-      prevChart.showTitle !== nextChart.showTitle
-    ) {
-      if (isDev) console.log(`[Chart ${chartId}] Re-render: chart data properties changed`)
-      return false
-    }
+    // If references are different, we need to re-render
+    // This is important because UIStore creates new objects on update
+    if (isDev) console.log(`[Chart ${chartId}] Re-render: editingChart reference changed`)
+    return false
+  }
+  
+  // If references are the same, do deep comparison of properties that affect rendering
+  const prevChart = prevProps.editingChart
+  const nextChart = nextProps.editingChart
+  
+  if (
+    prevChart.id !== nextChart.id ||
+    prevChart.type !== nextChart.type ||
+    prevChart.xAxisType !== nextChart.xAxisType ||
+    prevChart.xParameter !== nextChart.xParameter ||
+    JSON.stringify(prevChart.yAxisParams) !== JSON.stringify(nextChart.yAxisParams) ||
+    JSON.stringify(prevChart.margins) !== JSON.stringify(nextChart.margins) ||
+    prevChart.xLabel !== nextChart.xLabel ||
+    JSON.stringify(prevChart.yAxisLabels) !== JSON.stringify(nextChart.yAxisLabels) ||
+    prevChart.autoUpdateXLabel !== nextChart.autoUpdateXLabel ||
+    prevChart.autoUpdateYLabels !== nextChart.autoUpdateYLabels ||
+    prevChart.showXLabel !== nextChart.showXLabel ||
+    prevChart.showYLabel !== nextChart.showYLabel ||
+    prevChart.title !== nextChart.title ||
+    prevChart.showTitle !== nextChart.showTitle ||
+    prevChart.legendMode !== nextChart.legendMode ||
+    // More efficient plotStyles comparison using custom comparison function
+    !arePlotStylesEqual(prevChart.plotStyles, nextChart.plotStyles)
+  ) {
+    if (isDev) console.log(`[Chart ${chartId}] Re-render: chart data properties changed`)
+    return false
   }
   
   // Check if selectedDataSourceItems changed
@@ -157,7 +176,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   const mergedChart = useMemo(() => {
     if (!chartSettings) return editingChart
     
-    return {
+    const merged = {
       ...editingChart,
       showLegend: chartSettings.showLegend !== undefined ? chartSettings.showLegend : editingChart.showLegend,
       showTitle: chartSettings.showChartTitle !== undefined ? chartSettings.showChartTitle : editingChart.showTitle,
@@ -172,8 +191,24 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           left: typeof chartSettings.margins.left === 'number' ? chartSettings.margins.left : 40
         } : editingChart.margins) : editingChart.margins,
       xLabelOffset: chartSettings.xLabelOffset !== undefined ? chartSettings.xLabelOffset : editingChart.xLabelOffset,
-      yLabelOffset: chartSettings.yLabelOffset !== undefined ? chartSettings.yLabelOffset : editingChart.yLabelOffset
+      yLabelOffset: chartSettings.yLabelOffset !== undefined ? chartSettings.yLabelOffset : editingChart.yLabelOffset,
+      // Always use the latest plotStyles and legendMode from editingChart
+      plotStyles: editingChart.plotStyles,
+      legendMode: editingChart.legendMode
     }
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[ChartPreviewGraph] mergedChart updated:', {
+        editingChartPlotStyles: editingChart.plotStyles,
+        mergedChartPlotStyles: merged.plotStyles,
+        plotStylesMode: merged.plotStyles?.mode || merged.legendMode || 'datasource',
+        chartId: editingChart.id,
+        plotStyles: merged.plotStyles,
+        legendMode: merged.legendMode
+      })
+    }
+    
+    return merged
   }, [editingChart, chartSettings])
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -255,8 +290,10 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     id: mergedChart.id,
     type: mergedChart.type,
     showMarkers: mergedChart.showMarkers,
+    showLines: mergedChart.showLines,
+    plotStyles: mergedChart.plotStyles,
     // Add other properties that affect actual rendering
-  }), [mergedChart.id, mergedChart.type, mergedChart.showMarkers])
+  }), [mergedChart.id, mergedChart.type, mergedChart.showMarkers, mergedChart.showLines, mergedChart.plotStyles])
   
 
   // Handle zoom transformation
@@ -1060,6 +1097,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         chartId: chartRenderProps.id,
         chartType: chartRenderProps.type || 'scatter',
         showMarkers: chartRenderProps.showMarkers || false,
+        showLines: chartRenderProps.showLines || false,
+        plotStyles: chartRenderProps.plotStyles,
         computedMargins,
       }
       
@@ -1075,6 +1114,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         if (prevRenderDeps.current.chartId !== currentDeps.chartId) changes.push('chartId')
         if (prevRenderDeps.current.chartType !== currentDeps.chartType) changes.push('chartType')
         if (prevRenderDeps.current.showMarkers !== currentDeps.showMarkers) changes.push('showMarkers')
+        if (prevRenderDeps.current.showLines !== currentDeps.showLines) changes.push('showLines')
+        if (!arePlotStylesEqual(prevRenderDeps.current.plotStyles, currentDeps.plotStyles)) changes.push('plotStyles')
         if (JSON.stringify(prevRenderDeps.current.computedMargins) !== JSON.stringify(currentDeps.computedMargins)) changes.push('computedMargins')
         
         console.log(`[Chart ${chartRenderProps.id}] Render triggered by changes in:`, changes)
@@ -1112,7 +1153,9 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     chartRenderProps.id,
     chartRenderProps.type,
     chartRenderProps.showMarkers,
-    // Note: margins and plotStyles are accessed directly from mergedChart in render function
+    chartRenderProps.showLines,
+    chartRenderProps.plotStyles,
+    // margins are accessed directly from mergedChart in render function
     selectionState.isSelecting,
     selectionState.startX,
     selectionState.startY,
@@ -1135,6 +1178,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     chartId: string,
     chartType: string,
     showMarkers: boolean,
+    showLines: boolean,
+    plotStyles: any,
     computedMargins: { top: number; right: number; bottom: number; left: number },
   } | null>(null)
   
