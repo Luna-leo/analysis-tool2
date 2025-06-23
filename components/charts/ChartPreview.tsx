@@ -31,11 +31,6 @@ interface ChartPreviewProps {
 }
 
 export const ChartPreview = ({ editingChart, selectedDataSourceItems, setEditingChart, dataSourceStyles, chartSettings, enableZoom = true, enablePan = true, zoomMode = 'auto' }: ChartPreviewProps) => {
-  // Debug logging
-  if (process.env.NODE_ENV === 'development') {
-    console.log('[ChartPreview] Rendering with plotStyles:', editingChart.plotStyles)
-  }
-  
   return (
     <div className="w-full h-full flex flex-col">
       <ChartPreviewGraph

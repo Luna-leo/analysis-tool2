@@ -40,32 +40,20 @@ const chartLegendPropsAreEqual = (
     const prevMode = prevPlotStyles?.mode || prevProps.editingChart.legendMode || 'datasource'
     const nextMode = nextPlotStyles?.mode || nextProps.editingChart.legendMode || 'datasource'
     if (prevMode !== nextMode) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[ChartLegend] Re-render: mode changed', { prevMode, nextMode })
-      }
       return false
     }
     
     // Check plotStyles content based on mode
     if (prevMode === 'datasource') {
       if (JSON.stringify(prevPlotStyles?.byDataSource) !== JSON.stringify(nextPlotStyles?.byDataSource)) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[ChartLegend] Re-render: byDataSource changed')
-        }
         return false
       }
     } else if (prevMode === 'parameter') {
       if (JSON.stringify(prevPlotStyles?.byParameter) !== JSON.stringify(nextPlotStyles?.byParameter)) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[ChartLegend] Re-render: byParameter changed')
-        }
         return false
       }
     } else {
       if (JSON.stringify(prevPlotStyles?.byBoth) !== JSON.stringify(nextPlotStyles?.byBoth)) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[ChartLegend] Re-render: byBoth changed')
-        }
         return false
       }
     }
@@ -108,17 +96,6 @@ export const ChartLegend = React.memo(
       const mode = editingChart.plotStyles?.mode || editingChart.legendMode || 'datasource'
       const items: { key: string; label: string; colorIndex: number; dsId?: string; plotStyle?: any }[] = []
       
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[ChartLegend] Rendering with editingChart:', {
-          chartId: editingChart.id,
-          mode,
-          plotStyles: editingChart.plotStyles,
-          hasPlotStyles: !!editingChart.plotStyles,
-          plotStylesByMode: mode === 'datasource' ? editingChart.plotStyles?.byDataSource : 
-                           mode === 'parameter' ? editingChart.plotStyles?.byParameter : 
-                           editingChart.plotStyles?.byBoth
-        })
-      }
 
       if (mode === 'datasource') {
         dataSources.forEach((ds, idx) => {
@@ -127,14 +104,6 @@ export const ChartLegend = React.memo(
           const defaultLabel = ds.labelDescription ? `${ds.label} (${ds.labelDescription})` : ds.label
           const finalLabel = customLabel || defaultLabel
           
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`[ChartLegend] DataSource ${ds.id} label:`, {
-              customLabel,
-              defaultLabel,
-              finalLabel,
-              plotStyle
-            })
-          }
           
           items.push({ 
             key: ds.id, 
@@ -151,14 +120,6 @@ export const ChartLegend = React.memo(
           const defaultLabel = param.parameter || 'Unnamed'
           const finalLabel = customLabel || defaultLabel
           
-          if (process.env.NODE_ENV === 'development') {
-            console.log(`[ChartLegend] Parameter ${idx} label:`, {
-              customLabel,
-              defaultLabel,
-              finalLabel,
-              plotStyle
-            })
-          }
           
           items.push({ 
             key: `param-${idx}`, 
@@ -185,14 +146,6 @@ export const ChartLegend = React.memo(
         })
       }
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[ChartLegend] Rendering with items:', {
-          mode,
-          plotStyles: editingChart.plotStyles,
-          itemCount: items.length,
-          items: items.map(item => ({ key: item.key, label: item.label, hasCustomLabel: !!item.plotStyle?.legendText }))
-        })
-      }
 
       return (
         <div

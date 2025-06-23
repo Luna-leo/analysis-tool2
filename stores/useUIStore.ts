@@ -68,13 +68,6 @@ export const useUIStore = create<UIStore>()(
       setCurrentPage: (page) => set({ currentPage: page }),
       setHoveredChart: (chartId) => set({ hoveredChart: chartId }),
       setEditingChart: (chart) => {
-        if (process.env.NODE_ENV === 'development' && chart) {
-          console.log('[UIStore] setEditingChart called with:', {
-            chartId: chart.id,
-            hasPlotStyles: !!chart.plotStyles,
-            plotStylesMode: chart.plotStyles?.mode || chart.legendMode || 'datasource'
-          })
-        }
         // Force a new object reference to ensure React detects the change
         set({ editingChart: chart ? { ...chart } : null })
       },

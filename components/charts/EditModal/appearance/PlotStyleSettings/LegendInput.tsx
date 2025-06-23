@@ -11,19 +11,11 @@ interface LegendInputProps {
 }
 
 export const LegendInput = React.memo(({ value, onChange, placeholder = "Enter legend text", disabled }: LegendInputProps) => {
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[LegendInput] Value changed:', { from: value, to: newValue })
-    }
-    onChange(newValue)
-  }
-  
   return (
     <Input
       type="text"
       value={value}
-      onChange={handleChange}
+      onChange={(e) => onChange(e.target.value)}
       className="h-7 text-xs"
       placeholder={placeholder}
       disabled={disabled}

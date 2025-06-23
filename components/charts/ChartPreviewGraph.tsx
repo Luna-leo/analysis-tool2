@@ -70,19 +70,6 @@ interface ChartPreviewGraphProps {
 
 
 const chartPreviewGraphPropsAreEqual = (prevProps: ChartPreviewGraphProps, nextProps: ChartPreviewGraphProps) => {
-  const isDev = process.env.NODE_ENV === 'development'
-  const chartId = prevProps.editingChart?.id || 'unknown'
-  
-  if (isDev) {
-    const referenceChanged = prevProps.editingChart !== nextProps.editingChart
-    console.log(`[ChartPreviewGraph ${chartId}] Comparing props:`, {
-      referenceChanged,
-      prevChartId: prevProps.editingChart?.id,
-      nextChartId: nextProps.editingChart?.id,
-      plotStylesEqual: arePlotStylesEqual(prevProps.editingChart?.plotStyles, nextProps.editingChart?.plotStyles)
-    })
-  }
-  
   // Check primitive props
   if (
     prevProps.maxDataPoints !== nextProps.maxDataPoints ||
@@ -92,7 +79,6 @@ const chartPreviewGraphPropsAreEqual = (prevProps: ChartPreviewGraphProps, nextP
     prevProps.showZoomControls !== nextProps.showZoomControls ||
     prevProps.isCompactLayout !== nextProps.isCompactLayout
   ) {
-    if (isDev) console.log(`[Chart ${chartId}] Re-render: primitive props changed`)
     return false
   }
   
@@ -100,7 +86,6 @@ const chartPreviewGraphPropsAreEqual = (prevProps: ChartPreviewGraphProps, nextP
   if (prevProps.editingChart !== nextProps.editingChart) {
     // If references are different, we need to re-render
     // This is important because UIStore creates new objects on update
-    if (isDev) console.log(`[Chart ${chartId}] Re-render: editingChart reference changed`)
     return false
   }
   
@@ -127,14 +112,12 @@ const chartPreviewGraphPropsAreEqual = (prevProps: ChartPreviewGraphProps, nextP
     // More efficient plotStyles comparison using custom comparison function
     !arePlotStylesEqual(prevChart.plotStyles, nextChart.plotStyles)
   ) {
-    if (isDev) console.log(`[Chart ${chartId}] Re-render: chart data properties changed`)
     return false
   }
   
   // Check if selectedDataSourceItems changed
   if (prevProps.selectedDataSourceItems !== nextProps.selectedDataSourceItems) {
     if (prevProps.selectedDataSourceItems.length !== nextProps.selectedDataSourceItems.length) {
-      if (isDev) console.log(`[Chart ${chartId}] Re-render: data source items changed`)
       return false
     }
     // Could add deeper comparison if needed
@@ -142,13 +125,11 @@ const chartPreviewGraphPropsAreEqual = (prevProps: ChartPreviewGraphProps, nextP
   
   // Check if dataSourceStyles changed (shallow comparison)
   if (JSON.stringify(prevProps.dataSourceStyles) !== JSON.stringify(nextProps.dataSourceStyles)) {
-    if (isDev) console.log(`[Chart ${chartId}] Re-render: data source styles changed`)
     return false
   }
   
   // Check if chartSettings changed
   if (JSON.stringify(prevProps.chartSettings) !== JSON.stringify(nextProps.chartSettings)) {
-    if (isDev) console.log(`[Chart ${chartId}] Re-render: chart settings changed`)
     return false
   }
   
@@ -197,16 +178,6 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       legendMode: editingChart.legendMode
     }
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[ChartPreviewGraph] mergedChart updated:', {
-        editingChartPlotStyles: editingChart.plotStyles,
-        mergedChartPlotStyles: merged.plotStyles,
-        plotStylesMode: merged.plotStyles?.mode || merged.legendMode || 'datasource',
-        chartId: editingChart.id,
-        plotStyles: merged.plotStyles,
-        legendMode: merged.legendMode
-      })
-    }
     
     return merged
   }, [editingChart, chartSettings])

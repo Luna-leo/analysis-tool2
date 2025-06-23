@@ -7,6 +7,50 @@ export const usePlotStyleUpdate = (
   editingChart: ChartComponent,
   setEditingChart: (chart: ChartComponent) => void
 ) => {
+  // Helper function to get the style key based on mode
+  const getStyleKey = useCallback((
+    mode: LegendMode,
+    dataSourceId: string,
+    paramIndex: number
+  ): string => {
+    if (mode === 'datasource') return dataSourceId
+    if (mode === 'parameter') return paramIndex.toString()
+    return `${dataSourceId}-${paramIndex}`
+  }, [])
+
+  // Helper function to update plot style property
+  const updatePlotStyleProperty = useCallback((
+    dataSourceId: string,
+    dataSourceIndex: number,
+    paramIndex: number,
+    property: Partial<PlotStyle>
+  ) => {
+    const mode = editingChart.plotStyles?.mode || editingChart.legendMode || 'datasource'
+    const plotStyles = editingChart.plotStyles ? { ...editingChart.plotStyles } : { mode, byDataSource: {}, byParameter: {}, byBoth: {} }
+    const key = getStyleKey(mode, dataSourceId, paramIndex)
+
+    if (mode === 'datasource') {
+      plotStyles.byDataSource = plotStyles.byDataSource || {}
+      plotStyles.byDataSource[key] = {
+        ...plotStyles.byDataSource[key],
+        ...property
+      }
+    } else if (mode === 'parameter') {
+      plotStyles.byParameter = plotStyles.byParameter || {}
+      plotStyles.byParameter[key] = {
+        ...plotStyles.byParameter[key],
+        ...property
+      }
+    } else {
+      plotStyles.byBoth = plotStyles.byBoth || {}
+      plotStyles.byBoth[key] = {
+        ...plotStyles.byBoth[key],
+        ...property
+      }
+    }
+
+    setEditingChart({ ...editingChart, plotStyles: { ...plotStyles, mode } })
+  }, [editingChart, setEditingChart, getStyleKey])
   // Initialize plotStyles if not exists
   const initializePlotStyles = useCallback(() => {
     if (!editingChart.plotStyles) {
@@ -63,32 +107,8 @@ export const usePlotStyleUpdate = (
     paramIndex: number,
     marker: MarkerSettings
   ) => {
-    const mode = editingChart.plotStyles?.mode || editingChart.legendMode || 'datasource'
-    const plotStyles = editingChart.plotStyles ? { ...editingChart.plotStyles } : { mode, byDataSource: {}, byParameter: {}, byBoth: {} }
-
-    if (mode === 'datasource') {
-      plotStyles.byDataSource = plotStyles.byDataSource || {}
-      plotStyles.byDataSource[dataSourceId] = {
-        ...plotStyles.byDataSource[dataSourceId],
-        marker
-      }
-    } else if (mode === 'parameter') {
-      plotStyles.byParameter = plotStyles.byParameter || {}
-      plotStyles.byParameter[paramIndex] = {
-        ...plotStyles.byParameter[paramIndex],
-        marker
-      }
-    } else {
-      const key = `${dataSourceId}-${paramIndex}`
-      plotStyles.byBoth = plotStyles.byBoth || {}
-      plotStyles.byBoth[key] = {
-        ...plotStyles.byBoth[key],
-        marker
-      }
-    }
-
-    setEditingChart({ ...editingChart, plotStyles: { ...plotStyles, mode } })
-  }, [editingChart, setEditingChart])
+    updatePlotStyleProperty(dataSourceId, dataSourceIndex, paramIndex, { marker })
+  }, [updatePlotStyleProperty])
 
   // Update line style
   const updateLineStyle = useCallback((
@@ -97,32 +117,8 @@ export const usePlotStyleUpdate = (
     paramIndex: number,
     line: LineSettings
   ) => {
-    const mode = editingChart.plotStyles?.mode || editingChart.legendMode || 'datasource'
-    const plotStyles = editingChart.plotStyles ? { ...editingChart.plotStyles } : { mode, byDataSource: {}, byParameter: {}, byBoth: {} }
-
-    if (mode === 'datasource') {
-      plotStyles.byDataSource = plotStyles.byDataSource || {}
-      plotStyles.byDataSource[dataSourceId] = {
-        ...plotStyles.byDataSource[dataSourceId],
-        line
-      }
-    } else if (mode === 'parameter') {
-      plotStyles.byParameter = plotStyles.byParameter || {}
-      plotStyles.byParameter[paramIndex] = {
-        ...plotStyles.byParameter[paramIndex],
-        line
-      }
-    } else {
-      const key = `${dataSourceId}-${paramIndex}`
-      plotStyles.byBoth = plotStyles.byBoth || {}
-      plotStyles.byBoth[key] = {
-        ...plotStyles.byBoth[key],
-        line
-      }
-    }
-
-    setEditingChart({ ...editingChart, plotStyles: { ...plotStyles, mode } })
-  }, [editingChart, setEditingChart])
+    updatePlotStyleProperty(dataSourceId, dataSourceIndex, paramIndex, { line })
+  }, [updatePlotStyleProperty])
 
   // Update legend text
   const updateLegend = useCallback((
@@ -131,47 +127,8 @@ export const usePlotStyleUpdate = (
     paramIndex: number,
     legendText: string
   ) => {
-    const mode = editingChart.plotStyles?.mode || editingChart.legendMode || 'datasource'
-    const plotStyles = editingChart.plotStyles ? { ...editingChart.plotStyles } : { mode, byDataSource: {}, byParameter: {}, byBoth: {} }
-
-    if (mode === 'datasource') {
-      plotStyles.byDataSource = plotStyles.byDataSource || {}
-      plotStyles.byDataSource[dataSourceId] = {
-        ...plotStyles.byDataSource[dataSourceId],
-        legendText
-      }
-    } else if (mode === 'parameter') {
-      plotStyles.byParameter = plotStyles.byParameter || {}
-      plotStyles.byParameter[paramIndex] = {
-        ...plotStyles.byParameter[paramIndex],
-        legendText
-      }
-    } else {
-      const key = `${dataSourceId}-${paramIndex}`
-      plotStyles.byBoth = plotStyles.byBoth || {}
-      plotStyles.byBoth[key] = {
-        ...plotStyles.byBoth[key],
-        legendText
-      }
-    }
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[usePlotStyleUpdate] Updating legend text:', { 
-        mode, 
-        dataSourceId, 
-        paramIndex, 
-        legendText, 
-        currentPlotStyles: editingChart.plotStyles,
-        newPlotStyles: plotStyles,
-        willUpdate: mode === 'datasource' ? plotStyles.byDataSource[dataSourceId] :
-                    mode === 'parameter' ? plotStyles.byParameter[paramIndex] :
-                    plotStyles.byBoth[`${dataSourceId}-${paramIndex}`]
-      })
-    }
-    const newChart = { ...editingChart, plotStyles: { ...plotStyles, mode } }
-    console.log('[usePlotStyleUpdate] Calling setEditingChart with:', newChart)
-    setEditingChart(newChart)
-  }, [editingChart, setEditingChart])
+    updatePlotStyleProperty(dataSourceId, dataSourceIndex, paramIndex, { legendText })
+  }, [updatePlotStyleProperty])
 
   // Initialize default styles for a mode
   const initializeDefaultStylesForMode = useCallback((
@@ -270,35 +227,8 @@ export const usePlotStyleUpdate = (
     paramIndex: number,
     visible: boolean
   ) => {
-    const mode = editingChart.plotStyles?.mode || editingChart.legendMode || 'datasource'
-    const plotStyles = editingChart.plotStyles ? { ...editingChart.plotStyles } : { mode, byDataSource: {}, byParameter: {}, byBoth: {} }
-
-    if (mode === 'datasource') {
-      plotStyles.byDataSource = plotStyles.byDataSource || {}
-      plotStyles.byDataSource[dataSourceId] = {
-        ...plotStyles.byDataSource[dataSourceId],
-        visible
-      }
-    } else if (mode === 'parameter') {
-      plotStyles.byParameter = plotStyles.byParameter || {}
-      plotStyles.byParameter[paramIndex] = {
-        ...plotStyles.byParameter[paramIndex],
-        visible
-      }
-    } else {
-      const key = `${dataSourceId}-${paramIndex}`
-      plotStyles.byBoth = plotStyles.byBoth || {}
-      plotStyles.byBoth[key] = {
-        ...plotStyles.byBoth[key],
-        visible
-      }
-    }
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[usePlotStyleUpdate] Updating visibility:', { mode, dataSourceId, paramIndex, visible, plotStyles })
-    }
-    setEditingChart({ ...editingChart, plotStyles: { ...plotStyles, mode } })
-  }, [editingChart, setEditingChart])
+    updatePlotStyleProperty(dataSourceId, dataSourceIndex, paramIndex, { visible })
+  }, [updatePlotStyleProperty])
 
   return {
     initializePlotStyles,
