@@ -8,6 +8,7 @@ import { lttbSample } from './lttb'
 import { nthPointSample, stratifiedNthPointSample } from './nth-point'
 import { douglasPeuckerSample } from './douglas-peucker'
 import { adaptiveSample } from './adaptive'
+import { isCollinear } from './collinearity'
 
 /**
  * Main sampling function that delegates to specific algorithms
@@ -17,6 +18,7 @@ export function sampleData<T extends DataPoint>(
   options: SamplingOptions
 ): SamplingResult<T> {
   const { method, targetPoints, preserveExtremes = true } = options
+  
   
   // Early return for empty or small datasets
   if (!data || data.length === 0) {
@@ -42,7 +44,13 @@ export function sampleData<T extends DataPoint>(
   
   switch (method) {
     case 'lttb':
-      sampledData = lttbSample(data, targetPoints)
+      // LTTB fails on collinear data, use fallback
+      const isDataCollinear = isCollinear(data)
+      if (isDataCollinear) {
+        sampledData = stratifiedNthPointSample(data, targetPoints)
+      } else {
+        sampledData = lttbSample(data, targetPoints)
+      }
       break
       
     case 'nth-point':
@@ -50,7 +58,13 @@ export function sampleData<T extends DataPoint>(
       break
       
     case 'douglas-peucker':
-      sampledData = douglasPeuckerSample(data, targetPoints)
+      // Douglas-Peucker also fails on perfectly collinear data
+      const isDPDataCollinear = isCollinear(data)
+      if (isDPDataCollinear) {
+        sampledData = stratifiedNthPointSample(data, targetPoints)
+      } else {
+        sampledData = douglasPeuckerSample(data, targetPoints)
+      }
       break
       
     case 'adaptive':

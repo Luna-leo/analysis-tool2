@@ -1,6 +1,7 @@
 import { DataPoint, SamplingFunction } from './types'
 import { lttbSample } from './lttb'
-import { nthPointSample } from './nth-point'
+import { nthPointSample, stratifiedNthPointSample } from './nth-point'
+import { isCollinear, isXYIdentical } from './collinearity'
 
 /**
  * Adaptive sampling based on data characteristics
@@ -13,6 +14,16 @@ export const adaptiveSample: SamplingFunction<any> = <T extends DataPoint>(
   // For small datasets, return as-is
   if (data.length <= targetPoints) {
     return data
+  }
+  
+  // Check if data is collinear (e.g., when X and Y are the same parameter)
+  // LTTB fails on collinear data because all triangular areas are zero
+  const collinear = isCollinear(data)
+  
+  if (collinear) {
+    // Use stratified nth-point sampling for collinear data
+    // This ensures even distribution of points along the line
+    return stratifiedNthPointSample(data, targetPoints)
   }
   
   // For moderate datasets (up to 5000 points), use LTTB for best quality

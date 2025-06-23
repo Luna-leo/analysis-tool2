@@ -271,6 +271,7 @@ export function useOptimizedChart({
         // Apply data sampling if needed
         let sampledData = allData
         if (settings.performanceSettings.dataProcessing.enableSampling && allData.length > effectiveMaxDataPoints) {
+          
           // Group by series for batch sampling
           const seriesMap = new Map<string, ChartDataPoint[]>()
           allData.forEach(point => {
@@ -284,8 +285,8 @@ export function useOptimizedChart({
           if (settings.performanceSettings.dataProcessing.samplingMethod === 'none') {
             samplingMethod = 'none'
           } else if (settings.performanceSettings.dataProcessing.samplingMethod === 'auto') {
-            // Auto selects method based on chart type and data
-            samplingMethod = editingChart.type === 'scatter' ? 'douglas-peucker' : 'lttb'
+            // Pass 'auto' through to let the sampling module handle it with adaptive sampling
+            samplingMethod = 'auto'
           } else if (['lttb', 'nth-point', 'adaptive', 'douglas-peucker'].includes(settings.performanceSettings.dataProcessing.samplingMethod)) {
             samplingMethod = settings.performanceSettings.dataProcessing.samplingMethod as SamplingMethod
           }
