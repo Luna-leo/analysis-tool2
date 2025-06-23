@@ -16,6 +16,7 @@ import {
   mergeParametersWithPriority,
   shouldUseDataSourcePriority 
 } from "@/utils/dataSourceParameterUtils"
+import { getDefaultColor } from "@/utils/chartColors"
 
 interface RegularParameterRowProps {
   index: number
@@ -137,6 +138,40 @@ export function RegularParameterRow({
             }
           }
         }
+      } else if (editingChart.plotStyles?.mode === 'both' && editingChart.plotStyles.byBoth && selectedDataSourceItems) {
+        // Update legend for all data source combinations in 'both' mode
+        const updatedByBoth = { ...editingChart.plotStyles.byBoth }
+        selectedDataSourceItems.forEach((dataSource, dataSourceIndex) => {
+          const key = `${dataSource.id}-${index}`
+          // Create new entry if it doesn't exist
+          if (!updatedByBoth[key]) {
+            const defaultColor = getDefaultColor(dataSourceIndex)
+            updatedByBoth[key] = {
+              marker: {
+                type: 'circle',
+                size: 6,
+                borderColor: defaultColor,
+                fillColor: defaultColor
+              },
+              line: {
+                style: 'solid',
+                width: 2,
+                color: defaultColor
+              },
+              visible: true,
+              legendText: `${dataSource.label}-${parsedParam.name}`
+            }
+          } else {
+            updatedByBoth[key] = {
+              ...updatedByBoth[key],
+              legendText: `${dataSource.label}-${parsedParam.name}`
+            }
+          }
+        })
+        updatedPlotStyles = {
+          ...editingChart.plotStyles,
+          byBoth: updatedByBoth
+        }
       }
       
       // Set Y-axis label to parameter name if label is empty OR if auto-update is enabled (default: true)
@@ -173,6 +208,40 @@ export function RegularParameterRow({
             legendText: parsedParam.name
           }
         }
+      }
+    } else if (parsedParam && editingChart.plotStyles?.mode === 'both' && editingChart.plotStyles.byBoth && selectedDataSourceItems) {
+      // Update legend for all data source combinations in 'both' mode
+      const updatedByBoth = { ...editingChart.plotStyles.byBoth }
+      selectedDataSourceItems.forEach((dataSource, dataSourceIndex) => {
+        const key = `${dataSource.id}-${index}`
+        // Create new entry if it doesn't exist
+        if (!updatedByBoth[key]) {
+          const defaultColor = getDefaultColor(dataSourceIndex)
+          updatedByBoth[key] = {
+            marker: {
+              type: 'circle',
+              size: 6,
+              borderColor: defaultColor,
+              fillColor: defaultColor
+            },
+            line: {
+              style: 'solid',
+              width: 2,
+              color: defaultColor
+            },
+            visible: true,
+            legendText: `${dataSource.label}-${parsedParam.name}`
+          }
+        } else {
+          updatedByBoth[key] = {
+            ...updatedByBoth[key],
+            legendText: `${dataSource.label}-${parsedParam.name}`
+          }
+        }
+      })
+      updatedPlotStyles = {
+        ...editingChart.plotStyles,
+        byBoth: updatedByBoth
       }
     }
     

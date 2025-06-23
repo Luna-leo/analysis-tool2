@@ -1,8 +1,9 @@
-import { ChartComponent, InterlockDefinition, InterlockMaster } from "@/types"
+import { ChartComponent, InterlockDefinition, InterlockMaster, EventInfo } from "@/types"
 import { useInterlockMasterStore } from "@/stores/useInterlockMasterStore"
 import { useFormulaMasterStore } from "@/stores/useFormulaMasterStore"
 import { FormulaMaster } from "@/data/formulaMaster"
 import { formulaMasterToDefinition } from "@/utils/formulaUtils"
+import { getDefaultColor } from "@/utils/chartColors"
 
 interface UseYParameterHandlersProps {
   editingChart: ChartComponent
@@ -15,6 +16,7 @@ interface UseYParameterHandlersProps {
   setShowFormulaDialog: (show: boolean) => void
   setOpenComboboxIndex: (index: number | null) => void
   setSearchQuery: (query: string) => void
+  selectedDataSourceItems?: EventInfo[]
 }
 
 export function useYParameterHandlers({
@@ -27,7 +29,8 @@ export function useYParameterHandlers({
   setFormulaMode,
   setShowFormulaDialog,
   setOpenComboboxIndex,
-  setSearchQuery
+  setSearchQuery,
+  selectedDataSourceItems
 }: UseYParameterHandlersProps) {
   // Get interlocks from the store
   const { interlocks, addInterlock, updateInterlock } = useInterlockMasterStore()
@@ -65,6 +68,40 @@ export function useYParameterHandlers({
             legendText: formula.name
           }
         }
+      }
+    } else if (editingChart.plotStyles?.mode === 'both' && editingChart.plotStyles.byBoth && selectedDataSourceItems) {
+      // Update legend for all data source combinations in 'both' mode
+      const updatedByBoth = { ...editingChart.plotStyles.byBoth }
+      selectedDataSourceItems.forEach((dataSource, dataSourceIndex) => {
+        const key = `${dataSource.id}-${index}`
+        // Create new entry if it doesn't exist
+        if (!updatedByBoth[key]) {
+          const defaultColor = getDefaultColor(dataSourceIndex)
+          updatedByBoth[key] = {
+            marker: {
+              type: 'circle',
+              size: 6,
+              borderColor: defaultColor,
+              fillColor: defaultColor
+            },
+            line: {
+              style: 'solid',
+              width: 2,
+              color: defaultColor
+            },
+            visible: true,
+            legendText: `${dataSource.label}-${formula.name}`
+          }
+        } else {
+          updatedByBoth[key] = {
+            ...updatedByBoth[key],
+            legendText: `${dataSource.label}-${formula.name}`
+          }
+        }
+      })
+      updatedPlotStyles = {
+        ...editingChart.plotStyles,
+        byBoth: updatedByBoth
       }
     }
     
@@ -163,6 +200,40 @@ export function useYParameterHandlers({
               legendText: interlockDefinition.name
             }
           }
+        }
+      } else if (editingChart.plotStyles?.mode === 'both' && editingChart.plotStyles.byBoth && selectedDataSourceItems) {
+        // Update legend for all data source combinations in 'both' mode
+        const updatedByBoth = { ...editingChart.plotStyles.byBoth }
+        selectedDataSourceItems.forEach((dataSource, dataSourceIndex) => {
+          const key = `${dataSource.id}-${index}`
+          // Create new entry if it doesn't exist
+          if (!updatedByBoth[key]) {
+            const defaultColor = getDefaultColor(dataSourceIndex)
+            updatedByBoth[key] = {
+              marker: {
+                type: 'circle',
+                size: 6,
+                borderColor: defaultColor,
+                fillColor: defaultColor
+              },
+              line: {
+                style: 'solid',
+                width: 2,
+                color: defaultColor
+              },
+              visible: true,
+              legendText: `${dataSource.label}-${interlockDefinition.name}`
+            }
+          } else {
+            updatedByBoth[key] = {
+              ...updatedByBoth[key],
+              legendText: `${dataSource.label}-${interlockDefinition.name}`
+            }
+          }
+        })
+        updatedPlotStyles = {
+          ...editingChart.plotStyles,
+          byBoth: updatedByBoth
         }
       }
       
@@ -312,6 +383,40 @@ export function useYParameterHandlers({
               }
             }
           }
+        } else if (editingChart.plotStyles?.mode === 'both' && editingChart.plotStyles.byBoth && selectedDataSourceItems) {
+          // Update legend for all data source combinations in 'both' mode
+          const updatedByBoth = { ...editingChart.plotStyles.byBoth }
+          selectedDataSourceItems.forEach((dataSource, dataSourceIndex) => {
+            const key = `${dataSource.id}-${index}`
+            // Create new entry if it doesn't exist
+            if (!updatedByBoth[key]) {
+              const defaultColor = getDefaultColor(dataSourceIndex)
+              updatedByBoth[key] = {
+                marker: {
+                  type: 'circle',
+                  size: 6,
+                  borderColor: defaultColor,
+                  fillColor: defaultColor
+                },
+                line: {
+                  style: 'solid',
+                  width: 2,
+                  color: defaultColor
+                },
+                visible: true,
+                legendText: `${dataSource.label}-${selectedFormula.name}`
+              }
+            } else {
+              updatedByBoth[key] = {
+                ...updatedByBoth[key],
+                legendText: `${dataSource.label}-${selectedFormula.name}`
+              }
+            }
+          })
+          updatedPlotStyles = {
+            ...editingChart.plotStyles,
+            byBoth: updatedByBoth
+          }
         }
         
         const currentLabel = editingChart.yAxisLabels?.[axisNo]
@@ -408,6 +513,40 @@ export function useYParameterHandlers({
                 legendText: selectedMaster.name
               }
             }
+          }
+        } else if (editingChart.plotStyles?.mode === 'both' && editingChart.plotStyles.byBoth && selectedDataSourceItems) {
+          // Update legend for all data source combinations in 'both' mode
+          const updatedByBoth = { ...editingChart.plotStyles.byBoth }
+          selectedDataSourceItems.forEach((dataSource, dataSourceIndex) => {
+            const key = `${dataSource.id}-${index}`
+            // Create new entry if it doesn't exist
+            if (!updatedByBoth[key]) {
+              const defaultColor = getDefaultColor(dataSourceIndex)
+              updatedByBoth[key] = {
+                marker: {
+                  type: 'circle',
+                  size: 6,
+                  borderColor: defaultColor,
+                  fillColor: defaultColor
+                },
+                line: {
+                  style: 'solid',
+                  width: 2,
+                  color: defaultColor
+                },
+                visible: true,
+                legendText: `${dataSource.label}-${selectedMaster.name}`
+              }
+            } else {
+              updatedByBoth[key] = {
+                ...updatedByBoth[key],
+                legendText: `${dataSource.label}-${selectedMaster.name}`
+              }
+            }
+          })
+          updatedPlotStyles = {
+            ...editingChart.plotStyles,
+            byBoth: updatedByBoth
           }
         }
         

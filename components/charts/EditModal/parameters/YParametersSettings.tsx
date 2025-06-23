@@ -98,7 +98,8 @@ export function YParametersSettings({ editingChart, setEditingChart, isReference
     setFormulaMode,
     setShowFormulaDialog,
     setOpenComboboxIndex,
-    setSearchQuery
+    setSearchQuery,
+    selectedDataSourceItems
   })
 
   // Wrap save handlers to include index
