@@ -89,10 +89,19 @@ export const useFileStore = create<FileStore>()(
         const savedTab = savedState?.tabs?.find(tab => tab.id === file.id)
         
         // If we have saved charts for this file, use them
+        const chartsToUse = savedTab?.charts || file.charts
+        
+        if (process.env.NODE_ENV === 'development' && chartsToUse) {
+          const chartsWithReferenceLines = chartsToUse.filter(c => c.referenceLines && c.referenceLines.length > 0)
+          if (chartsWithReferenceLines.length > 0) {
+            console.log(`[FileStore] Opening file ${file.id} with Reference Lines:`, chartsWithReferenceLines)
+          }
+        }
+        
         const openTab: OpenTab = { 
           ...file, 
           source,
-          charts: savedTab?.charts || file.charts,
+          charts: chartsToUse,
           selectedDataSources: file.selectedDataSources // Ensure selectedDataSources is preserved
         }
         
@@ -366,6 +375,13 @@ export const useFileStore = create<FileStore>()(
       setDragOverTab: (tabId) => set({ dragOverTab: tabId }),
 
       updateFileCharts: (fileId, charts) => set((state) => {
+        if (process.env.NODE_ENV === 'development') {
+          const chartsWithReferenceLines = charts.filter(c => c.referenceLines && c.referenceLines.length > 0)
+          if (chartsWithReferenceLines.length > 0) {
+            console.log(`[FileStore] Updating charts with Reference Lines for file ${fileId}:`, chartsWithReferenceLines)
+          }
+        }
+        
         // Update charts in fileTree
         const newFileTree = traverseAndUpdate(state.fileTree, fileId, (node) => ({
           ...node,
@@ -576,6 +592,15 @@ export const useFileStore = create<FileStore>()(
 const saveToStorage = () => {
   const state = useFileStore.getState()
   const graphStateStore = useGraphStateStore.getState()
+  
+  if (process.env.NODE_ENV === 'development') {
+    const tabsWithReferenceLines = state.openTabs.filter(tab => 
+      tab.charts?.some(c => c.referenceLines && c.referenceLines.length > 0)
+    )
+    if (tabsWithReferenceLines.length > 0) {
+      console.log('[FileStore] Saving tabs with Reference Lines to GraphState:', tabsWithReferenceLines)
+    }
+  }
   
   graphStateStore.saveState({
     tabs: state.openTabs,

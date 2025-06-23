@@ -44,6 +44,9 @@ export const OptimizedChartPreview = React.memo(({
     yScale: d3.ScaleLinear<number, number> | null
   }>({ xScale: null, yScale: null })
   
+  // Track margin for ReferenceLines
+  const marginRef = useRef({ top: 20, right: 40, bottom: 60, left: 60 })
+  
   // Use optimized data loading hook
   const { data: chartData, isLoading: isLoadingData, error } = useOptimizedChart({
     editingChart,
@@ -121,6 +124,7 @@ export const OptimizedChartPreview = React.memo(({
       svg.selectAll(".main-chart-group").remove()
 
       const margin = { top: 20, right: 40, bottom: 60, left: 60 }
+      marginRef.current = margin
       const width = dimensions.width - margin.left - margin.right
       const height = dimensions.height - margin.top - margin.bottom
 
@@ -218,6 +222,7 @@ export const OptimizedChartPreview = React.memo(({
           setEditingChart={setEditingChart}
           scalesRef={scalesRef}
           dimensions={dimensions}
+          margins={marginRef.current}
         />
       )}
     </div>

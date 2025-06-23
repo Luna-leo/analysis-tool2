@@ -434,7 +434,12 @@ const ChartCardComponent = ({
         style={{ contain: 'layout' }} // Add CSS containment
       >
         <ChartPreviewGraph 
-          editingChart={chart} 
+          editingChart={(() => {
+            if (process.env.NODE_ENV === 'development' && chart.referenceLines) {
+              console.log(`[ChartCard ${chart.id}] Reference Lines:`, chart.referenceLines)
+            }
+            return chart
+          })()} 
           selectedDataSourceItems={selectedDataSources} 
           setEditingChart={handleChartUpdate}
           maxDataPoints={
