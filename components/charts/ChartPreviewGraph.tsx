@@ -153,20 +153,25 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     : Number.MAX_SAFE_INTEGER
   const effectiveMaxDataPoints = maxDataPoints ?? defaultMaxDataPoints
   
+  // Initialize xLabel for datetime axis if missing
+  useEffect(() => {
+    if ((editingChart.xAxisType === "datetime" || !editingChart.xAxisType) && !editingChart.xLabel && setEditingChart) {
+      setEditingChart({
+        ...editingChart,
+        xLabel: "Datetime"
+      })
+    }
+  }, [editingChart.xAxisType, editingChart.xLabel])
+  
   // Merge global chart settings with individual chart settings
   const mergedChart = useMemo(() => {
     let baseChart = editingChart
     
-    // Initialize xLabel for datetime axis if missing
+    // Apply xLabel if needed (without calling setState)
     if ((baseChart.xAxisType === "datetime" || !baseChart.xAxisType) && !baseChart.xLabel) {
       baseChart = {
         ...baseChart,
         xLabel: "Datetime"
-      }
-      
-      // Update the original chart if setEditingChart is available
-      if (setEditingChart) {
-        setEditingChart(baseChart)
       }
     }
     
@@ -195,7 +200,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     
     
     return merged
-  }, [editingChart, chartSettings, setEditingChart])
+  }, [editingChart, chartSettings])
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -279,6 +284,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     showLines: mergedChart.showLines,
     plotStyles: mergedChart.plotStyles,
     // Add display settings that affect rendering
+    title: mergedChart.title,
     showTitle: mergedChart.showTitle,
     showGrid: mergedChart.showGrid,
     showXLabel: mergedChart.showXLabel,
@@ -289,6 +295,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     mergedChart.showMarkers, 
     mergedChart.showLines, 
     mergedChart.plotStyles,
+    mergedChart.title,
     mergedChart.showTitle,
     mergedChart.showGrid,
     mergedChart.showXLabel,
@@ -1156,6 +1163,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     chartRenderProps.showLines,
     chartRenderProps.plotStyles,
     // Display settings
+    chartRenderProps.title,
     chartRenderProps.showTitle,
     chartRenderProps.showGrid,
     chartRenderProps.showXLabel,

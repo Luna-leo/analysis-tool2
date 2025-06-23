@@ -143,7 +143,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
   
   const { layoutSettingsMap, chartSettingsMap, updateLayoutSettings } = useLayoutStore()
   const { updateFileCharts, openTabs } = useFileStore()
-  const { gridSelectionMode, sourceSelectionMode } = useUIStore()
+  const { gridSelectionMode, sourceSelectionMode, editingChart, editModalOpen } = useUIStore()
   
   // Get the current file from openTabs to ensure we have the latest version
   const currentFile = openTabs.find(tab => tab.id === file.id) || file
@@ -174,11 +174,40 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     return { start: 0, end: Math.min(itemsPerRow * rowsInViewport, 12) } // Cap at 12 items initially
   })
   
-  // Update local charts when file.charts changes
+  // Create charts array that includes editing state only when modal is open
+  const chartsWithEditing = useMemo(() => {
+    const baseCharts = currentFile.charts || []
+    
+    // Only apply editing overlay when modal is actually open
+    if (!editModalOpen || !editingChart) {
+      return baseCharts
+    }
+    
+    // Check if editing chart belongs to this file
+    if (editingChart.fileId && editingChart.fileId !== file.id) {
+      return baseCharts
+    }
+    
+    // If editingChart doesn't have fileId, check if it matches current file
+    // This handles legacy charts without fileId
+    if (!editingChart.fileId) {
+      // Only apply if we're on the active file tab
+      const activeFileTab = useFileStore.getState().activeTab
+      if (activeFileTab !== file.id) {
+        return baseCharts
+      }
+    }
+    
+    // Replace the editing chart in the array
+    return baseCharts.map(chart => 
+      chart.id === editingChart.id ? editingChart : chart
+    )
+  }, [currentFile.charts, editingChart, file.id, editModalOpen])
+
+  // Update local charts when file.charts or editing state changes
   useEffect(() => {
-    // Use currentFile to ensure we have the latest charts
-    setLocalCharts(currentFile.charts || [])
-  }, [currentFile.charts])
+    setLocalCharts(chartsWithEditing)
+  }, [chartsWithEditing])
 
   // Drag and drop handlers
   const handleDragStart = useCallback((index: number) => {
