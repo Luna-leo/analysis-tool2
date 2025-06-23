@@ -93,9 +93,9 @@ export function VerticalReferenceLine({
         .attr("class", "main-line")
     }
     
-    // Extend line beyond chart area if auto range is enabled
-    const y1 = line.yRange?.auto ? -1000 : 0
-    const y2 = line.yRange?.auto ? height + 1000 : height
+    // Extend line beyond chart area to reach SVG edges
+    const y1 = -1000
+    const y2 = height + 1000
     
     mainLine
       .attr("x1", xPos)

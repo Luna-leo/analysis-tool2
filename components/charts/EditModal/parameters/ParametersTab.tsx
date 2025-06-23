@@ -20,16 +20,6 @@ interface ReferenceLineConfig {
   xValue?: string
   yValue?: string
   axisNo?: number
-  yRange?: {
-    auto: boolean
-    min: string
-    max: string
-  }
-  xRange?: {
-    auto: boolean
-    min: string
-    max: string
-  }
   color?: string
   style?: "solid" | "dashed" | "dotted"
   labelOffset?: {
@@ -52,16 +42,6 @@ export function ParametersTab({ editingChart, setEditingChart, selectedDataSourc
         xValue: line.type === "vertical" ? (typeof line.value === 'string' ? line.value : line.value?.toString()) : undefined,
         yValue: line.type === "horizontal" ? line.value?.toString() : undefined,
         axisNo: 1,
-        yRange: line.yRange || {
-          auto: true,
-          min: "0",
-          max: "100"
-        },
-        xRange: line.xRange || {
-          auto: true,
-          min: "0",
-          max: "100"
-        },
         color: line.color,
         style: line.style,
         labelOffset: line.labelOffset
@@ -101,9 +81,7 @@ export function ParametersTab({ editingChart, setEditingChart, selectedDataSourc
         label: line.label,
         color: line.color || "#ff0000",
         style: line.style || "solid" as const,
-        labelOffset: line.labelOffset,
-        xRange: line.xRange,
-        yRange: line.yRange
+        labelOffset: line.labelOffset
       }
     })
 

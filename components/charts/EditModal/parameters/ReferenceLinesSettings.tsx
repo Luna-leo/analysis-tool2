@@ -43,16 +43,6 @@ export function ReferenceLinesSettings({
       xValue: defaultXValue,
       yValue: "",
       axisNo: 1,
-      yRange: {
-        auto: true,
-        min: "0",
-        max: "100"
-      },
-      xRange: {
-        auto: true,
-        min: "0",
-        max: "100"
-      }
     }
     onUpdateReferenceLines([...referenceLines, newReferenceLine])
   }
@@ -72,16 +62,6 @@ export function ReferenceLinesSettings({
       xValue: "",
       yValue: defaultYValue,
       axisNo: 1,
-      yRange: {
-        auto: true,
-        min: "0",
-        max: "100"
-      },
-      xRange: {
-        auto: true,
-        min: "0",
-        max: "100"
-      }
     }
     onUpdateReferenceLines([...referenceLines, newReferenceLine])
   }
@@ -93,26 +73,6 @@ export function ReferenceLinesSettings({
       const updatedLine = { ...line, [field]: value }
       
       return updatedLine
-    }))
-  }
-
-  type RangeField = keyof NonNullable<ReferenceLineConfig['xRange']> | keyof NonNullable<ReferenceLineConfig['yRange']>
-  
-  const handleUpdateRange = (
-    id: string,
-    rangeType: 'xRange' | 'yRange',
-    field: RangeField,
-    value: any
-  ) => {
-    onUpdateReferenceLines(referenceLines.map(line => {
-      if (line.id !== id) return line
-      return {
-        ...line,
-        [rangeType]: {
-          ...line[rangeType],
-          [field]: value
-        }
-      }
     }))
   }
 
@@ -159,7 +119,6 @@ export function ReferenceLinesSettings({
                 <div className="flex-1">Label</div>
                 <div className="w-40">Value</div>
                 <div className="w-16">Axis No</div>
-                <div className="w-24">Range</div>
                 <div className="w-7"></div>
               </div>
 
@@ -171,7 +130,6 @@ export function ReferenceLinesSettings({
                       line={line}
                       editingChart={editingChart}
                       onUpdateReferenceLine={handleUpdateReferenceLine}
-                      onUpdateRange={handleUpdateRange}
                       onRemoveReferenceLine={handleRemoveReferenceLine}
                     />
                   ))}

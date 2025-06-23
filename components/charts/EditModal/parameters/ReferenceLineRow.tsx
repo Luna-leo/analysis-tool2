@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
 import { ChartComponent } from "@/types"
-import { ReferenceLineRangePopover } from "./ReferenceLineRangePopover"
 
 export interface ReferenceLineConfig {
   id: string
@@ -14,28 +13,12 @@ export interface ReferenceLineConfig {
   xValue?: string
   yValue?: string
   axisNo?: number
-  yRange?: {
-    auto: boolean
-    min: string
-    max: string
-  }
-  xRange?: {
-    auto: boolean
-    min: string
-    max: string
-  }
 }
 
 interface ReferenceLineRowProps {
   line: ReferenceLineConfig
   editingChart: ChartComponent
   onUpdateReferenceLine: (id: string, field: keyof ReferenceLineConfig, value: any) => void
-  onUpdateRange: (
-    id: string,
-    rangeType: 'xRange' | 'yRange',
-    field: keyof NonNullable<ReferenceLineConfig['xRange']> | keyof NonNullable<ReferenceLineConfig['yRange']>,
-    value: any
-  ) => void
   onRemoveReferenceLine: (id: string) => void
 }
 
@@ -43,7 +26,6 @@ export const ReferenceLineRow = React.memo(({
   line,
   editingChart,
   onUpdateReferenceLine,
-  onUpdateRange,
   onRemoveReferenceLine
 }: ReferenceLineRowProps) => {
   const handleLabelChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,13 +105,6 @@ export const ReferenceLineRow = React.memo(({
         ) : (
           <div className="h-7" />
         )}
-      </div>
-      <div className="w-24">
-        <ReferenceLineRangePopover
-          line={line}
-          editingChart={editingChart}
-          onUpdateRange={onUpdateRange}
-        />
       </div>
       <div className="w-7">
         <Button

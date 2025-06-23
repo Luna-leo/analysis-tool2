@@ -65,9 +65,9 @@ export function HorizontalReferenceLine({
       mainLine = group.append("line")
         .attr("class", "main-line")
     }
-    // Extend line beyond chart area if auto range is enabled
-    const x1 = line.xRange?.auto ? -1000 : 0
-    const x2 = line.xRange?.auto ? width + 1000 : width
+    // Extend line beyond chart area to reach SVG edges
+    const x1 = -1000
+    const x2 = width + 1000
     
     mainLine
       .attr("x1", x1)

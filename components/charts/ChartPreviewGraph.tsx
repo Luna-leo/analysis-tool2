@@ -1302,6 +1302,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           setEditingChart={setEditingChart}
           scalesRef={currentScalesRef}
           dimensions={dimensions}
+          margins={computedMargins}
         />
       )}
       {enableZoom && showZoomControls && (

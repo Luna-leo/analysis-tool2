@@ -16,9 +16,10 @@ interface ReferenceLinesProps {
     yScale: d3.ScaleLinear<number, number> | null
   }>
   dimensions?: { width: number; height: number }
+  margins?: { top: number; right: number; bottom: number; left: number }
 }
 
-export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRef, dimensions }: ReferenceLinesProps) {
+export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRef, dimensions, margins }: ReferenceLinesProps) {
   const {
     draggingLine,
     draggingLabel,
@@ -47,35 +48,11 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
     if (!svgRef.current || !scalesRef.current.xScale || !scalesRef.current.yScale) return
 
     const svg = d3.select(svgRef.current)
-    const margin = { top: 20, right: 40, bottom: 60, left: 60 }
+    const margin = margins || { top: 20, right: 40, bottom: 60, left: 60 }
     const width = (dimensions?.width || 400) - margin.left - margin.right
     const height = (dimensions?.height || 300) - margin.top - margin.bottom
 
     const isInteractive = !!setEditingChart
-    const clipId = `reference-lines-clip-${editingChart.id}`
-
-    // Ensure clipPath exists for reference lines
-    let defs = svg.select<SVGDefsElement>("defs")
-    if (defs.empty()) {
-      defs = svg.append<SVGDefsElement>("defs")
-    }
-    
-    let clipPath = defs.select<SVGClipPathElement>(`#${clipId}`)
-    if (clipPath.empty()) {
-      clipPath = defs.append<SVGClipPathElement>("clipPath")
-        .attr("id", clipId)
-      
-      clipPath.append("rect")
-        .attr("x", 0)
-        .attr("y", 0)
-        .attr("width", width)
-        .attr("height", height)
-    } else {
-      // Update existing clipPath dimensions
-      clipPath.select("rect")
-        .attr("width", width)
-        .attr("height", height)
-    }
 
     // Ensure reference lines layer exists at the SVG level, not inside main chart group
     let refLinesLayer = svg.select<SVGGElement>(".reference-lines-layer")
@@ -84,11 +61,7 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
         .append<SVGGElement>("g")
         .attr("class", "reference-lines-layer")
         .attr("transform", `translate(${margin.left},${margin.top})`)
-        .attr("clip-path", `url(#${clipId})`)
         .style("pointer-events", isInteractive ? "auto" : "none")
-    } else {
-      // Ensure clip-path is set (in case it was missing)
-      refLinesLayer.attr("clip-path", `url(#${clipId})`)
     }
     
     // Always bring reference lines layer to front
