@@ -926,6 +926,19 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               console.log(`[Chart ${chartRenderProps.id}] Rendering with zoom version:`, zoomVersion)
             }
             
+            // Debug log scales information
+            if (process.env.NODE_ENV === 'development' && baseScalesRef.current.xScale) {
+              const domain = baseScalesRef.current.xScale.domain()
+              console.log('[ChartPreviewGraph] Current scales:', {
+                chartId: chartRenderProps.id,
+                usingCurrentScales: scalesToUse === currentScalesRef,
+                baseScaleDomain: domain,
+                baseScaleDomainStart: domain[0] instanceof Date ? domain[0].toISOString() : domain[0],
+                baseScaleDomainEnd: domain[1] instanceof Date ? domain[1].toISOString() : domain[1],
+                hasCurrentScales: hasValidCurrentScales
+              })
+            }
+            
             
             // Apply quality optimization if enabled
             const dataToRender = qualityRenderOptions.samplingRate < 1
@@ -1297,16 +1310,25 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           dataSourceStyles={dataSourceStyles}
         />
       )}
-      {!isLoadingData && scalesReady && currentScalesRef.current.xScale && currentScalesRef.current.yScale && (
-        <ReferenceLines
-          svgRef={svgRef}
-          editingChart={mergedChart}
-          setEditingChart={setEditingChart}
-          scalesRef={currentScalesRef}
-          dimensions={dimensions}
-          margins={computedMargins}
-        />
-      )}
+      {!isLoadingData && scalesReady && (() => {
+        // Use currentScalesRef if available, otherwise use baseScalesRef
+        const scalesToUse = currentScalesRef.current.xScale && currentScalesRef.current.yScale 
+          ? currentScalesRef 
+          : baseScalesRef.current.xScale && baseScalesRef.current.yScale
+          ? baseScalesRef
+          : null;
+          
+        return scalesToUse ? (
+          <ReferenceLines
+            svgRef={svgRef}
+            editingChart={mergedChart}
+            setEditingChart={setEditingChart}
+            scalesRef={scalesToUse}
+            dimensions={dimensions}
+            margins={computedMargins}
+          />
+        ) : null;
+      })()}
       {enableZoom && showZoomControls && (
         <>
           {/* Check if this is being used in ChartCard (has chartSettings) */}

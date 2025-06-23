@@ -6,6 +6,7 @@ import { ChartComponent } from "@/types"
 import { VerticalReferenceLine } from "./VerticalReferenceLine"
 import { HorizontalReferenceLine } from "./HorizontalReferenceLine"
 import { useReferenceLineDrag } from "./useReferenceLineDrag"
+import { useFileStore } from "@/stores/useFileStore"
 
 interface ReferenceLinesProps {
   svgRef: React.RefObject<SVGSVGElement | null>
@@ -20,6 +21,8 @@ interface ReferenceLinesProps {
 }
 
 export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRef, dimensions, margins }: ReferenceLinesProps) {
+  const { updateFileCharts, openTabs } = useFileStore()
+  
   const {
     draggingLine,
     draggingLabel,
@@ -67,6 +70,19 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
     // Always bring reference lines layer to front
     refLinesLayer.raise()
 
+    // Debug scale information
+    if (process.env.NODE_ENV === 'development' && scalesRef.current.xScale) {
+      const domain = scalesRef.current.xScale.domain()
+      console.log('[ReferenceLines] Drawing with scales:', {
+        domain,
+        domainStart: domain[0] instanceof Date ? domain[0].toISOString() : domain[0],
+        domainEnd: domain[1] instanceof Date ? domain[1].toISOString() : domain[1],
+        range: scalesRef.current.xScale.range(),
+        width,
+        height
+      })
+    }
+    
     // Always draw reference lines
     drawReferenceLines(
       refLinesLayer,
@@ -86,6 +102,33 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
     dimensions,
     margins
   ])
+
+  // Helper function to update reference lines in both UIStore and FileStore
+  const updateReferenceLines = (updatedReferenceLines: typeof editingChart.referenceLines) => {
+    if (!setEditingChart) return
+    
+    const currentChart = editingChartRef.current
+    
+    // Update UIStore
+    setEditingChart({
+      ...currentChart,
+      referenceLines: updatedReferenceLines
+    })
+    
+    // Also update FileStore for immediate reflection in Chart Grid
+    const fileId = currentChart.fileId
+    if (fileId) {
+      const currentFile = openTabs.find(tab => tab.id === fileId)
+      if (currentFile && currentFile.charts) {
+        const updatedCharts = currentFile.charts.map(c => 
+          c.id === currentChart.id 
+            ? { ...c, referenceLines: updatedReferenceLines }
+            : c
+        )
+        updateFileCharts(fileId, updatedCharts)
+      }
+    }
+  }
 
   const drawReferenceLines = (
     g: d3.Selection<SVGGElement, unknown, null, undefined>, 
@@ -134,23 +177,15 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
             endLineDrag()
             
             // Update the data model with the current chart state
-            if (setEditingChart) {
-              // Get the current reference lines from the ref to ensure we have the latest state
-              const currentChart = editingChartRef.current
-              const updatedReferenceLines = (currentChart.referenceLines || []).map((refLine) => 
-                refLine.id === line.id ? { ...refLine, value: newValue } : refLine
-              )
-              
-              setEditingChart({
-                ...currentChart,
-                referenceLines: updatedReferenceLines
-              })
-              
-              // Clear drag position after a small delay to ensure the update has been processed
-              setTimeout(() => {
-                clearLineDragPosition(line.id)
-              }, 100)
-            }
+            const currentChart = editingChartRef.current
+            const updatedReferenceLines = (currentChart.referenceLines || []).map((refLine) => 
+              refLine.id === line.id ? { ...refLine, value: newValue } : refLine
+            )
+            
+            updateReferenceLines(updatedReferenceLines)
+            
+            // Clear drag position immediately
+            clearLineDragPosition(line.id)
           },
           isLabelDragging: isLabelDragging(line.id),
           labelDragPosition: getLabelDragPosition(line.id),
@@ -167,24 +202,17 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
             endLabelDrag()
             
             // Update the data model with label offset
-            if (setEditingChart) {
-              const currentChart = editingChartRef.current
-              const updatedReferenceLines = (currentChart.referenceLines || []).map((refLine) => 
-                refLine.id === line.id 
-                  ? { ...refLine, labelOffset: { x: offsetX, y: offsetY } } 
-                  : refLine
-              )
-              
-              setEditingChart({
-                ...currentChart,
-                referenceLines: updatedReferenceLines
-              })
-              
-              // Clear drag position
-              setTimeout(() => {
-                clearLabelDragPosition(line.id)
-              }, 100)
-            }
+            const currentChart = editingChartRef.current
+            const updatedReferenceLines = (currentChart.referenceLines || []).map((refLine) => 
+              refLine.id === line.id 
+                ? { ...refLine, labelOffset: { x: offsetX, y: offsetY } } 
+                : refLine
+            )
+            
+            updateReferenceLines(updatedReferenceLines)
+            
+            // Clear drag position immediately
+            clearLabelDragPosition(line.id)
           }
         })
       } else if (line.type === "horizontal") {
@@ -203,23 +231,15 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
             endLineDrag()
             
             // Update the data model with the current chart state
-            if (setEditingChart) {
-              // Get the current reference lines from the ref to ensure we have the latest state
-              const currentChart = editingChartRef.current
-              const updatedReferenceLines = (currentChart.referenceLines || []).map((refLine) => 
-                refLine.id === line.id ? { ...refLine, value: newValue } : refLine
-              )
-              
-              setEditingChart({
-                ...currentChart,
-                referenceLines: updatedReferenceLines
-              })
-              
-              // Clear drag position after a small delay to ensure the update has been processed
-              setTimeout(() => {
-                clearLineDragPosition(line.id)
-              }, 100)
-            }
+            const currentChart = editingChartRef.current
+            const updatedReferenceLines = (currentChart.referenceLines || []).map((refLine) => 
+              refLine.id === line.id ? { ...refLine, value: newValue } : refLine
+            )
+            
+            updateReferenceLines(updatedReferenceLines)
+            
+            // Clear drag position immediately
+            clearLineDragPosition(line.id)
           },
           isLabelDragging: isLabelDragging(line.id),
           labelDragPosition: getLabelDragPosition(line.id),
@@ -236,24 +256,17 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
             endLabelDrag()
             
             // Update the data model with label offset
-            if (setEditingChart) {
-              const currentChart = editingChartRef.current
-              const updatedReferenceLines = (currentChart.referenceLines || []).map((refLine) => 
-                refLine.id === line.id 
-                  ? { ...refLine, labelOffset: { x: offsetX, y: offsetY } } 
-                  : refLine
-              )
-              
-              setEditingChart({
-                ...currentChart,
-                referenceLines: updatedReferenceLines
-              })
-              
-              // Clear drag position
-              setTimeout(() => {
-                clearLabelDragPosition(line.id)
-              }, 100)
-            }
+            const currentChart = editingChartRef.current
+            const updatedReferenceLines = (currentChart.referenceLines || []).map((refLine) => 
+              refLine.id === line.id 
+                ? { ...refLine, labelOffset: { x: offsetX, y: offsetY } } 
+                : refLine
+            )
+            
+            updateReferenceLines(updatedReferenceLines)
+            
+            // Clear drag position immediately
+            clearLabelDragPosition(line.id)
           }
         })
       }

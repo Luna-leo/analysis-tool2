@@ -83,9 +83,25 @@ export function VerticalReferenceLine({
       }
       xPos = (xScale as d3.ScaleLinear<number, number>)(paramValue)
     }
+    
+    // Debug log initial position
+    if (process.env.NODE_ENV === 'development' && !isDragging) {
+      const domain = xScale.domain()
+      console.log('[VerticalReferenceLine] Initial position:', {
+        lineId: line.id,
+        lineValue: line.value,
+        xAxisType: xAxisType || "datetime",
+        xPos,
+        xScaleDomain: domain,
+        domainStart: domain[0] instanceof Date ? domain[0].toISOString() : domain[0],
+        domainEnd: domain[1] instanceof Date ? domain[1].toISOString() : domain[1],
+        xScaleRange: xScale.range()
+      })
+    }
   }
   
-  if (!isNaN(xPos) && xPos >= 0 && xPos <= width) {
+  // Always render the line, even if it's outside the visible area
+  if (!isNaN(xPos)) {
     // Update or create main line
     let mainLine = group.select<SVGLineElement>(".main-line")
     if (mainLine.empty()) {
@@ -105,6 +121,8 @@ export function VerticalReferenceLine({
       .attr("stroke", color)
       .attr("stroke-width", 1)
       .attr("stroke-dasharray", strokeDasharray)
+      // Hide line if too far outside visible area
+      .style("display", (xPos < -50 || xPos > width + 50) ? "none" : "")
     
     // Update or create interactive area
     if (isInteractive) {
@@ -126,7 +144,25 @@ export function VerticalReferenceLine({
           }
         })
         .on("drag", function(event) {
-          const clampedX = Math.max(0, Math.min(width, event.x))
+          // Use d3.pointer to get accurate coordinates relative to the parent group
+          const [x, _] = d3.pointer(event, this.parentNode as SVGGElement)
+          const clampedX = Math.max(0, Math.min(width, x))
+          
+          // Debug logging
+          if (process.env.NODE_ENV === 'development') {
+            const domain = xScale.domain()
+            console.log('[VerticalReferenceLine] Drag:', {
+              eventX: event.x,
+              pointerX: x,
+              clampedX,
+              width,
+              xScaleDomain: domain,
+              domainStart: domain[0] instanceof Date ? domain[0].toISOString() : domain[0],
+              domainEnd: domain[1] instanceof Date ? domain[1].toISOString() : domain[1],
+              xScaleRange: xScale.range()
+            })
+          }
+          
           onDrag(clampedX)
           
           // Update visual elements directly without re-render
@@ -153,12 +189,38 @@ export function VerticalReferenceLine({
           }
         })
         .on("end", function(event) {
-          const clampedX = Math.max(0, Math.min(width, event.x))
+          // Use d3.pointer to get accurate coordinates relative to the parent group
+          const [x, _] = d3.pointer(event, this.parentNode as SVGGElement)
+          const clampedX = Math.max(0, Math.min(width, x))
           
           let newValue: string | number
           if ((xAxisType || "datetime") === "datetime") {
             const newDate = (xScale as d3.ScaleTime<number, number>).invert(clampedX)
-            newValue = formatDateToISOWithoutMillis(newDate)
+            
+            // Format date in local timezone to match the data
+            const localISOString = new Date(newDate.getTime() - newDate.getTimezoneOffset() * 60000)
+              .toISOString()
+              .slice(0, 19)
+            
+            // Debug logging
+            if (process.env.NODE_ENV === 'development') {
+              const domain = xScale.domain()
+              console.log('[VerticalReferenceLine] Drag end:', {
+                eventX: event.x,
+                pointerX: x,
+                clampedX,
+                newDate,
+                newDateLocal: newDate.toString(),
+                formattedDateUTC: formatDateToISOWithoutMillis(newDate),
+                formattedDateLocal: localISOString,
+                xScaleDomain: domain,
+                domainStart: domain[0] instanceof Date ? domain[0].toISOString() : domain[0],
+                domainEnd: domain[1] instanceof Date ? domain[1].toISOString() : domain[1],
+                xScaleRange: xScale.range()
+              })
+            }
+            
+            newValue = localISOString
           } else {
             // For time or parameter axis
             const numValue = (xScale as d3.ScaleLinear<number, number>).invert(clampedX)
@@ -186,6 +248,8 @@ export function VerticalReferenceLine({
         .attr("x2", xPos)
         .attr("y1", y1)
         .attr("y2", y2)
+        // Hide interactive area if line is too far outside visible area
+        .style("display", (xPos < -50 || xPos > width + 50) ? "none" : "")
     }
     
     // Update or create label - ensure it's always on top
@@ -237,12 +301,14 @@ export function VerticalReferenceLine({
             onLabelDragStart()
           })
           .on("drag", function(event) {
-            onLabelDrag(event.x, event.y)
+            // Use d3.pointer for label drag as well
+            const [x, y] = d3.pointer(event, this)
+            onLabelDrag(x, y)
             
             const g = d3.select(this)
             g.select(".line-label")
-              .attr("x", event.x)
-              .attr("y", event.y)
+              .attr("x", x)
+              .attr("y", y)
             
             // Update background position based on text
             const textBBox = (g.select(".line-label").node() as SVGTextElement).getBBox()
@@ -253,14 +319,17 @@ export function VerticalReferenceLine({
               .attr("height", textBBox.height + 4)
           })
           .on("end", function(event) {
+            // Use d3.pointer for accurate coordinates
+            const [x, y] = d3.pointer(event, this)
+            
             // Get the current line position from DOM
             const parentGroup = d3.select(this.parentNode as SVGGElement)
             const mainLine = parentGroup.select(".main-line")
             const lineX = parseFloat(mainLine.attr("x1"))
             
             // Calculate offset from actual line position
-            const offsetX = event.x - lineX
-            const offsetY = event.y
+            const offsetX = x - lineX
+            const offsetY = y
             
             onLabelDragEnd(offsetX, offsetY)
           })
