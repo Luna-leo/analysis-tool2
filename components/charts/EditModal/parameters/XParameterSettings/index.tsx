@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -24,6 +24,16 @@ interface XParameterSettingsProps {
 
 export function XParameterSettings({ editingChart, setEditingChart, selectedDataSourceItems }: XParameterSettingsProps) {
   const [isOpen, setIsOpen] = useState(true)
+
+  // Initialize label for datetime axis if missing
+  useEffect(() => {
+    if ((editingChart.xAxisType === "datetime" || !editingChart.xAxisType) && !editingChart.xLabel) {
+      setEditingChart({
+        ...editingChart,
+        xLabel: "Datetime"
+      })
+    }
+  }, [editingChart.xAxisType, editingChart.xLabel]) // Run when axis type or label changes
 
   // Generate auto label based on current parameter
   const getAutoLabel = () => {
@@ -107,17 +117,27 @@ export function XParameterSettings({ editingChart, setEditingChart, selectedData
                     if (newAxisType === "datetime") {
                       // Always use timestamp for datetime
                       newXParameter = "timestamp"
-                    } else if (editingChart.xAxisType === "datetime" && newAxisType !== "datetime") {
+                    } else if ((editingChart.xAxisType || "datetime") === "datetime" && (newAxisType === "time" || newAxisType === "parameter")) {
                       // Switching from datetime to parameter/time - clear timestamp parameter
                       newXParameter = ""
                     }
                     // Otherwise keep existing parameter
                     
-                    setEditingChart({
+                    const newChart = {
                       ...editingChart,
                       xAxisType: newAxisType,
                       xParameter: newXParameter,
-                    })
+                    }
+                    
+                    // Set xLabel for datetime if auto-update is enabled or label is empty
+                    if (newAxisType === "datetime" && (!editingChart.xLabel || (editingChart.autoUpdateXLabel ?? true))) {
+                      newChart.xLabel = "Datetime"
+                    } else if ((editingChart.xAxisType || "datetime") === "datetime" && newAxisType !== "datetime" && editingChart.xLabel === "Datetime") {
+                      // Clear the default "Datetime" label when switching away from datetime
+                      newChart.xLabel = ""
+                    }
+                    
+                    setEditingChart(newChart)
                   }}
                 >
                   <option value="datetime">Datetime</option>

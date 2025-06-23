@@ -417,7 +417,11 @@ export class AxisManager {
     
     // X-axis label with bounds checking
     const showXLabel = editingChart.showXLabel ?? true
-    if (editingChart.xLabel && showXLabel) {
+    // Use fallback "Datetime" label for datetime axis if no label is set
+    const effectiveXLabel = editingChart.xLabel || 
+      ((editingChart.xAxisType === "datetime" || !editingChart.xAxisType) ? "Datetime" : "")
+    
+    if (effectiveXLabel && showXLabel) {
       let labelX: number
       let labelY: number
       
@@ -440,7 +444,7 @@ export class AxisManager {
         .attr("y", labelY)
         .style("font-size", "12px")
         .style("cursor", "move")
-        .text(editingChart.xLabel)
+        .text(effectiveXLabel)
     }
     
     // Y-axis label with bounds checking

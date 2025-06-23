@@ -2,7 +2,7 @@ import type { ChartComponent } from '@/types'
 
 export class ChartOperations {
   static duplicate(chart: ChartComponent): ChartComponent {
-    return {
+    const duplicated = {
       ...chart,
       id: `chart_${Date.now()}`,
       title: `${chart.title} (コピー)`,
@@ -11,6 +11,13 @@ export class ChartOperations {
       xParameter: chart.xParameter,
       plotStyles: chart.plotStyles  // Preserve plotStyles when duplicating
     }
+    
+    // Ensure xLabel is set for datetime axis
+    if ((duplicated.xAxisType === "datetime" || !duplicated.xAxisType) && !duplicated.xLabel) {
+      duplicated.xLabel = "Datetime"
+    }
+    
+    return duplicated
   }
   
   static insertAfter(

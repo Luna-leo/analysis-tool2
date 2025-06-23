@@ -155,32 +155,47 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   
   // Merge global chart settings with individual chart settings
   const mergedChart = useMemo(() => {
-    if (!chartSettings) return editingChart
+    let baseChart = editingChart
+    
+    // Initialize xLabel for datetime axis if missing
+    if ((baseChart.xAxisType === "datetime" || !baseChart.xAxisType) && !baseChart.xLabel) {
+      baseChart = {
+        ...baseChart,
+        xLabel: "Datetime"
+      }
+      
+      // Update the original chart if setEditingChart is available
+      if (setEditingChart) {
+        setEditingChart(baseChart)
+      }
+    }
+    
+    if (!chartSettings) return baseChart
     
     const merged = {
-      ...editingChart,
-      showLegend: chartSettings.showLegend !== undefined ? chartSettings.showLegend : editingChart.showLegend,
-      showTitle: chartSettings.showChartTitle !== undefined ? chartSettings.showChartTitle : editingChart.showTitle,
-      showXLabel: chartSettings.showXAxis !== undefined ? chartSettings.showXAxis : editingChart.showXLabel,
-      showYLabel: chartSettings.showYAxis !== undefined ? chartSettings.showYAxis : editingChart.showYLabel,
-      showGrid: chartSettings.showGrid !== undefined ? chartSettings.showGrid : editingChart.showGrid,
+      ...baseChart,
+      showLegend: chartSettings.showLegend !== undefined ? chartSettings.showLegend : baseChart.showLegend,
+      showTitle: chartSettings.showChartTitle !== undefined ? chartSettings.showChartTitle : baseChart.showTitle,
+      showXLabel: chartSettings.showXAxis !== undefined ? chartSettings.showXAxis : baseChart.showXLabel,
+      showYLabel: chartSettings.showYAxis !== undefined ? chartSettings.showYAxis : baseChart.showYLabel,
+      showGrid: chartSettings.showGrid !== undefined ? chartSettings.showGrid : baseChart.showGrid,
       margins: chartSettings.margins !== undefined ? 
         (typeof chartSettings.margins === 'object' && chartSettings.margins ? {
           top: typeof chartSettings.margins.top === 'number' ? chartSettings.margins.top : 20,
           right: typeof chartSettings.margins.right === 'number' ? chartSettings.margins.right : 20,
           bottom: typeof chartSettings.margins.bottom === 'number' ? chartSettings.margins.bottom : 40,
           left: typeof chartSettings.margins.left === 'number' ? chartSettings.margins.left : 40
-        } : editingChart.margins) : editingChart.margins,
-      xLabelOffset: chartSettings.xLabelOffset !== undefined ? chartSettings.xLabelOffset : editingChart.xLabelOffset,
-      yLabelOffset: chartSettings.yLabelOffset !== undefined ? chartSettings.yLabelOffset : editingChart.yLabelOffset,
-      // Always use the latest plotStyles and legendMode from editingChart
-      plotStyles: editingChart.plotStyles,
-      legendMode: editingChart.legendMode
+        } : baseChart.margins) : baseChart.margins,
+      xLabelOffset: chartSettings.xLabelOffset !== undefined ? chartSettings.xLabelOffset : baseChart.xLabelOffset,
+      yLabelOffset: chartSettings.yLabelOffset !== undefined ? chartSettings.yLabelOffset : baseChart.yLabelOffset,
+      // Always use the latest plotStyles and legendMode from baseChart
+      plotStyles: baseChart.plotStyles,
+      legendMode: baseChart.legendMode
     }
     
     
     return merged
-  }, [editingChart, chartSettings])
+  }, [editingChart, chartSettings, setEditingChart])
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
