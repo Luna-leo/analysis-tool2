@@ -6,8 +6,6 @@
 import { 
   AxisType, 
   TimeUnit, 
-  MarkerType, 
-  LineStyle, 
   ReferenceLine,
   InterlockDefinition
 } from './index'
@@ -99,6 +97,11 @@ export interface ChartComponent {
   // Core properties
   id: string
   title: string
+  /**
+   * @deprecated This property is not used. Actual chart data is loaded dynamically 
+   * via the useOptimizedChart hook based on data sources and parameters.
+   * This field is always initialized as an empty array and never populated.
+   */
   data: ChartData[]
   
   // Data configuration

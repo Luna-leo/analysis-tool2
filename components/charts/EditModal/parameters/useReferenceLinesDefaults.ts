@@ -1,15 +1,142 @@
 import { ChartComponent, EventInfo } from "@/types"
 import { formatDateTimeForInput } from "@/utils/dateUtils"
+import { useOptimizedChart } from "@/hooks/useOptimizedChart"
 
 export function useReferenceLinesDefaults(
   editingChart: ChartComponent,
   selectedDataSourceItems: EventInfo[]
 ) {
+  // Load actual chart data
+  const { data: chartData } = useOptimizedChart({
+    editingChart,
+    selectedDataSourceItems,
+    maxDataPoints: 10000 // We don't need all points, just enough to calculate range
+  })
 
   const getDefaultValues = () => {
     const now = new Date()
     let defaultXValue = ""
-    let defaultYValue = "50" // Always use midpoint of 0-100 range
+    let defaultYValue = ""
+
+    // Calculate default Y value based on Y-axis range
+    if (editingChart.yAxisParams && editingChart.yAxisParams.length > 0) {
+      // Debug logging
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[useReferenceLinesDefaults] Y-axis params:', editingChart.yAxisParams)
+        console.log('[useReferenceLinesDefaults] Actual chart data from useOptimizedChart:', {
+          hasData: !!chartData,
+          dataLength: chartData?.length || 0,
+          dataType: typeof chartData,
+          sampleData: chartData?.slice(0, 3),
+          chartId: editingChart.id,
+          chartTitle: editingChart.title
+        })
+      }
+      
+      // Find the first Y parameter with a manual range (auto = false)
+      const paramWithRange = editingChart.yAxisParams.find(param => 
+        param.range && 
+        param.range.auto === false && 
+        param.range.min !== undefined && 
+        param.range.max !== undefined
+      )
+      
+      if (paramWithRange && paramWithRange.range) {
+        // Use midpoint of the manual range
+        const midpoint = (paramWithRange.range.min + paramWithRange.range.max) / 2
+        defaultYValue = midpoint.toString()
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[useReferenceLinesDefaults] Found manual range:', paramWithRange.range, 'midpoint:', midpoint)
+        }
+      } else {
+        // If no manual range is set, try to calculate from actual chart data
+        if (chartData && chartData.length > 0) {
+          // Extract Y values from chart data
+          const yValues: number[] = []
+          
+          chartData.forEach((dataPoint: any, index: number) => {
+            // Debug first few data points
+            if (process.env.NODE_ENV === 'development' && index < 3) {
+              console.log('[useReferenceLinesDefaults] Actual data point:', index, dataPoint)
+            }
+            
+            // The chartData from useOptimizedChart has y values directly
+            if (typeof dataPoint.y === 'number') {
+              yValues.push(dataPoint.y)
+            }
+          })
+          
+          if (yValues.length > 0) {
+            // Calculate min and max from data
+            const min = Math.min(...yValues)
+            const max = Math.max(...yValues)
+            
+            // Apply nice rounding similar to D3's nice() function
+            const range = max - min
+            let niceMin = min
+            let niceMax = max
+            
+            if (range > 0) {
+              // Find a nice round interval
+              const power = Math.pow(10, Math.floor(Math.log10(range)))
+              const fraction = range / power
+              let niceFraction: number
+              
+              if (fraction <= 1) niceFraction = 1
+              else if (fraction <= 2) niceFraction = 2
+              else if (fraction <= 5) niceFraction = 5
+              else niceFraction = 10
+              
+              const niceInterval = niceFraction * power
+              
+              // Round min down and max up to nice values
+              niceMin = Math.floor(min / niceInterval) * niceInterval
+              niceMax = Math.ceil(max / niceInterval) * niceInterval
+              
+              // Ensure non-negative data doesn't get negative domain
+              if (min >= 0 && niceMin < 0) {
+                niceMin = 0
+              }
+            } else {
+              // All values are the same
+              const padding = Math.abs(min) * 0.1 || 1
+              niceMin = min - padding
+              niceMax = max + padding
+            }
+            
+            // Calculate midpoint
+            const midpoint = (niceMin + niceMax) / 2
+            defaultYValue = midpoint.toString()
+            
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[useReferenceLinesDefaults] Calculated Y range from data:', {
+                dataMin: min,
+                dataMax: max,
+                niceMin,
+                niceMax,
+                midpoint,
+                yValuesCount: yValues.length
+              })
+            }
+          } else {
+            // No valid Y values found in data
+            defaultYValue = "50"
+            
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[useReferenceLinesDefaults] No valid Y values in data, using default 50')
+            }
+          }
+        } else {
+          // No data available
+          defaultYValue = "50"
+          
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[useReferenceLinesDefaults] No chart data available, using default 50')
+          }
+        }
+      }
+    }
 
     // Calculate default X value based on chart's X-axis type
     const xAxisType = editingChart.xAxisType || "datetime"
