@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useMemo } from "react"
 import { Dialog, DialogContent, DialogDescription } from "@/components/ui/dialog"
 import { useUIStore } from "@/stores/useUIStore"
 import { useFileStore } from "@/stores/useFileStore"
@@ -294,6 +294,16 @@ export function ChartEditModal() {
   const currentFile = openTabs.find(tab => tab.id === targetFileId)
   const selectedDataSourceItems = currentFile?.selectedDataSources || []
   const allCharts = currentFile?.charts || []
+  
+  // Create a version of allCharts that includes the current editing state
+  const allChartsWithEditing = useMemo(() => {
+    if (!currentFile?.charts) return []
+    
+    return currentFile.charts.map(chart => 
+      chart.id === editingChart.id ? editingChart : chart
+    )
+  }, [currentFile?.charts, editingChart])
+  
   const currentLayoutSettings = layoutSettingsMap[targetFileId] || {
     columns: 2,
     rows: 2
@@ -487,7 +497,7 @@ export function ChartEditModal() {
                   {/* Chart grid */}
                   <div className="flex-1 overflow-hidden">
                     <ChartSelectionGrid
-                      charts={allCharts}
+                      charts={allChartsWithEditing}
                       columns={currentLayoutSettings.columns} // Use actual layout columns
                       currentChartId={editingChart.id}
                       selectedChartIds={selectedChartIds}
@@ -508,7 +518,7 @@ export function ChartEditModal() {
         onOpenChange={setBulkApplyDialogOpen}
         selectedChartIds={selectedChartIds}
         currentChart={editingChart}
-        allCharts={allCharts}
+        allCharts={allChartsWithEditing}
         onApply={(settings) => handleBulkApply(settings)}
       />
       
