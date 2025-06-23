@@ -120,32 +120,38 @@ export function ChartEditModal() {
   // Create a version of allCharts that includes the current editing state
   // This must be called before any conditional returns to maintain hooks order
   const allChartsWithEditing = useMemo(() => {
-    console.log('[DEBUG] allChartsWithEditing calculation:', {
-      hasCurrentFile: !!currentFile,
-      hasCharts: !!currentFile?.charts,
-      chartsLength: currentFile?.charts?.length,
-      hasEditingChart: !!editingChart,
-      editingChartId: editingChart?.id,
-      editingChartTitle: editingChart?.title,
-      targetFileId,
-      currentFileId: currentFile?.id
-    })
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[DEBUG] allChartsWithEditing calculation:', {
+        hasCurrentFile: !!currentFile,
+        hasCharts: !!currentFile?.charts,
+        chartsLength: currentFile?.charts?.length,
+        hasEditingChart: !!editingChart,
+        editingChartId: editingChart?.id,
+        editingChartTitle: editingChart?.title,
+        targetFileId,
+        currentFileId: currentFile?.id
+      })
+    }
     
     if (!currentFile?.charts || !editingChart) return []
     
     const result = currentFile.charts.map(chart => {
       const isMatch = chart.id === editingChart.id
       if (isMatch) {
-        console.log('[DEBUG] Updating chart:', {
-          chartId: chart.id,
-          oldTitle: chart.title,
-          newTitle: editingChart.title
-        })
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[DEBUG] Updating chart:', {
+            chartId: chart.id,
+            oldTitle: chart.title,
+            newTitle: editingChart.title
+          })
+        }
       }
       return isMatch ? { ...editingChart } : chart
     })
     
-    console.log('[DEBUG] allChartsWithEditing result:', result.map(c => ({ id: c.id, title: c.title })))
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[DEBUG] allChartsWithEditing result:', result.map(c => ({ id: c.id, title: c.title })))
+    }
     
     return result
   }, [
@@ -351,13 +357,15 @@ export function ChartEditModal() {
   }
 
   const handleSetSelectedDataSourceItems = (items: React.SetStateAction<EventInfo[]>) => {
-    console.log('[ChartEditModal] handleSetSelectedDataSourceItems called:', {
-      targetFileId,
-      editingChartId: editingChart.id,
-      editingChartFileId: editingChart.fileId,
-      itemsType: typeof items,
-      itemsCount: Array.isArray(items) ? items.length : 'function'
-    })
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[ChartEditModal] handleSetSelectedDataSourceItems called:', {
+        targetFileId,
+        editingChartId: editingChart.id,
+        editingChartFileId: editingChart.fileId,
+        itemsType: typeof items,
+        itemsCount: Array.isArray(items) ? items.length : 'function'
+      })
+    }
     
     if (typeof items === 'function') {
       const newItems = items(selectedDataSourceItems)
@@ -538,12 +546,14 @@ export function ChartEditModal() {
                   {/* Chart grid */}
                   <div className="flex-1 overflow-hidden">
                     {(() => {
-                      console.log('[DEBUG] Passing to ChartSelectionGrid:', {
-                        chartsLength: allChartsWithEditing.length,
-                        charts: allChartsWithEditing.map(c => ({ id: c.id, title: c.title })),
-                        currentChartId: editingChart.id,
-                        previewMode
-                      })
+                      if (process.env.NODE_ENV === 'development') {
+                        console.log('[DEBUG] Passing to ChartSelectionGrid:', {
+                          chartsLength: allChartsWithEditing.length,
+                          charts: allChartsWithEditing.map(c => ({ id: c.id, title: c.title })),
+                          currentChartId: editingChart.id,
+                          previewMode
+                        })
+                      }
                       return null
                     })()}
                     <ChartSelectionGrid

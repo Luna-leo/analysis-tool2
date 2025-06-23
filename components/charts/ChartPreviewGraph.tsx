@@ -1156,7 +1156,9 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         if (!arePlotStylesEqual(prevRenderDeps.current.plotStyles, currentDeps.plotStyles)) changes.push('plotStyles')
         if (JSON.stringify(prevRenderDeps.current.computedMargins) !== JSON.stringify(currentDeps.computedMargins)) changes.push('computedMargins')
         
-        console.log(`[Chart ${chartRenderProps.id}] Render triggered by changes in:`, changes)
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[Chart ${chartRenderProps.id}] Render triggered by changes in:`, changes)
+        }
       }
       
       prevRenderDeps.current = currentDeps
