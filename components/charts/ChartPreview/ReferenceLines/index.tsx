@@ -83,7 +83,8 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
     draggingLabel,
     svgRef,
     scalesRef,
-    dimensions
+    dimensions,
+    margins
   ])
 
   const drawReferenceLines = (

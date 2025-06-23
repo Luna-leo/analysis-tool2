@@ -215,7 +215,7 @@ export const OptimizedChartPreview = React.memo(({
           opacity: isVisible ? 1 : 0.1 
         }} 
       />
-      {!isLoadingData && hasBeenVisible && (
+      {!isLoadingData && hasBeenVisible && scalesRef.current.xScale && scalesRef.current.yScale && (
         <ReferenceLines
           svgRef={svgRef}
           editingChart={editingChart}

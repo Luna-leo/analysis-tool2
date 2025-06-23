@@ -556,6 +556,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       currentScalesRef.current = { xScale: null, yScale: null }
       pendingZoomTransform.current = null
       isWaitingForNewDataRef.current = true // Mark that we're waiting for new data
+      setScalesReady(false) // Reset scales ready state for ReferenceLines
       
       // Reset zoom if available
       if (resetZoomRef.current) {
@@ -987,6 +988,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               currentScalesRef.current.yScale = baseScalesRef.current.yScale
               isInitialRenderComplete.current = true
               // Initial render complete, scales ready
+              setScalesReady(true) // Mark scales as ready for ReferenceLines
               
               // Apply pending zoom transform if any
               if (pendingZoomTransform.current) {
@@ -1295,7 +1297,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           dataSourceStyles={dataSourceStyles}
         />
       )}
-      {!isLoadingData && (
+      {!isLoadingData && scalesReady && currentScalesRef.current.xScale && currentScalesRef.current.yScale && (
         <ReferenceLines
           svgRef={svgRef}
           editingChart={mergedChart}

@@ -31,6 +31,18 @@ interface ChartPreviewProps {
 }
 
 export const ChartPreview = ({ editingChart, selectedDataSourceItems, setEditingChart, dataSourceStyles, chartSettings, enableZoom = true, enablePan = true, zoomMode = 'auto' }: ChartPreviewProps) => {
+  
+  // Debug logging for reference lines
+  React.useEffect(() => {
+    if (process.env.NODE_ENV === 'development' && editingChart?.referenceLines?.length) {
+      console.log('[ChartPreview] Rendering with Reference Lines:', {
+        chartId: editingChart.id,
+        chartTitle: editingChart.title,
+        referenceLines: editingChart.referenceLines
+      })
+    }
+  }, [editingChart?.referenceLines])
+  
   return (
     <div className="w-full h-full flex flex-col">
       <ChartPreviewGraph

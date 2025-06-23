@@ -156,6 +156,15 @@ const ChartCardComponent = ({
       ...chart,
       fileId: chart.fileId || fileId
     }
+    
+    // Debug log for reference lines
+    if (process.env.NODE_ENV === 'development' && chart.referenceLines?.length) {
+      console.log('[ChartCard] Opening edit modal with chart:', {
+        chartId: chart.id,
+        referenceLines: chart.referenceLines
+      })
+    }
+    
     setEditingChartWithIndex(chartWithFileId, index)
     setEditModalOpen(true)
   }, [setEditingChartWithIndex, setEditModalOpen, chart, index, fileId])

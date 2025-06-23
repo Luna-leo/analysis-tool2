@@ -202,6 +202,14 @@ export function ChartEditModal() {
         updatedCharts = [...currentCharts, updatedChart]
       }
       
+      // Debug log for reference lines
+      if (process.env.NODE_ENV === 'development' && updatedChart.referenceLines?.length) {
+        console.log('[ChartEditModal] Saving chart with Reference Lines:', {
+          chartId: updatedChart.id,
+          referenceLines: updatedChart.referenceLines
+        })
+      }
+      
       // Save to file store
       updateFileCharts(currentFile.id, updatedCharts)
     }

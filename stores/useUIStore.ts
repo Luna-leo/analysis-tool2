@@ -69,11 +69,21 @@ export const useUIStore = create<UIStore>()(
       setHoveredChart: (chartId) => set({ hoveredChart: chartId }),
       setEditingChart: (chart) => {
         // Force a new object reference to ensure React detects the change
-        set({ editingChart: chart ? { ...chart } : null })
+        // Deep copy referenceLines array to preserve nested data
+        set({ 
+          editingChart: chart ? {
+            ...chart,
+            referenceLines: chart.referenceLines ? [...chart.referenceLines] : []
+          } : null 
+        })
       },
       setEditingChartWithIndex: (chart, index) => set({ 
         // Force a new object reference to ensure React detects the change
-        editingChart: chart ? { ...chart } : null, 
+        // Deep copy referenceLines array to preserve nested data
+        editingChart: chart ? {
+          ...chart,
+          referenceLines: chart.referenceLines ? [...chart.referenceLines] : []
+        } : null, 
         editingChartIndex: index 
       }),
       navigateToNextChart: (charts) => {
@@ -83,7 +93,11 @@ export const useUIStore = create<UIStore>()(
           const nextChart = charts[currentIndex + 1]
           set({ 
             // Force a new object reference to ensure React detects the change
-            editingChart: { ...nextChart }, 
+            // Deep copy referenceLines array to preserve nested data
+            editingChart: {
+              ...nextChart,
+              referenceLines: nextChart.referenceLines ? [...nextChart.referenceLines] : []
+            }, 
             editingChartIndex: currentIndex + 1 
           })
         }
@@ -95,7 +109,11 @@ export const useUIStore = create<UIStore>()(
           const prevChart = charts[currentIndex - 1]
           set({ 
             // Force a new object reference to ensure React detects the change
-            editingChart: { ...prevChart }, 
+            // Deep copy referenceLines array to preserve nested data
+            editingChart: {
+              ...prevChart,
+              referenceLines: prevChart.referenceLines ? [...prevChart.referenceLines] : []
+            }, 
             editingChartIndex: currentIndex - 1 
           })
         }
