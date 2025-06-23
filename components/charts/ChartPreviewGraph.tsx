@@ -278,8 +278,22 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     showMarkers: mergedChart.showMarkers,
     showLines: mergedChart.showLines,
     plotStyles: mergedChart.plotStyles,
-    // Add other properties that affect actual rendering
-  }), [mergedChart.id, mergedChart.type, mergedChart.showMarkers, mergedChart.showLines, mergedChart.plotStyles])
+    // Add display settings that affect rendering
+    showTitle: mergedChart.showTitle,
+    showGrid: mergedChart.showGrid,
+    showXLabel: mergedChart.showXLabel,
+    showYLabel: mergedChart.showYLabel,
+  }), [
+    mergedChart.id, 
+    mergedChart.type, 
+    mergedChart.showMarkers, 
+    mergedChart.showLines, 
+    mergedChart.plotStyles,
+    mergedChart.showTitle,
+    mergedChart.showGrid,
+    mergedChart.showXLabel,
+    mergedChart.showYLabel
+  ])
   
 
   // Handle zoom transformation
@@ -1141,6 +1155,11 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     chartRenderProps.showMarkers,
     chartRenderProps.showLines,
     chartRenderProps.plotStyles,
+    // Display settings
+    chartRenderProps.showTitle,
+    chartRenderProps.showGrid,
+    chartRenderProps.showXLabel,
+    chartRenderProps.showYLabel,
     // margins are accessed directly from mergedChart in render function
     selectionState.isSelecting,
     selectionState.startX,
