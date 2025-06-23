@@ -414,15 +414,6 @@ export function ChartEditModal() {
                   selectedDataSourceItems={selectedDataSourceItems}
                   setEditingChart={setEditingChart}
                   dataSourceStyles={dataSourceStyles}
-                  chartSettings={chartSettingsMap[targetFileId] ? {
-                    ...chartSettingsMap[targetFileId],
-                    margins: chartSettingsMap[targetFileId].margins && typeof chartSettingsMap[targetFileId].margins === 'object' ? {
-                      top: typeof chartSettingsMap[targetFileId].margins!.top === 'number' ? chartSettingsMap[targetFileId].margins!.top : 20,
-                      right: typeof chartSettingsMap[targetFileId].margins!.right === 'number' ? chartSettingsMap[targetFileId].margins!.right : 20,
-                      bottom: typeof chartSettingsMap[targetFileId].margins!.bottom === 'number' ? chartSettingsMap[targetFileId].margins!.bottom : 40,
-                      left: typeof chartSettingsMap[targetFileId].margins!.left === 'number' ? chartSettingsMap[targetFileId].margins!.left : 40
-                    } : undefined
-                  } : undefined}
                   enableZoom={true}
                   enablePan={true}
                   zoomMode="auto"
