@@ -27,25 +27,25 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
     const height = window.innerHeight
     setWindowSize({ width, height })
     
-    // Generate particle data - reduced for performance
-    const newParticles = Array.from({ length: 10 }, (_, i) => ({
+    // Generate particle data - minimal for performance
+    const newParticles = Array.from({ length: 5 }, (_, i) => ({
       id: i,
-      size: Math.random() * 4 + 2,
+      size: Math.random() * 6 + 4,
       initialX: Math.random() * width,
       initialY: Math.random() * height,
       targetX: Math.random() * width,
       targetY: Math.random() * height,
-      duration: Math.random() * 15 + 15,
-      delay: Math.random() * 2
+      duration: Math.random() * 20 + 20,
+      delay: i * 0.5
     }))
     setParticles(newParticles)
   }, [])
 
   useEffect(() => {
-    const timer1 = setTimeout(() => setStage("expanding"), 600)
-    const timer2 = setTimeout(() => setStage("complete"), 1500)
-    const timer3 = setTimeout(() => setStage("fadeout"), 2700)
-    const timer4 = setTimeout(() => onComplete(), 3200)
+    const timer1 = setTimeout(() => setStage("expanding"), 1000)
+    const timer2 = setTimeout(() => setStage("complete"), 2000)
+    const timer3 = setTimeout(() => setStage("fadeout"), 3200)
+    const timer4 = setTimeout(() => onComplete(), 3700)
 
     return () => {
       clearTimeout(timer1)
@@ -84,8 +84,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                 animate={{
                   x: particle.targetX,
                   y: particle.targetY,
-                  scale: [0, 1, 1, 0],
-                  opacity: [0, 0.2, 0.2, 0]
+                  opacity: [0, 0.15, 0.15, 0]
                 }}
                 transition={{
                   duration: particle.duration,
@@ -114,7 +113,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
-                transition={{ duration: 0.5, type: "spring", stiffness: 200, damping: 25 }}
+                transition={{ duration: 0.6, type: "spring", stiffness: 120, damping: 20 }}
                 className="text-8xl font-bold bg-gradient-to-b from-white to-zinc-400 bg-clip-text text-transparent tracking-wider"
                 style={{
                   textShadow: "0 0 20px rgba(255, 255, 255, 0.3)",
@@ -145,7 +144,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                 <motion.div
                   initial={{ width: 0, opacity: 0 }}
                   animate={{ width: "auto", opacity: 1 }}
-                  transition={{ duration: 0.6, ease: "easeOut" }}
+                  transition={{ duration: 0.7, ease: "easeOut" }}
                   className="overflow-hidden"
                 >
                   <span className="text-4xl font-medium text-zinc-300">hinami's</span>
@@ -164,7 +163,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                 <motion.div
                   initial={{ width: 0, opacity: 0 }}
                   animate={{ width: "auto", opacity: 1 }}
-                  transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
+                  transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
                   className="overflow-hidden"
                 >
                   <span className="text-4xl font-medium text-zinc-300">nalysis</span>
