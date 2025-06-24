@@ -59,7 +59,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
     <AnimatePresence>
       {stage !== "fadeout" && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-800"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -70,7 +70,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
             {particles.map((particle) => (
               <motion.div
                 key={particle.id}
-                className="absolute bg-white/10 rounded-full"
+                className="absolute bg-white/5 rounded-full blur-sm"
                 style={{
                   width: particle.size,
                   height: particle.size,
@@ -85,7 +85,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                   x: particle.targetX,
                   y: particle.targetY,
                   scale: [0, 1, 1, 0],
-                  opacity: [0, 0.5, 0.5, 0]
+                  opacity: [0, 0.2, 0.2, 0]
                 }}
                 transition={{
                   duration: particle.duration,
@@ -98,15 +98,25 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
             ))}
           </div>
           
-          {/* Animated gradient overlay */}
+          {/* Subtle grid pattern overlay */}
+          <div 
+            className="absolute inset-0 opacity-5"
+            style={{
+              backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                               linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
+              backgroundSize: '50px 50px'
+            }}
+          />
+          
+          {/* Animated gradient overlay - monochrome */}
           <motion.div
-            className="absolute inset-0 opacity-30"
+            className="absolute inset-0 opacity-20"
             animate={{
               background: [
-                "radial-gradient(circle at 20% 50%, rgba(147, 51, 234, 0.3) 0%, transparent 50%)",
-                "radial-gradient(circle at 80% 50%, rgba(59, 130, 246, 0.3) 0%, transparent 50%)",
-                "radial-gradient(circle at 50% 50%, rgba(147, 51, 234, 0.3) 0%, transparent 50%)",
-                "radial-gradient(circle at 20% 50%, rgba(147, 51, 234, 0.3) 0%, transparent 50%)",
+                "radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%)",
+                "radial-gradient(circle at 80% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%)",
+                "radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%)",
+                "radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%)",
               ]
             }}
             transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
@@ -120,10 +130,10 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ duration: 0.6, type: "spring", stiffness: 260, damping: 20 }}
-                className="text-8xl font-bold bg-gradient-to-r from-purple-400 via-blue-400 to-purple-400 bg-clip-text text-transparent tracking-wider"
+                className="text-8xl font-bold bg-gradient-to-b from-white to-zinc-400 bg-clip-text text-transparent tracking-wider"
                 style={{
-                  textShadow: "0 0 30px rgba(147, 51, 234, 0.8), 0 0 60px rgba(59, 130, 246, 0.5)",
-                  filter: "drop-shadow(0 0 20px rgba(147, 51, 234, 0.8))"
+                  textShadow: "0 0 40px rgba(255, 255, 255, 0.5), 0 0 80px rgba(255, 255, 255, 0.3)",
+                  filter: "drop-shadow(0 0 30px rgba(255, 255, 255, 0.4))"
                 }}
               >
                 CAA
@@ -139,7 +149,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                   transition={{ duration: 0.5, ease: "easeInOut" }}
                   className="text-6xl font-bold text-white"
                   style={{
-                    textShadow: "0 0 20px rgba(147, 51, 234, 0.8)",
+                    textShadow: "0 0 20px rgba(255, 255, 255, 0.5)",
                   }}
                 >
                   C
@@ -150,7 +160,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                   transition={{ duration: 0.8, ease: "easeOut" }}
                   className="overflow-hidden"
                 >
-                  <span className="text-4xl font-medium text-white/90">hinami's</span>
+                  <span className="text-4xl font-medium text-zinc-300">hinami's</span>
                 </motion.div>
                 <motion.span
                   initial={{ marginLeft: 0 }}
@@ -158,7 +168,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                   transition={{ duration: 0.5, ease: "easeOut" }}
                   className="text-6xl font-bold text-white"
                   style={{
-                    textShadow: "0 0 20px rgba(147, 51, 234, 0.8)",
+                    textShadow: "0 0 20px rgba(255, 255, 255, 0.5)",
                   }}
                 >
                   A
@@ -169,7 +179,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                   transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
                   className="overflow-hidden"
                 >
-                  <span className="text-4xl font-medium text-white/90">nalysis</span>
+                  <span className="text-4xl font-medium text-zinc-300">nalysis</span>
                 </motion.div>
                 <motion.span
                   initial={{ marginLeft: 0 }}
@@ -177,7 +187,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                   transition={{ duration: 0.5, ease: "easeInOut" }}
                   className="text-6xl font-bold text-white"
                   style={{
-                    textShadow: "0 0 20px rgba(59, 130, 246, 0.8)",
+                    textShadow: "0 0 20px rgba(255, 255, 255, 0.5)",
                   }}
                 >
                   APP
@@ -193,20 +203,20 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                 transition={{ duration: 0.5 }}
                 className="text-center"
               >
-                <h1 className="text-5xl font-bold text-white mb-4">
+                <h1 className="text-5xl font-bold bg-gradient-to-b from-white to-zinc-400 bg-clip-text text-transparent mb-4">
                   Chinami's Analysis APP
                 </h1>
                 <motion.div
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
                   transition={{ duration: 0.8, ease: "easeOut" }}
-                  className="h-1 bg-gradient-to-r from-purple-400 via-blue-400 to-purple-400 rounded-full"
+                  className="h-1 bg-gradient-to-r from-zinc-600 via-white to-zinc-600 rounded-full"
                 />
                 <motion.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.3, duration: 0.5 }}
-                  className="mt-4 text-lg text-white/70"
+                  className="mt-4 text-lg text-zinc-400"
                 >
                   Advanced Data Analysis & Visualization
                 </motion.p>
@@ -218,9 +228,9 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                   transition={{ delay: 0.8, duration: 0.5 }}
                   className="mt-8 flex items-center justify-center gap-2"
                 >
-                  <div className="w-2 h-2 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <div className="w-2 h-2 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <div className="w-2 h-2 bg-white/50 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                  <div className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <div className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <div className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                 </motion.div>
               </motion.div>
             )}
