@@ -59,7 +59,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
     <AnimatePresence>
       {stage !== "fadeout" && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-800"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-white via-zinc-50 to-zinc-100"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -70,7 +70,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
             {particles.map((particle) => (
               <motion.div
                 key={particle.id}
-                className="absolute bg-white/5 rounded-full"
+                className="absolute bg-black/5 rounded-full"
                 style={{
                   width: particle.size,
                   height: particle.size,
@@ -84,7 +84,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                 animate={{
                   x: particle.targetX,
                   y: particle.targetY,
-                  opacity: [0, 0.15, 0.15, 0]
+                  opacity: [0, 0.1, 0.1, 0]
                 }}
                 transition={{
                   duration: particle.duration,
@@ -102,7 +102,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
           <div 
             className="absolute inset-0 opacity-10"
             style={{
-              background: "radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 70%)",
+              background: "radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.05) 0%, transparent 70%)",
             }}
           />
 
@@ -114,9 +114,9 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ duration: 0.6, type: "spring", stiffness: 120, damping: 20 }}
-                className="text-8xl font-bold bg-gradient-to-b from-white to-zinc-400 bg-clip-text text-transparent tracking-wider"
+                className="text-8xl font-bold bg-gradient-to-b from-zinc-900 to-zinc-600 bg-clip-text text-transparent tracking-wider"
                 style={{
-                  textShadow: "0 0 20px rgba(255, 255, 255, 0.3)",
+                  textShadow: "0 0 20px rgba(0, 0, 0, 0.2)",
                   willChange: "transform"
                 }}
               >
@@ -134,9 +134,9 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                   initial={{ scale: 1 }}
                   animate={{ scale: 1 }}
                   transition={{ duration: 0.4, ease: "easeOut" }}
-                  className="text-6xl font-bold text-white"
+                  className="text-6xl font-bold text-zinc-900"
                   style={{
-                    textShadow: "0 0 10px rgba(255, 255, 255, 0.3)",
+                    textShadow: "0 0 10px rgba(0, 0, 0, 0.1)",
                   }}
                 >
                   C
@@ -147,15 +147,15 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                   transition={{ duration: 0.7, ease: "easeOut" }}
                   className="overflow-hidden"
                 >
-                  <span className="text-4xl font-medium text-zinc-300">hinami's</span>
+                  <span className="text-4xl font-medium text-zinc-600">hinami's</span>
                 </motion.div>
                 <motion.span
                   initial={{ marginLeft: 0 }}
                   animate={{ marginLeft: "0.5rem" }}
                   transition={{ duration: 0.3, ease: "easeOut" }}
-                  className="text-6xl font-bold text-white"
+                  className="text-6xl font-bold text-zinc-900"
                   style={{
-                    textShadow: "0 0 10px rgba(255, 255, 255, 0.3)",
+                    textShadow: "0 0 10px rgba(0, 0, 0, 0.1)",
                   }}
                 >
                   A
@@ -166,15 +166,15 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                   transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
                   className="overflow-hidden"
                 >
-                  <span className="text-4xl font-medium text-zinc-300">nalysis</span>
+                  <span className="text-4xl font-medium text-zinc-600">nalysis</span>
                 </motion.div>
                 <motion.span
                   initial={{ marginLeft: 0 }}
                   animate={{ marginLeft: "0.5rem" }}
                   transition={{ duration: 0.3, ease: "easeInOut" }}
-                  className="text-6xl font-bold text-white"
+                  className="text-6xl font-bold text-zinc-900"
                   style={{
-                    textShadow: "0 0 10px rgba(255, 255, 255, 0.3)",
+                    textShadow: "0 0 10px rgba(0, 0, 0, 0.1)",
                   }}
                 >
                   APP
@@ -190,20 +190,20 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                 transition={{ duration: 0.5 }}
                 className="text-center"
               >
-                <h1 className="text-5xl font-bold bg-gradient-to-b from-white to-zinc-400 bg-clip-text text-transparent mb-4">
+                <h1 className="text-5xl font-bold bg-gradient-to-b from-zinc-900 to-zinc-600 bg-clip-text text-transparent mb-4">
                   Chinami's Analysis APP
                 </h1>
                 <motion.div
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
                   transition={{ duration: 0.8, ease: "easeOut" }}
-                  className="h-1 bg-gradient-to-r from-zinc-600 via-white to-zinc-600 rounded-full"
+                  className="h-1 bg-gradient-to-r from-zinc-300 via-zinc-900 to-zinc-300 rounded-full"
                 />
                 <motion.p
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.3, duration: 0.5 }}
-                  className="mt-4 text-lg text-zinc-400"
+                  className="mt-4 text-lg text-zinc-600"
                 >
                   Advanced Data Analysis & Visualization
                 </motion.p>
@@ -215,9 +215,9 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                   transition={{ delay: 0.8, duration: 0.5 }}
                   className="mt-8 flex items-center justify-center gap-2"
                 >
-                  <div className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                  <div className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                  <div className="w-2 h-2 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                  <div className="w-2 h-2 bg-zinc-600 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                  <div className="w-2 h-2 bg-zinc-600 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                  <div className="w-2 h-2 bg-zinc-600 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
                 </motion.div>
               </motion.div>
             )}
