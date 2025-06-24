@@ -1741,6 +1741,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
             scalesRef={scalesToUse}
             dimensions={dimensions}
             margins={computedMargins}
+            zoomVersion={zoomVersion}
           />
         ) : null;
       })()}

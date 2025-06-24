@@ -18,9 +18,10 @@ interface ReferenceLinesProps {
   }>
   dimensions?: { width: number; height: number }
   margins?: { top: number; right: number; bottom: number; left: number }
+  zoomVersion?: number
 }
 
-export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRef, dimensions, margins }: ReferenceLinesProps) {
+export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRef, dimensions, margins, zoomVersion }: ReferenceLinesProps) {
   const { updateFileCharts, openTabs } = useFileStore()
   
   const {
@@ -63,9 +64,11 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
       refLinesLayer = svg
         .append<SVGGElement>("g")
         .attr("class", "reference-lines-layer")
-        .attr("transform", `translate(${margin.left},${margin.top})`)
         .style("pointer-events", isInteractive ? "auto" : "none")
     }
+    
+    // Update transform to match the current margin (this ensures lines stay aligned with the chart)
+    refLinesLayer.attr("transform", `translate(${margin.left},${margin.top})`)
     
     // Always bring reference lines layer to front
     refLinesLayer.raise()
@@ -100,7 +103,8 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
     svgRef,
     scalesRef,
     dimensions,
-    margins
+    margins,
+    zoomVersion
   ])
 
   // Helper function to update reference lines in both UIStore and FileStore
