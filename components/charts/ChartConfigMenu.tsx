@@ -23,6 +23,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { useChartConfigExport } from '@/hooks/useChartConfigExport'
+import { ExportConfigDialog } from './ExportConfigDialog'
 import type { ChartComponent, LayoutSettings, ChartSettings, EventInfo } from '@/types'
 import type { ChartGridConfig } from '@/types/chart-config'
 
@@ -52,6 +53,7 @@ export function ChartConfigMenu({
   const [presetName, setPresetName] = useState('')
   const [presetsOpen, setPresetsOpen] = useState(false)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
+  const [exportDialogOpen, setExportDialogOpen] = useState(false)
   const [importMode, setImportMode] = useState<'overwrite' | 'new-page'>('overwrite')
   const [newPageName, setNewPageName] = useState('')
   const [pendingImportConfig, setPendingImportConfig] = useState<ChartGridConfig | null>(null)
@@ -75,8 +77,9 @@ export function ChartConfigMenu({
 
   const presetNames = Object.keys(presets)
 
-  const handleExport = () => {
-    exportConfig(fileId, fileName, layoutSettings, chartSettings, charts, selectedDataSources)
+  const handleExport = (customFilename?: string) => {
+    exportConfig(fileId, fileName, layoutSettings, chartSettings, charts, selectedDataSources, customFilename)
+    setExportDialogOpen(false)
   }
 
   const handleImportClick = () => {
@@ -148,7 +151,7 @@ export function ChartConfigMenu({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuItem onClick={handleExport} disabled={isExporting}>
+          <DropdownMenuItem onClick={() => setExportDialogOpen(true)} disabled={isExporting}>
             <Download className="h-4 w-4 mr-2" />
             Export Configuration
           </DropdownMenuItem>
@@ -306,6 +309,15 @@ export function ChartConfigMenu({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Export Configuration Dialog */}
+      <ExportConfigDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        onExport={handleExport}
+        defaultFilename={fileName}
+        isExporting={isExporting}
+      />
     </>
   )
 }

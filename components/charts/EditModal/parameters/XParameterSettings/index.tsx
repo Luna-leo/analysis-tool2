@@ -292,6 +292,73 @@ export function XParameterSettings({ editingChart, setEditingChart, selectedData
                 </TooltipProvider>
               </div>
             </div>
+            
+            {/* Third row: Axis display settings */}
+            <div className="flex gap-2 items-center">
+              <Label className="text-sm w-32">Axis Display</Label>
+              <div className="flex-1 flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="x-axis-ticks" className="text-xs text-muted-foreground">Ticks:</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Input
+                          id="x-axis-ticks"
+                          type="number"
+                          min={2}
+                          max={20}
+                          value={editingChart.xAxisTicks || 5}
+                          onChange={(e) => {
+                            const value = parseInt(e.target.value)
+                            if (!isNaN(value) && value >= 2 && value <= 20) {
+                              setEditingChart({
+                                ...editingChart,
+                                xAxisTicks: value,
+                              })
+                            }
+                          }}
+                          className="h-8 w-16 text-sm"
+                        />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Number of tick marks on X-axis (2-20)</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                {(editingChart.xAxisType === 'parameter' || editingChart.xAxisType === 'time') && (
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="x-axis-precision" className="text-xs text-muted-foreground">Decimal Places:</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Input
+                            id="x-axis-precision"
+                            type="number"
+                            min={0}
+                            max={10}
+                            value={editingChart.xAxisTickPrecision ?? 2}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value)
+                              if (!isNaN(value) && value >= 0 && value <= 10) {
+                                setEditingChart({
+                                  ...editingChart,
+                                  xAxisTickPrecision: value,
+                                })
+                              }
+                            }}
+                            className="h-8 w-16 text-sm"
+                          />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Number of decimal places in tick labels (0-10)</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </CollapsibleContent>
       </Collapsible>

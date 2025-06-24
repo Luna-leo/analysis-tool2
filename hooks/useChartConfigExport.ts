@@ -72,7 +72,8 @@ export function useChartConfigExport() {
     layoutSettings: LayoutSettings,
     chartSettings: ChartSettings,
     charts: ChartComponent[],
-    selectedDataSources?: EventInfo[]
+    selectedDataSources?: EventInfo[],
+    customFilename?: string
   ) => {
     setIsExporting(true)
 
@@ -106,12 +107,26 @@ export function useChartConfigExport() {
         }
       }
 
+      // Format timestamp as YYYY-MM-DD_HH-mm-ss
+      const now = new Date()
+      const timestamp = now.getFullYear() + '-' +
+        String(now.getMonth() + 1).padStart(2, '0') + '-' +
+        String(now.getDate()).padStart(2, '0') + '_' +
+        String(now.getHours()).padStart(2, '0') + '-' +
+        String(now.getMinutes()).padStart(2, '0') + '-' +
+        String(now.getSeconds()).padStart(2, '0')
+
+      // Use custom filename if provided, otherwise use fileName with timestamp
+      const downloadFilename = customFilename 
+        ? `${customFilename}.json`
+        : `${fileName}_${timestamp}.json`
+
       // Create blob and download
       const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `${fileId}_chartconfig_${Date.now()}.json`
+      a.download = downloadFilename
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
