@@ -1,7 +1,7 @@
 "use client"
 
-import React from "react"
-import { LayoutGrid } from "lucide-react"
+import React, { useState, useEffect } from "react"
+import { LayoutGrid, ChevronRight, ChevronDown, Eye, Sliders, Grid3x3, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import {
@@ -11,6 +11,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { useLayoutStore } from "@/stores/useLayoutStore"
 import { getDefaultChartSettings } from "@/utils/chart/marginCalculator"
 
@@ -21,6 +22,25 @@ interface LayoutSettingsProps {
 
 export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
   const { layoutSettingsMap, chartSettingsMap, updateLayoutSettings, updateChartSettings } = useLayoutStore()
+  
+  // Collapse states for sections
+  const [displayOpen, setDisplayOpen] = useState(false)
+  const [marginsOpen, setMarginsOpen] = useState(false)
+  
+  // Load collapse states from localStorage
+  useEffect(() => {
+    const savedStates = localStorage.getItem('layoutMenuCollapseStates')
+    if (savedStates) {
+      const states = JSON.parse(savedStates)
+      setDisplayOpen(states.display ?? false)
+      setMarginsOpen(states.margins ?? false)
+    }
+  }, [])
+  
+  // Save collapse states to localStorage
+  const saveCollapseStates = (display: boolean, margins: boolean) => {
+    localStorage.setItem('layoutMenuCollapseStates', JSON.stringify({ display, margins }))
+  }
   
   const defaultLayoutSettings = {
     showFileName: true,
@@ -88,6 +108,28 @@ export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
     })
   }
   
+  // Count active display options
+  const countActiveDisplayOptions = () => {
+    let count = 0
+    if (currentChartSettings.showLegend ?? true) count++
+    if (currentChartSettings.showChartTitle ?? true) count++
+    if (currentChartSettings.showGrid ?? true) count++
+    if (currentChartSettings.showXAxis ?? true) count++
+    if (currentChartSettings.showYAxis ?? true) count++
+    if (currentChartSettings.showXLabel ?? true) count++
+    if (currentChartSettings.showYLabel ?? true) count++
+    if (currentChartSettings.showMarkers ?? true) count++
+    if (currentChartSettings.showLines ?? true) count++
+    if (currentChartSettings.showTooltip ?? true) count++
+    return count
+  }
+  
+  // Reset all settings to defaults
+  const resetToDefaults = () => {
+    updateLayoutSettings(fileId, defaultLayoutSettings)
+    updateChartSettings(fileId, defaultChartSettings)
+  }
+  
   // Handle grid preset click and apply layout-specific margins
   const handleGridPreset = (columns: number, rows: number) => {
     updateLayoutSettings(fileId, { columns, rows })
@@ -119,13 +161,23 @@ export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
           <span className={size === "sm" ? "" : "text-sm font-medium"}>Layout</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-64">
-        <DropdownMenuLabel className="text-xs">Layout Settings</DropdownMenuLabel>
+      <DropdownMenuContent align="end" className="w-64 max-h-[80vh] overflow-y-auto">
+        <DropdownMenuLabel className="text-xs flex items-center gap-2">
+          <LayoutGrid className="h-3.5 w-3.5" />
+          Layout Settings
+        </DropdownMenuLabel>
         <DropdownMenuSeparator />
         
-        {/* Quick Grid Presets - At the top in a single row */}
-        <div className="px-3 py-2">
-          <span className="text-xs font-medium">Quick Grid Presets</span>
+        {/* Grid Layout Section - Always expanded */}
+        <div className="space-y-2">
+          <div className="px-3 pt-2 pb-1 flex items-center gap-2">
+            <Grid3x3 className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-xs font-medium">Grid Layout</span>
+          </div>
+          
+          {/* Quick Grid Presets */}
+          <div className="px-3">
+            <span className="text-xs text-muted-foreground">Quick Presets</span>
           <div className="flex gap-1.5 mt-2">
             <Button
               variant={isPresetActive(1, 1) ? "default" : "outline"}
@@ -172,14 +224,12 @@ export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
               4×4
             </Button>
           </div>
-        </div>
-
-        <DropdownMenuSeparator />
-        
-        {/* Grid Layout */}
-        <div className="px-3 py-2">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-xs font-medium">Grid</span>
+          </div>
+          
+          {/* Grid Controls */}
+          <div className="px-3 pb-2 space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs text-muted-foreground">Custom Grid</span>
             <div className="flex gap-2">
               <select
                 id="columns"
@@ -216,30 +266,52 @@ export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
             </div>
           </div>
           
-          {/* Pagination */}
-          <div className="flex items-center justify-between mt-2">
-            <label htmlFor="pagination" className="text-xs">
-              Pagination
-            </label>
-            <input
-              type="checkbox"
-              id="pagination"
-              checked={currentLayoutSettings.pagination ?? true}
-              onChange={(e) => {
-                updateLayoutSettings(fileId, {
-                  pagination: e.target.checked,
-                })
-              }}
-              className="rounded h-3.5 w-3.5"
-            />
+            {/* Pagination */}
+            <div className="flex items-center justify-between">
+              <label htmlFor="pagination" className="text-xs text-muted-foreground">
+                Pagination
+              </label>
+              <input
+                type="checkbox"
+                id="pagination"
+                checked={currentLayoutSettings.pagination ?? true}
+                onChange={(e) => {
+                  updateLayoutSettings(fileId, {
+                    pagination: e.target.checked,
+                  })
+                }}
+                className="rounded h-3.5 w-3.5"
+              />
+            </div>
           </div>
         </div>
 
         <DropdownMenuSeparator />
 
-        {/* Display Options */}
-        <div className="px-3 py-2 space-y-1.5">
-          <span className="text-xs font-medium">Display</span>
+        {/* Display Options - Collapsible */}
+        <Collapsible 
+          open={displayOpen} 
+          onOpenChange={(open) => {
+            setDisplayOpen(open)
+            saveCollapseStates(open, marginsOpen)
+          }}
+        >
+          <CollapsibleTrigger className="w-full px-3 py-2 flex items-center justify-between hover:bg-accent rounded-sm transition-colors">
+            <div className="flex items-center gap-2">
+              <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs font-medium">Display Options</span>
+              <span className="text-xs text-muted-foreground">({countActiveDisplayOptions()}/10)</span>
+            </div>
+            {displayOpen ? (
+              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+            )}
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="px-3 pb-2 space-y-1.5">
+          
+          {/* Basic Display Options */}
           <div className="flex items-center justify-between">
             <label htmlFor="showLegend" className="text-xs">
               Legend
@@ -272,14 +344,170 @@ export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
               className="rounded h-3.5 w-3.5"
             />
           </div>
-        </div>
+          
+          {/* Grid and Axes */}
+          <div className="flex items-center justify-between">
+            <label htmlFor="showGrid" className="text-xs">
+              Grid lines
+            </label>
+            <input
+              type="checkbox"
+              id="showGrid"
+              checked={currentChartSettings.showGrid ?? true}
+              onChange={(e) => {
+                updateChartSettings(fileId, {
+                  showGrid: e.target.checked,
+                })
+              }}
+              className="rounded h-3.5 w-3.5"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <label htmlFor="showXAxis" className="text-xs">
+              X-axis
+            </label>
+            <input
+              type="checkbox"
+              id="showXAxis"
+              checked={currentChartSettings.showXAxis ?? true}
+              onChange={(e) => {
+                updateChartSettings(fileId, {
+                  showXAxis: e.target.checked,
+                })
+              }}
+              className="rounded h-3.5 w-3.5"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <label htmlFor="showYAxis" className="text-xs">
+              Y-axis
+            </label>
+            <input
+              type="checkbox"
+              id="showYAxis"
+              checked={currentChartSettings.showYAxis ?? true}
+              onChange={(e) => {
+                updateChartSettings(fileId, {
+                  showYAxis: e.target.checked,
+                })
+              }}
+              className="rounded h-3.5 w-3.5"
+            />
+          </div>
+              
+              {/* Labels & Data Section within Display */}
+              <div className="pt-2 mt-2 border-t border-border/50">
+                <span className="text-xs font-medium text-muted-foreground">Labels & Data</span>
+              </div>
+          <div className="flex items-center justify-between">
+            <label htmlFor="showXLabel" className="text-xs">
+              X-axis label
+            </label>
+            <input
+              type="checkbox"
+              id="showXLabel"
+              checked={currentChartSettings.showXLabel ?? true}
+              onChange={(e) => {
+                updateChartSettings(fileId, {
+                  showXLabel: e.target.checked,
+                })
+              }}
+              className="rounded h-3.5 w-3.5"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <label htmlFor="showYLabel" className="text-xs">
+              Y-axis label
+            </label>
+            <input
+              type="checkbox"
+              id="showYLabel"
+              checked={currentChartSettings.showYLabel ?? true}
+              onChange={(e) => {
+                updateChartSettings(fileId, {
+                  showYLabel: e.target.checked,
+                })
+              }}
+              className="rounded h-3.5 w-3.5"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <label htmlFor="showMarkers" className="text-xs">
+              Data markers
+            </label>
+            <input
+              type="checkbox"
+              id="showMarkers"
+              checked={currentChartSettings.showMarkers ?? true}
+              onChange={(e) => {
+                updateChartSettings(fileId, {
+                  showMarkers: e.target.checked,
+                })
+              }}
+              className="rounded h-3.5 w-3.5"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <label htmlFor="showLines" className="text-xs">
+              Line connections
+            </label>
+            <input
+              type="checkbox"
+              id="showLines"
+              checked={currentChartSettings.showLines ?? true}
+              onChange={(e) => {
+                updateChartSettings(fileId, {
+                  showLines: e.target.checked,
+                })
+              }}
+              className="rounded h-3.5 w-3.5"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <label htmlFor="showTooltip" className="text-xs">
+              Tooltips
+            </label>
+            <input
+              type="checkbox"
+              id="showTooltip"
+              checked={currentChartSettings.showTooltip ?? true}
+              onChange={(e) => {
+                updateChartSettings(fileId, {
+                  showTooltip: e.target.checked,
+                })
+              }}
+              className="rounded h-3.5 w-3.5"
+            />
+          </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
 
         <DropdownMenuSeparator />
 
-        {/* Chart Margins */}
-        <div className="px-3 py-2 space-y-2">
-          <div>
-            <span className="text-xs font-medium">Grid-wide Chart Margins (px)</span>
+        {/* Margins & Spacing - Collapsible */}
+        <Collapsible 
+          open={marginsOpen} 
+          onOpenChange={(open) => {
+            setMarginsOpen(open)
+            saveCollapseStates(displayOpen, open)
+          }}
+        >
+          <CollapsibleTrigger className="w-full px-3 py-2 flex items-center justify-between hover:bg-accent rounded-sm transition-colors">
+            <div className="flex items-center gap-2">
+              <Sliders className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs font-medium">Margins & Spacing</span>
+            </div>
+            {marginsOpen ? (
+              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+            )}
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <div className="px-3 pb-2 space-y-2">
+              <div>
+                <span className="text-xs font-medium">Grid-wide Chart Margins (px)</span>
             <p className="text-xs text-muted-foreground mt-0.5">
               Apply to all charts in this grid
             </p>
@@ -396,16 +624,14 @@ export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
               />
             </div>
           </div>
-        </div>
-
-        <DropdownMenuSeparator />
-
-        {/* Axis Label Distance */}
-        <div className="px-3 py-2 space-y-2">
-          <span className="text-xs font-medium">Axis Label Distance (px)</span>
-          <p className="text-xs text-muted-foreground">
-            Adjust to avoid overlap with tick labels
-          </p>
+          
+          {/* Axis Label Distance */}
+          <div className="pt-2 mt-2 border-t border-border/50">
+            <span className="text-xs font-medium">Axis Label Distance (px)</span>
+            <p className="text-xs text-muted-foreground">
+              Adjust to avoid overlap with tick labels
+            </p>
+          </div>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label htmlFor="xLabelOffset" className="text-xs">X-axis label</label>
@@ -438,6 +664,23 @@ export function LayoutSettings({ fileId, size = "sm" }: LayoutSettingsProps) {
               />
             </div>
           </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+        
+        <DropdownMenuSeparator />
+        
+        {/* Reset Button */}
+        <div className="px-3 py-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full h-8 text-xs flex items-center justify-center gap-2 hover:bg-accent"
+            onClick={resetToDefaults}
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Reset to Defaults
+          </Button>
         </div>
       </DropdownMenuContent>
     </DropdownMenu>

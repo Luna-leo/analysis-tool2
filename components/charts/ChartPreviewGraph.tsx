@@ -40,6 +40,11 @@ interface ChartPreviewGraphProps {
     showGrid: boolean
     showLegend?: boolean
     showChartTitle?: boolean
+    showXLabel?: boolean
+    showYLabel?: boolean
+    showMarkers?: boolean
+    showLines?: boolean
+    showTooltip?: boolean
     margins?: {
       top: number
       right: number
@@ -181,9 +186,17 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       ...baseChart,
       showLegend: chartSettings.showLegend !== undefined ? chartSettings.showLegend : baseChart.showLegend,
       showTitle: chartSettings.showChartTitle !== undefined ? chartSettings.showChartTitle : baseChart.showTitle,
-      showXLabel: chartSettings.showXAxis !== undefined ? chartSettings.showXAxis : baseChart.showXLabel,
-      showYLabel: chartSettings.showYAxis !== undefined ? chartSettings.showYAxis : baseChart.showYLabel,
+      // Axes visibility controls both axis and labels
+      showXAxis: chartSettings.showXAxis !== undefined ? chartSettings.showXAxis : baseChart.showXAxis,
+      showYAxis: chartSettings.showYAxis !== undefined ? chartSettings.showYAxis : baseChart.showYAxis,
+      // Label visibility (separate from axis visibility)
+      showXLabel: chartSettings.showXLabel !== undefined ? chartSettings.showXLabel : baseChart.showXLabel,
+      showYLabel: chartSettings.showYLabel !== undefined ? chartSettings.showYLabel : baseChart.showYLabel,
       showGrid: chartSettings.showGrid !== undefined ? chartSettings.showGrid : baseChart.showGrid,
+      // Data display options
+      showMarkers: chartSettings.showMarkers !== undefined ? chartSettings.showMarkers : baseChart.showMarkers,
+      showLines: chartSettings.showLines !== undefined ? chartSettings.showLines : baseChart.showLines,
+      showTooltip: chartSettings.showTooltip !== undefined ? chartSettings.showTooltip : baseChart.showTooltip,
       margins: chartSettings.margins !== undefined ? 
         (typeof chartSettings.margins === 'object' && chartSettings.margins ? {
           top: typeof chartSettings.margins.top === 'number' ? chartSettings.margins.top : 20,

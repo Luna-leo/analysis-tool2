@@ -125,8 +125,11 @@ export interface ChartComponent {
   showMarkers?: boolean
   showLines?: boolean
   showGrid?: boolean
+  showXAxis?: boolean
+  showYAxis?: boolean
   showXLabel?: boolean
   showYLabel?: boolean
+  showTooltip?: boolean
   
   // Labels
   xLabel?: string
@@ -203,6 +206,11 @@ export interface ChartSettings {
   showGrid: boolean
   showLegend?: boolean
   showChartTitle?: boolean
+  showXLabel?: boolean
+  showYLabel?: boolean
+  showMarkers?: boolean
+  showLines?: boolean
+  showTooltip?: boolean
   margins?: ChartMargins | { top: string | number; right: string | number; bottom: string | number; left: string | number }
   xLabelOffset?: number
   yLabelOffset?: number

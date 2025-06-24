@@ -55,6 +55,11 @@ interface ChartCardProps {
     showGrid: boolean
     showLegend?: boolean
     showChartTitle?: boolean
+    showXLabel?: boolean
+    showYLabel?: boolean
+    showMarkers?: boolean
+    showLines?: boolean
+    showTooltip?: boolean
     margins?: {
       top: number
       right: number

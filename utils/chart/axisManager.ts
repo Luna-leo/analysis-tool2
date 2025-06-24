@@ -323,6 +323,8 @@ export class AxisManager {
     const yAxisTicks = editingChart.yAxisTicks || 5
     const xAxisTickPrecision = editingChart.xAxisTickPrecision ?? 2
     const yAxisTickPrecision = editingChart.yAxisTickPrecision ?? 2
+    const showXAxis = editingChart.showXAxis ?? true
+    const showYAxis = editingChart.showYAxis ?? true
     
     // Create X-axis
     let xAxis: d3.Axis<number | Date | { valueOf(): number }>
@@ -355,27 +357,41 @@ export class AxisManager {
     const yDomain = this.yScale.domain() as [number, number]
     const xAxisY = calculateXAxisPosition(yDomain, this.yScale, height)
     
-    // Render X-axis
-    const xAxisGroup = g.append("g")
-      .attr("class", "x-axis")
-      .attr("transform", `translate(0,${xAxisY})`)
-      .call(xAxis)
-    
-    xAxisGroup.selectAll("text")
-      .style("font-size", "12px")
+    // Render X-axis (only if showXAxis is true)
+    if (showXAxis) {
+      const xAxisGroup = g.append("g")
+        .attr("class", "x-axis")
+        .attr("transform", `translate(0,${xAxisY})`)
+        .call(xAxis)
+      
+      // Apply x-axis styling (consistent with redrawAxesWithScales)
+      xAxisGroup.select('.domain')
+        .style('stroke', '#9ca3af')  // Changed to darker gray for better visibility
+        .style('stroke-width', 1)
+      xAxisGroup.selectAll('.tick line')
+        .style('stroke', '#d1d5db')  // Slightly lighter for tick lines
+        .style('stroke-width', 1)
+      xAxisGroup.selectAll("text")
+        .style('fill', '#6b7280')
+        .style("font-size", "12px")
+    }
     
     // Add grid lines if enabled
     if (editingChart.showGrid) {
-      // X grid lines
+      // X grid lines - create separate axis object for grid
+      const xGridAxis = d3.axisBottom(this.xScale)
+        .ticks(xAxisTicks)
+        .tickSize(-height)
+        .tickFormat(() => '')
+      
       g.insert('g', ':first-child')
-        .attr('class', 'grid')
+        .attr('class', 'grid x-grid')
         .attr('transform', `translate(0,${height})`)
-        .call(xAxis
-          .tickSize(-height)
-          .tickFormat(() => '')
-        )
+        .call(xGridAxis)
         .style('stroke-dasharray', '3,3')
         .style('opacity', 0.3)
+        .select('.domain')
+        .style('opacity', 0) // Hide the domain line for grid
     }
     
     // Create and render Y-axis
@@ -383,24 +399,40 @@ export class AxisManager {
       .ticks(yAxisTicks)
       .tickFormat(d3.format(`.${yAxisTickPrecision}f`))
     
-    const yAxisGroup = g.append("g")
-      .attr("class", "y-axis")
-      .call(yAxis)
+    let yAxisGroup: d3.Selection<SVGGElement, unknown, null, undefined> | undefined
     
-    yAxisGroup.selectAll("text")
-      .style("font-size", "12px")
+    if (showYAxis) {
+      yAxisGroup = g.append("g")
+        .attr("class", "y-axis")
+        .call(yAxis)
+      
+      // Apply y-axis styling (consistent with redrawAxesWithScales)
+      yAxisGroup.select('.domain')
+        .style('stroke', '#9ca3af')  // Changed to darker gray for better visibility
+        .style('stroke-width', 1)
+      yAxisGroup.selectAll('.tick line')
+        .style('stroke', '#d1d5db')  // Slightly lighter for tick lines
+        .style('stroke-width', 1)
+      yAxisGroup.selectAll("text")
+        .style('fill', '#6b7280')
+        .style("font-size", "12px")
+    }
     
-    // Add grid lines if enabled
+    // Add Y grid lines if enabled
     if (editingChart.showGrid) {
-      // Y grid lines
+      // Y grid lines - create separate axis object for grid
+      const yGridAxis = d3.axisLeft(this.yScale)
+        .ticks(yAxisTicks)
+        .tickSize(-width)
+        .tickFormat(() => '')
+      
       g.insert('g', ':first-child')
-        .attr('class', 'grid')
-        .call(yAxis
-          .tickSize(-width)
-          .tickFormat(() => '')
-        )
+        .attr('class', 'grid y-grid')
+        .call(yGridAxis)
         .style('stroke-dasharray', '3,3')
         .style('opacity', 0.3)
+        .select('.domain')
+        .style('opacity', 0) // Hide the domain line for grid
     }
     
     // Return the Y-axis group for label positioning
@@ -708,9 +740,11 @@ export class AxisManager {
     const yAxisTicks = editingChart.yAxisTicks || 5
     const xAxisTickPrecision = editingChart.xAxisTickPrecision ?? 2
     const yAxisTickPrecision = editingChart.yAxisTickPrecision ?? 2
+    const showXAxis = editingChart.showXAxis ?? true
+    const showYAxis = editingChart.showYAxis ?? true
     
-    // Remove existing axes
-    g.selectAll('.x-axis, .y-axis').remove()
+    // Remove existing axes and grid lines
+    g.selectAll('.x-axis, .y-axis, .grid').remove()
     
     // Create X-axis
     let xAxis: d3.Axis<number | Date | { valueOf(): number }>
@@ -743,22 +777,24 @@ export class AxisManager {
     const yDomain = scales.yScale.domain() as [number, number]
     const xAxisY = calculateXAxisPosition(yDomain, scales.yScale, height)
     
-    // Render X-axis
-    const xAxisGroup = g.append('g')
-      .attr('class', 'x-axis')
-      .attr('transform', `translate(0,${xAxisY})`)
-      .call(xAxis)
-    
-    // Apply x-axis styling
-    xAxisGroup.select('.domain')
-      .style('stroke', '#e5e7eb')
-      .style('stroke-width', 1)
-    xAxisGroup.selectAll('.tick line')
-      .style('stroke', '#e5e7eb')
-      .style('stroke-width', 1)
-    xAxisGroup.selectAll('.tick text')
-      .style('fill', '#6b7280')
-      .style('font-size', '12px')
+    // Render X-axis (only if showXAxis is true)
+    if (showXAxis) {
+      const xAxisGroup = g.append('g')
+        .attr('class', 'x-axis')
+        .attr('transform', `translate(0,${xAxisY})`)
+        .call(xAxis)
+      
+      // Apply x-axis styling
+      xAxisGroup.select('.domain')
+        .style('stroke', '#9ca3af')  // Changed to darker gray for better visibility
+        .style('stroke-width', 1)
+      xAxisGroup.selectAll('.tick line')
+        .style('stroke', '#d1d5db')  // Slightly lighter for tick lines
+        .style('stroke-width', 1)
+      xAxisGroup.selectAll('.tick text')
+        .style('fill', '#6b7280')
+        .style('font-size', '12px')
+    }
     
     // Create Y-axis
     const firstYParam = (editingChart.yAxisParams && editingChart.yAxisParams[0]) || null
@@ -767,46 +803,56 @@ export class AxisManager {
       .ticks(yAxisTicks)
       .tickFormat(d3.format(yAxisFormat))
     
-    // Render Y-axis
-    const yAxisGroup = g.append('g')
-      .attr('class', 'y-axis')
-      .call(yAxis)
+    // Render Y-axis (only if showYAxis is true)
+    let yAxisGroup: d3.Selection<SVGGElement, unknown, null, undefined> | undefined
     
-    // Apply y-axis styling
-    yAxisGroup.select('.domain')
-      .style('stroke', '#e5e7eb')
-      .style('stroke-width', 1)
-    yAxisGroup.selectAll('.tick line')
-      .style('stroke', '#e5e7eb')
-      .style('stroke-width', 1)
-    yAxisGroup.selectAll('.tick text')
-      .style('fill', '#6b7280')
-      .style('font-size', '12px')
+    if (showYAxis) {
+      yAxisGroup = g.append('g')
+        .attr('class', 'y-axis')
+        .call(yAxis)
+      
+      // Apply y-axis styling
+      yAxisGroup.select('.domain')
+        .style('stroke', '#9ca3af')  // Changed to darker gray for better visibility
+        .style('stroke-width', 1)
+      yAxisGroup.selectAll('.tick line')
+        .style('stroke', '#d1d5db')  // Slightly lighter for tick lines
+        .style('stroke-width', 1)
+      yAxisGroup.selectAll('.tick text')
+        .style('fill', '#6b7280')
+        .style('font-size', '12px')
+    }
     
     // Add grid if enabled
     if (editingChart.showGrid) {
-      g.selectAll('.grid').remove()
+      // X grid lines - create separate axis object for grid
+      const xGridAxis = d3.axisBottom(scales.xScale)
+        .ticks(xAxisTicks)
+        .tickSize(-height)
+        .tickFormat(() => '')
       
-      // X grid lines
       g.insert('g', ':first-child')
-        .attr('class', 'grid')
+        .attr('class', 'grid x-grid')
         .attr('transform', `translate(0,${height})`)
-        .call(xAxis
-          .tickSize(-height)
-          .tickFormat(() => '')
-        )
+        .call(xGridAxis)
         .style('stroke-dasharray', '3,3')
         .style('opacity', 0.3)
+        .select('.domain')
+        .style('opacity', 0) // Hide the domain line for grid
       
-      // Y grid lines
+      // Y grid lines - create separate axis object for grid
+      const yGridAxis = d3.axisLeft(scales.yScale)
+        .ticks(yAxisTicks)
+        .tickSize(-width)
+        .tickFormat(() => '')
+      
       g.insert('g', ':first-child')
-        .attr('class', 'grid')
-        .call(yAxis
-          .tickSize(-width)
-          .tickFormat(() => '')
-        )
+        .attr('class', 'grid y-grid')
+        .call(yGridAxis)
         .style('stroke-dasharray', '3,3')
         .style('opacity', 0.3)
+        .select('.domain')
+        .style('opacity', 0) // Hide the domain line for grid
     }
     
     // Return the Y-axis group for label positioning

@@ -250,6 +250,16 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
    * Create tooltip handlers for SVG rendering
    */
   private createTooltipHandlers() {
+    // If tooltips are disabled, return empty handlers
+    const showTooltip = this.editingChart.showTooltip ?? true
+    if (!showTooltip || this.disableTooltips) {
+      return {
+        onMouseEnter: () => {},
+        onMouseMove: () => {},
+        onMouseLeave: () => {}
+      }
+    }
+    
     return ChartTooltipManager.createHandlers({
       xAxisType: this.editingChart.xAxisType || 'datetime',
       showTimestamp: true,
