@@ -3,7 +3,6 @@
 import React, { useState } from "react"
 import { ChartComponent, EventInfo } from "@/types"
 import { XParameterSettings } from "./XParameterSettings"
-import { YAxisSettings } from "./YAxisSettings"
 import { YParametersSettings } from "./YParametersSettings"
 import { ReferenceLinesSettings } from "./ReferenceLinesSettings"
 
@@ -98,11 +97,6 @@ export function ParametersTab({ editingChart, setEditingChart, selectedDataSourc
         editingChart={editingChart} 
         setEditingChart={setEditingChart}
         selectedDataSourceItems={selectedDataSourceItems}
-      />
-      
-      <YAxisSettings
-        editingChart={editingChart}
-        setEditingChart={setEditingChart}
       />
       
       {!isBulkEdit && (

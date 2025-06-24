@@ -326,6 +326,16 @@ export class AxisManager {
     const showXAxis = editingChart.showXAxis ?? true
     const showYAxis = editingChart.showYAxis ?? true
     
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[AxisManager.renderAxes] Axis settings:', {
+        chartId: editingChart.id,
+        xAxisTicks,
+        yAxisTicks,
+        xAxisTickPrecision,
+        yAxisTickPrecision
+      })
+    }
+    
     // Create X-axis
     let xAxis: d3.Axis<number | Date | { valueOf(): number }>
     
@@ -743,6 +753,16 @@ export class AxisManager {
     const showXAxis = editingChart.showXAxis ?? true
     const showYAxis = editingChart.showYAxis ?? true
     
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[AxisManager.redrawAxesWithScales] Axis settings:', {
+        chartId: editingChart.id,
+        xAxisTicks,
+        yAxisTicks,
+        xAxisTickPrecision,
+        yAxisTickPrecision
+      })
+    }
+    
     // Remove existing axes and grid lines
     g.selectAll('.x-axis, .y-axis, .grid').remove()
     
@@ -797,11 +817,9 @@ export class AxisManager {
     }
     
     // Create Y-axis
-    const firstYParam = (editingChart.yAxisParams && editingChart.yAxisParams[0]) || null
-    const yAxisFormat = (firstYParam && 'format' in firstYParam && typeof firstYParam.format === 'string' ? firstYParam.format : null) || `.${yAxisTickPrecision}f`
     const yAxis = d3.axisLeft(scales.yScale)
       .ticks(yAxisTicks)
-      .tickFormat(d3.format(yAxisFormat))
+      .tickFormat(d3.format(`.${yAxisTickPrecision}f`))
     
     // Render Y-axis (only if showYAxis is true)
     let yAxisGroup: d3.Selection<SVGGElement, unknown, null, undefined> | undefined

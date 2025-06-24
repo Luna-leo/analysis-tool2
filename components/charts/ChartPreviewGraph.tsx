@@ -114,6 +114,12 @@ const chartPreviewGraphPropsAreEqual = (prevProps: ChartPreviewGraphProps, nextP
     prevChart.title !== nextChart.title ||
     prevChart.showTitle !== nextChart.showTitle ||
     prevChart.legendMode !== nextChart.legendMode ||
+    prevChart.showGrid !== nextChart.showGrid ||
+    // Axis tick settings
+    prevChart.xAxisTicks !== nextChart.xAxisTicks ||
+    prevChart.yAxisTicks !== nextChart.yAxisTicks ||
+    prevChart.xAxisTickPrecision !== nextChart.xAxisTickPrecision ||
+    prevChart.yAxisTickPrecision !== nextChart.yAxisTickPrecision ||
     // More efficient plotStyles comparison using custom comparison function
     !arePlotStylesEqual(prevChart.plotStyles, nextChart.plotStyles)
   ) {
@@ -289,6 +295,61 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   // Track previous dimensions to detect size changes
   const prevDimensionsRef = useRef<{ width: number; height: number } | null>(null)
   
+  // Track previous axis settings to detect changes
+  const prevAxisSettingsRef = useRef<{
+    xAxisTicks?: number
+    yAxisTicks?: number
+    xAxisTickPrecision?: number
+    yAxisTickPrecision?: number
+    showGrid?: boolean
+  }>({})
+  
+  // Clear scales when axis settings change
+  // Note: This may not be necessary anymore since renderChart is now triggered on axis settings changes
+  useEffect(() => {
+    const currentSettings = {
+      xAxisTicks: mergedChart.xAxisTicks,
+      yAxisTicks: mergedChart.yAxisTicks,
+      xAxisTickPrecision: mergedChart.xAxisTickPrecision,
+      yAxisTickPrecision: mergedChart.yAxisTickPrecision,
+      showGrid: mergedChart.showGrid
+    }
+    
+    const prevSettings = prevAxisSettingsRef.current
+    
+    // Check if any axis settings changed
+    if (
+      prevSettings.xAxisTicks !== currentSettings.xAxisTicks ||
+      prevSettings.yAxisTicks !== currentSettings.yAxisTicks ||
+      prevSettings.xAxisTickPrecision !== currentSettings.xAxisTickPrecision ||
+      prevSettings.yAxisTickPrecision !== currentSettings.yAxisTickPrecision ||
+      prevSettings.showGrid !== currentSettings.showGrid
+    ) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[ChartPreviewGraph] Axis settings changed, clearing scales:', {
+          chartId: mergedChart.id,
+          prev: prevSettings,
+          current: currentSettings
+        })
+      }
+      
+      // Clear scales to force recreation with new settings
+      baseScalesRef.current = { xScale: null, yScale: null }
+      currentScalesRef.current = { xScale: null, yScale: null }
+      isInitialRenderComplete.current = false
+      
+      // Update previous settings
+      prevAxisSettingsRef.current = currentSettings
+    }
+  }, [
+    mergedChart.xAxisTicks,
+    mergedChart.yAxisTicks,
+    mergedChart.xAxisTickPrecision,
+    mergedChart.yAxisTickPrecision,
+    mergedChart.showGrid,
+    mergedChart.id
+  ])
+  
   // Extract render-critical properties from mergedChart to optimize re-renders
   const chartRenderProps = useMemo(() => ({
     id: mergedChart.id,
@@ -302,6 +363,11 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     showGrid: mergedChart.showGrid,
     showXLabel: mergedChart.showXLabel,
     showYLabel: mergedChart.showYLabel,
+    // Add axis tick settings
+    xAxisTicks: mergedChart.xAxisTicks,
+    yAxisTicks: mergedChart.yAxisTicks,
+    xAxisTickPrecision: mergedChart.xAxisTickPrecision,
+    yAxisTickPrecision: mergedChart.yAxisTickPrecision,
   }), [
     mergedChart.id, 
     mergedChart.type, 
@@ -312,7 +378,11 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     mergedChart.showTitle,
     mergedChart.showGrid,
     mergedChart.showXLabel,
-    mergedChart.showYLabel
+    mergedChart.showYLabel,
+    mergedChart.xAxisTicks,
+    mergedChart.yAxisTicks,
+    mergedChart.xAxisTickPrecision,
+    mergedChart.yAxisTickPrecision
   ])
   
 
@@ -1157,6 +1227,10 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         showLines: chartRenderProps.showLines || false,
         plotStyles: chartRenderProps.plotStyles,
         computedMargins,
+        xAxisTicks: chartRenderProps.xAxisTicks,
+        yAxisTicks: chartRenderProps.yAxisTicks,
+        xAxisTickPrecision: chartRenderProps.xAxisTickPrecision,
+        yAxisTickPrecision: chartRenderProps.yAxisTickPrecision,
       }
       
       if (prevRenderDeps.current) {
@@ -1174,9 +1248,22 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         if (prevRenderDeps.current.showLines !== currentDeps.showLines) changes.push('showLines')
         if (!arePlotStylesEqual(prevRenderDeps.current.plotStyles, currentDeps.plotStyles)) changes.push('plotStyles')
         if (JSON.stringify(prevRenderDeps.current.computedMargins) !== JSON.stringify(currentDeps.computedMargins)) changes.push('computedMargins')
+        if (prevRenderDeps.current.xAxisTicks !== currentDeps.xAxisTicks) changes.push('xAxisTicks')
+        if (prevRenderDeps.current.yAxisTicks !== currentDeps.yAxisTicks) changes.push('yAxisTicks')
+        if (prevRenderDeps.current.xAxisTickPrecision !== currentDeps.xAxisTickPrecision) changes.push('xAxisTickPrecision')
+        if (prevRenderDeps.current.yAxisTickPrecision !== currentDeps.yAxisTickPrecision) changes.push('yAxisTickPrecision')
         
-        if (process.env.NODE_ENV === 'development') {
+        if (process.env.NODE_ENV === 'development' && changes.length > 0) {
           console.log(`[Chart ${chartRenderProps.id}] Render triggered by changes in:`, changes)
+          // Log axis settings specifically if they changed
+          if (changes.some(c => c.includes('Axis'))) {
+            console.log('[ChartPreviewGraph] Axis settings in render:', {
+              xAxisTicks: chartRenderProps.xAxisTicks,
+              yAxisTicks: chartRenderProps.yAxisTicks,
+              xAxisTickPrecision: chartRenderProps.xAxisTickPrecision,
+              yAxisTickPrecision: chartRenderProps.yAxisTickPrecision
+            })
+          }
         }
       }
       
@@ -1220,6 +1307,11 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     chartRenderProps.showGrid,
     chartRenderProps.showXLabel,
     chartRenderProps.showYLabel,
+    // Axis tick settings
+    chartRenderProps.xAxisTicks,
+    chartRenderProps.yAxisTicks,
+    chartRenderProps.xAxisTickPrecision,
+    chartRenderProps.yAxisTickPrecision,
     // margins are accessed directly from mergedChart in render function
     selectionState.isSelecting,
     selectionState.startX,
@@ -1246,6 +1338,10 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     showLines: boolean,
     plotStyles: any,
     computedMargins: { top: number; right: number; bottom: number; left: number },
+    xAxisTicks?: number,
+    yAxisTicks?: number,
+    xAxisTickPrecision?: number,
+    yAxisTickPrecision?: number,
   } | null>(null)
   
   // Track shift key state for visual feedback - only for this chart

@@ -3,6 +3,7 @@
 import React, { useState } from "react"
 import { ChartComponent } from "@/types"
 import { ChartSettings } from "./ChartSettings"
+import { AxisDisplaySettings } from "./AxisDisplaySettings"
 import { PlotStyleTable } from "./PlotStyleSettings"
 import { LayoutSettings } from "./LayoutSettings"
 import { Separator } from "@/components/ui/separator"
@@ -58,6 +59,11 @@ export function AppearanceTab({
     <div className="space-y-4">
       {/* Chart General Settings */}
       <ChartSettings editingChart={editingChart} setEditingChart={setEditingChart} />
+      
+      <Separator />
+      
+      {/* Axis Display Settings */}
+      <AxisDisplaySettings editingChart={editingChart} setEditingChart={setEditingChart} />
       
       <Separator />
       

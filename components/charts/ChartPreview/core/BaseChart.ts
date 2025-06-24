@@ -111,6 +111,10 @@ export abstract class BaseChart<TData = any> {
   protected setupScalesAndAxes(): void {
     // Check if we already have scales (from zoom)
     if (this.scalesRef.current.xScale && this.scalesRef.current.yScale) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[BaseChart ${this.editingChart.id}] Using existing scales (redrawAxesWithScales)`)
+      }
+      
       // Update scale ranges to match new dimensions
       this.updateScaleRanges()
       
@@ -131,6 +135,7 @@ export abstract class BaseChart<TData = any> {
     } else {
       // Create new scales (initial render)
       if (process.env.NODE_ENV === 'development') {
+        console.log(`[BaseChart ${this.editingChart.id}] Creating new scales (initial render)`)
         console.log(`[BaseChart ${this.editingChart.id}] Creating AxisManager with data:`, {
           dataLength: this.data.length,
           xAxisType: this.editingChart.xAxisType,
