@@ -366,11 +366,16 @@ export class AxisManager {
     
     // Add grid lines if enabled
     if (editingChart.showGrid) {
-      xAxisGroup.selectAll(".tick line")
-        .clone()
-        .attr("y2", -height)
-        .attr("stroke-opacity", 0.1)
-        .attr("class", "grid-line")
+      // X grid lines
+      g.insert('g', ':first-child')
+        .attr('class', 'grid')
+        .attr('transform', `translate(0,${height})`)
+        .call(xAxis
+          .tickSize(-height)
+          .tickFormat(() => '')
+        )
+        .style('stroke-dasharray', '3,3')
+        .style('opacity', 0.3)
     }
     
     // Create and render Y-axis
@@ -387,11 +392,15 @@ export class AxisManager {
     
     // Add grid lines if enabled
     if (editingChart.showGrid) {
-      yAxisGroup.selectAll(".tick line")
-        .clone()
-        .attr("x2", width)
-        .attr("stroke-opacity", 0.1)
-        .attr("class", "grid-line")
+      // Y grid lines
+      g.insert('g', ':first-child')
+        .attr('class', 'grid')
+        .call(yAxis
+          .tickSize(-width)
+          .tickFormat(() => '')
+        )
+        .style('stroke-dasharray', '3,3')
+        .style('opacity', 0.3)
     }
     
     // Return the Y-axis group for label positioning
