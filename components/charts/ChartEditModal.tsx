@@ -496,6 +496,19 @@ export function ChartEditModal() {
                   selectedDataSourceItems={selectedDataSourceItems}
                   setEditingChart={setEditingChart}
                   dataSourceStyles={dataSourceStyles}
+                  chartSettings={{
+                    showXAxis: true,
+                    showYAxis: true,
+                    showGrid: true,
+                    margins: {
+                      top: 20,      // Restored to default for Chart Preview
+                      right: 30,    // Slightly reduced from default 40
+                      bottom: 50,   // Slightly reduced from default 60
+                      left: 80      // Default value for sufficient space
+                    },
+                    xLabelOffset: 40,  // Tick text (12px) + more spacing (28px)
+                    yLabelOffset: 50,  // Tick text + more spacing for better readability
+                  }}
                   enableZoom={true}
                   enablePan={true}
                   zoomMode="auto"

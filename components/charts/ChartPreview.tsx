@@ -45,21 +45,25 @@ export const ChartPreview = ({ editingChart, selectedDataSourceItems, setEditing
   
   return (
     <div className="w-full h-full flex flex-col">
-      <ChartPreviewGraph
-        editingChart={editingChart}
-        selectedDataSourceItems={selectedDataSourceItems}
-        setEditingChart={setEditingChart}
-        dataSourceStyles={dataSourceStyles}
-        chartSettings={chartSettings}
-        enableZoom={enableZoom}
-        enablePan={enablePan}
-        zoomMode={zoomMode}
-        showZoomControls={true}
-      />
-      <ChartPreviewInfo
-        editingChart={editingChart}
-        selectedDataSourceItems={selectedDataSourceItems}
-      />
+      <div className="flex-shrink-0" style={{ height: '60%' }}>
+        <ChartPreviewGraph
+          editingChart={editingChart}
+          selectedDataSourceItems={selectedDataSourceItems}
+          setEditingChart={setEditingChart}
+          dataSourceStyles={dataSourceStyles}
+          chartSettings={chartSettings}
+          enableZoom={enableZoom}
+          enablePan={enablePan}
+          zoomMode={zoomMode}
+          showZoomControls={true}
+        />
+      </div>
+      <div className="flex-1 overflow-y-auto">
+        <ChartPreviewInfo
+          editingChart={editingChart}
+          selectedDataSourceItems={selectedDataSourceItems}
+        />
+      </div>
     </div>
   )
 }

@@ -718,24 +718,44 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   }, [dimensions, chartRenderProps.id])
 
 
-  // Calculate minimum height based on layout
-  const getMinHeight = useCallback((currentGridLayout?: { columns: number; rows: number }) => {
-    // Special handling for 4-column layouts
-    if (currentGridLayout && currentGridLayout.columns >= 4) {
-      if (currentGridLayout.rows === 1) return 80   // 1x4: Reduced height for horizontal emphasis
-      if (currentGridLayout.rows === 2) return 100  // 2x4: Moderate height
-      if (currentGridLayout.rows === 3) return 80   // 3x4: Compact
-      if (currentGridLayout.rows >= 4) return 80    // 4x4: Increased from 60 to 80 for better visibility
+  // Calculate minimum height based on layout - maintaining aspect ratio with Chart Grid
+  const calculateAspectRatio = useCallback((containerHeight: number, currentGridLayout?: { columns: number; rows: number }) => {
+    // Default minimum heights
+    const defaultMinHeight = 200
+    
+    if (!currentGridLayout) {
+      return defaultMinHeight
     }
-    // Existing logic for other layouts
-    if (currentGridLayout && (currentGridLayout.columns >= 3 || currentGridLayout.rows >= 3)) {
-      return 100 // Compact for 3x3
+    
+    const isCompactLayout = currentGridLayout.rows >= 3 || currentGridLayout.columns >= 3
+    
+    // For Chart Preview, we want to maintain aspect ratio but not compress too much
+    // Use a percentage of container height based on grid layout
+    if (containerHeight > 0) {
+      // Calculate what percentage of height each row should take
+      // This maintains the visual aspect ratio of Chart Grid
+      let heightPercentage: number
+      
+      if (currentGridLayout.rows === 1) {
+        heightPercentage = 0.8 // Single row can use most of the height
+      } else if (currentGridLayout.rows === 2) {
+        heightPercentage = 0.4 // Two rows, each takes ~40%
+      } else if (currentGridLayout.rows === 3) {
+        heightPercentage = 0.3 // Three rows, each takes ~30%
+      } else {
+        heightPercentage = 0.25 // Four or more rows
+      }
+      
+      const calculatedHeight = containerHeight * heightPercentage
+      
+      // Apply minimum constraints to ensure readability
+      const minConstraint = isCompactLayout ? 150 : 200
+      return Math.max(calculatedHeight, minConstraint)
     }
-    if (isCompactLayout) {
-      return 150 // General compact layout
-    }
-    return 200 // Normal layout
-  }, [isCompactLayout])
+    
+    // Fallback to static minimums
+    return isCompactLayout ? 150 : defaultMinHeight
+  }, [])
 
   // Throttled resize handler for better performance
   const handleResize = useThrottle((entries: ResizeObserverEntry[]) => {
@@ -743,11 +763,12 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       const { width, height } = entry.contentRect
       // Only update if we have valid dimensions
       if (width > 0 && height > 0) {
-        const minHeight = getMinHeight(gridLayout)
-        // Remove container padding to use full height
+        // Calculate height based on aspect ratio, but use full container height as maximum
+        const aspectHeight = calculateAspectRatio(height, gridLayout)
+        
         setDimensions({ 
           width: Math.max(400, width), 
-          height: Math.max(minHeight, height) // Use full container height
+          height: Math.max(aspectHeight, Math.min(height, 600)) // Cap at 600px to avoid excessive height
         })
       }
     }
@@ -922,13 +943,23 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   useEffect(() => {
     if (!containerRef.current) return
 
+    // Set initial dimensions based on container
+    const rect = containerRef.current.getBoundingClientRect()
+    if (rect.width > 0 && rect.height > 0) {
+      const aspectHeight = calculateAspectRatio(rect.height, gridLayout)
+      setDimensions({
+        width: Math.max(400, rect.width),
+        height: Math.max(aspectHeight, Math.min(rect.height, 600))
+      })
+    }
+
     const resizeObserver = new ResizeObserver(handleResize)
     resizeObserver.observe(containerRef.current)
 
     return () => {
       resizeObserver.disconnect()
     }
-  }, [handleResize])
+  }, [handleResize, gridLayout, calculateAspectRatio])
 
   // Function to render no data display
   const renderNoDataDisplay = (
