@@ -53,7 +53,21 @@ Changed all color elements to grayscale:
 3. Ensure no performance degradation
 4. Test on light/dark themes if applicable
 
+## Updates
+### Timing Adjustments (2025-06-24)
+- Reduced "CAA" display duration from 800ms to 500ms
+- Accelerated overall animation sequence:
+  - Initial → Expanding: 500ms (was 800ms)
+  - Expanding → Complete: 1300ms (was 1800ms)
+  - Complete → Fadeout: 2500ms (was 3300ms)
+  - Total duration: 3000ms (was 3800ms)
+- Faster individual animations:
+  - CAA spring animation: 0.4s (was 0.6s)
+  - Text expansion: 0.6s (was 0.8s)
+  - Margin transitions: 0.3s (was 0.5s)
+
 ## Future Improvements
 - Consider adding theme detection for light/dark mode
 - Add subtle noise texture for more depth
 - Possibility of user preference for color scheme
+- Option to skip animation with key press

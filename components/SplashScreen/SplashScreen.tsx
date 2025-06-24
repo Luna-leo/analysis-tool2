@@ -42,10 +42,10 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
   }, [])
 
   useEffect(() => {
-    const timer1 = setTimeout(() => setStage("expanding"), 800)
-    const timer2 = setTimeout(() => setStage("complete"), 1800)
-    const timer3 = setTimeout(() => setStage("fadeout"), 3300)
-    const timer4 = setTimeout(() => onComplete(), 3800)
+    const timer1 = setTimeout(() => setStage("expanding"), 500)
+    const timer2 = setTimeout(() => setStage("complete"), 1300)
+    const timer3 = setTimeout(() => setStage("fadeout"), 2500)
+    const timer4 = setTimeout(() => onComplete(), 3000)
 
     return () => {
       clearTimeout(timer1)
@@ -129,7 +129,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
-                transition={{ duration: 0.6, type: "spring", stiffness: 260, damping: 20 }}
+                transition={{ duration: 0.4, type: "spring", stiffness: 260, damping: 20 }}
                 className="text-8xl font-bold bg-gradient-to-b from-white to-zinc-400 bg-clip-text text-transparent tracking-wider"
                 style={{
                   textShadow: "0 0 40px rgba(255, 255, 255, 0.5), 0 0 80px rgba(255, 255, 255, 0.3)",
@@ -146,7 +146,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                 <motion.span
                   initial={{ scale: 1 }}
                   animate={{ scale: 1 }}
-                  transition={{ duration: 0.5, ease: "easeInOut" }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
                   className="text-6xl font-bold text-white"
                   style={{
                     textShadow: "0 0 20px rgba(255, 255, 255, 0.5)",
@@ -157,7 +157,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                 <motion.div
                   initial={{ width: 0, opacity: 0 }}
                   animate={{ width: "auto", opacity: 1 }}
-                  transition={{ duration: 0.8, ease: "easeOut" }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
                   className="overflow-hidden"
                 >
                   <span className="text-4xl font-medium text-zinc-300">hinami's</span>
@@ -165,7 +165,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                 <motion.span
                   initial={{ marginLeft: 0 }}
                   animate={{ marginLeft: "0.5rem" }}
-                  transition={{ duration: 0.5, ease: "easeOut" }}
+                  transition={{ duration: 0.3, ease: "easeOut" }}
                   className="text-6xl font-bold text-white"
                   style={{
                     textShadow: "0 0 20px rgba(255, 255, 255, 0.5)",
@@ -176,7 +176,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                 <motion.div
                   initial={{ width: 0, opacity: 0 }}
                   animate={{ width: "auto", opacity: 1 }}
-                  transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+                  transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
                   className="overflow-hidden"
                 >
                   <span className="text-4xl font-medium text-zinc-300">nalysis</span>
@@ -184,7 +184,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                 <motion.span
                   initial={{ marginLeft: 0 }}
                   animate={{ marginLeft: "0.5rem" }}
-                  transition={{ duration: 0.5, ease: "easeInOut" }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
                   className="text-6xl font-bold text-white"
                   style={{
                     textShadow: "0 0 20px rgba(255, 255, 255, 0.5)",
