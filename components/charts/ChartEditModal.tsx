@@ -19,6 +19,7 @@ import { SaveTemplateDialog, TemplateListDialog } from "./PlotStyleTemplate"
 import { PlotStyleTemplate } from "@/types/plot-style-template"
 import { PlotStyleApplicator } from "@/utils/plotStyleApplicator"
 import { toast } from "sonner"
+import { useSharedDataCache } from "@/hooks/useSharedDataCache"
 
 export function ChartEditModal() {
   const { 
@@ -35,6 +36,7 @@ export function ChartEditModal() {
   } = useUIStore()
   const { openTabs, activeTab: activeFileTab, updateFileCharts, updateFileDataSources } = useFileStore()
   const { layoutSettingsMap, chartSettingsMap } = useLayoutStore()
+  const dataCache = useSharedDataCache()
   const [activeTab, setActiveTab] = useState<TabType>("datasource")
   const [dataSourceStyles, setDataSourceStyles] = useState<{ [dataSourceId: string]: any }>({})
   const [previewMode, setPreviewMode] = useState<'preview' | 'grid'>('preview')
@@ -218,6 +220,27 @@ export function ChartEditModal() {
       
       // Save to file store
       updateFileCharts(currentFile.id, updatedCharts)
+      
+      // Clear cache for affected data sources when Y parameters have changed
+      if (existingChartIndex >= 0) {
+        const oldChart = currentCharts[existingChartIndex]
+        const oldYParams = JSON.stringify(oldChart.yAxisParams || [])
+        const newYParams = JSON.stringify(updatedChart.yAxisParams || [])
+        
+        if (oldYParams !== newYParams) {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[ChartEditModal] Y parameters changed, clearing cache')
+          }
+          
+          // Get all data source IDs used by this chart
+          const dataSourceIds = selectedDataSourceItems.map(item => item.id)
+          
+          if (dataSourceIds.length > 0) {
+            // Clear cache for these data sources
+            dataCache.clearForDataSources(dataSourceIds)
+          }
+        }
+      }
     }
     
     if (closeModal) {

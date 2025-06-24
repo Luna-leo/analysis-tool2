@@ -180,7 +180,8 @@ export function useOptimizedChart({
               dataSource.id,
               allParameters,
               () => getParameterDataRef.current(dataSource.id, allParameters),
-              xAxisType
+              xAxisType,
+              yAxisParamsKey
             )
             
             // Debug logging removed to reduce console spam

@@ -12,10 +12,11 @@ const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 export function useSharedDataCache() {
   const cacheRef = useRef<Map<string, CacheEntry>>(new Map())
 
-  const getCacheKey = useCallback((periodId: string, parameters: string[], xAxisType?: string): string => {
-    // Include xAxisType in cache key to force refetch when axis type changes
+  const getCacheKey = useCallback((periodId: string, parameters: string[], xAxisType?: string, yAxisParamsKey?: string): string => {
+    // Include xAxisType and yAxisParamsKey in cache key to force refetch when axis type or Y parameters change
     const axisTypePrefix = xAxisType ? `${xAxisType}:` : ''
-    return `${axisTypePrefix}${periodId}:${parameters.sort().join(',')}`
+    const yAxisSuffix = yAxisParamsKey ? `:${yAxisParamsKey}` : ''
+    return `${axisTypePrefix}${periodId}:${parameters.sort().join(',')}${yAxisSuffix}`
   }, [])
 
   const get = useCallback(
@@ -23,9 +24,10 @@ export function useSharedDataCache() {
       periodId: string,
       parameters: string[],
       fetchFn: () => Promise<CSVDataPoint[] | undefined>,
-      xAxisType?: string
+      xAxisType?: string,
+      yAxisParamsKey?: string
     ): Promise<CSVDataPoint[] | undefined> => {
-      const key = getCacheKey(periodId, parameters, xAxisType)
+      const key = getCacheKey(periodId, parameters, xAxisType, yAxisParamsKey)
       const now = Date.now()
       
       // Check if we have a valid cache entry
@@ -62,7 +64,28 @@ export function useSharedDataCache() {
 
   const clearForPeriod = useCallback((periodId: string) => {
     for (const [key, _] of cacheRef.current.entries()) {
-      if (key.startsWith(`${periodId}:`)) {
+      // Check if the key contains the periodId (considering xAxisType prefix)
+      if (key.includes(`:${periodId}:`) || key.startsWith(`${periodId}:`)) {
+        cacheRef.current.delete(key)
+      }
+    }
+  }, [])
+
+  const clearForDataSources = useCallback((dataSourceIds: string[]) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[useSharedDataCache] Clearing cache for data sources:', dataSourceIds)
+    }
+    
+    for (const [key, _] of cacheRef.current.entries()) {
+      // Check if the key contains any of the dataSourceIds
+      const shouldClear = dataSourceIds.some(id => 
+        key.includes(`:${id}:`) || key.startsWith(`${id}:`)
+      )
+      
+      if (shouldClear) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[useSharedDataCache] Clearing cache entry:', key)
+        }
         cacheRef.current.delete(key)
       }
     }
@@ -71,6 +94,7 @@ export function useSharedDataCache() {
   return {
     get,
     clear,
-    clearForPeriod
+    clearForPeriod,
+    clearForDataSources
   }
 }

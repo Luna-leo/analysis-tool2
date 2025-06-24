@@ -569,7 +569,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
                 ) : (
                   visibleCharts.map(({ chart, index, isVisible }) => (
                     <VirtualizedChartCard
-                      key={chart.id}
+                      key={`${chart.id}-${JSON.stringify(chart.yAxisParams?.map(p => p.parameter))}`}
                       chart={chart}
                       isCompactLayout={chartSizes.isCompactLayout}
                       cardMinHeight={chartSizes.cardMinHeight}
