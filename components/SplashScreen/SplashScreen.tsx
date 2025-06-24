@@ -27,25 +27,25 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
     const height = window.innerHeight
     setWindowSize({ width, height })
     
-    // Generate particle data
-    const newParticles = Array.from({ length: 20 }, (_, i) => ({
+    // Generate particle data - reduced for performance
+    const newParticles = Array.from({ length: 10 }, (_, i) => ({
       id: i,
       size: Math.random() * 4 + 2,
       initialX: Math.random() * width,
       initialY: Math.random() * height,
       targetX: Math.random() * width,
       targetY: Math.random() * height,
-      duration: Math.random() * 10 + 10,
+      duration: Math.random() * 15 + 15,
       delay: Math.random() * 2
     }))
     setParticles(newParticles)
   }, [])
 
   useEffect(() => {
-    const timer1 = setTimeout(() => setStage("expanding"), 500)
-    const timer2 = setTimeout(() => setStage("complete"), 1300)
-    const timer3 = setTimeout(() => setStage("fadeout"), 2500)
-    const timer4 = setTimeout(() => onComplete(), 3000)
+    const timer1 = setTimeout(() => setStage("expanding"), 600)
+    const timer2 = setTimeout(() => setStage("complete"), 1500)
+    const timer3 = setTimeout(() => setStage("fadeout"), 2700)
+    const timer4 = setTimeout(() => onComplete(), 3200)
 
     return () => {
       clearTimeout(timer1)
@@ -70,7 +70,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
             {particles.map((particle) => (
               <motion.div
                 key={particle.id}
-                className="absolute bg-white/5 rounded-full blur-sm"
+                className="absolute bg-white/5 rounded-full"
                 style={{
                   width: particle.size,
                   height: particle.size,
@@ -91,35 +91,20 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                   duration: particle.duration,
                   repeat: Infinity,
                   repeatType: "reverse",
-                  ease: "linear",
+                  ease: "easeInOut",
                   delay: particle.delay
                 }}
               />
             ))}
           </div>
           
-          {/* Subtle grid pattern overlay */}
-          <div 
-            className="absolute inset-0 opacity-5"
-            style={{
-              backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
-                               linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-              backgroundSize: '50px 50px'
-            }}
-          />
           
-          {/* Animated gradient overlay - monochrome */}
-          <motion.div
-            className="absolute inset-0 opacity-20"
-            animate={{
-              background: [
-                "radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%)",
-                "radial-gradient(circle at 80% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%)",
-                "radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%)",
-                "radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%)",
-              ]
+          {/* Simplified gradient overlay for performance */}
+          <div 
+            className="absolute inset-0 opacity-10"
+            style={{
+              background: "radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 70%)",
             }}
-            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
           />
 
           {/* Main content */}
@@ -129,11 +114,11 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
-                transition={{ duration: 0.4, type: "spring", stiffness: 260, damping: 20 }}
+                transition={{ duration: 0.5, type: "spring", stiffness: 200, damping: 25 }}
                 className="text-8xl font-bold bg-gradient-to-b from-white to-zinc-400 bg-clip-text text-transparent tracking-wider"
                 style={{
-                  textShadow: "0 0 40px rgba(255, 255, 255, 0.5), 0 0 80px rgba(255, 255, 255, 0.3)",
-                  filter: "drop-shadow(0 0 30px rgba(255, 255, 255, 0.4))"
+                  textShadow: "0 0 20px rgba(255, 255, 255, 0.3)",
+                  willChange: "transform"
                 }}
               >
                 CAA
@@ -142,14 +127,17 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
 
             {/* Expanding animation */}
             {stage === "expanding" && (
-              <motion.div className="flex items-center justify-center gap-2">
+              <motion.div 
+                className="flex items-center justify-center gap-2"
+                style={{ willChange: "contents" }}
+              >
                 <motion.span
                   initial={{ scale: 1 }}
                   animate={{ scale: 1 }}
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
                   className="text-6xl font-bold text-white"
                   style={{
-                    textShadow: "0 0 20px rgba(255, 255, 255, 0.5)",
+                    textShadow: "0 0 10px rgba(255, 255, 255, 0.3)",
                   }}
                 >
                   C
@@ -168,7 +156,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                   transition={{ duration: 0.3, ease: "easeOut" }}
                   className="text-6xl font-bold text-white"
                   style={{
-                    textShadow: "0 0 20px rgba(255, 255, 255, 0.5)",
+                    textShadow: "0 0 10px rgba(255, 255, 255, 0.3)",
                   }}
                 >
                   A
@@ -187,7 +175,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                   transition={{ duration: 0.3, ease: "easeInOut" }}
                   className="text-6xl font-bold text-white"
                   style={{
-                    textShadow: "0 0 20px rgba(255, 255, 255, 0.5)",
+                    textShadow: "0 0 10px rgba(255, 255, 255, 0.3)",
                   }}
                 >
                   APP
