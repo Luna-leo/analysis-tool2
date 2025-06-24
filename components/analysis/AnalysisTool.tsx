@@ -21,6 +21,7 @@ import { useViewStore } from "@/stores/useViewStore"
 import { useCSVDataStore } from "@/stores/useCSVDataStore"
 import { PerformanceMonitor } from "../PerformanceMonitor"
 import { MemoryWarning } from "../MemoryWarning"
+import { SplashScreen } from "../SplashScreen"
 import { usePerformanceMonitor } from "@/hooks/usePerformanceMonitor"
 import { optimizeMemory } from "@/utils/memoryOptimization"
 import { getDefaultColor } from "@/utils/chartColors"
@@ -33,6 +34,8 @@ interface SelectedDataSourceInfo {
 }
 
 export default function AnalysisTool() {
+  // Initialize to false to match server render, will set to true after mount
+  const [showSplash, setShowSplash] = React.useState(false)
   const [selectedDataSourceInfo, setSelectedDataSourceInfo] = React.useState<SelectedDataSourceInfo>({
     dataSource: null,
     index: 0
@@ -168,6 +171,11 @@ export default function AnalysisTool() {
     return undefined
   }
 
+  // Show splash screen after mount to avoid hydration issues
+  useEffect(() => {
+    setShowSplash(true)
+  }, [])
+
   useEffect(() => {
     // Load parameters on mount
     loadParameters()
@@ -278,6 +286,13 @@ export default function AnalysisTool() {
       }
     }
   }, []) // Empty dependency array to run only once on mount
+
+  // Show splash screen if needed
+  if (showSplash) {
+    return <SplashScreen onComplete={() => {
+      setShowSplash(false)
+    }} />
+  }
 
   return (
     <div className="h-screen flex">
