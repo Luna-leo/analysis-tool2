@@ -49,6 +49,20 @@ export function VerticalReferenceLine({
   const color = line.color || "#ff0000"
   const strokeDasharray = line.style === "dashed" ? "5,5" : line.style === "dotted" ? "2,2" : "none"
   
+  // Validate scale before using
+  if (!xScale || typeof xScale !== 'function') {
+    console.warn('Invalid xScale provided to VerticalReferenceLine')
+    return null
+  }
+  
+  // Validate scale domain/range
+  const domain = xScale.domain()
+  const range = xScale.range()
+  if (!domain || !range || domain.length !== 2 || range.length !== 2) {
+    console.warn('Invalid scale domain or range in VerticalReferenceLine')
+    return null
+  }
+  
   let xPos: number
   
   // Use drag position only if this specific line is currently being dragged
