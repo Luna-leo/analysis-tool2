@@ -1,33 +1,28 @@
 "use client"
 
-import React, { useEffect, useRef, useMemo, useLayoutEffect, useCallback } from "react"
+import React, { useEffect, useRef, useMemo, useCallback, useState } from "react"
 import * as d3 from "d3"
 import { ChartComponent, EventInfo, DataSourceStyle } from "@/types"
-import {
-  renderScatterPlot,
-  ReferenceLines
-} from "./ChartPreview/index"
+import { ChartContainer } from "./ChartPreview/ChartContainer"
+import { ChartOverlay } from "./ChartPreview/ChartOverlay"
+import { ChartCanvas } from "./ChartPreview/ChartCanvas"
+import { ReferenceLines } from "./ChartPreview/ReferenceLines"
 import { ChartLegend } from "./ChartLegend"
-import { NoDataDisplay } from "./NoDataDisplay"
 import { useOptimizedChart } from "@/hooks/useOptimizedChart"
-import { hideAllTooltips } from "@/utils/chartTooltip"
 import { useThrottle } from "@/hooks/useDebounce"
 import { useSettingsStore } from "@/stores/useSettingsStore"
 import { useChartLoadingStore } from "@/stores/useChartLoadingStore"
 import { useChartZoom } from "./ChartPreview/useChartZoom"
-import { ZoomControls } from "./ChartPreview/ZoomControls"
 import { useQualityOptimization } from "./ChartPreview/useQualityOptimization"
-import { 
-  calculateMarginInPixels, 
-  createLayoutContext, 
-  getUnifiedLayoutCategory,
-  getUnifiedMinimumMargins,
-  getUnifiedMaximumMargins,
-  calculateUnifiedMargins,
-  DEFAULT_UNIFIED_MARGIN_CONFIG,
-  MarginValue
-} from "@/utils/chart/marginCalculator"
 import { arePlotStylesEqual } from "@/utils/plotStylesComparison"
+import { renderChart } from "@/utils/chart/chartRenderer"
+import { renderNoDataDisplay } from "@/utils/chart/noDataRenderer"
+import {
+  useChartScales,
+  useChartLabelDrag,
+  useChartLayout,
+  useChartDimensions
+} from "@/hooks/charts"
 
 interface ChartPreviewGraphProps {
   editingChart: ChartComponent
@@ -47,11 +42,6 @@ interface ChartPreviewGraphProps {
     showLines?: boolean
     showTooltip?: boolean
     margins?: {
-      top: number
-      right: number
-      bottom: number
-      left: number
-    } | {
       top: string | number
       right: string | number
       bottom: string | number
@@ -74,7 +64,6 @@ interface ChartPreviewGraphProps {
   }
 }
 
-
 const chartPreviewGraphPropsAreEqual = (prevProps: ChartPreviewGraphProps, nextProps: ChartPreviewGraphProps) => {
   // Check primitive props
   if (
@@ -90,12 +79,10 @@ const chartPreviewGraphPropsAreEqual = (prevProps: ChartPreviewGraphProps, nextP
   
   // Check if editingChart reference changed
   if (prevProps.editingChart !== nextProps.editingChart) {
-    // If references are different, we need to re-render
-    // This is important because UIStore creates new objects on update
     return false
   }
   
-  // If references are the same, do deep comparison of properties that affect rendering
+  // Check chart properties that affect rendering
   const prevChart = prevProps.editingChart
   const nextChart = nextProps.editingChart
   
@@ -116,31 +103,26 @@ const chartPreviewGraphPropsAreEqual = (prevProps: ChartPreviewGraphProps, nextP
     prevChart.showTitle !== nextChart.showTitle ||
     prevChart.legendMode !== nextChart.legendMode ||
     prevChart.showGrid !== nextChart.showGrid ||
-    // Axis tick settings
     prevChart.xAxisTicks !== nextChart.xAxisTicks ||
     prevChart.yAxisTicks !== nextChart.yAxisTicks ||
     prevChart.xAxisTickPrecision !== nextChart.xAxisTickPrecision ||
     prevChart.yAxisTickPrecision !== nextChart.yAxisTickPrecision ||
-    // More efficient plotStyles comparison using custom comparison function
     !arePlotStylesEqual(prevChart.plotStyles, nextChart.plotStyles)
   ) {
     return false
   }
   
-  // Check if selectedDataSourceItems changed
+  // Check other props
   if (prevProps.selectedDataSourceItems !== nextProps.selectedDataSourceItems) {
     if (prevProps.selectedDataSourceItems.length !== nextProps.selectedDataSourceItems.length) {
       return false
     }
-    // Could add deeper comparison if needed
   }
   
-  // Check if dataSourceStyles changed (shallow comparison)
   if (JSON.stringify(prevProps.dataSourceStyles) !== JSON.stringify(nextProps.dataSourceStyles)) {
     return false
   }
   
-  // Check if chartSettings changed
   if (JSON.stringify(prevProps.chartSettings) !== JSON.stringify(nextProps.chartSettings)) {
     return false
   }
@@ -148,13 +130,44 @@ const chartPreviewGraphPropsAreEqual = (prevProps: ChartPreviewGraphProps, nextP
   return true
 }
 
-export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints, dataSourceStyles, chartSettings, enableZoom = true, enablePan = true, zoomMode = 'auto', showZoomControls = true, isCompactLayout = false, gridLayout }: ChartPreviewGraphProps) => {
-  const [isShiftPressed, setIsShiftPressed] = React.useState(false)
-  const [isRangeSelectionMode, setIsRangeSelectionMode] = React.useState(false)
+export const ChartPreviewGraph = React.memo(({ 
+  editingChart, 
+  selectedDataSourceItems, 
+  setEditingChart, 
+  maxDataPoints, 
+  dataSourceStyles, 
+  chartSettings, 
+  enableZoom = true, 
+  enablePan = true, 
+  zoomMode = 'auto', 
+  showZoomControls = true, 
+  isCompactLayout = false, 
+  gridLayout 
+}: ChartPreviewGraphProps) => {
+  // State management
+  const [isShiftPressed, setIsShiftPressed] = useState(false)
+  const [isRangeSelectionMode, setIsRangeSelectionMode] = useState(false)
+  const [isMouseOver, setIsMouseOver] = useState(false)
+  const [zoomVersion, setZoomVersion] = useState(0)
+  
+  // Refs
+  const svgRef = useRef<SVGSVGElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const renderingRef = useRef<boolean>(false)
+  const animationFrameRef = useRef<number | null>(null)
+  const cleanupRef = useRef<(() => void) | null>(null)
+  const legendRef = useRef<HTMLDivElement>(null)
+  const [legendPos, setLegendPos] = useState<{ x: number; y: number } | null>(null)
+  const legendRatioRef = useRef<{ xRatio: number; yRatio: number } | null>(
+    editingChart.legendPosition ?? null
+  )
+  
+  // Store management
   const { settings } = useSettingsStore()
   const { registerRendering, unregisterRendering } = useChartLoadingStore()
   
-  // Extract only what we need from settings to avoid unnecessary re-renders
+  // Extract settings
   const enableSampling = settings.performanceSettings.dataProcessing.enableSampling
   const defaultSamplingPoints = settings.performanceSettings.dataProcessing.defaultSamplingPoints
   const dynamicQuality = true // Default to dynamic quality
@@ -173,13 +186,13 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         xLabel: "Datetime"
       })
     }
-  }, [editingChart.xAxisType, editingChart.xLabel])
+  }, [editingChart.xAxisType, editingChart.xLabel, setEditingChart])
   
   // Merge global chart settings with individual chart settings
   const mergedChart = useMemo(() => {
     let baseChart = editingChart
     
-    // Apply xLabel if needed (without calling setState)
+    // Apply xLabel if needed
     if ((baseChart.xAxisType === "datetime" || !baseChart.xAxisType) && !baseChart.xLabel) {
       baseChart = {
         ...baseChart,
@@ -189,18 +202,15 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     
     if (!chartSettings) return baseChart
     
-    const merged = {
+    return {
       ...baseChart,
       showLegend: chartSettings.showLegend !== undefined ? chartSettings.showLegend : baseChart.showLegend,
       showTitle: chartSettings.showChartTitle !== undefined ? chartSettings.showChartTitle : baseChart.showTitle,
-      // Axes visibility controls both axis and labels
       showXAxis: chartSettings.showXAxis !== undefined ? chartSettings.showXAxis : baseChart.showXAxis,
       showYAxis: chartSettings.showYAxis !== undefined ? chartSettings.showYAxis : baseChart.showYAxis,
-      // Label visibility (separate from axis visibility)
       showXLabel: chartSettings.showXLabel !== undefined ? chartSettings.showXLabel : baseChart.showXLabel,
       showYLabel: chartSettings.showYLabel !== undefined ? chartSettings.showYLabel : baseChart.showYLabel,
       showGrid: chartSettings.showGrid !== undefined ? chartSettings.showGrid : baseChart.showGrid,
-      // Data display options
       showMarkers: chartSettings.showMarkers !== undefined ? chartSettings.showMarkers : baseChart.showMarkers,
       showLines: chartSettings.showLines !== undefined ? chartSettings.showLines : baseChart.showLines,
       showTooltip: chartSettings.showTooltip !== undefined ? chartSettings.showTooltip : baseChart.showTooltip,
@@ -213,230 +223,127 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         } : baseChart.margins) : baseChart.margins,
       xLabelOffset: chartSettings.xLabelOffset !== undefined ? chartSettings.xLabelOffset : baseChart.xLabelOffset,
       yLabelOffset: chartSettings.yLabelOffset !== undefined ? chartSettings.yLabelOffset : baseChart.yLabelOffset,
-      // Always use the latest plotStyles and legendMode from baseChart
       plotStyles: baseChart.plotStyles,
       legendMode: baseChart.legendMode
     }
-    
-    
-    return merged
   }, [editingChart, chartSettings])
-  const svgRef = useRef<SVGSVGElement>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const renderingRef = useRef<boolean>(false)
-  const animationFrameRef = useRef<number | null>(null)
-  const cleanupRef = useRef<(() => void) | null>(null)
-  const [dimensions, setDimensions] = React.useState({ width: 600, height: 400 })
-  const legendRef = useRef<HTMLDivElement>(null)
-  const [legendPos, setLegendPos] = React.useState<{ x: number; y: number } | null>(null)
-  const legendRatioRef = useRef<{ xRatio: number; yRatio: number } | null>(
-    mergedChart.legendPosition ?? null
-  )
   
-  // States for draggable labels
-  const [titlePos, setTitlePos] = React.useState<{ x: number; y: number } | null>(null)
-  const [xLabelPos, setXLabelPos] = React.useState<{ x: number; y: number } | null>(null)
-  const [yLabelPos, setYLabelPos] = React.useState<{ x: number; y: number } | null>(null)
-  const titleRatioRef = useRef<{ xRatio: number; yRatio: number } | null>(
-    mergedChart.titlePosition ?? null
-  )
-  const xLabelRatioRef = useRef<{ xRatio: number; yRatio: number } | null>(
-    mergedChart.xLabelPosition ?? null
-  )
-  const yLabelRatioRef = useRef<{ xRatio: number; yRatio: number } | null>(
-    mergedChart.yLabelPosition ?? null
-  )
-
-  useEffect(() => {
-    legendRatioRef.current = mergedChart.legendPosition ?? null
-  }, [mergedChart.legendPosition])
+  // Custom hooks
+  const { calculateAspectRatio } = useChartLayout({
+    chart: mergedChart,
+    dimensions: { width: 600, height: 400 }, // Will be updated by useChartDimensions
+    gridLayout,
+    chartSettings
+  })
   
-  useEffect(() => {
-    titleRatioRef.current = mergedChart.titlePosition ?? null
-    xLabelRatioRef.current = mergedChart.xLabelPosition ?? null
-    yLabelRatioRef.current = mergedChart.yLabelPosition ?? null
-  }, [mergedChart.titlePosition, mergedChart.xLabelPosition, mergedChart.yLabelPosition])
+  const { dimensions } = useChartDimensions({
+    containerRef: containerRef as React.RefObject<HTMLDivElement>,
+    gridLayout,
+    calculateAspectRatio
+  })
   
-  // Base scales (never modified)
-  const baseScalesRef = useRef<{
-    xScale: d3.ScaleTime<number, number> | d3.ScaleLinear<number, number> | null,
-    yScale: d3.ScaleLinear<number, number> | null
-  }>({ xScale: null, yScale: null })
-
-  // Current scales (with zoom applied)
-  const currentScalesRef = useRef<{
-    xScale: d3.ScaleTime<number, number> | d3.ScaleLinear<number, number> | null,
-    yScale: d3.ScaleLinear<number, number> | null
-  }>({ xScale: null, yScale: null })
+  // Update layout with actual dimensions
+  const { computedMargins: finalMargins, chartArea: finalChartArea } = useChartLayout({
+    chart: mergedChart,
+    dimensions,
+    gridLayout,
+    chartSettings
+  })
   
-  // Scales actually used for rendering (to ensure ReferenceLines uses same scales)
-  const renderScalesRef = useRef<{
-    xScale: d3.ScaleTime<number, number> | d3.ScaleLinear<number, number> | null,
-    yScale: d3.ScaleLinear<number, number> | null
-  }>({ xScale: null, yScale: null })
-
-  // Force update when zoom changes
-  const [zoomVersion, setZoomVersion] = React.useState(0)
+  const {
+    baseScalesRef,
+    currentScalesRef,
+    renderScalesRef,
+    resetScales,
+    applyZoomTransform,
+    initializeScales,
+    getScalesForRendering,
+    areScalesReady
+  } = useChartScales({
+    zoomMode,
+    chartType: mergedChart.type
+  })
   
-  // Track if initial render is complete
-  const isInitialRenderComplete = useRef(false)
+  const {
+    addLabelDragHandlers,
+    calculateLabelPositions
+  } = useChartLabelDrag({
+    chart: mergedChart,
+    setEditingChart,
+    containerRef: containerRef as React.RefObject<HTMLDivElement>,
+    svgRef: svgRef as React.RefObject<SVGSVGElement>,
+    dimensions
+  })
   
-  // Track pending zoom transform
-  const pendingZoomTransform = useRef<d3.ZoomTransform | null>(null)
+  // Data loading
+  const { data: chartData, isLoading: isLoadingData, error } = useOptimizedChart({
+    editingChart: mergedChart,
+    selectedDataSourceItems,
+    maxDataPoints: effectiveMaxDataPoints
+  })
   
-  // Track previous parameters to detect changes
-  const prevParamsRef = useRef<{
-    xParameter?: string
-    yAxisParams?: string
-    xAxisType?: string
-    gridLayout?: string
-  }>({})
+  // Memoize chartData
+  const memoizedChartData = useMemo(() => {
+    return chartData
+  }, [JSON.stringify(chartData?.slice(0, 10)), chartData?.length])
   
-  // Store reset zoom function ref to use in effect
-  const resetZoomRef = useRef<(() => void) | null>(null)
+  // Quality optimization
+  const {
+    qualityState,
+    startInteraction,
+    endInteraction,
+    cleanup: cleanupQuality,
+  } = useQualityOptimization({
+    dataCount: memoizedChartData?.length || 0,
+    enableOptimization: dynamicQuality,
+    qualityThreshold: qualityThreshold,
+    debounceDelay: 150,
+  })
   
-  // Track data version to detect actual data changes
-  const dataVersionRef = useRef<string>('')
-  const isWaitingForNewDataRef = useRef(false)
-  
-  // Track previous dimensions to detect size changes
-  const prevDimensionsRef = useRef<{ width: number; height: number } | null>(null)
-  
-  // Track previous axis settings to detect changes
-  const prevAxisSettingsRef = useRef<{
-    xAxisTicks?: number
-    yAxisTicks?: number
-    xAxisTickPrecision?: number
-    yAxisTickPrecision?: number
-    showGrid?: boolean
-  }>({})
-  
-  // Clear scales when axis settings change
-  // Note: This may not be necessary anymore since renderChart is now triggered on axis settings changes
-  useEffect(() => {
-    const currentSettings = {
-      xAxisTicks: mergedChart.xAxisTicks,
-      yAxisTicks: mergedChart.yAxisTicks,
-      xAxisTickPrecision: mergedChart.xAxisTickPrecision,
-      yAxisTickPrecision: mergedChart.yAxisTickPrecision,
-      showGrid: mergedChart.showGrid
-    }
-    
-    const prevSettings = prevAxisSettingsRef.current
-    
-    // Check if any axis settings changed
-    if (
-      prevSettings.xAxisTicks !== currentSettings.xAxisTicks ||
-      prevSettings.yAxisTicks !== currentSettings.yAxisTicks ||
-      prevSettings.xAxisTickPrecision !== currentSettings.xAxisTickPrecision ||
-      prevSettings.yAxisTickPrecision !== currentSettings.yAxisTickPrecision ||
-      prevSettings.showGrid !== currentSettings.showGrid
-    ) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[ChartPreviewGraph] Axis settings changed, clearing scales:', {
-          chartId: mergedChart.id,
-          prev: prevSettings,
-          current: currentSettings
-        })
-      }
-      
-      // Clear scales to force recreation with new settings
-      baseScalesRef.current = { xScale: null, yScale: null }
-      currentScalesRef.current = { xScale: null, yScale: null }
-      renderScalesRef.current = { xScale: null, yScale: null } // Reset render scales too
-      isInitialRenderComplete.current = false
-      
-      // Update previous settings
-      prevAxisSettingsRef.current = currentSettings
-    }
-  }, [
-    mergedChart.xAxisTicks,
-    mergedChart.yAxisTicks,
-    mergedChart.xAxisTickPrecision,
-    mergedChart.yAxisTickPrecision,
-    mergedChart.showGrid,
-    mergedChart.id
-  ])
-  
-  // Extract render-critical properties from mergedChart to optimize re-renders
-  const chartRenderProps = useMemo(() => ({
-    id: mergedChart.id,
-    type: mergedChart.type,
-    showMarkers: mergedChart.showMarkers,
-    showLines: mergedChart.showLines,
-    plotStyles: mergedChart.plotStyles,
-    // Add display settings that affect rendering
-    title: mergedChart.title,
-    showTitle: mergedChart.showTitle,
-    showGrid: mergedChart.showGrid,
-    showXLabel: mergedChart.showXLabel,
-    showYLabel: mergedChart.showYLabel,
-    // Add axis tick settings
-    xAxisTicks: mergedChart.xAxisTicks,
-    yAxisTicks: mergedChart.yAxisTicks,
-    xAxisTickPrecision: mergedChart.xAxisTickPrecision,
-    yAxisTickPrecision: mergedChart.yAxisTickPrecision,
-  }), [
-    mergedChart.id, 
-    mergedChart.type, 
-    mergedChart.showMarkers, 
-    mergedChart.showLines, 
-    mergedChart.plotStyles,
-    mergedChart.title,
-    mergedChart.showTitle,
-    mergedChart.showGrid,
-    mergedChart.showXLabel,
-    mergedChart.showYLabel,
-    mergedChart.xAxisTicks,
-    mergedChart.yAxisTicks,
-    mergedChart.xAxisTickPrecision,
-    mergedChart.yAxisTickPrecision
-  ])
-  
-
-  // Handle zoom transformation with throttling to prevent race conditions
+  // Zoom handling
   const handleZoomTransformBase = useCallback((transform: d3.ZoomTransform) => {
-    if (!baseScalesRef.current.xScale || !baseScalesRef.current.yScale) {
-      pendingZoomTransform.current = transform;
-      return;
-    }
-
-    // Determine zoom mode based on chart type
-    const effectiveZoomMode = zoomMode === 'auto' 
-      ? (mergedChart.type === 'scatter' ? 'xy' : 'x')
-      : zoomMode
-
-    // Update current scales with zoom transform
-    const newXScale = transform.rescaleX(baseScalesRef.current.xScale)
-    const newYScale = effectiveZoomMode === 'xy' 
-      ? transform.rescaleY(baseScalesRef.current.yScale)
-      : baseScalesRef.current.yScale
-
-    // Only update if scales actually changed
-    if (currentScalesRef.current.xScale !== newXScale || currentScalesRef.current.yScale !== newYScale) {
-      currentScalesRef.current.xScale = newXScale
-      currentScalesRef.current.yScale = newYScale
-      
-      // Clear pending transform
-      pendingZoomTransform.current = null;
-
-      // Force re-render
+    const updated = applyZoomTransform(transform)
+    if (updated) {
       setZoomVersion(v => v + 1)
     }
-  }, [zoomMode, mergedChart.type])
+  }, [applyZoomTransform])
   
-  // Throttle zoom transform to 60fps to prevent race conditions during rapid movements
   const handleZoomTransform = useThrottle(handleZoomTransformBase, 16)
-
-  // Initialize legend position once container and legend are mounted
-  useLayoutEffect(() => {
-    if (!containerRef.current || !legendRef.current) return
-    if (legendPos !== null) return
-
+  
+  const {
+    zoomLevel,
+    zoomIn,
+    zoomOut,
+    resetZoom,
+    selectionState,
+  } = useChartZoom({
+    svgRef,
+    width: dimensions.width,
+    height: dimensions.height,
+    minZoom: 0.5,
+    maxZoom: 10,
+    enablePan,
+    enableZoom,
+    onZoom: handleZoomTransform,
+    onZoomStart: startInteraction,
+    onZoomEnd: endInteraction,
+    margin: finalMargins,
+    chartId: editingChart.id,
+    enableRangeSelection: true,
+    isRangeSelectionMode,
+    getScales: useCallback(() => ({
+      baseScales: baseScalesRef.current,
+      currentScales: currentScalesRef.current,
+    }), [baseScalesRef, currentScalesRef]),
+  })
+  
+  // Legend position management
+  useEffect(() => {
+    if (!containerRef.current || !legendRef.current || legendPos !== null) return
+    
     const containerRect = containerRef.current.getBoundingClientRect()
     const legendRect = legendRef.current.getBoundingClientRect()
-
+    
     if (mergedChart.legendPosition) {
       const { xRatio, yRatio } = mergedChart.legendPosition
       const ratioX = Number.isFinite(xRatio) ? xRatio : 0
@@ -466,7 +373,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       setEditingChart?.({ ...mergedChart, legendPosition: defaultRatio })
     }
   }, [mergedChart, setEditingChart])
-
+  
   // Sync legend position if editingChart changes elsewhere
   useEffect(() => {
     if (!containerRef.current || !legendRef.current || !mergedChart.legendPosition) return
@@ -490,336 +397,6 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     }
   }, [mergedChart.legendPosition, dimensions])
   
-  // Use optimized data loading hook
-  const { data: chartData, isLoading: isLoadingData, error } = useOptimizedChart({
-    editingChart: mergedChart,
-    selectedDataSourceItems,
-    maxDataPoints: effectiveMaxDataPoints
-  })
-  
-  // Memoize chartData to prevent unnecessary re-renders
-  // Only create new reference when data actually changes
-  const memoizedChartData = useMemo(() => {
-    return chartData
-  }, [JSON.stringify(chartData?.slice(0, 10)), chartData?.length]) // Use first 10 items + length as a fingerprint
-  
-  // Initialize quality optimization
-  const {
-    qualityState,
-    startInteraction,
-    endInteraction,
-    cleanup: cleanupQuality,
-  } = useQualityOptimization({
-    dataCount: memoizedChartData?.length || 0,
-    enableOptimization: dynamicQuality,
-    qualityThreshold: qualityThreshold,
-    debounceDelay: 150,
-  })
-  
-  // Extract quality render options separately to avoid unnecessary re-renders
-  const qualityRenderOptions = qualityState.renderOptions
-  
-  // Memoize dataSourceStyles to prevent unnecessary re-renders
-  const memoizedDataSourceStyles = useMemo(() => {
-    return dataSourceStyles || {}
-  }, [JSON.stringify(dataSourceStyles)])
-  
-  // Track when scales are ready
-  const [scalesReady, setScalesReady] = React.useState(false)
-  React.useEffect(() => {
-    if (baseScalesRef.current.xScale && baseScalesRef.current.yScale) {
-      setScalesReady(true)
-    }
-  }, [zoomVersion]) // Update when zoom changes
-  
-  // Calculate margins based on current state
-  const computedMargins = useMemo(() => {
-    let margin = { top: 20, right: 40, bottom: 60, left: 60 }
-    
-    // Priority 1: Grid-wide chart settings margins (from Layout Settings)
-    if (chartSettings?.margins) {
-      margin = {
-        top: Number(chartSettings.margins.top) || 20,
-        right: Number(chartSettings.margins.right) || 40,
-        bottom: Number(chartSettings.margins.bottom) || 50,
-        left: Number(chartSettings.margins.left) || 55
-      }
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[ChartPreviewGraph] Using grid-wide margins from chartSettings:', margin)
-      }
-    }
-    // Priority 2: 4x4 layout gets ultra-compact margins
-    else if (gridLayout?.columns === 4 && gridLayout?.rows === 4) {
-      margin = {
-        top: Math.round(dimensions.height * 0.03),    // 3%
-        right: Math.round(dimensions.width * 0.04),   // 4%
-        bottom: Math.round(dimensions.height * 0.06), // 6%
-        left: Math.round(dimensions.width * 0.10)     // 10%
-      }
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[ChartPreviewGraph] Computed 4x4 margins:', {
-          margin,
-          dimensions,
-          percentages: {
-            top: '3%',
-            right: '4%',
-            bottom: '6%',
-            left: '10%'
-          }
-        })
-      }
-    } else {
-      // Check if we have percentage margins
-      const hasPercentageMargins = mergedChart.margins && 
-        typeof mergedChart.margins.top === 'string' && 
-        (mergedChart.margins.top as string).endsWith('%')
-      
-      if ((chartSettings?.marginMode === 'unified' || chartSettings?.marginMode === 'percentage' || hasPercentageMargins) && gridLayout) {
-        // Use the new unified margin calculation with grid layout info
-        margin = calculateUnifiedMargins(dimensions.width, dimensions.height, DEFAULT_UNIFIED_MARGIN_CONFIG, gridLayout)
-      } else if (hasPercentageMargins && mergedChart.margins) {
-        // Convert percentage margins to pixels (for cases without gridLayout)
-        margin = {
-          top: calculateMarginInPixels(mergedChart.margins.top as MarginValue, dimensions.height),
-          right: calculateMarginInPixels(mergedChart.margins.right as MarginValue, dimensions.width),
-          bottom: calculateMarginInPixels(mergedChart.margins.bottom as MarginValue, dimensions.height),
-          left: calculateMarginInPixels(mergedChart.margins.left as MarginValue, dimensions.width)
-        }
-      } else if (mergedChart.margins) {
-        // Fall back to existing margins if not using unified mode
-        margin = mergedChart.margins as { top: number; right: number; bottom: number; left: number }
-      }
-    }
-    
-    return margin
-  }, [dimensions, gridLayout, mergedChart.margins, chartSettings?.marginMode, chartSettings?.margins])
-  
-  // Initialize zoom functionality
-  const {
-    zoomLevel,
-    zoomIn,
-    zoomOut,
-    resetZoom,
-    selectionState,
-  } = useChartZoom({
-    svgRef,
-    width: dimensions.width,
-    height: dimensions.height,
-    minZoom: 0.5,
-    maxZoom: 10,
-    enablePan,
-    enableZoom,
-    onZoom: handleZoomTransform,
-    onZoomStart: startInteraction,
-    onZoomEnd: endInteraction,
-    margin: computedMargins,
-    chartId: editingChart.id,
-    enableRangeSelection: true,
-    isRangeSelectionMode,
-    getScales: useCallback(() => ({
-      baseScales: baseScalesRef.current,
-      currentScales: currentScalesRef.current,
-    }), []),
-  })
-  
-  // Store resetZoom in ref for use in effects
-  useEffect(() => {
-    resetZoomRef.current = resetZoom
-  }, [resetZoom])
-  
-  // Reset scales when parameters or layout changes
-  useEffect(() => {
-    const currentParams = {
-      xParameter: mergedChart.xParameter,
-      yAxisParams: JSON.stringify(mergedChart.yAxisParams),
-      xAxisType: mergedChart.xAxisType,
-      gridLayout: JSON.stringify(gridLayout) // Add grid layout to track changes
-    }
-    
-    // Check if any parameter has changed
-    const hasParamsChanged = 
-      prevParamsRef.current.xParameter !== currentParams.xParameter ||
-      prevParamsRef.current.yAxisParams !== currentParams.yAxisParams ||
-      prevParamsRef.current.xAxisType !== currentParams.xAxisType ||
-      prevParamsRef.current.gridLayout !== currentParams.gridLayout // Check layout changes
-    
-    if (hasParamsChanged && prevParamsRef.current.xParameter !== undefined) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[ChartPreviewGraph] Parameters or layout changed, resetting scales:', {
-          chartId: mergedChart.id,
-          layoutChanged: prevParamsRef.current.gridLayout !== currentParams.gridLayout,
-          prevLayout: prevParamsRef.current.gridLayout,
-          newLayout: currentParams.gridLayout
-        })
-      }
-      
-      // Reset all scale-related state
-      isInitialRenderComplete.current = false
-      baseScalesRef.current = { xScale: null, yScale: null }
-      currentScalesRef.current = { xScale: null, yScale: null }
-      renderScalesRef.current = { xScale: null, yScale: null } // Reset render scales too
-      pendingZoomTransform.current = null
-      isWaitingForNewDataRef.current = true // Mark that we're waiting for new data
-      setScalesReady(false) // Reset scales ready state for ReferenceLines
-      
-      // Reset zoom if available
-      if (resetZoomRef.current) {
-        resetZoomRef.current()
-      }
-      
-      // Force re-render
-      setZoomVersion(v => v + 1)
-    }
-    
-    // Update previous params
-    prevParamsRef.current = currentParams
-  }, [mergedChart.xParameter, mergedChart.yAxisParams, mergedChart.xAxisType, gridLayout])
-  
-  // Track data changes and force scale recreation when new data arrives
-  useEffect(() => {
-    if (!memoizedChartData || isLoadingData) return
-    
-    // Create a data fingerprint to detect actual data changes
-    const dataFingerprint = JSON.stringify({
-      length: memoizedChartData.length,
-      firstItems: memoizedChartData.slice(0, 5).map(d => ({
-        x: d.x instanceof Date ? d.x.getTime() : d.x,
-        y: d.y,
-        series: d.series
-      })),
-      lastItems: memoizedChartData.slice(-5).map(d => ({
-        x: d.x instanceof Date ? d.x.getTime() : d.x,
-        y: d.y,
-        series: d.series
-      }))
-    })
-    
-    const dataChanged = dataFingerprint !== dataVersionRef.current
-    
-    if (dataChanged && isWaitingForNewDataRef.current) {
-      
-      // Force scale recreation with new data
-      isInitialRenderComplete.current = false
-      baseScalesRef.current = { xScale: null, yScale: null }
-      currentScalesRef.current = { xScale: null, yScale: null }
-      renderScalesRef.current = { xScale: null, yScale: null } // Reset render scales too
-      isWaitingForNewDataRef.current = false
-      
-      // Force re-render to create new scales with fresh data
-      setZoomVersion(v => v + 1)
-    }
-    
-    dataVersionRef.current = dataFingerprint
-  }, [memoizedChartData, isLoadingData])
-  
-  // Track dimension changes and update scales accordingly
-  useEffect(() => {
-    if (!prevDimensionsRef.current) {
-      prevDimensionsRef.current = dimensions
-      return
-    }
-    
-    const prevDims = prevDimensionsRef.current
-    const dimensionsChanged = prevDims.width !== dimensions.width || prevDims.height !== dimensions.height
-    
-    if (dimensionsChanged && isInitialRenderComplete.current) {
-      // Dimensions changed after initial render - need to update scale ranges
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[Chart ${chartRenderProps.id}] Dimensions changed:`, {
-          prev: prevDims,
-          new: dimensions
-        })
-      }
-      
-      // Force a re-render to update scale ranges
-      setZoomVersion(v => v + 1)
-    }
-    
-    prevDimensionsRef.current = dimensions
-  }, [dimensions, chartRenderProps.id])
-
-
-  // Calculate minimum height based on layout - maintaining aspect ratio with Chart Grid
-  const calculateAspectRatio = useCallback((containerHeight: number, currentGridLayout?: { columns: number; rows: number }) => {
-    // Default minimum heights
-    const defaultMinHeight = 200
-    
-    if (!currentGridLayout) {
-      return defaultMinHeight
-    }
-    
-    const isCompactLayout = currentGridLayout.rows >= 3 || currentGridLayout.columns >= 3
-    
-    // For Chart Preview, we want to maintain aspect ratio but not compress too much
-    // Use a percentage of container height based on grid layout
-    if (containerHeight > 0) {
-      // Calculate what percentage of height each row should take
-      // This maintains the visual aspect ratio of Chart Grid
-      let heightPercentage: number
-      
-      if (currentGridLayout.rows === 1) {
-        heightPercentage = 0.8 // Single row can use most of the height
-      } else if (currentGridLayout.rows === 2) {
-        heightPercentage = 0.4 // Two rows, each takes ~40%
-      } else if (currentGridLayout.rows === 3) {
-        heightPercentage = 0.3 // Three rows, each takes ~30%
-      } else {
-        heightPercentage = 0.25 // Four or more rows
-      }
-      
-      const calculatedHeight = containerHeight * heightPercentage
-      
-      // Apply minimum constraints to ensure readability
-      const minConstraint = isCompactLayout ? 150 : 200
-      return Math.max(calculatedHeight, minConstraint)
-    }
-    
-    // Fallback to static minimums
-    return isCompactLayout ? 150 : defaultMinHeight
-  }, [])
-
-  // Throttled resize handler for better performance
-  const handleResize = useThrottle((entries: ResizeObserverEntry[]) => {
-    for (const entry of entries) {
-      const { width, height } = entry.contentRect
-      // Only update if we have valid dimensions
-      if (width > 0 && height > 0) {
-        // Calculate height based on aspect ratio, but use full container height as maximum
-        const aspectHeight = calculateAspectRatio(height, gridLayout)
-        
-        setDimensions({ 
-          width: Math.max(400, width), 
-          height: Math.max(aspectHeight, Math.min(height, 600)) // Cap at 600px to avoid excessive height
-        })
-      }
-    }
-  }, 150)
-
-  // Keep legend within bounds when container resizes or ratio changes
-  useEffect(() => {
-    if (!containerRef.current || !legendRef.current || !legendRatioRef.current) return
-    const containerRect = containerRef.current.getBoundingClientRect()
-    const legendRect = legendRef.current.getBoundingClientRect()
-    const { xRatio, yRatio } = legendRatioRef.current
-    const ratioX = Number.isFinite(xRatio) ? xRatio : 0
-    const ratioY = Number.isFinite(yRatio) ? yRatio : 0
-    const newPos = {
-      x: Math.min(
-        Math.max(0, ratioX * containerRect.width),
-        containerRect.width - legendRect.width
-      ),
-      y: Math.min(
-        Math.max(0, ratioY * containerRect.height),
-        containerRect.height - legendRect.height
-      )
-    }
-    if (legendPos?.x !== newPos.x || legendPos?.y !== newPos.y) {
-      setLegendPos(newPos)
-    }
-  }, [dimensions])
-
   const handleLegendPointerDown = (e: React.PointerEvent) => {
     if (!containerRef.current || !legendRef.current) return
     e.preventDefault()
@@ -857,778 +434,153 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     window.addEventListener('pointerup', handleUp)
   }
   
-  // Add drag handlers for chart labels
-  const addLabelDragHandlers = useCallback(() => {
-    if (!svgRef.current || !containerRef.current) return
-    
-    const svg = d3.select(svgRef.current)
-    const containerRect = containerRef.current.getBoundingClientRect()
-    
-    // Helper function to setup drag behavior for a label
-    const setupLabelDrag = (
-      selector: string,
-      posRef: React.MutableRefObject<{ xRatio: number; yRatio: number } | null>,
-      setPos: React.Dispatch<React.SetStateAction<{ x: number; y: number } | null>>,
-      updateKey: 'titlePosition' | 'xLabelPosition' | 'yLabelPosition',
-      isRotated: boolean = false
-    ) => {
-      const label = svg.select(selector)
-      if (label.empty()) return
-      
-      label.on('pointerdown', function(event: PointerEvent) {
-        event.preventDefault()
-        event.stopPropagation()
-        
-        const element = this as SVGTextElement
-        const transform = element.getAttribute('transform')
-        const currentX = +(element.getAttribute('x') || 0) || 0
-        const currentY = +(element.getAttribute('y') || 0) || 0
-        
-        // Get the group transform to calculate absolute position
-        const mainGroup = svg.select('g')
-        const groupTransform = mainGroup.attr('transform')
-        const translateMatch = groupTransform?.match(/translate\(([^,]+),([^)]+)\)/)
-        const groupX = translateMatch ? +translateMatch[1] : 0
-        const groupY = translateMatch ? +translateMatch[2] : 0
-        
-        let startX: number, startY: number
-        if (isRotated) {
-          // For rotated Y-label (-90 degrees), the element's x,y are in rotated space
-          // After -90 rotation: element at (x,y) appears at screen position (y, -x)
-          startX = groupX + currentY  // Screen X = rotated Y
-          startY = groupY - currentX  // Screen Y = -rotated X
-        } else {
-          startX = groupX + currentX
-          startY = groupY + currentY
-        }
-        
-        const initialMouseX = event.clientX
-        const initialMouseY = event.clientY
-        
-        const handleMove = (ev: PointerEvent) => {
-          const deltaX = ev.clientX - initialMouseX
-          const deltaY = ev.clientY - initialMouseY
-          
-          let newX: number, newY: number
-          if (isRotated) {
-            // For rotated label, calculate new screen position
-            newX = startX + deltaX
-            newY = startY + deltaY
-            
-            // Convert screen position to rotated coordinate system
-            // For -90 rotation: to move right on screen (deltaX), increase Y in rotated space
-            // For -90 rotation: to move down on screen (deltaY), decrease X in rotated space
-            const rotatedX = currentX - deltaY  // Screen Y movement -> rotated -X
-            const rotatedY = currentY + deltaX  // Screen X movement -> rotated Y
-            
-            element.setAttribute('x', String(rotatedX))
-            element.setAttribute('y', String(rotatedY))
-          } else {
-            newX = startX + deltaX
-            newY = startY + deltaY
-            
-            // Update element position
-            element.setAttribute('x', String(newX - groupX))
-            element.setAttribute('y', String(newY - groupY))
-          }
-          
-          // Calculate and store ratio
-          const ratio = {
-            xRatio: containerRect.width ? newX / containerRect.width : 0.5,
-            yRatio: containerRect.height ? newY / containerRect.height : 0.5
-          }
-          
-          posRef.current = ratio
-          setPos({ x: newX, y: newY })
-        }
-        
-        const handleUp = () => {
-          document.removeEventListener('pointermove', handleMove)
-          document.removeEventListener('pointerup', handleUp)
-          
-          if (posRef.current) {
-            setEditingChart?.({ ...mergedChart, [updateKey]: posRef.current })
-          }
-        }
-        
-        document.addEventListener('pointermove', handleMove)
-        document.addEventListener('pointerup', handleUp)
-      })
-    }
-    
-    // Setup drag for each label
-    setupLabelDrag('.chart-title', titleRatioRef, setTitlePos, 'titlePosition')
-    setupLabelDrag('.x-axis-label', xLabelRatioRef, setXLabelPos, 'xLabelPosition')
-    setupLabelDrag('.y-axis-label', yLabelRatioRef, setYLabelPos, 'yLabelPosition', true)
-  }, [mergedChart, setEditingChart])
-
-  // Handle resize with throttle
+  // Reset parameters on change
   useEffect(() => {
-    if (!containerRef.current) return
-
-    // Set initial dimensions based on container
-    const rect = containerRef.current.getBoundingClientRect()
-    if (rect.width > 0 && rect.height > 0) {
-      const aspectHeight = calculateAspectRatio(rect.height, gridLayout)
-      setDimensions({
-        width: Math.max(400, rect.width),
-        height: Math.max(aspectHeight, Math.min(rect.height, 600))
-      })
-    }
-
-    const resizeObserver = new ResizeObserver(handleResize)
-    resizeObserver.observe(containerRef.current)
-
-    return () => {
-      resizeObserver.disconnect()
-    }
-  }, [handleResize, gridLayout, calculateAspectRatio])
-
-  // Function to render no data display
-  const renderNoDataDisplay = (
-    g: d3.Selection<SVGGElement, unknown, null, undefined>,
-    width: number,
-    height: number,
-    chart: ChartComponent,
-    dataSources: EventInfo[]
-  ) => {
-    // Check configuration status
-    const hasDataSources = dataSources.length > 0
-    const hasXParameter = !!chart.xParameter || chart.xAxisType === "datetime" || chart.xAxisType === "time"
-    const yAxisParams = chart.yAxisParams || []
-    const hasYParameters = yAxisParams.length > 0 && yAxisParams.some(p => p.parameter)
-    const validYParams = yAxisParams.filter(p => p.parameter)
-
-    const centerX = width / 2
-    const centerY = height / 2
+    resetScales()
+    resetZoom()
+    setZoomVersion(v => v + 1)
+  }, [mergedChart.xParameter, mergedChart.yAxisParams, mergedChart.xAxisType, gridLayout, resetScales, resetZoom])
+  
+  // Track axis settings changes
+  useEffect(() => {
+    resetScales()
+    setZoomVersion(v => v + 1)
+  }, [
+    mergedChart.xAxisTicks,
+    mergedChart.yAxisTicks,
+    mergedChart.xAxisTickPrecision,
+    mergedChart.yAxisTickPrecision,
+    mergedChart.showGrid,
+    resetScales
+  ])
+  
+  // Render chart function
+  const doRenderChart = useCallback(() => {
+    if (!svgRef.current || renderingRef.current) return
     
-    // Use ALL available space
-    const isCompact = width < 400 || height < 300
-    const margin = 2 // Ultra minimal margin
-    const boxWidth = width - (margin * 2)
-    const boxHeight = height - (margin * 2)
-    const startX = margin
-    const startY = margin
-
-    // Background box - very subtle
-    g.append("rect")
-      .attr("x", startX)
-      .attr("y", startY)
-      .attr("width", boxWidth)
-      .attr("height", boxHeight)
-      .attr("rx", 2)
-      .attr("fill", "#fcfcfc")
-      .attr("stroke", "#f0f0f0")
-      .attr("stroke-width", 0.5)
-
-    // Calculate dynamic font sizes - MUCH larger to fill space
-    const baseFontSize = Math.max(16, Math.min(32, height / 8))
-    const titleFontSize = Math.min(baseFontSize + 4, height / 6)
-    const statusFontSize = baseFontSize
-    const iconFontSize = baseFontSize + 4
-
-    let currentY = startY + titleFontSize * 0.8
-
-    // Chart title (if exists)
-    if (chart.title) {
-      const maxTitleWidth = boxWidth - 10
-      const titleText = g.append("text")
-        .attr("x", centerX)
-        .attr("y", currentY)
-        .attr("text-anchor", "middle")
-        .attr("font-size", `${titleFontSize}px`)
-        .attr("font-weight", "700")
-        .style("fill", "#1f2937")
-        .text(chart.title)
-      
-      // Truncate if too long
-      let titleNode = titleText.node()
-      if (titleNode && titleNode.getComputedTextLength() > maxTitleWidth) {
-        let truncatedTitle = chart.title
-        while (titleNode.getComputedTextLength() > maxTitleWidth && truncatedTitle.length > 0) {
-          truncatedTitle = truncatedTitle.slice(0, -1)
-          titleText.text(truncatedTitle + "...")
-        }
+    // Cancel any pending animation frame
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+      animationFrameRef.current = null
+    }
+    
+    // Clean up any previous rendering
+    if (cleanupRef.current) {
+      cleanupRef.current()
+      cleanupRef.current = null
+    }
+    
+    // Skip rendering if loading
+    if (isLoadingData) return
+    
+    renderingRef.current = true
+    registerRendering(editingChart.id)
+    
+    animationFrameRef.current = requestAnimationFrame(() => {
+      if (!svgRef.current) {
+        renderingRef.current = false
+        unregisterRendering(editingChart.id)
+        return
       }
-      currentY += titleFontSize * 1.2
-    }
 
-    // Configuration status
-    const statusItems: Array<{
-      label: string
-      status: boolean
-      text: string
-      tooltip?: string | null
-    }> = [
-      {
-        label: "Data",
-        status: hasDataSources,
-        text: hasDataSources 
-          ? `${dataSources.length} selected`
-          : "None selected"
-      },
-      {
-        label: "X-axis",
-        status: hasXParameter,
-        text: hasXParameter
-          ? chart.xAxisType === "datetime" 
-            ? "Datetime"
-            : chart.xAxisType === "time"
-            ? "Time"
-            : chart.xParameter || "Selected"
-          : "Not configured"
-      },
-      {
-        label: "Y-axis",
-        status: hasYParameters,
-        text: hasYParameters
-          ? validYParams[0].parameter + (validYParams.length > 1 ? ` +${validYParams.length - 1} more` : "")
-          : "Not configured",
-        tooltip: validYParams.length > 1 
-          ? validYParams.map(p => p.parameter).join(", ")
-          : null
-      }
-    ]
-
-    // Calculate optimal spacing to fill ALL available height
-    const remainingHeight = boxHeight - (currentY - startY) - 10 // Tiny bottom margin
-    const itemSpacing = remainingHeight / statusItems.length
-    
-    // Use full width for horizontal spacing
-    const iconX = startX + 15
-    const labelX = iconX + iconFontSize + 10
-    const statusX = Math.max(labelX + 80, width * 0.35)
-    
-    statusItems.forEach((item, index) => {
-      const yPos = currentY + (index + 0.5) * itemSpacing
-      
-      // Status icon - LARGE
-      g.append("text")
-        .attr("x", iconX)
-        .attr("y", yPos)
-        .attr("font-size", `${iconFontSize}px`)
-        .attr("font-weight", "bold")
-        .style("fill", item.status ? "#10b981" : "#ef4444")
-        .text(item.status ? "✓" : "✗")
-      
-      // Label
-      g.append("text")
-        .attr("x", labelX)
-        .attr("y", yPos)
-        .attr("font-size", `${statusFontSize}px`)
-        .attr("font-weight", "500")
-        .style("fill", "#6b7280")
-        .text(`${item.label}:`)
-      
-      // Status text group (for tooltip support)
-      const textGroup = g.append("g")
-      
-      // Calculate available width for status text
-      const maxStatusWidth = boxWidth - statusX + startX - 10
-      
-      const statusText = textGroup.append("text")
-        .attr("x", statusX)
-        .attr("y", yPos)
-        .attr("font-size", `${statusFontSize}px`)
-        .attr("font-weight", "500")
-        .style("fill", "#374151")
-        .text(item.text)
-      
-      // Check if text needs truncation
-      const statusNode = statusText.node()
-      if (statusNode && statusNode.getComputedTextLength() > maxStatusWidth) {
-        let truncatedText = item.text
-        while (statusNode.getComputedTextLength() > maxStatusWidth && truncatedText.length > 0) {
-          truncatedText = truncatedText.slice(0, -1)
-          statusText.text(truncatedText + "...")
-        }
-        
-        // Add hover tooltip for full text
-        const fullTextTooltip = g.append("g")
-          .style("visibility", "hidden")
-          .attr("class", "full-text-tooltip")
-        
-        const tooltipBg = fullTextTooltip.append("rect")
-          .attr("fill", "rgba(0, 0, 0, 0.85)")
-          .attr("rx", 3)
-          .attr("stroke", "none")
-        
-        const tooltipText = fullTextTooltip.append("text")
-          .attr("x", 0)
-          .attr("y", 0)
-          .attr("fill", "white")
-          .attr("font-size", `${Math.max(12, baseFontSize - 2)}px`)
-          .attr("dominant-baseline", "middle")
-          .attr("text-anchor", "start")
-          .text(item.text)
-        
-        const bbox = tooltipText.node()?.getBBox()
-        if (bbox) {
-          const padding = 8
-          tooltipBg
-            .attr("x", -padding)
-            .attr("y", bbox.y - padding)
-            .attr("width", bbox.width + padding * 2)
-            .attr("height", bbox.height + padding * 2)
-          
-          // Position tooltip - ensure it stays within bounds
-          const tooltipWidth = bbox.width + padding * 2
-          // Ensure tooltip doesn't go past left or right edges
-          let tooltipX = statusX
-          if (tooltipX + tooltipWidth > boxWidth - 5) {
-            tooltipX = boxWidth - tooltipWidth - 5
+      try {
+        if (memoizedChartData && memoizedChartData.length > 0) {
+          const scalesToUse = getScalesForRendering()
+          renderScalesRef.current = {
+            xScale: scalesToUse.current.xScale,
+            yScale: scalesToUse.current.yScale
           }
-          if (tooltipX < startX + 5) {
-            tooltipX = startX + 5
-          }
-          const tooltipY = yPos - bbox.height - padding * 2 - 5
           
-          fullTextTooltip.attr("transform", `translate(${tooltipX}, ${tooltipY})`)
+          const qualityRenderOptions = qualityState.renderOptions
+          const labelPositions = calculateLabelPositions(finalMargins)
+          
+          const result = renderChart({
+            svg: svgRef.current,
+            data: memoizedChartData,
+            dimensions,
+            margin: finalMargins,
+            chart: mergedChart,
+            scalesToUse,
+            dataSourceStyles: dataSourceStyles || {},
+            enableSampling,
+            qualityRenderOptions,
+            selectionState,
+            isShiftPressed,
+            isRangeSelectionMode,
+            labelPositions,
+            canvas: canvasRef.current ?? undefined,
+            editingChartId: editingChart.id
+          })
+          
+          cleanupRef.current = result.cleanup
+          
+          // Initialize scales after first render
+          if (initializeScales()) {
+            setZoomVersion(v => v + 1)
+          }
+        } else {
+          // Render no data display
+          const svg = d3.select(svgRef.current)
+          svg.selectAll("*").remove()
+          
+          const mainGroup = svg.append("g")
+            .attr("transform", `translate(${finalMargins.left},${finalMargins.top})`)
+          
+          renderNoDataDisplay(
+            mainGroup,
+            finalChartArea.width,
+            finalChartArea.height,
+            mergedChart,
+            selectedDataSourceItems
+          )
         }
         
-        statusText.style("cursor", "pointer")
-        textGroup
-          .on("mouseenter", () => fullTextTooltip.style("visibility", "visible"))
-          .on("mouseleave", () => fullTextTooltip.style("visibility", "hidden"))
-      }
-      
-      // Add tooltip for "+N more" parameters (only if not already truncated)
-      if (item.tooltip && statusNode && statusNode.getComputedTextLength() <= maxStatusWidth) {
-        // Create tooltip rect
-        const tooltipGroup = g.append("g")
-          .style("visibility", "hidden")
-          .attr("class", "tooltip-group")
+        // Add drag handlers for labels after rendering
+        setTimeout(() => {
+          addLabelDragHandlers()
+        }, 50)
         
-        const tooltipText = item.tooltip
-        const tooltipPadding = 8
-        const tooltipFontSize = Math.max(12, baseFontSize - 2)
-        
-        // Background rect for tooltip
-        const tooltipBg = tooltipGroup.append("rect")
-          .attr("fill", "rgba(0, 0, 0, 0.8)")
-          .attr("rx", 3)
-          .attr("stroke", "none")
-        
-        // Tooltip text - split parameters into separate lines
-        const parameters = tooltipText.split(", ")
-        const lineHeight = tooltipFontSize * 1.2
-        
-        // Create text element for multiline text
-        const tooltipTextGroup = tooltipGroup.append("g")
-        
-        parameters.forEach((param, idx) => {
-          tooltipTextGroup.append("text")
-            .attr("x", 0)
-            .attr("y", idx * lineHeight)
-            .attr("fill", "white")
-            .attr("font-size", `${tooltipFontSize}px`)
-            .attr("dominant-baseline", "text-before-edge")
-            .attr("text-anchor", "start")
-            .text(param)
+        // Use double requestAnimationFrame to wait for browser paint
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            renderingRef.current = false
+            animationFrameRef.current = null
+            unregisterRendering(editingChart.id)
+          })
         })
-        
-        // Position tooltip after text is rendered
-        const bbox = tooltipTextGroup.node()?.getBBox()
-        if (bbox) {
-          tooltipBg
-            .attr("x", -tooltipPadding)
-            .attr("y", -tooltipPadding)
-            .attr("width", bbox.width + tooltipPadding * 2)
-            .attr("height", bbox.height + tooltipPadding * 2)
-          
-          // Position tooltip - ensure it stays within bounds
-          const tooltipWidth = bbox.width + tooltipPadding * 2
-          // Ensure tooltip doesn't go past left or right edges
-          let tooltipX = statusX
-          if (tooltipX + tooltipWidth > boxWidth - 5) {
-            tooltipX = boxWidth - tooltipWidth - 5
-          }
-          if (tooltipX < startX + 5) {
-            tooltipX = startX + 5
-          }
-          const tooltipY = yPos - bbox.height - tooltipPadding * 2 - 5
-          
-          tooltipGroup.attr("transform", `translate(${tooltipX}, ${tooltipY})`)
-        }
-        
-        // Underline the "+N more" part
-        const moreMatch = item.text.match(/(\+\d+ more)/)
-        if (moreMatch) {
-          statusText.style("text-decoration", "underline")
-            .style("text-decoration-style", "dotted")
-            .style("cursor", "pointer")
-        }
-        
-        // Show/hide tooltip on hover
-        textGroup
-          .on("mouseenter", () => tooltipGroup.style("visibility", "visible"))
-          .on("mouseleave", () => tooltipGroup.style("visibility", "hidden"))
+      } catch (error) {
+        console.error('Error rendering chart:', error)
+        renderingRef.current = false
+        animationFrameRef.current = null
+        unregisterRendering(editingChart.id)
       }
     })
-
-    // Skip hint text to save space
-  }
-
-  // Render chart function (not memoized for zoom updates)
-  const renderChart = () => {
-      if (!svgRef.current || renderingRef.current) return
-      
-      // Cancel any pending animation frame
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current)
-        animationFrameRef.current = null
-      }
-      
-      // Clean up any previous rendering
-      if (cleanupRef.current) {
-        cleanupRef.current()
-        cleanupRef.current = null
-      }
-      
-      // Skip rendering if loading
-      if (isLoadingData) return
-      
-      renderingRef.current = true
-      registerRendering(editingChart.id)  // Register rendering start
-      
-      animationFrameRef.current = requestAnimationFrame(() => {
-        if (!svgRef.current) {
-          renderingRef.current = false
-          unregisterRendering(editingChart.id)  // Unregister if aborted
-          return
-        }
-
-        try {
-          const svg = d3.select(svgRef.current)
-          
-          // Clear everything except reference lines layer and defs
-          // Get all direct children of the SVG
-          const svgNode = svgRef.current;
-          if (svgNode) {
-            const children = Array.from(svgNode.children);
-            children.forEach(child => {
-              const elem = d3.select(child);
-              const tagName = child.tagName?.toLowerCase();
-              
-              // Keep defs (for clipPaths) and reference-lines-layer
-              if (tagName === 'defs' || elem.classed('reference-lines-layer')) {
-                return; // Keep these elements
-              }
-              
-              // Remove everything else
-              child.remove();
-            });
-          }
-
-          // Use the pre-computed margins
-          const margin = computedMargins
-          
-          // Debug logging
-          if (process.env.NODE_ENV === 'development' && gridLayout?.columns === 4 && gridLayout?.rows === 4) {
-            console.log('[ChartPreviewGraph] Using pre-computed margins:', {
-              chartId: mergedChart.id,
-              margin,
-              dimensions,
-              gridLayout
-            })
-          }
-          
-          const width = dimensions.width - margin.left - margin.right
-          const height = dimensions.height - margin.top - margin.bottom
-          
-          // Set viewBox to ensure content stays within bounds
-          svg.attr("viewBox", `0 0 ${dimensions.width} ${dimensions.height}`)
-            .attr("preserveAspectRatio", "xMidYMid meet")
-
-          // Main group with margin transform
-          const mainGroup = svg.append("g")
-            .attr("transform", `translate(${margin.left},${margin.top})`)
-
-          if (memoizedChartData && memoizedChartData.length > 0) {
-            // Use baseScalesRef for initial render, currentScalesRef for zoomed state
-            // Check if we have valid current scales (they would be set after zoom)
-            const hasValidCurrentScales = currentScalesRef.current.xScale !== null && currentScalesRef.current.yScale !== null
-            const scalesToUse = isInitialRenderComplete.current && hasValidCurrentScales ? currentScalesRef : baseScalesRef
-            
-            // Store the scales we're using for rendering to ensure ReferenceLines uses the same
-            renderScalesRef.current = {
-              xScale: scalesToUse.current.xScale,
-              yScale: scalesToUse.current.yScale
-            }
-            
-            // Only log significant state changes
-            if (process.env.NODE_ENV === 'development' && zoomVersion > 0) {
-              console.log(`[Chart ${chartRenderProps.id}] Rendering with zoom version:`, zoomVersion)
-            }
-            
-            // Debug log scales information
-            if (process.env.NODE_ENV === 'development' && baseScalesRef.current.xScale) {
-              const domain = baseScalesRef.current.xScale.domain()
-              console.log('[ChartPreviewGraph] Current scales:', {
-                chartId: chartRenderProps.id,
-                usingCurrentScales: scalesToUse === currentScalesRef,
-                baseScaleDomain: domain,
-                baseScaleDomainStart: domain[0] instanceof Date ? domain[0].toISOString() : domain[0],
-                baseScaleDomainEnd: domain[1] instanceof Date ? domain[1].toISOString() : domain[1],
-                hasCurrentScales: hasValidCurrentScales
-              })
-            }
-            
-            
-            // Apply quality optimization if enabled
-            const dataToRender = qualityRenderOptions.samplingRate < 1
-              ? memoizedChartData.filter((_, i) => i % Math.round(1 / qualityRenderOptions.samplingRate) === 0)
-              : memoizedChartData
-              
-            // Override chart display options based on quality level
-            const optimizedChart = {
-              ...mergedChart,
-              margins: margin, // Use calculated pixel values instead of percentage strings
-              showMarkers: qualityRenderOptions.enableMarkers && mergedChart.showMarkers,
-            }
-            
-            // Calculate label positions from ratios
-            const labelPositions: any = {}
-            
-            if (titleRatioRef.current && containerRef.current) {
-              const containerRect = containerRef.current.getBoundingClientRect()
-              labelPositions.title = {
-                x: titleRatioRef.current.xRatio * containerRect.width - margin.left,
-                y: titleRatioRef.current.yRatio * containerRect.height - margin.top
-              }
-            }
-            
-            if (xLabelRatioRef.current && containerRef.current) {
-              const containerRect = containerRef.current.getBoundingClientRect()
-              labelPositions.xLabel = {
-                x: xLabelRatioRef.current.xRatio * containerRect.width - margin.left,
-                y: xLabelRatioRef.current.yRatio * containerRect.height - margin.top
-              }
-            }
-            
-            if (yLabelRatioRef.current && containerRef.current) {
-              const containerRect = containerRef.current.getBoundingClientRect()
-              labelPositions.yLabel = {
-                x: yLabelRatioRef.current.xRatio * containerRect.width - margin.left,
-                y: yLabelRatioRef.current.yRatio * containerRect.height - margin.top
-              }
-            }
-            
-            // Render chart with current scales - pass mainGroup
-            renderScatterPlot({ 
-              g: mainGroup, 
-              data: dataToRender, 
-              width, 
-              height, 
-              editingChart: optimizedChart, 
-              scalesRef: scalesToUse, 
-              dataSourceStyles: memoizedDataSourceStyles, 
-              canvas: canvasRef.current ?? undefined,
-              plotStyles: mergedChart.plotStyles,
-              enableSampling: enableSampling,
-              disableTooltips: selectionState.isSelecting || isShiftPressed,
-              labelPositions: Object.keys(labelPositions).length > 0 ? labelPositions : undefined
-            })
-
-            // On first render, copy base scales to current scales
-            if (!isInitialRenderComplete.current && baseScalesRef.current.xScale) {
-              currentScalesRef.current.xScale = baseScalesRef.current.xScale
-              currentScalesRef.current.yScale = baseScalesRef.current.yScale
-              isInitialRenderComplete.current = true
-              // Initial render complete, scales ready
-              setScalesReady(true) // Mark scales as ready for ReferenceLines
-              
-              // Apply pending zoom transform if any
-              if (pendingZoomTransform.current) {
-                // Apply pending zoom transform
-                handleZoomTransform(pendingZoomTransform.current);
-              }
-            }
-            
-            // Add selection overlay if selecting or shift is pressed or in range selection mode
-            if (selectionState.isSelecting || isShiftPressed || isRangeSelectionMode) {
-              // Create an invisible overlay that captures all mouse events during selection
-              svg.append("rect")
-                .attr("class", "selection-overlay")
-                .attr("x", 0)
-                .attr("y", 0)
-                .attr("width", dimensions.width)
-                .attr("height", dimensions.height)
-                .attr("fill", "transparent")
-                .style("cursor", "crosshair")
-                .style("pointer-events", "all");
-              
-              // Draw selection rectangle within the plot area (only if actively selecting)
-              if (selectionState.isSelecting) {
-                if (process.env.NODE_ENV === 'development') {
-                  console.log(`[ChartPreviewGraph ${editingChart.id}] Drawing selection rect:`, {
-                    selectionState,
-                    plotDimensions: { width, height },
-                    margin
-                  });
-                }
-                
-                // Create a unique clip path for selection
-                const selectionClipId = `selection-clip-${Math.random().toString(36).substr(2, 9)}`;
-                mainGroup.append("clipPath")
-                  .attr("id", selectionClipId)
-                  .append("rect")
-                  .attr("x", 0)
-                  .attr("y", 0)
-                  .attr("width", width)
-                  .attr("height", height);
-                
-                const selectionGroup = mainGroup.append("g")
-                  .attr("class", "selection-rect")
-                  .attr("clip-path", `url(#${selectionClipId})`);
-                
-                const rectX = Math.min(selectionState.startX, selectionState.endX) - margin.left;
-                const rectY = Math.min(selectionState.startY, selectionState.endY) - margin.top;
-                const rectWidth = Math.abs(selectionState.endX - selectionState.startX);
-                const rectHeight = Math.abs(selectionState.endY - selectionState.startY);
-                
-                if (process.env.NODE_ENV === 'development') {
-                  console.log(`[ChartPreviewGraph ${editingChart.id}] Selection rect attributes:`, {
-                    x: rectX,
-                    y: rectY,
-                    width: rectWidth,
-                    height: rectHeight
-                  });
-                }
-                
-                selectionGroup.append("rect")
-                  .attr("x", rectX)
-                  .attr("y", rectY)
-                  .attr("width", rectWidth)
-                  .attr("height", rectHeight)
-                  .attr("fill", "rgba(59, 130, 246, 0.1)")
-                  .attr("stroke", "rgb(59, 130, 246)")
-                  .attr("stroke-width", "2")
-                  .attr("stroke-dasharray", "4,2")
-                  .style("pointer-events", "none");
-              }
-            }
-          } else {
-            // Show loading or no data message
-            if (!isLoadingData) {
-              // Create a React component mounting point
-              const foreignObject = mainGroup.append("foreignObject")
-                .attr("x", 0)
-                .attr("y", 0)
-                .attr("width", width)
-                .attr("height", height)
-              
-              // Use D3 to render the NoDataDisplay component
-              const container = foreignObject.append("xhtml:div")
-              
-              // Create SVG element for NoDataDisplay
-              const noDataSvg = container.append("svg")
-                .attr("width", width)
-                .attr("height", height)
-              
-              // Render NoDataDisplay manually as SVG elements
-              const noDataG = noDataSvg.append("g")
-              
-              // Import and render NoDataDisplay content directly
-              // Since we can't use React components directly in D3, we'll recreate the display
-              renderNoDataDisplay(noDataG, width, height, mergedChart, selectedDataSourceItems)
-            }
-            // If loading, the loading indicator in the parent component will show
-          }
-          
-          // Store cleanup function
-          cleanupRef.current = () => {
-            hideAllTooltips()
-          }
-          
-          // Add drag handlers for labels after rendering
-          setTimeout(() => {
-            addLabelDragHandlers()
-          }, 50)
-          
-          // Use double requestAnimationFrame to wait for browser paint
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              renderingRef.current = false
-              animationFrameRef.current = null
-              unregisterRendering(editingChart.id)  // Unregister after paint
-              
-              if (process.env.NODE_ENV === 'development') {
-                console.log(`[Chart ${editingChart.id}] Rendering complete (after paint)`)
-              }
-            })
-          })
-        } catch (error) {
-          console.error('Error rendering chart:', error)
-          renderingRef.current = false
-          animationFrameRef.current = null
-          unregisterRendering(editingChart.id)  // Unregister on error
-        }
-      })
-    }
-
-  // Initial render and updates
+  }, [
+    memoizedChartData,
+    dimensions,
+    finalMargins,
+    finalChartArea,
+    mergedChart,
+    dataSourceStyles,
+    enableSampling,
+    qualityState.renderOptions,
+    selectionState,
+    isShiftPressed,
+    isRangeSelectionMode,
+    editingChart.id,
+    isLoadingData,
+    registerRendering,
+    unregisterRendering,
+    getScalesForRendering,
+    initializeScales,
+    calculateLabelPositions,
+    addLabelDragHandlers,
+    selectedDataSourceItems
+  ])
+  
+  // Render on dependencies change
   useEffect(() => {
-    // Debug logging in development
-    if (process.env.NODE_ENV === 'development' && memoizedChartData?.length > 0) {
-      const currentDeps = {
-        chartData: memoizedChartData,
-        dimensions,
-        isLoadingData,
-        enableSampling,
-        zoomVersion,
-        samplingRate: qualityRenderOptions.samplingRate,
-        enableMarkers: qualityRenderOptions.enableMarkers,
-        chartId: chartRenderProps.id,
-        chartType: chartRenderProps.type || 'scatter',
-        showMarkers: chartRenderProps.showMarkers || false,
-        showLines: chartRenderProps.showLines || false,
-        plotStyles: chartRenderProps.plotStyles,
-        computedMargins,
-        xAxisTicks: chartRenderProps.xAxisTicks,
-        yAxisTicks: chartRenderProps.yAxisTicks,
-        xAxisTickPrecision: chartRenderProps.xAxisTickPrecision,
-        yAxisTickPrecision: chartRenderProps.yAxisTickPrecision,
-      }
-      
-      if (prevRenderDeps.current) {
-        const changes: string[] = []
-        if (prevRenderDeps.current.chartData !== currentDeps.chartData) changes.push('chartData')
-        if (prevRenderDeps.current.dimensions !== currentDeps.dimensions) changes.push('dimensions')
-        if (prevRenderDeps.current.isLoadingData !== currentDeps.isLoadingData) changes.push('isLoadingData')
-        if (prevRenderDeps.current.enableSampling !== currentDeps.enableSampling) changes.push('enableSampling')
-        if (prevRenderDeps.current.zoomVersion !== currentDeps.zoomVersion) changes.push('zoomVersion')
-        if (prevRenderDeps.current.samplingRate !== currentDeps.samplingRate) changes.push('samplingRate')
-        if (prevRenderDeps.current.enableMarkers !== currentDeps.enableMarkers) changes.push('enableMarkers')
-        if (prevRenderDeps.current.chartId !== currentDeps.chartId) changes.push('chartId')
-        if (prevRenderDeps.current.chartType !== currentDeps.chartType) changes.push('chartType')
-        if (prevRenderDeps.current.showMarkers !== currentDeps.showMarkers) changes.push('showMarkers')
-        if (prevRenderDeps.current.showLines !== currentDeps.showLines) changes.push('showLines')
-        if (!arePlotStylesEqual(prevRenderDeps.current.plotStyles, currentDeps.plotStyles)) changes.push('plotStyles')
-        if (JSON.stringify(prevRenderDeps.current.computedMargins) !== JSON.stringify(currentDeps.computedMargins)) changes.push('computedMargins')
-        if (prevRenderDeps.current.xAxisTicks !== currentDeps.xAxisTicks) changes.push('xAxisTicks')
-        if (prevRenderDeps.current.yAxisTicks !== currentDeps.yAxisTicks) changes.push('yAxisTicks')
-        if (prevRenderDeps.current.xAxisTickPrecision !== currentDeps.xAxisTickPrecision) changes.push('xAxisTickPrecision')
-        if (prevRenderDeps.current.yAxisTickPrecision !== currentDeps.yAxisTickPrecision) changes.push('yAxisTickPrecision')
-        
-        if (process.env.NODE_ENV === 'development' && changes.length > 0) {
-          console.log(`[Chart ${chartRenderProps.id}] Render triggered by changes in:`, changes)
-          // Log axis settings specifically if they changed
-          if (changes.some(c => c.includes('Axis'))) {
-            console.log('[ChartPreviewGraph] Axis settings in render:', {
-              xAxisTicks: chartRenderProps.xAxisTicks,
-              yAxisTicks: chartRenderProps.yAxisTicks,
-              xAxisTickPrecision: chartRenderProps.xAxisTickPrecision,
-              yAxisTickPrecision: chartRenderProps.yAxisTickPrecision
-            })
-          }
-        }
-      }
-      
-      prevRenderDeps.current = currentDeps
-    }
-    
-    renderChart()
+    doRenderChart()
     
     return () => {
       if (animationFrameRef.current) {
@@ -1641,70 +593,12 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       }
       if (renderingRef.current) {
         renderingRef.current = false
-        unregisterRendering(editingChart.id)  // Clean up if render was in progress
+        unregisterRendering(editingChart.id)
       }
     }
-  }, [
-    memoizedChartData, 
-    dimensions, 
-    isLoadingData, 
-    enableSampling, 
-    zoomVersion,
-    // Extract individual properties from qualityRenderOptions to avoid object reference changes
-    qualityRenderOptions.samplingRate,
-    qualityRenderOptions.enableMarkers,
-    // Use specific chart render properties instead of whole objects
-    chartRenderProps.id,
-    chartRenderProps.type,
-    chartRenderProps.showMarkers,
-    chartRenderProps.showLines,
-    chartRenderProps.plotStyles,
-    // Display settings
-    chartRenderProps.title,
-    chartRenderProps.showTitle,
-    chartRenderProps.showGrid,
-    chartRenderProps.showXLabel,
-    chartRenderProps.showYLabel,
-    // Axis tick settings
-    chartRenderProps.xAxisTicks,
-    chartRenderProps.yAxisTicks,
-    chartRenderProps.xAxisTickPrecision,
-    chartRenderProps.yAxisTickPrecision,
-    // margins are accessed directly from mergedChart in render function
-    selectionState.isSelecting,
-    selectionState.startX,
-    selectionState.startY,
-    selectionState.endX,
-    selectionState.endY,
-    isShiftPressed,
-    computedMargins,
-  ])
+  }, [doRenderChart])
   
-
-  // Debug: Track previous render values in development
-  const prevRenderDeps = useRef<{
-    chartData: any[],
-    dimensions: any,
-    isLoadingData: boolean,
-    enableSampling: boolean,
-    zoomVersion: number,
-    samplingRate: number,
-    enableMarkers: boolean,
-    chartId: string,
-    chartType: string,
-    showMarkers: boolean,
-    showLines: boolean,
-    plotStyles: any,
-    computedMargins: { top: number; right: number; bottom: number; left: number },
-    xAxisTicks?: number,
-    yAxisTicks?: number,
-    xAxisTickPrecision?: number,
-    yAxisTickPrecision?: number,
-  } | null>(null)
-  
-  // Track shift key state for visual feedback - only for this chart
-  const [isMouseOver, setIsMouseOver] = React.useState(false)
-  
+  // Track shift key state
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Shift' && (isMouseOver || isRangeSelectionMode)) {
@@ -1726,54 +620,37 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       window.removeEventListener('keyup', handleKeyUp)
     }
   }, [isMouseOver, isRangeSelectionMode])
-
   
-  // Clean up tooltips on unmount
+  // Clean up on unmount
   useEffect(() => {
     return () => {
-      hideAllTooltips()
       cleanupQuality()
-      unregisterRendering(editingChart.id)  // Clean up rendering state
+      unregisterRendering(editingChart.id)
       if (canvasRef.current && containerRef.current) {
         containerRef.current.removeChild(canvasRef.current)
       }
     }
   }, [cleanupQuality, editingChart.id, unregisterRendering])
-
+  
   return (
-    <div 
-      ref={containerRef} 
-      className="w-full h-full relative overflow-hidden"
+    <ChartContainer
+      ref={containerRef}
+      isLoading={isLoadingData}
+      error={error}
       onMouseEnter={() => setIsMouseOver(true)}
       onMouseLeave={() => {
         setIsMouseOver(false)
         setIsShiftPressed(false)
       }}
     >
-      {isLoadingData && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
-          <div className="text-sm text-muted-foreground">Loading data...</div>
-        </div>
-      )}
-      {error && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
-          <div className="text-sm text-destructive">Error loading data</div>
-        </div>
-      )}
-      <div className="relative w-full h-full overflow-hidden">
-        <svg 
-          ref={svgRef} 
-          width={dimensions.width} 
-          height={dimensions.height} 
-          className="absolute inset-0" 
-          style={{ 
-            visibility: isLoadingData ? 'hidden' : 'visible',
-            maxWidth: '100%',
-            maxHeight: '100%'
-          }}
-          data-chart-id={chartRenderProps.id}
-        />
-      </div>
+      <ChartCanvas
+        ref={svgRef}
+        width={dimensions.width}
+        height={dimensions.height}
+        isLoading={isLoadingData}
+        chartId={editingChart.id}
+      />
+      
       {!isLoadingData && mergedChart.showLegend !== false && selectedDataSourceItems.length > 0 && (
         <ChartLegend
           ref={legendRef}
@@ -1785,81 +662,34 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           dataSourceStyles={dataSourceStyles}
         />
       )}
-      {!isLoadingData && scalesReady && renderScalesRef.current.xScale && renderScalesRef.current.yScale && (
+      
+      {!isLoadingData && areScalesReady() && renderScalesRef.current.xScale && renderScalesRef.current.yScale && (
         <ReferenceLines
           svgRef={svgRef}
           editingChart={mergedChart}
           setEditingChart={setEditingChart}
           scalesRef={renderScalesRef}
           dimensions={dimensions}
-          margins={computedMargins}
+          margins={finalMargins}
           zoomVersion={zoomVersion}
         />
       )}
-      {enableZoom && showZoomControls && (
-        <>
-          {/* Check if this is being used in ChartCard (has chartSettings) */}
-          {chartSettings ? (
-            // Compact mode for ChartCard - show on hover
-            <div 
-              className={`absolute z-10 transition-opacity duration-200 ${isMouseOver ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-              style={{ 
-                bottom: '4px', 
-                right: '8px' 
-              }}
-            >
-              <ZoomControls
-                onZoomIn={zoomIn}
-                onZoomOut={zoomOut}
-                onReset={resetZoom}
-                zoomLevel={zoomLevel}
-                minZoom={0.5}
-                maxZoom={10}
-                showZoomLevel={false}
-                isRangeSelectionMode={isRangeSelectionMode}
-                onToggleRangeSelection={() => setIsRangeSelectionMode(!isRangeSelectionMode)}
-                variant={isCompactLayout ? "ultra-compact" : "default"}
-                position="static"
-                orientation="horizontal"
-              />
-            </div>
-          ) : (
-            // Default mode for ChartEditModal - position above x-axis
-            <div 
-              className="absolute z-10"
-              style={{ 
-                bottom: '8px', 
-                right: '16px' 
-              }}
-            >
-              <ZoomControls
-                onZoomIn={zoomIn}
-                onZoomOut={zoomOut}
-                onReset={resetZoom}
-                zoomLevel={zoomLevel}
-                minZoom={0.5}
-                maxZoom={10}
-                showZoomLevel={true}
-                isRangeSelectionMode={isRangeSelectionMode}
-                onToggleRangeSelection={() => setIsRangeSelectionMode(!isRangeSelectionMode)}
-                variant="default"
-                position="static"
-                orientation="horizontal"
-              />
-            </div>
-          )}
-          {(isShiftPressed || isRangeSelectionMode) && (
-            <div className={`absolute ${chartSettings ? 'top-1' : 'top-4'} left-1/2 transform -translate-x-1/2 bg-blue-500/90 text-white px-3 py-1 rounded-md text-sm font-medium shadow-md backdrop-blur-sm`}>
-              {isRangeSelectionMode ? '範囲選択モード - ドラッグで範囲を選択' : 'Range selection mode - Drag to select area'}
-            </div>
-          )}
-          {qualityState.isTransitioning && qualityState.level !== 'high' && !chartSettings && (
-            <div className="absolute bottom-20 right-4 bg-yellow-500/90 text-white px-2 py-1 rounded text-xs font-medium shadow-sm backdrop-blur-sm">
-              Performance mode
-            </div>
-          )}
-        </>
-      )}
-    </div>
+      
+      <ChartOverlay
+        enableZoom={enableZoom}
+        showZoomControls={showZoomControls}
+        isMouseOver={isMouseOver}
+        isCompactLayout={isCompactLayout}
+        chartSettings={chartSettings}
+        zoomLevel={zoomLevel}
+        isRangeSelectionMode={isRangeSelectionMode}
+        isShiftPressed={isShiftPressed}
+        qualityState={qualityState}
+        onZoomIn={zoomIn}
+        onZoomOut={zoomOut}
+        onResetZoom={resetZoom}
+        onToggleRangeSelection={() => setIsRangeSelectionMode(!isRangeSelectionMode)}
+      />
+    </ChartContainer>
   )
 }, chartPreviewGraphPropsAreEqual)
