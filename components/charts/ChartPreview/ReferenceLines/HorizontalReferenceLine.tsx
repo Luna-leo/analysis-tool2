@@ -46,6 +46,20 @@ export function HorizontalReferenceLine({
   const color = line.color || "#ff0000"
   const strokeDasharray = line.style === "dashed" ? "5,5" : line.style === "dotted" ? "2,2" : "none"
   
+  // Validate scale before using
+  if (!yScale || typeof yScale !== 'function') {
+    console.warn('Invalid yScale provided to HorizontalReferenceLine')
+    return null
+  }
+  
+  // Validate scale domain/range
+  const domain = yScale.domain()
+  const range = yScale.range()
+  if (!domain || !range || domain.length !== 2 || range.length !== 2) {
+    console.warn('Invalid scale domain or range in HorizontalReferenceLine')
+    return null
+  }
+  
   let yPos: number
   
   // Use drag position only if this specific line is currently being dragged
@@ -101,7 +115,9 @@ export function HorizontalReferenceLine({
           }
         })
         .on("drag", function(event) {
-          const clampedY = Math.max(0, Math.min(height, event.y))
+          // Use d3.pointer to get accurate coordinates relative to the parent group
+          const [_, y] = d3.pointer(event, this.parentNode as SVGGElement)
+          const clampedY = Math.max(0, Math.min(height, y))
           onDrag(clampedY)
           
           // Update visual elements directly without re-render
@@ -128,7 +144,9 @@ export function HorizontalReferenceLine({
           }
         })
         .on("end", function(event) {
-          const clampedY = Math.max(0, Math.min(height, event.y))
+          // Use d3.pointer to get accurate coordinates relative to the parent group
+          const [_, y] = d3.pointer(event, this.parentNode as SVGGElement)
+          const clampedY = Math.max(0, Math.min(height, y))
           const numValue = yScale.invert(clampedY)
           // Keep decimal precision
           const newValue = Math.round(numValue * 1000) / 1000 // 3 decimal places

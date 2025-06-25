@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useRef } from "react"
+import React, { useEffect, useRef, useMemo } from "react"
 import * as d3 from "d3"
 import { ChartComponent } from "@/types"
 import { VerticalReferenceLine } from "./VerticalReferenceLine"
@@ -47,6 +47,23 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
   useEffect(() => {
     editingChartRef.current = editingChart
   }, [editingChart])
+  
+  // Track scale changes with fingerprinting
+  const scaleFingerprint = useMemo(() => {
+    if (!scalesRef.current.xScale || !scalesRef.current.yScale) return null
+    
+    const xDomain = scalesRef.current.xScale.domain()
+    const xRange = scalesRef.current.xScale.range()
+    const yDomain = scalesRef.current.yScale.domain()
+    const yRange = scalesRef.current.yScale.range()
+    
+    return JSON.stringify({
+      xDomain: xDomain.map(d => d instanceof Date ? d.getTime() : d),
+      xRange,
+      yDomain,
+      yRange
+    })
+  }, [scalesRef.current.xScale, scalesRef.current.yScale, zoomVersion])
 
   useEffect(() => {
     if (!svgRef.current || !scalesRef.current.xScale || !scalesRef.current.yScale) return
@@ -138,7 +155,7 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
     draggingLine,
     draggingLabel,
     svgRef,
-    scalesRef,
+    scaleFingerprint, // Track actual scale changes
     dimensions,
     margins,
     zoomVersion
