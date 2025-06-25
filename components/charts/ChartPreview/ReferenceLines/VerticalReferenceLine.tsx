@@ -8,6 +8,7 @@ import { formatDateToISOWithoutMillis } from "@/utils/dateUtils"
 interface VerticalReferenceLineProps {
   line: ReferenceLine
   group: d3.Selection<SVGGElement, unknown, null, undefined>
+  labelGroup: d3.Selection<SVGGElement, unknown, null, undefined>
   xScale: d3.ScaleTime<number, number> | d3.ScaleLinear<number, number>
   width: number
   height: number
@@ -28,6 +29,7 @@ interface VerticalReferenceLineProps {
 export function VerticalReferenceLine({
   line,
   group,
+  labelGroup,
   xScale,
   width,
   height,
@@ -113,17 +115,6 @@ export function VerticalReferenceLine({
     const y1 = 0
     const y2 = height
     
-    // Debug logging
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[VerticalReferenceLine] Line coordinates:', {
-        lineId: line.id,
-        xPos,
-        y1,
-        y2,
-        height,
-        width
-      })
-    }
     
     mainLine
       .attr("x1", xPos)
@@ -260,16 +251,20 @@ export function VerticalReferenceLine({
         .attr("y2", y2)
     }
     
-    // Update or create label - ensure it's always on top
-    if (line.label) {
-      let labelGroup = group.select<SVGGElement>(".line-label-group")
-      if (labelGroup.empty()) {
-        labelGroup = group.append("g")
+    // Check if line is completely outside plot area
+    const lineThreshold = 5 // Allow a few pixels of tolerance
+    const isLineVisible = xPos >= -lineThreshold && xPos <= width + lineThreshold
+    
+    // Update or create label - in the separate label group
+    if (line.label && isLineVisible) {
+      let labelGroupElement = labelGroup.select<SVGGElement>(".line-label-group")
+      if (labelGroupElement.empty()) {
+        labelGroupElement = labelGroup.append("g")
           .attr("class", "line-label-group")
       }
       
-      let labelBackground = labelGroup.select<SVGRectElement>(".line-label-background")
-      let labelText = labelGroup.select<SVGTextElement>(".line-label")
+      let labelBackground = labelGroupElement.select<SVGRectElement>(".line-label-background")
+      let labelText = labelGroupElement.select<SVGTextElement>(".line-label")
       
       // Calculate label position
       let labelX = xPos + 3
@@ -286,7 +281,7 @@ export function VerticalReferenceLine({
       }
       
       if (labelBackground.empty()) {
-        labelBackground = labelGroup.append("rect")
+        labelBackground = labelGroupElement.append("rect")
           .attr("class", "line-label-background")
           .attr("fill", "white")
           .attr("fill-opacity", 0.9)
@@ -298,7 +293,7 @@ export function VerticalReferenceLine({
       }
       
       if (labelText.empty()) {
-        labelText = labelGroup.append("text")
+        labelText = labelGroupElement.append("text")
           .attr("class", "line-label")
           .style("font-size", "12px")
           .style("cursor", "move")
@@ -333,8 +328,8 @@ export function VerticalReferenceLine({
             const [x, y] = d3.pointer(event, this)
             
             // Get the current line position from DOM
-            const parentGroup = d3.select(this.parentNode as SVGGElement)
-            const mainLine = parentGroup.select(".main-line")
+            // Line is in the group (clip area), need to find it
+            const mainLine = group.select(".main-line")
             const lineX = parseFloat(mainLine.attr("x1"))
             
             // Calculate offset from actual line position
@@ -344,7 +339,7 @@ export function VerticalReferenceLine({
             onLabelDragEnd(offsetX, offsetY)
           })
           
-        labelGroup.call(labelDrag)
+        labelGroupElement.call(labelDrag)
       }
       
       labelText
@@ -363,9 +358,10 @@ export function VerticalReferenceLine({
         .attr("height", textBBox.height + 4)
       
       // Ensure label group is on top
-      labelGroup.raise()
-    } else {
-      group.select(".line-label-group").remove()
+      labelGroupElement.raise()
+    } else if (!isLineVisible && line.label) {
+      // Remove label if line is not visible
+      labelGroup.select(".line-label-group").remove()
     }
     
     // Remove any existing handle (no handle for vertical lines)

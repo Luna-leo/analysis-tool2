@@ -91,41 +91,34 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
     // Update transform to match the current margin (this ensures lines stay aligned with the chart)
     refLinesLayer.attr("transform", `translate(${margin.left},${margin.top})`)
     
-    // Apply clip path to constrain reference lines to plot area
-    refLinesLayer.attr("clip-path", `url(#${clipId})`)
+    // Create or select clip group for lines
+    let clipGroup = refLinesLayer.select<SVGGElement>(".reference-lines-clip-group")
+    if (clipGroup.empty()) {
+      clipGroup = refLinesLayer
+        .append<SVGGElement>("g")
+        .attr("class", "reference-lines-clip-group")
+    }
+    
+    // Apply clip path to lines group only
+    clipGroup.attr("clip-path", `url(#${clipId})`)
+    
+    // Create or select labels group (no clip path)
+    let labelsGroup = refLinesLayer.select<SVGGElement>(".reference-labels-group")
+    if (labelsGroup.empty()) {
+      labelsGroup = refLinesLayer
+        .append<SVGGElement>("g")
+        .attr("class", "reference-labels-group")
+        .style("pointer-events", isInteractive ? "auto" : "none")
+    }
     
     // Always bring reference lines layer to front
     refLinesLayer.raise()
 
-    // Debug scale and dimension information
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[ReferenceLines] Dimensions check:', {
-        chartId: editingChart.id,
-        passedDimensions: dimensions,
-        passedMargins: margins,
-        calculatedWidth: width,
-        calculatedHeight: height,
-        margin,
-        svgElement: svgRef.current
-      })
-      
-      if (scalesRef.current.xScale) {
-        const domain = scalesRef.current.xScale.domain()
-        console.log('[ReferenceLines] Drawing with scales:', {
-          domain,
-          domainStart: domain[0] instanceof Date ? domain[0].toISOString() : domain[0],
-          domainEnd: domain[1] instanceof Date ? domain[1].toISOString() : domain[1],
-          xRange: scalesRef.current.xScale.range(),
-          yRange: scalesRef.current.yScale?.range(),
-          width,
-          height
-        })
-      }
-    }
     
     // Always draw reference lines
     drawReferenceLines(
-      refLinesLayer,
+      clipGroup,
+      labelsGroup,
       scalesRef.current.xScale,
       scalesRef.current.yScale,
       width,
@@ -172,7 +165,8 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
   }
 
   const drawReferenceLines = (
-    g: d3.Selection<SVGGElement, unknown, null, undefined>, 
+    linesGroup: d3.Selection<SVGGElement, unknown, null, undefined>, 
+    labelsGroup: d3.Selection<SVGGElement, unknown, null, undefined>,
     xScale: d3.ScaleTime<number, number> | d3.ScaleLinear<number, number>, 
     yScale: d3.ScaleLinear<number, number>, 
     width: number, 
@@ -181,30 +175,45 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
     const referenceLines = editingChartRef.current.referenceLines || []
     const isInteractive = !!setEditingChart
     
-    // Data join with existing elements
-    const lineGroups = g.selectAll<SVGGElement, typeof referenceLines[0]>(".reference-line-group")
+    // Data join for line groups (in clip area)
+    const lineGroups = linesGroup.selectAll<SVGGElement, typeof referenceLines[0]>(".reference-line-group")
       .data(referenceLines, d => d.id)
     
-    // Remove exit selection
-    lineGroups.exit().remove()
+    // Data join for label groups (outside clip area)
+    const labelGroups = labelsGroup.selectAll<SVGGElement, typeof referenceLines[0]>(".reference-label-group")
+      .data(referenceLines, d => d.id)
     
-    // Enter selection - create new groups
+    // Remove exit selections
+    lineGroups.exit().remove()
+    labelGroups.exit().remove()
+    
+    // Enter selection for lines
     const lineGroupsEnter = lineGroups.enter()
       .append("g")
       .attr("class", "reference-line-group")
       .attr("data-line-id", d => d.id)
     
+    // Enter selection for labels
+    const labelGroupsEnter = labelGroups.enter()
+      .append("g")
+      .attr("class", "reference-label-group")
+      .attr("data-line-id", d => d.id)
+    
     // Merge enter and update selections
     const allLineGroups = lineGroupsEnter.merge(lineGroups)
+    const allLabelGroups = labelGroupsEnter.merge(labelGroups)
     
     // Update each line group
-    allLineGroups.each(function(line) {
-      const group = d3.select(this)
+    allLineGroups.each(function(line, index) {
+      const lineGroup = d3.select(this)
+      // Get corresponding label group
+      const labelGroup = d3.select(allLabelGroups.nodes()[index])
       
       if (line.type === "vertical") {
         VerticalReferenceLine({
           line,
-          group,
+          group: lineGroup,
+          labelGroup,
           xScale,
           width,
           height,
@@ -231,7 +240,7 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
           isLabelDragging: isLabelDragging(line.id),
           labelDragPosition: getLabelDragPosition(line.id),
           onLabelDragStart: () => {
-            const labelEl = group.select(".line-label")
+            const labelEl = labelGroup.select(".line-label")
             if (!labelEl.empty()) {
               const x = parseFloat(labelEl.attr("x"))
               const y = parseFloat(labelEl.attr("y"))
@@ -259,7 +268,8 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
       } else if (line.type === "horizontal") {
         HorizontalReferenceLine({
           line,
-          group,
+          group: lineGroup,
+          labelGroup,
           yScale,
           width,
           height,
@@ -285,7 +295,7 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
           isLabelDragging: isLabelDragging(line.id),
           labelDragPosition: getLabelDragPosition(line.id),
           onLabelDragStart: () => {
-            const labelEl = group.select(".line-label")
+            const labelEl = labelGroup.select(".line-label")
             if (!labelEl.empty()) {
               const x = parseFloat(labelEl.attr("x"))
               const y = parseFloat(labelEl.attr("y"))

@@ -7,6 +7,7 @@ import { ReferenceLine } from "@/types"
 interface HorizontalReferenceLineProps {
   line: ReferenceLine
   group: d3.Selection<SVGGElement, unknown, null, undefined>
+  labelGroup: d3.Selection<SVGGElement, unknown, null, undefined>
   yScale: d3.ScaleLinear<number, number>
   width: number
   height: number
@@ -26,6 +27,7 @@ interface HorizontalReferenceLineProps {
 export function HorizontalReferenceLine({
   line,
   group,
+  labelGroup,
   yScale,
   width,
   height,
@@ -69,17 +71,6 @@ export function HorizontalReferenceLine({
     const x1 = 0
     const x2 = width
     
-    // Debug logging
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[HorizontalReferenceLine] Line coordinates:', {
-        lineId: line.id,
-        yPos,
-        x1,
-        x2,
-        width,
-        height
-      })
-    }
     
     mainLine
       .attr("x1", x1)
@@ -163,16 +154,20 @@ export function HorizontalReferenceLine({
         .attr("y2", yPos)
     }
     
-    // Update or create label
-    if (line.label) {
-      let labelGroup = group.select<SVGGElement>(".line-label-group")
-      if (labelGroup.empty()) {
-        labelGroup = group.append("g")
+    // Check if line is completely outside plot area
+    const lineThreshold = 5 // Allow a few pixels of tolerance
+    const isLineVisible = yPos >= -lineThreshold && yPos <= height + lineThreshold
+    
+    // Update or create label - in the separate label group
+    if (line.label && isLineVisible) {
+      let labelGroupElement = labelGroup.select<SVGGElement>(".line-label-group")
+      if (labelGroupElement.empty()) {
+        labelGroupElement = labelGroup.append("g")
           .attr("class", "line-label-group")
       }
       
-      let labelBackground = labelGroup.select<SVGRectElement>(".line-label-background")
-      let labelText = labelGroup.select<SVGTextElement>(".line-label")
+      let labelBackground = labelGroupElement.select<SVGRectElement>(".line-label-background")
+      let labelText = labelGroupElement.select<SVGTextElement>(".line-label")
       
       // Calculate label position
       let labelX = 5
@@ -189,7 +184,7 @@ export function HorizontalReferenceLine({
       }
       
       if (labelBackground.empty()) {
-        labelBackground = labelGroup.append("rect")
+        labelBackground = labelGroupElement.append("rect")
           .attr("class", "line-label-background")
           .attr("fill", "white")
           .attr("fill-opacity", 0.9)
@@ -201,7 +196,7 @@ export function HorizontalReferenceLine({
       }
       
       if (labelText.empty()) {
-        labelText = labelGroup.append("text")
+        labelText = labelGroupElement.append("text")
           .attr("class", "line-label")
           .style("font-size", "12px")
           .style("cursor", "move")
@@ -231,8 +226,8 @@ export function HorizontalReferenceLine({
           })
           .on("end", function(event) {
             // Get the current line position from DOM
-            const parentGroup = d3.select(this.parentNode as SVGGElement)
-            const mainLine = parentGroup.select(".main-line")
+            // Line is in the group (clip area), need to find it
+            const mainLine = group.select(".main-line")
             const lineY = parseFloat(mainLine.attr("y1"))
             
             // Calculate offset from actual line position
@@ -242,7 +237,7 @@ export function HorizontalReferenceLine({
             onLabelDragEnd(offsetX, offsetY)
           })
           
-        labelGroup.call(labelDrag)
+        labelGroupElement.call(labelDrag)
       }
       
       labelText
@@ -261,9 +256,10 @@ export function HorizontalReferenceLine({
         .attr("height", textBBox.height + 4)
       
       // Ensure label group is on top
-      labelGroup.raise()
-    } else {
-      group.select(".line-label-group").remove()
+      labelGroupElement.raise()
+    } else if (!isLineVisible && line.label) {
+      // Remove label if line is not visible
+      labelGroup.select(".line-label-group").remove()
     }
     
     // Remove any existing handle (no handle for horizontal lines)
