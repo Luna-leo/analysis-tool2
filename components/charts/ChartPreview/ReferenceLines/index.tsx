@@ -112,7 +112,10 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
     }
     
     // Always bring reference lines layer to front
-    refLinesLayer.raise()
+    // Use setTimeout to ensure this happens after all chart rendering
+    setTimeout(() => {
+      refLinesLayer.raise()
+    }, 0)
 
     
     // Always draw reference lines
@@ -124,6 +127,10 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
       width,
       height
     )
+    
+    // Ensure reference lines are on top after drawing
+    // This is important because chart rendering might have added elements after our layer
+    refLinesLayer.raise()
   }, [
     // Use specific properties to avoid unnecessary re-renders
     editingChart.referenceLines,

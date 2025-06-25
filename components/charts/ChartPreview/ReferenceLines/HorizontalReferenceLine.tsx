@@ -187,12 +187,12 @@ export function HorizontalReferenceLine({
         labelBackground = labelGroupElement.append("rect")
           .attr("class", "line-label-background")
           .attr("fill", "white")
-          .attr("fill-opacity", 0.9)
+          .attr("fill-opacity", 0.95)
           .attr("stroke", color)
           .attr("stroke-width", 1)
           .attr("rx", 2)
           .attr("ry", 2)
-          .style("filter", "drop-shadow(0 1px 2px rgba(0,0,0,0.1))")
+          .style("filter", "drop-shadow(0 1px 3px rgba(0,0,0,0.2))")
       }
       
       if (labelText.empty()) {
