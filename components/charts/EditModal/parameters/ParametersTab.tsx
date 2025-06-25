@@ -92,7 +92,7 @@ export function ParametersTab({ editingChart, setEditingChart, selectedDataSourc
   }
 
   return (
-    <div className="flex flex-col space-y-4 h-full">
+    <div className="flex flex-col space-y-4 pb-4">
       <XParameterSettings 
         editingChart={editingChart} 
         setEditingChart={setEditingChart}

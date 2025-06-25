@@ -41,7 +41,7 @@ export function TabContent({
     
     case "parameters":
       return (
-        <div className="h-full">
+        <div className="h-full overflow-y-auto">
           <ParametersTab 
             editingChart={editingChart} 
             setEditingChart={setEditingChart}
