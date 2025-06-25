@@ -113,6 +113,18 @@ export function VerticalReferenceLine({
     const y1 = 0
     const y2 = height
     
+    // Debug logging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[VerticalReferenceLine] Line coordinates:', {
+        lineId: line.id,
+        xPos,
+        y1,
+        y2,
+        height,
+        width
+      })
+    }
+    
     mainLine
       .attr("x1", xPos)
       .attr("x2", xPos)
@@ -121,8 +133,6 @@ export function VerticalReferenceLine({
       .attr("stroke", color)
       .attr("stroke-width", 1)
       .attr("stroke-dasharray", strokeDasharray)
-      // Hide line if too far outside visible area
-      .style("display", (xPos < -50 || xPos > width + 50) ? "none" : "")
     
     // Update or create interactive area
     if (isInteractive) {
@@ -248,8 +258,6 @@ export function VerticalReferenceLine({
         .attr("x2", xPos)
         .attr("y1", y1)
         .attr("y2", y2)
-        // Hide interactive area if line is too far outside visible area
-        .style("display", (xPos < -50 || xPos > width + 50) ? "none" : "")
     }
     
     // Update or create label - ensure it's always on top

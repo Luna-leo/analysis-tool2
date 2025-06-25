@@ -58,6 +58,27 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
 
     const isInteractive = !!setEditingChart
 
+    // Create or update clip path for reference lines
+    const clipId = `reference-lines-clip-${editingChart.id}`
+    let defs = svg.select("defs")
+    if (defs.empty()) {
+      defs = svg.append("defs")
+    }
+    
+    let clipPath = defs.select(`#${clipId}`)
+    if (clipPath.empty()) {
+      clipPath = defs.append("clipPath")
+        .attr("id", clipId)
+    }
+    
+    // Update clip path rectangle to match plot area
+    clipPath.selectAll("rect").remove()
+    clipPath.append("rect")
+      .attr("x", 0)
+      .attr("y", 0)
+      .attr("width", width)
+      .attr("height", height)
+
     // Ensure reference lines layer exists at the SVG level, not inside main chart group
     let refLinesLayer = svg.select<SVGGElement>(".reference-lines-layer")
     if (refLinesLayer.empty()) {
@@ -70,20 +91,36 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
     // Update transform to match the current margin (this ensures lines stay aligned with the chart)
     refLinesLayer.attr("transform", `translate(${margin.left},${margin.top})`)
     
+    // Apply clip path to constrain reference lines to plot area
+    refLinesLayer.attr("clip-path", `url(#${clipId})`)
+    
     // Always bring reference lines layer to front
     refLinesLayer.raise()
 
-    // Debug scale information
-    if (process.env.NODE_ENV === 'development' && scalesRef.current.xScale) {
-      const domain = scalesRef.current.xScale.domain()
-      console.log('[ReferenceLines] Drawing with scales:', {
-        domain,
-        domainStart: domain[0] instanceof Date ? domain[0].toISOString() : domain[0],
-        domainEnd: domain[1] instanceof Date ? domain[1].toISOString() : domain[1],
-        range: scalesRef.current.xScale.range(),
-        width,
-        height
+    // Debug scale and dimension information
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[ReferenceLines] Dimensions check:', {
+        chartId: editingChart.id,
+        passedDimensions: dimensions,
+        passedMargins: margins,
+        calculatedWidth: width,
+        calculatedHeight: height,
+        margin,
+        svgElement: svgRef.current
       })
+      
+      if (scalesRef.current.xScale) {
+        const domain = scalesRef.current.xScale.domain()
+        console.log('[ReferenceLines] Drawing with scales:', {
+          domain,
+          domainStart: domain[0] instanceof Date ? domain[0].toISOString() : domain[0],
+          domainEnd: domain[1] instanceof Date ? domain[1].toISOString() : domain[1],
+          xRange: scalesRef.current.xScale.range(),
+          yRange: scalesRef.current.yScale?.range(),
+          width,
+          height
+        })
+      }
     }
     
     // Always draw reference lines

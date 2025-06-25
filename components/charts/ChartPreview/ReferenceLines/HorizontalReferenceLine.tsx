@@ -69,6 +69,18 @@ export function HorizontalReferenceLine({
     const x1 = 0
     const x2 = width
     
+    // Debug logging
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[HorizontalReferenceLine] Line coordinates:', {
+        lineId: line.id,
+        yPos,
+        x1,
+        x2,
+        width,
+        height
+      })
+    }
+    
     mainLine
       .attr("x1", x1)
       .attr("x2", x2)
