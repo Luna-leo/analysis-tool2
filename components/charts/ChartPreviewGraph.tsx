@@ -1781,7 +1781,13 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           {/* Check if this is being used in ChartCard (has chartSettings) */}
           {chartSettings ? (
             // Compact mode for ChartCard - show on hover
-            <div className={`absolute ${isCompactLayout ? 'bottom-1 right-1' : 'bottom-1 right-1'} z-10 transition-opacity duration-200 ${isMouseOver ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+            <div 
+              className={`absolute z-10 transition-opacity duration-200 ${isMouseOver ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+              style={{ 
+                bottom: '4px', 
+                right: '8px' 
+              }}
+            >
               <ZoomControls
                 onZoomIn={zoomIn}
                 onZoomOut={zoomOut}
@@ -1798,8 +1804,14 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               />
             </div>
           ) : (
-            // Default mode for ChartEditModal - reduce margins
-            <div className="absolute bottom-2 right-2 z-10">
+            // Default mode for ChartEditModal - position above x-axis
+            <div 
+              className="absolute z-10"
+              style={{ 
+                bottom: '8px', 
+                right: '16px' 
+              }}
+            >
               <ZoomControls
                 onZoomIn={zoomIn}
                 onZoomOut={zoomOut}
