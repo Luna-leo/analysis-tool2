@@ -402,7 +402,7 @@ const ChartCardComponent = ({
       {!gridSelectionMode && !sourceSelectionMode && (
         <div 
           className={cn(
-            "absolute -top-3 right-2 flex gap-1 transition-all duration-200 z-50",
+            "absolute top-2 right-2 flex gap-1 transition-all duration-200 z-50",
             isHovered ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2 pointer-events-none"
           )}
           onMouseDown={(e) => e.stopPropagation()}
