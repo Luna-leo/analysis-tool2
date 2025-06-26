@@ -18,7 +18,6 @@ interface ParameterComboboxProps {
   placeholder?: string
   selectedDataSourceItems?: EventInfo[]
   disabled?: boolean
-  showDataSourceIndicators?: boolean
 }
 
 export function ParameterCombobox({ 
@@ -27,8 +26,7 @@ export function ParameterCombobox({
   className, 
   placeholder = "Select Parameter",
   selectedDataSourceItems,
-  disabled = false,
-  showDataSourceIndicators = true
+  disabled = false
 }: ParameterComboboxProps) {
   const [open, setOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -81,40 +79,20 @@ export function ParameterCombobox({
             >
               {searchFilteredParameters.map((param, idx) => {
                 const paramKey = createParameterKey(param.name, param.unit)
-                const isDataSourceRelated = param.isFromDataSource || param.matchesDataSource
                 
                 return (
                   <CommandItem
                     key={`${paramKey}-${idx}`}
                     value={paramKey}
                     onSelect={handleParameterSelect}
-                    className={cn(
-                      "flex flex-col items-start relative",
-                      showDataSourceIndicators && isDataSourceRelated && "bg-primary/5"
-                    )}
+                    className="flex flex-col items-start relative"
                   >
                     <div className="flex items-center gap-2 w-full">
-                      <span className={cn(
-                        "font-medium",
-                        showDataSourceIndicators && isDataSourceRelated && "text-primary"
-                      )}>
+                      <span className="font-medium">
                         {param.name}
                       </span>
-                      {showDataSourceIndicators && param.isFromDataSource && (
-                        <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
-                          DS
-                        </span>
-                      )}
-                      {showDataSourceIndicators && param.matchesDataSource && !param.isFromDataSource && (
-                        <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
-                          ✓
-                        </span>
-                      )}
                     </div>
-                    <span className={cn(
-                      "text-xs",
-                      showDataSourceIndicators && isDataSourceRelated ? "text-primary/70" : "text-muted-foreground"
-                    )}>
+                    <span className="text-xs text-muted-foreground">
                       {param.unit}
                     </span>
                   </CommandItem>
