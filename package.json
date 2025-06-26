@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/dev-with-branch-port.js",
+    "dev:default": "next dev",
+    "dev:3000": "PORT=3000 next dev",
+    "dev:3001": "PORT=3001 next dev",
     "build": "cross-env NODE_ENV=production next build",
     "build:analyze": "cross-env ANALYZE=true next build",
     "start": "cross-env NODE_ENV=production next start",
