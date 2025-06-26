@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { SettingsStore, ParameterSource, PlotDefaults, SeriesDefaults, PerformanceSettings } from '@/types/settings'
+import { SettingsStore, PlotDefaults, SeriesDefaults, PerformanceSettings } from '@/types/settings'
 import { DEFAULT_SETTINGS, DEFAULT_PLOT_SETTINGS, DEFAULT_SERIES_SETTINGS, DEFAULT_PERFORMANCE_SETTINGS } from '@/constants/settings'
 
 export const useSettingsStore = create<SettingsStore>()(
@@ -9,17 +9,6 @@ export const useSettingsStore = create<SettingsStore>()(
       settings: DEFAULT_SETTINGS,
       isLoading: false,
 
-      updateParameterSource: (source: ParameterSource) => {
-        set((state) => ({
-          settings: {
-            ...state.settings,
-            toolDefaults: {
-              ...state.settings.toolDefaults,
-              parameterSource: source
-            }
-          }
-        }))
-      },
 
       updatePlotDefaults: (plotDefaults: Partial<PlotDefaults>) => {
         set((state) => ({

@@ -45,7 +45,6 @@ export default function AnalysisTool() {
   const [saveTemplateOpen, setSaveTemplateOpen] = React.useState(false)
   
   const { openTabs, activeTab, openFile, fileTree, setActiveTab, toggleFolder, setFileTree, updateFileCharts, createNewFile, createNewFileWithConfig, updateFileDataSources } = useFileStore()
-  const { loadParameters } = useParameterStore()
   const { loadState } = useGraphStateStore()
   const { updateLayoutSettings, updateChartSettings } = useLayoutStore()
   const { setCurrentPage, gridSelectionMode, setGridSelectionMode, gridSelectedChartIds } = useUIStore()
@@ -177,9 +176,6 @@ export default function AnalysisTool() {
   }, [])
 
   useEffect(() => {
-    // Load parameters on mount
-    loadParameters()
-    
     // Load CSV data from IndexedDB
     loadFromIndexedDB()
     

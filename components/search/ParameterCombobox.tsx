@@ -18,7 +18,6 @@ interface ParameterComboboxProps {
   placeholder?: string
   selectedDataSourceItems?: EventInfo[]
   disabled?: boolean
-  showDataSourceIndicators?: boolean
 }
 
 export function ParameterCombobox({ 
@@ -27,8 +26,7 @@ export function ParameterCombobox({
   className, 
   placeholder = "Select Parameter",
   selectedDataSourceItems,
-  disabled = false,
-  showDataSourceIndicators = true
+  disabled = false
 }: ParameterComboboxProps) {
   const [open, setOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -90,22 +88,22 @@ export function ParameterCombobox({
                     onSelect={handleParameterSelect}
                     className={cn(
                       "flex flex-col items-start relative",
-                      showDataSourceIndicators && isDataSourceRelated && "bg-primary/5"
+                      isDataSourceRelated && "bg-primary/5"
                     )}
                   >
                     <div className="flex items-center gap-2 w-full">
                       <span className={cn(
                         "font-medium",
-                        showDataSourceIndicators && isDataSourceRelated && "text-primary"
+                        isDataSourceRelated && "text-primary"
                       )}>
                         {param.name}
                       </span>
-                      {showDataSourceIndicators && param.isFromDataSource && (
+                      {param.isFromDataSource && (
                         <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
                           DS
                         </span>
                       )}
-                      {showDataSourceIndicators && param.matchesDataSource && !param.isFromDataSource && (
+                      {param.matchesDataSource && !param.isFromDataSource && (
                         <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
                           ✓
                         </span>
@@ -113,7 +111,7 @@ export function ParameterCombobox({
                     </div>
                     <span className={cn(
                       "text-xs",
-                      showDataSourceIndicators && isDataSourceRelated ? "text-primary/70" : "text-muted-foreground"
+                      isDataSourceRelated ? "text-primary/70" : "text-muted-foreground"
                     )}>
                       {param.unit}
                     </span>

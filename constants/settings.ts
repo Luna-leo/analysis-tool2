@@ -65,7 +65,7 @@ export const DEFAULT_PERFORMANCE_SETTINGS: PerformanceSettings = {
  */
 export const DEFAULT_SETTINGS: UserSettings = {
   toolDefaults: {
-    parameterSource: 'master'
+    // Reserved for future tool settings
   },
   displaySettings: {
     plotDefaults: DEFAULT_PLOT_SETTINGS,

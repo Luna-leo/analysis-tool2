@@ -141,8 +141,8 @@ export function XParameterSettings({ editingChart, setEditingChart, selectedData
                   }}
                 >
                   <option value="datetime">Datetime</option>
-                  <option value="time">Time (elapsed)</option>
-                  <option value="parameter">Parameter</option>
+                  <option value="time" disabled={!selectedDataSourceItems || selectedDataSourceItems.length === 0}>Time (elapsed)</option>
+                  <option value="parameter" disabled={!selectedDataSourceItems || selectedDataSourceItems.length === 0}>Parameter</option>
                 </select>
               </div>
 
@@ -182,6 +182,7 @@ export function XParameterSettings({ editingChart, setEditingChart, selectedData
                     }}
                     selectedDataSourceItems={selectedDataSourceItems}
                     className="h-8"
+                    placeholder={!selectedDataSourceItems || selectedDataSourceItems.length === 0 ? "Select data source first" : "Select Parameter"}
                   />
                 )}
               </div>

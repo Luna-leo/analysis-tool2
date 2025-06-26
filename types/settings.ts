@@ -1,7 +1,5 @@
 import { MarkerType, LineStyle } from './index'
 
-export type ParameterSource = "master" | "datasource"
-
 export interface PlotDefaults {
   showMarkers: boolean
   showLines: boolean
@@ -53,7 +51,7 @@ export interface PerformanceSettings {
 }
 
 export interface ToolSettings {
-  parameterSource: ParameterSource
+  // Reserved for future tool settings
 }
 
 export interface DisplaySettings {
@@ -70,7 +68,6 @@ export interface UserSettings {
 export interface SettingsStore {
   settings: UserSettings
   isLoading: boolean
-  updateParameterSource: (source: ParameterSource) => void
   updatePlotDefaults: (plotDefaults: Partial<PlotDefaults>) => void
   resetPlotDefaults: () => void
   updateSeriesDefaults: (seriesDefaults: Partial<SeriesDefaults>) => void

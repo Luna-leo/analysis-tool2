@@ -1,6 +1,7 @@
 import { Parameter } from '@/types/parameter'
 import { EventInfo } from '@/types'
 import { ParsedCSVData } from '@/types/csv-data'
+import { CSVDataSet } from '@/stores/useCSVDataStore'
 
 export interface EnhancedParameter extends Parameter {
   isFromDataSource?: boolean
@@ -55,6 +56,29 @@ export function extractParametersFromCSV(csvData: ParsedCSVData): EnhancedParame
     })
   })
 
+  return parameters
+}
+
+/**
+ * Extract parameters from CSVDataSet (stored CSV data)
+ */
+export function extractParametersFromCSVDataSet(dataset: CSVDataSet): EnhancedParameter[] {
+  const parameters: EnhancedParameter[] = []
+  
+  dataset.parameters.forEach(paramName => {
+    const unit = dataset.units[paramName] || ''
+    
+    parameters.push({
+      id: `ds_${paramName}`,
+      name: paramName,
+      unit: unit,
+      plant: dataset.plant,
+      machineNo: dataset.machineNo,
+      source: 'DataSource',
+      isFromDataSource: true
+    })
+  })
+  
   return parameters
 }
 
@@ -118,9 +142,3 @@ export function mergeParametersWithPriority(
   })
 }
 
-/**
- * Check if parameter source setting is set to use data source
- */
-export function shouldUseDataSourcePriority(parameterSource: string): boolean {
-  return parameterSource === 'datasource'
-}
