@@ -9,7 +9,10 @@
     "dev:3001": "cross-env PORT=3001 next dev",
     "build": "cross-env NODE_ENV=production next build",
     "build:analyze": "cross-env ANALYZE=true next build",
-    "start": "cross-env NODE_ENV=production next start",
+    "start": "cross-env NODE_ENV=production node scripts/start-with-branch-port.js",
+    "start:default": "cross-env NODE_ENV=production next start",
+    "start:3000": "cross-env NODE_ENV=production PORT=3000 next start",
+    "start:3001": "cross-env NODE_ENV=production PORT=3001 next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit"
   },
