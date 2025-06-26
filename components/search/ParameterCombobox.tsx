@@ -79,20 +79,40 @@ export function ParameterCombobox({
             >
               {searchFilteredParameters.map((param, idx) => {
                 const paramKey = createParameterKey(param.name, param.unit)
+                const isDataSourceRelated = param.isFromDataSource || param.matchesDataSource
                 
                 return (
                   <CommandItem
                     key={`${paramKey}-${idx}`}
                     value={paramKey}
                     onSelect={handleParameterSelect}
-                    className="flex flex-col items-start relative"
+                    className={cn(
+                      "flex flex-col items-start relative",
+                      isDataSourceRelated && "bg-primary/5"
+                    )}
                   >
                     <div className="flex items-center gap-2 w-full">
-                      <span className="font-medium">
+                      <span className={cn(
+                        "font-medium",
+                        isDataSourceRelated && "text-primary"
+                      )}>
                         {param.name}
                       </span>
+                      {param.isFromDataSource && (
+                        <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+                          DS
+                        </span>
+                      )}
+                      {param.matchesDataSource && !param.isFromDataSource && (
+                        <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+                          ✓
+                        </span>
+                      )}
                     </div>
-                    <span className="text-xs text-muted-foreground">
+                    <span className={cn(
+                      "text-xs",
+                      isDataSourceRelated ? "text-primary/70" : "text-muted-foreground"
+                    )}>
                       {param.unit}
                     </span>
                   </CommandItem>
