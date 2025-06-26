@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Community Support / コミュニティサポート
+    url: https://github.com/Luna-leo/analysis-tool2/discussions
+    about: Ask questions and discuss with the community / 質問をしてコミュニティと議論する
+  - name: Security Issues / セキュリティ問題
+    url: mailto:security@example.com
+    about: Please report security vulnerabilities privately / セキュリティの脆弱性は非公開で報告してください

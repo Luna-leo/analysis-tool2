@@ -1,0 +1,145 @@
+name: Bug Report / バグ報告
+description: Report a bug in Chinami's Analysis App / アプリケーションのバグを報告する
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug! Please fill out the form below.
+        バグ報告ありがとうございます！以下のフォームにご記入ください。
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description / バグの説明
+      description: A clear and concise description of what the bug is / バグの内容を明確かつ簡潔に説明してください
+      placeholder: |
+        When I try to... / ...しようとすると
+        The application... / アプリケーションが...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce / 再現手順
+      description: Steps to reproduce the behavior / バグを再現する手順
+      placeholder: |
+        1. Go to... / ...を開く
+        2. Click on... / ...をクリック
+        3. Scroll down to... / ...までスクロール
+        4. See error / エラーが発生
+      value: |
+        1. 
+        2. 
+        3. 
+        4. 
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior / 期待される動作
+      description: What you expected to happen / 期待される動作を説明してください
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior / 実際の動作
+      description: What actually happened / 実際に起きたことを説明してください
+    validations:
+      required: true
+
+  - type: dropdown
+    id: chart-type
+    attributes:
+      label: Related Chart Type / 関連するチャートタイプ
+      description: Which chart type is affected? / どのチャートタイプで問題が発生しましたか？
+      multiple: true
+      options:
+        - Line Chart / 折れ線グラフ
+        - Bar Chart / 棒グラフ
+        - Scatter Plot / 散布図
+        - Digital Display / デジタル表示
+        - Combined Chart / 複合チャート
+        - Not chart-related / チャート関連ではない
+
+  - type: checkboxes
+    id: components
+    attributes:
+      label: Affected Components / 影響を受けるコンポーネント
+      description: Check all that apply / 該当するものをすべて選択してください
+      options:
+        - label: CSV Import / CSVインポート
+        - label: Data Analysis / データ分析
+        - label: Chart Rendering / チャートレンダリング
+        - label: Formula System / 数式システム
+        - label: Event System / イベントシステム
+        - label: UI/UX
+        - label: Performance / パフォーマンス
+        - label: Data Storage (IndexedDB)
+
+  - type: textarea
+    id: data-info
+    attributes:
+      label: Dataset Information / データセット情報
+      description: If applicable, describe the dataset (size, format, etc.) / 該当する場合、データセット情報を記載してください（サイズ、形式など）
+      placeholder: |
+        - Number of rows / 行数: 
+        - Number of columns / 列数: 
+        - File size / ファイルサイズ: 
+        - CSV format (Standard/CASS) / CSV形式: 
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment / 環境
+      description: Please provide your environment details / 使用環境の詳細を記載してください
+      value: |
+        - Browser / ブラウザ: 
+        - OS: 
+        - Screen Resolution / 画面解像度: 
+        - Device Type / デバイスタイプ: Desktop/Tablet/Mobile
+
+  - type: checkboxes
+    id: performance-impact
+    attributes:
+      label: Performance Impact / パフォーマンスへの影響
+      options:
+        - label: This bug causes performance issues / このバグはパフォーマンスに影響します
+        - label: Application becomes unresponsive / アプリケーションが応答しなくなる
+        - label: Significant lag or delays / 著しい遅延が発生する
+
+  - type: textarea
+    id: console-errors
+    attributes:
+      label: Console Errors / コンソールエラー
+      description: If any, paste console error messages here / コンソールにエラーメッセージがある場合は貼り付けてください
+      render: javascript
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots / スクリーンショット
+      description: If applicable, add screenshots to help explain the problem / 問題の説明に役立つスクリーンショットがあれば追加してください
+      placeholder: Drag and drop images here / ここに画像をドラッグ＆ドロップ
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context / その他の情報
+      description: Add any other context about the problem here / その他の関連情報があれば記載してください
+
+  - type: checkboxes
+    id: typescript-check
+    attributes:
+      label: TypeScript Check / TypeScriptチェック
+      description: Have you verified this with type checking? / 型チェックで確認しましたか？
+      options:
+        - label: I ran `npm run type-check` and found type errors / `npm run type-check`を実行し、型エラーを確認しました
+        - label: No TypeScript errors found / TypeScriptエラーはありませんでした
+        - label: Not applicable / 該当しない

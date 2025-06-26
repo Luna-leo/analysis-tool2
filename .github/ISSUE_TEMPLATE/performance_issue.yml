@@ -1,0 +1,165 @@
+name: Performance Issue / パフォーマンス問題
+description: Report performance problems in Chinami's Analysis App / パフォーマンスの問題を報告する
+title: "[Performance]: "
+labels: ["performance", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a performance issue. Please provide detailed information to help us optimize the application.
+        パフォーマンス問題の報告ありがとうございます。アプリケーションの最適化に役立つ詳細情報をご提供ください。
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Performance Issue Description / パフォーマンス問題の説明
+      description: Describe the performance problem you're experiencing / 発生しているパフォーマンス問題を説明してください
+      placeholder: |
+        The application becomes slow when... / アプリケーションが遅くなるのは...
+        Loading takes too long when... / 読み込みに時間がかかるのは...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: issue-type
+    attributes:
+      label: Type of Performance Issue / パフォーマンス問題の種類
+      description: What kind of performance problem are you experiencing? / どのような種類のパフォーマンス問題ですか？
+      multiple: true
+      options:
+        - Slow initial load / 初期読み込みが遅い
+        - Slow CSV import / CSVインポートが遅い
+        - Laggy chart rendering / チャートレンダリングの遅延
+        - Unresponsive UI / UIが応答しない
+        - High memory usage / メモリ使用量が多い
+        - Chart pan/zoom lag / チャートのパン・ズームの遅延
+        - Formula calculation delays / 数式計算の遅延
+        - Data update lag / データ更新の遅延
+    validations:
+      required: true
+
+  - type: textarea
+    id: dataset-details
+    attributes:
+      label: Dataset Details / データセットの詳細
+      description: Provide specific information about your dataset / データセットの具体的な情報を提供してください
+      value: |
+        - Number of rows / 行数: 
+        - Number of columns / 列数: 
+        - File size (MB) / ファイルサイズ: 
+        - Number of data points being displayed / 表示されているデータポイント数: 
+        - CSV format (Standard/CASS) / CSV形式: 
+        - Update frequency (if real-time) / 更新頻度（リアルタイムの場合）: 
+    validations:
+      required: true
+
+  - type: textarea
+    id: chart-config
+    attributes:
+      label: Chart Configuration / チャート設定
+      description: Describe your chart setup / チャートの設定を説明してください
+      placeholder: |
+        - Chart type(s) / チャートタイプ: 
+        - Number of series / 系列数: 
+        - Number of Y-axes / Y軸の数: 
+        - Reference lines / 基準線: 
+        - Formulas used / 使用している数式: 
+        - Event triggers / イベントトリガー: 
+
+  - type: textarea
+    id: performance-metrics
+    attributes:
+      label: Performance Metrics / パフォーマンス指標
+      description: If available, provide specific performance measurements / 可能であれば、具体的なパフォーマンス測定値を提供してください
+      placeholder: |
+        - Time to load data / データ読み込み時間: 
+        - Time to render chart / チャートレンダリング時間: 
+        - FPS during interaction / 操作中のFPS: 
+        - Memory usage (from browser DevTools) / メモリ使用量: 
+
+  - type: textarea
+    id: browser-info
+    attributes:
+      label: Browser & System Information / ブラウザ・システム情報
+      description: Provide detailed environment information / 詳細な環境情報を提供してください
+      value: |
+        - Browser & Version / ブラウザとバージョン: 
+        - OS / オペレーティングシステム: 
+        - RAM / メモリ: 
+        - CPU / プロセッサ: 
+        - GPU (if relevant) / グラフィックス: 
+        - Screen Resolution / 画面解像度: 
+
+  - type: dropdown
+    id: performance-preset
+    attributes:
+      label: Performance Preset Used / 使用しているパフォーマンスプリセット
+      description: Which performance preset are you using? / どのパフォーマンスプリセットを使用していますか？
+      options:
+        - Default / デフォルト
+        - High Performance / 高パフォーマンス
+        - Balanced / バランス
+        - Low Performance / 低パフォーマンス
+        - Custom / カスタム
+        - Not sure / 不明
+
+  - type: checkboxes
+    id: attempted-solutions
+    attributes:
+      label: Attempted Solutions / 試した解決策
+      description: What have you tried to improve performance? / パフォーマンス改善のために何を試しましたか？
+      options:
+        - label: Changed performance preset / パフォーマンスプリセットを変更した
+        - label: Reduced data points / データポイントを減らした
+        - label: Disabled some chart features / 一部のチャート機能を無効にした
+        - label: Cleared browser cache / ブラウザキャッシュをクリアした
+        - label: Tried different browser / 別のブラウザを試した
+        - label: Restarted application / アプリケーションを再起動した
+
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: Steps to Reproduce Performance Issue / パフォーマンス問題の再現手順
+      description: How can we reproduce this performance issue? / このパフォーマンス問題をどのように再現できますか？
+      placeholder: |
+        1. Import CSV file with X rows / X行のCSVファイルをインポート
+        2. Create chart with Y series / Y系列のチャートを作成
+        3. Add formula... / 数式を追加...
+        4. Notice performance degradation / パフォーマンス低下を確認
+    validations:
+      required: true
+
+  - type: textarea
+    id: profiler-data
+    attributes:
+      label: Browser Profiler Data / ブラウザプロファイラーデータ
+      description: If possible, attach performance profiling data from browser DevTools / 可能であれば、ブラウザDevToolsのパフォーマンスプロファイリングデータを添付してください
+      placeholder: |
+        You can export and attach:
+        - Chrome Performance Profile
+        - Firefox Performance Profile
+        - Memory Heap Snapshot
+        - Network waterfall
+
+  - type: dropdown
+    id: impact-level
+    attributes:
+      label: Impact Level / 影響レベル
+      description: How severely does this affect your work? / 作業にどの程度深刻な影響がありますか？
+      options:
+        - Application is unusable / アプリケーションが使用できない
+        - Significantly slows down workflow / ワークフローが大幅に遅くなる
+        - Noticeable but manageable / 気になるが管理可能
+        - Minor annoyance / 軽微な問題
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context / その他の情報
+      description: Any other information that might help diagnose the performance issue / パフォーマンス問題の診断に役立つその他の情報
+      placeholder: |
+        - Comparison with previous versions / 以前のバージョンとの比較
+        - Specific operations that trigger the issue / 問題を引き起こす特定の操作
+        - Workarounds you've found / 見つけた回避策

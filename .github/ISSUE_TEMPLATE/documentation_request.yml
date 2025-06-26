@@ -1,0 +1,174 @@
+name: Documentation Request / ドキュメントリクエスト
+description: Request documentation improvements or report missing documentation / ドキュメントの改善要求や不足の報告
+title: "[Docs]: "
+labels: ["documentation", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping improve our documentation! Please provide details below.
+        ドキュメントの改善にご協力いただきありがとうございます！以下に詳細をご記入ください。
+
+  - type: dropdown
+    id: doc-type
+    attributes:
+      label: Documentation Type / ドキュメントの種類
+      description: What type of documentation is this about? / どのタイプのドキュメントに関するものですか？
+      options:
+        - Missing documentation / ドキュメントの不足
+        - Incorrect documentation / 誤ったドキュメント
+        - Unclear documentation / 不明瞭なドキュメント
+        - Outdated documentation / 古いドキュメント
+        - New feature documentation / 新機能のドキュメント
+        - API documentation / APIドキュメント
+        - Usage examples needed / 使用例が必要
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Documentation Category / ドキュメントカテゴリ
+      description: Based on CLAUDE.md documentation rules / CLAUDE.mdのドキュメントルールに基づく
+      options:
+        - Feature / 機能
+        - Bug Fix / バグ修正
+        - Refactoring / リファクタリング
+        - Breaking Change / 破壊的変更
+        - Installation/Setup / インストール・セットアップ
+        - Configuration / 設定
+        - Usage Guide / 使用ガイド
+        - API Reference / APIリファレンス
+    validations:
+      required: true
+
+  - type: textarea
+    id: current-situation
+    attributes:
+      label: Current Situation / 現在の状況
+      description: Describe what documentation is currently missing or incorrect / 現在不足している、または誤っているドキュメントについて説明してください
+      placeholder: |
+        The documentation for... is missing / ...のドキュメントがありません
+        The current documentation says... but it should say... / 現在のドキュメントは...と記載されていますが、...であるべきです
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-content
+    attributes:
+      label: Expected Documentation / 期待されるドキュメント
+      description: Describe what should be documented / どのような内容がドキュメント化されるべきか説明してください
+      placeholder: |
+        Should include: / 含まれるべき内容:
+        - How to... / ...する方法
+        - Configuration options for... / ...の設定オプション
+        - Examples of... / ...の例
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: affected-areas
+    attributes:
+      label: Affected Areas / 影響を受ける領域
+      description: Which areas of the application need documentation? / アプリケーションのどの領域にドキュメントが必要ですか？
+      options:
+        - label: CSV Import (Standard/CASS formats) / CSVインポート
+        - label: Chart Configuration / チャート設定
+        - label: Formula System / 数式システム
+        - label: Event System / イベントシステム
+        - label: Performance Settings / パフォーマンス設定
+        - label: Template System / テンプレートシステム
+        - label: Data Storage (IndexedDB) / データストレージ
+        - label: Keyboard Shortcuts / キーボードショートカット
+        - label: API/Integration / API・統合
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case / ユースケース
+      description: Describe a specific scenario where this documentation would be helpful / このドキュメントが役立つ具体的なシナリオを説明してください
+      placeholder: |
+        When a user wants to... / ユーザーが...したいとき
+        This documentation would help by... / このドキュメントは...することで役立ちます
+
+  - type: dropdown
+    id: target-audience
+    attributes:
+      label: Target Audience / 対象読者
+      description: Who would benefit from this documentation? / このドキュメントの対象者は？
+      multiple: true
+      options:
+        - New users / 新規ユーザー
+        - Developers / 開発者
+        - Data analysts / データアナリスト
+        - System administrators / システム管理者
+        - Contributors / コントリビューター
+
+  - type: textarea
+    id: suggested-location
+    attributes:
+      label: Suggested Location / 推奨される場所
+      description: Where should this documentation be placed? / このドキュメントはどこに配置されるべきですか？
+      placeholder: |
+        - /docs/[filename].md
+        - In CLAUDE.md under section...
+        - As inline code comments in...
+        - In README.md
+
+  - type: textarea
+    id: proposed-structure
+    attributes:
+      label: Proposed Documentation Structure / 提案するドキュメント構造
+      description: Following the format in CLAUDE.md / CLAUDE.mdのフォーマットに従って
+      value: |
+        ## Meta Information
+        - Category: 
+        - Related Components: 
+
+        ## Overview
+        [Brief description]
+
+        ## Details
+        ### Background/Problem
+        
+        ### Implementation/Usage
+        
+        ### Technical Details
+
+        ## Examples
+
+        ## Impact
+
+        ## Future Improvements
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution / 貢献
+      options:
+        - label: I can help write this documentation / このドキュメントの作成を手伝えます
+        - label: I can provide examples / 例を提供できます
+        - label: I can review the documentation / ドキュメントをレビューできます
+
+  - type: textarea
+    id: references
+    attributes:
+      label: References / 参考資料
+      description: Any existing resources or related documentation / 既存のリソースや関連ドキュメント
+      placeholder: |
+        - Related issues: #...
+        - External documentation: 
+        - Similar documentation in other projects:
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority / 優先度
+      description: How urgent is this documentation need? / このドキュメントはどの程度緊急ですか？
+      options:
+        - Critical - Blocking usage / 重要 - 使用がブロックされている
+        - High - Frequently needed / 高 - 頻繁に必要
+        - Medium - Would be helpful / 中 - あると便利
+        - Low - Nice to have / 低 - あると良い
+    validations:
+      required: true
