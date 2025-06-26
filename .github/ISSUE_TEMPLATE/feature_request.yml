@@ -1,0 +1,144 @@
+name: Feature Request / 機能リクエスト
+description: Suggest a new feature for Chinami's Analysis App / 新機能の提案
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for suggesting a new feature! Please provide detailed information below.
+        新機能のご提案ありがとうございます！以下に詳細情報をご記入ください。
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement / 解決したい問題
+      description: Describe the problem you're trying to solve / 解決しようとしている問題を説明してください
+      placeholder: |
+        I'm always frustrated when... / ...するときにいつも困っています
+        Currently, the app doesn't allow... / 現在、アプリは...できません
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution / 提案する解決策
+      description: Describe the solution you'd like / 希望する解決策を説明してください
+      placeholder: |
+        I would like to... / ...できるようになってほしい
+        The feature should... / この機能は...すべきです
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Approaches / 代替案
+      description: Describe any alternative solutions or features you've considered / 検討した代替案や機能があれば説明してください
+      placeholder: |
+        Another way could be... / 別の方法として...
+        I also considered... / また、...も検討しました
+
+  - type: dropdown
+    id: feature-area
+    attributes:
+      label: Feature Area / 機能領域
+      description: Which area of the application does this feature relate to? / この機能はアプリのどの領域に関連しますか？
+      multiple: true
+      options:
+        - Data Import (CSV) / データインポート
+        - Chart Visualization / チャートビジュアライゼーション
+        - Data Analysis / データ分析
+        - Formula System / 数式システム
+        - Event System / イベントシステム
+        - Export/Save Features / エクスポート・保存機能
+        - UI/UX Improvements / UI/UX改善
+        - Performance Optimization / パフォーマンス最適化
+        - Template System / テンプレートシステム
+        - Other / その他
+
+  - type: dropdown
+    id: chart-types
+    attributes:
+      label: Related Chart Types / 関連するチャートタイプ
+      description: If applicable, which chart types would benefit? / 該当する場合、どのチャートタイプに関連しますか？
+      multiple: true
+      options:
+        - All chart types / すべてのチャートタイプ
+        - Line Chart / 折れ線グラフ
+        - Bar Chart / 棒グラフ
+        - Scatter Plot / 散布図
+        - Digital Display / デジタル表示
+        - Combined Chart / 複合チャート
+        - Not applicable / 該当なし
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case Example / 使用例
+      description: Provide a specific example of how this feature would be used / この機能の具体的な使用例を提供してください
+      placeholder: |
+        For example, when analyzing... / 例えば、...を分析する際に
+        Users could... / ユーザーは...できるようになります
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: impact
+    attributes:
+      label: Impact on Existing Features / 既存機能への影響
+      description: Consider how this might affect current functionality / 現在の機能への影響を考慮してください
+      options:
+        - label: This feature might affect data import functionality / この機能はデータインポート機能に影響する可能性があります
+        - label: This feature might affect chart rendering / この機能はチャートレンダリングに影響する可能性があります
+        - label: This feature might affect performance / この機能はパフォーマンスに影響する可能性があります
+        - label: This feature requires new UI components / この機能は新しいUIコンポーネントが必要です
+        - label: This feature requires changes to data storage / この機能はデータストレージの変更が必要です
+        - label: No significant impact expected / 大きな影響は予想されません
+
+  - type: textarea
+    id: performance
+    attributes:
+      label: Performance Considerations / パフォーマンスに関する考慮事項
+      description: Describe any performance implications / パフォーマンスへの影響について説明してください
+      placeholder: |
+        This feature might impact... / この機能は...に影響する可能性があります
+        For large datasets... / 大規模なデータセットの場合...
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: UI/UX Mockups / UI/UXモックアップ
+      description: If applicable, add mockups or wireframes / 該当する場合、モックアップやワイヤーフレームを追加してください
+      placeholder: Drag and drop images here / ここに画像をドラッグ＆ドロップ
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority Level / 優先度
+      description: How important is this feature to you? / この機能はどの程度重要ですか？
+      options:
+        - Critical - Blocking my work / 重要 - 作業がブロックされています
+        - High - Would significantly improve workflow / 高 - ワークフローが大幅に改善されます
+        - Medium - Nice to have / 中 - あると便利
+        - Low - Future consideration / 低 - 将来的に検討
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution / 貢献
+      options:
+        - label: I'm willing to help implement this feature / この機能の実装を手伝う意思があります
+        - label: I can provide more detailed specifications / より詳細な仕様を提供できます
+        - label: I can help with testing / テストを手伝うことができます
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context / その他の情報
+      description: Add any other context about the feature request / 機能リクエストに関するその他の情報を追加してください
+      placeholder: |
+        Related issues... / 関連するissue...
+        Similar features in other tools... / 他のツールの類似機能...
+        References... / 参考資料...

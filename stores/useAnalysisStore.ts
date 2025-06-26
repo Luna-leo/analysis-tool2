@@ -1,16 +1,33 @@
 import { create } from 'zustand'
-import { devtools } from 'zustand/middleware'
+import { useViewStore } from './useViewStore'
+import { useFileStore } from './useFileStore'
+import { useLayoutStore } from './useLayoutStore'
+import { useUIStore } from './useUIStore'
 import type { ActiveView, FileNode, LayoutSettings, ChartSettings, ChartComponent } from '@/types'
 
+// Re-export individual stores
+export { useViewStore } from './useViewStore'
+export { useFileStore } from './useFileStore'
+export { useLayoutStore } from './useLayoutStore'
+export { useUIStore } from './useUIStore'
+
+// Legacy interface for backward compatibility
 interface AnalysisState {
   // View State
   activeView: ActiveView
   sidebarOpen: boolean
   
   // File State
+  fileTree: FileNode[]
   openTabs: FileNode[]
   activeTab: string
   expandedFolders: Set<string>
+  renamingNode: string | null
+  creatingNodeType: "folder" | "file" | null
+  creatingNodeParentId: string | null
+  draggedNode: string | null
+  dragOverNode: string | null
+  dragPosition: "before" | "after" | "inside" | null
   
   // Layout State
   layoutSettingsMap: Record<string, LayoutSettings>
@@ -37,6 +54,15 @@ interface AnalysisActions {
   setActiveTab: (tabId: string) => void
   toggleFolder: (folderId: string) => void
   reorderTabs: (draggedId: string, targetId: string) => void
+  setFileTree: (fileTree: FileNode[]) => void
+  renameNode: (nodeId: string, newName: string) => void
+  setRenamingNode: (nodeId: string | null) => void
+  createNewFolder: (parentId: string | null, name: string) => void
+  createNewFile: (parentId: string | null, name: string) => void
+  setCreatingNode: (type: "folder" | "file" | null, parentId: string | null) => void
+  moveNode: (nodeId: string, targetId: string | null, position: "before" | "after" | "inside") => void
+  setDraggedNode: (nodeId: string | null) => void
+  setDragOverNode: (nodeId: string | null, position: "before" | "after" | "inside" | null) => void
   
   // Layout Actions
   updateLayoutSettings: (fileId: string, settings: Partial<LayoutSettings>) => void
@@ -49,142 +75,92 @@ interface AnalysisActions {
   setEditModalOpen: (open: boolean) => void
   setDraggedTab: (tabId: string | null) => void
   setDragOverTab: (tabId: string | null) => void
+
+  // Chart Actions
+  duplicateChart: (fileId: string, chartId: string) => void
 }
 
 export type AnalysisStore = AnalysisState & AnalysisActions
 
-const defaultLayoutSettings: LayoutSettings = {
-  showFileName: true,
-  showDataSources: true,
-  columns: 2,
-  rows: 2,
-  pagination: true,
+// Legacy hook that combines all stores for backward compatibility
+// Note: This uses a custom hook approach to ensure reactivity
+export const useAnalysisStore = (): AnalysisStore => {
+  const viewStore = useViewStore()
+  const fileStore = useFileStore()
+  const layoutStore = useLayoutStore()
+  const uiStore = useUIStore()
+
+  return {
+    // View State
+    activeView: viewStore.activeView,
+    sidebarOpen: viewStore.sidebarOpen,
+    
+    // File State
+    fileTree: fileStore.fileTree,
+    openTabs: fileStore.openTabs,
+    activeTab: fileStore.activeTab,
+    expandedFolders: fileStore.expandedFolders,
+    renamingNode: fileStore.renamingNode,
+    creatingNodeType: fileStore.creatingNodeType,
+    creatingNodeParentId: fileStore.creatingNodeParentId,
+    draggedNode: fileStore.draggedNode,
+    dragOverNode: fileStore.dragOverNode,
+    dragPosition: fileStore.dragPosition,
+    draggedTab: fileStore.draggedTab,
+    dragOverTab: fileStore.dragOverTab,
+    
+    // Layout State
+    layoutSettingsMap: layoutStore.layoutSettingsMap,
+    chartSettingsMap: layoutStore.chartSettingsMap,
+    
+    // UI State
+    currentPage: uiStore.currentPage,
+    hoveredChart: uiStore.hoveredChart,
+    editingChart: uiStore.editingChart,
+    editModalOpen: uiStore.editModalOpen,
+
+    // View Actions
+    setActiveView: viewStore.setActiveView,
+    toggleSidebar: viewStore.toggleSidebar,
+    setSidebarOpen: viewStore.setSidebarOpen,
+    
+    // File Actions
+    openFile: (file) => {
+      fileStore.openFile(file)
+      uiStore.setCurrentPage(1)
+      // Initialize layout settings for new file
+      layoutStore.initializeSettings(file.id)
+    },
+    closeTab: fileStore.closeTab,
+    setActiveTab: (tabId) => {
+      fileStore.setActiveTab(tabId)
+      uiStore.setCurrentPage(1)
+    },
+    toggleFolder: fileStore.toggleFolder,
+    reorderTabs: fileStore.reorderTabs,
+    setFileTree: fileStore.setFileTree,
+    renameNode: fileStore.renameNode,
+    setRenamingNode: fileStore.setRenamingNode,
+    createNewFolder: fileStore.createNewFolder,
+    createNewFile: fileStore.createNewFile,
+    setCreatingNode: fileStore.setCreatingNode,
+    moveNode: fileStore.moveNode,
+    setDraggedNode: fileStore.setDraggedNode,
+    setDragOverNode: fileStore.setDragOverNode,
+    setDraggedTab: fileStore.setDraggedTab,
+    setDragOverTab: fileStore.setDragOverTab,
+    
+    // Layout Actions
+    updateLayoutSettings: layoutStore.updateLayoutSettings,
+    updateChartSettings: layoutStore.updateChartSettings,
+    
+    // UI Actions
+    setCurrentPage: uiStore.setCurrentPage,
+    setHoveredChart: uiStore.setHoveredChart,
+    setEditingChart: uiStore.setEditingChart,
+    setEditModalOpen: uiStore.setEditModalOpen,
+
+    // Chart Actions
+    duplicateChart: fileStore.duplicateChart,
+  }
 }
-
-const defaultChartSettings: ChartSettings = {
-  showLegend: true,
-  showXAxis: true,
-  showYAxis: true,
-  showGrid: true,
-}
-
-export const useAnalysisStore = create<AnalysisStore>()(
-  devtools(
-    (set) => ({
-      // Initial State
-      activeView: 'explorer',
-      sidebarOpen: true,
-      openTabs: [],
-      activeTab: '',
-      expandedFolders: new Set(['1']),
-      layoutSettingsMap: {},
-      chartSettingsMap: {},
-      currentPage: 1,
-      hoveredChart: null,
-      editingChart: null,
-      editModalOpen: false,
-      draggedTab: null,
-      dragOverTab: null,
-
-      // View Actions
-      setActiveView: (view) => set({ activeView: view }),
-      toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
-      setSidebarOpen: (open) => set({ sidebarOpen: open }),
-
-      // File Actions
-      openFile: (file) => set((state) => {
-        const exists = state.openTabs.find((tab) => tab.id === file.id)
-        if (exists) {
-          return { activeTab: file.id, currentPage: 1 }
-        }
-
-        // Initialize layout and chart settings for new file
-        const newLayoutSettings = !state.layoutSettingsMap[file.id]
-          ? { [file.id]: { ...defaultLayoutSettings } }
-          : {}
-        const newChartSettings = !state.chartSettingsMap[file.id]
-          ? { [file.id]: { ...defaultChartSettings } }
-          : {}
-
-        return {
-          openTabs: [...state.openTabs, file],
-          activeTab: file.id,
-          currentPage: 1,
-          layoutSettingsMap: { ...state.layoutSettingsMap, ...newLayoutSettings },
-          chartSettingsMap: { ...state.chartSettingsMap, ...newChartSettings },
-        }
-      }),
-
-      closeTab: (fileId) => set((state) => {
-        const newTabs = state.openTabs.filter((tab) => tab.id !== fileId)
-        const newActiveTab = state.activeTab === fileId && newTabs.length > 0
-          ? newTabs[newTabs.length - 1].id
-          : state.activeTab === fileId
-          ? ''
-          : state.activeTab
-
-        return {
-          openTabs: newTabs,
-          activeTab: newActiveTab,
-        }
-      }),
-
-      setActiveTab: (tabId) => set({ activeTab: tabId, currentPage: 1 }),
-
-      toggleFolder: (folderId) => set((state) => {
-        const newExpanded = new Set(state.expandedFolders)
-        if (newExpanded.has(folderId)) {
-          newExpanded.delete(folderId)
-        } else {
-          newExpanded.add(folderId)
-        }
-        return { expandedFolders: newExpanded }
-      }),
-
-      reorderTabs: (draggedId, targetId) => set((state) => {
-        const draggedIndex = state.openTabs.findIndex((tab) => tab.id === draggedId)
-        const targetIndex = state.openTabs.findIndex((tab) => tab.id === targetId)
-
-        if (draggedIndex === -1 || targetIndex === -1) return state
-
-        const newTabs = [...state.openTabs]
-        const [draggedTab] = newTabs.splice(draggedIndex, 1)
-        newTabs.splice(targetIndex, 0, draggedTab)
-
-        return { openTabs: newTabs }
-      }),
-
-      // Layout Actions
-      updateLayoutSettings: (fileId, settings) => set((state) => ({
-        layoutSettingsMap: {
-          ...state.layoutSettingsMap,
-          [fileId]: {
-            ...state.layoutSettingsMap[fileId],
-            ...settings,
-          },
-        },
-      })),
-
-      updateChartSettings: (fileId, settings) => set((state) => ({
-        chartSettingsMap: {
-          ...state.chartSettingsMap,
-          [fileId]: {
-            ...state.chartSettingsMap[fileId],
-            ...settings,
-          },
-        },
-      })),
-
-      // UI Actions
-      setCurrentPage: (page) => set({ currentPage: page }),
-      setHoveredChart: (chartId) => set({ hoveredChart: chartId }),
-      setEditingChart: (chart) => set({ editingChart: chart }),
-      setEditModalOpen: (open) => set({ editModalOpen: open }),
-      setDraggedTab: (tabId) => set({ draggedTab: tabId }),
-      setDragOverTab: (tabId) => set({ dragOverTab: tabId }),
-    }),
-    {
-      name: 'analysis-store',
-    }
-  )
-)

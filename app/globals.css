@@ -13,7 +13,19 @@ body {
   .text-balance {
     text-wrap: balance;
   }
+  
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
 }
+
 
 @layer base {
   :root {
@@ -85,13 +97,78 @@ body {
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
-}
-
-@layer base {
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Performance optimizations for production */
+@layer utilities {
+  /* GPU acceleration for chart containers */
+  .chart-container,
+  .chart-card,
+  .chart-preview-container {
+    transform: translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  
+  /* Optimize SVG rendering - but preserve quality for icons */
+  svg {
+    shape-rendering: auto; /* optimizeSpeedから変更 */
+  }
+  
+  /* High quality rendering for icons */
+  .lucide {
+    shape-rendering: geometricPrecision;
+    text-rendering: geometricPrecision;
+  }
+  
+  /* Reduce paint areas */
+  .chart-grid-item {
+    contain: layout style paint;
+  }
+  
+  /* Hardware acceleration for scrollable areas */
+  .overflow-auto,
+  .overflow-scroll {
+    -webkit-overflow-scrolling: touch;
+    transform: translateZ(0);
+  }
+  
+  /* Optimize chart animations */
+  .chart-transition {
+    transition: transform 0.2s ease-out;
+  }
+  
+  /* Disable expensive effects in production */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* KaTeX Formula Styles */
+.katex-formula {
+  font-size: 1.1em;
+}
+
+.katex-formula .katex {
+  font-size: inherit;
+}
+
+/* Adjust KaTeX display in tooltips */
+.katex-formula.text-base .katex {
+  font-size: 1.2em;
+}
+
+.katex-formula.text-xs .katex {
+  font-size: 0.9em;
 }

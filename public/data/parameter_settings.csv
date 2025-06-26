@@ -1,0 +1,10 @@
+chart_index,chart_title,y_axis_index,parameter,axis_name,color,marker_type,line_style
+0,温度変化グラフ,0,Temperature,温度(°C),#FF0000,circle,solid
+0,温度変化グラフ,1,Pressure,圧力(MPa),#0000FF,square,dashed
+1,流量監視グラフ,0,Flow_Rate,流量(L/min),#00FF00,triangle,solid
+1,流量監視グラフ,1,Flow_Speed,流速(m/s),#FFA500,diamond,dotted
+2,圧力推移グラフ,0,Pressure_Tank1,タンク1圧力(kPa),#FF00FF,star,solid
+2,圧力推移グラフ,1,Pressure_Tank2,タンク2圧力(kPa),#00FFFF,cross,dashed
+3,センサーデータ,0,Sensor_A,センサーA,#FF6347,circle,solid
+3,センサーデータ,1,Sensor_B,センサーB,#4682B4,square,solid
+3,センサーデータ,2,Sensor_C,センサーC,#32CD32,triangle,dotted

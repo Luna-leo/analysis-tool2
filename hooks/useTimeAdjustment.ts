@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { adjustDate } from '@/lib/dateUtils'
+import { adjustDate } from '@/utils/dateUtils'
 
 export type TimeUnit = 'd' | 'h' | 'm' | 's'
 export type TimeTarget = 'start' | 'end'

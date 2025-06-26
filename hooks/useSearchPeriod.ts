@@ -95,7 +95,7 @@ export const useSearchPeriod = (availableEvents: EventInfo[]) => {
     machineNo: ''
   }
   
-  const setManualPeriod = (period: any) => {
+  const setManualPeriod = (period: Partial<ManualPeriod>) => {
     if (manualPeriods.length > 0) {
       updateManualPeriod(manualPeriods[0].id, period)
     }

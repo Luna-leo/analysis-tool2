@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { formatDateTimeLocal } from '@/lib/dateUtils'
+import { formatDateTimeForInput } from '@/utils/dateUtils'
 import { EventInfo } from '@/types'
 
 export interface ManualEntryData extends EventInfo {
@@ -34,8 +34,8 @@ export const useManualEntry = () => {
       labelDescription: "",
       event: "",
       eventDetail: "",
-      start: formatDateTimeLocal(oneHourAgo),
-      end: formatDateTimeLocal(now),
+      start: formatDateTimeForInput(oneHourAgo),
+      end: formatDateTimeForInput(now),
       legend: ""
     })
     setEditingItemId(null)
@@ -47,7 +47,16 @@ export const useManualEntry = () => {
       ? `${item.label} (${item.labelDescription})` 
       : item.label
     
-    setData({ ...item, legend })
+    // Format dates for datetime-local input
+    const formattedStart = item.start ? formatDateTimeForInput(new Date(item.start)) : ''
+    const formattedEnd = item.end ? formatDateTimeForInput(new Date(item.end)) : ''
+    
+    setData({ 
+      ...item, 
+      start: formattedStart,
+      end: formattedEnd,
+      legend 
+    })
     setEditingItemId(item.id)
     setIsOpen(true)
   }
