@@ -2,7 +2,13 @@ import { CSVDataSourceType } from "@/types"
 import { StandardizedCSVData, ParsedCSVData } from "@/types/csv-data"
 import { getDataSourceConfig } from "@/data/dataSourceTypes"
 import { parseCASSFormat, parseStandardFormat, isCASSFormat, removeBOM } from "./csvParsers"
+import { parseCSVStreaming } from "./csvParsers/streamingParser"
 import { isTestDataFile as checkTestDataFile } from "@/config/csvFormats"
+import { CSVErrorCollector } from "./csv/errorHandling"
+import { parseCSVWithWorker, isWorkerAvailable } from "./csv/workerParser"
+
+// Threshold for using streaming parser (5MB)
+const STREAMING_THRESHOLD = 5 * 1024 * 1024
 
 export interface CSVParseResult {
   success: boolean
@@ -26,10 +32,13 @@ export interface CSVContentParseResult {
   format?: string
 }
 
-export function parseCSVContent(content: string, options: CSVContentParseOptions): CSVContentParseResult | null {
+export async function parseCSVContent(content: string, options: CSVContentParseOptions & { onProgress?: (progress: number) => void; errorCollector?: CSVErrorCollector }): Promise<CSVContentParseResult | null> {
   try {
     // Parse the CSV content
-    const parsedData = parseCSV(content, options.fileName)
+    const parsedData = await parseCSV(content, options.fileName, {
+      onProgress: options.onProgress,
+      errorCollector: options.errorCollector
+    })
     
     // Validate the structure
     const validation = validateCSVStructure(
@@ -89,7 +98,7 @@ export async function parseCSVFiles(files: File[]): Promise<CSVParseResult> {
       }
       
       console.log(`[parseCSVFiles] Parsing CSV content...`)
-      const parsed = parseCSV(text, file.name)
+      const parsed = await parseCSV(text, file.name)
       console.log(`[parseCSVFiles] Parsed result:`, {
         headers: parsed.headers,
         rowCount: parsed.rows.length,
@@ -121,8 +130,34 @@ function containsGarbledText(text: string): boolean {
          (text.charCodeAt(0) === 0xFEFF && text.includes('�'))
 }
 
-function parseCSV(text: string, fileName: string): ParsedCSVData {
+async function parseCSV(text: string, fileName: string, options?: { useStreaming?: boolean, onProgress?: (progress: number) => void, errorCollector?: CSVErrorCollector }): Promise<ParsedCSVData> {
   console.log(`[parseCSV] Parsing file: ${fileName}`)
+  
+  // Check if we should use streaming parser
+  const shouldUseStreaming = options?.useStreaming || text.length > STREAMING_THRESHOLD
+  
+  // Try to use Web Worker for large files if available
+  if (shouldUseStreaming && isWorkerAvailable() && !options?.errorCollector) {
+    try {
+      console.log(`[parseCSV] Using Web Worker for large file (${text.length} bytes)`)
+      return await parseCSVWithWorker(text, fileName, {
+        useStreaming: true,
+        onProgress: options?.onProgress
+      })
+    } catch (workerError) {
+      console.warn('[parseCSV] Web Worker failed, falling back to streaming parser:', workerError)
+      // Fall back to streaming parser if worker fails
+    }
+  }
+  
+  if (shouldUseStreaming) {
+    console.log(`[parseCSV] Using streaming parser for large file (${text.length} bytes)`)
+    return await parseCSVStreaming(text, fileName, {
+      onProgress: options?.onProgress,
+      errorCollector: options?.errorCollector,
+      chunkSize: 1000
+    })
+  }
   
   // Remove BOM if present
   const cleanText = removeBOM(text)
