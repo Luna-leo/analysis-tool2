@@ -16,6 +16,11 @@ export interface ReferenceLineConfig {
     x: number
     y: number
   }
+  // Style properties (simplified)
+  strokeWidth?: number
+  labelStyle?: {
+    fontSize?: number
+  }
 }
 
 // Conversion utilities
@@ -30,6 +35,10 @@ export function configToReferenceLine(
   color: string
   style: LineStyle
   labelOffset?: { x: number; y: number }
+  strokeWidth?: number
+  labelStyle?: {
+    fontSize?: number
+  }
 } {
   let value: number | string = ""
   
@@ -55,7 +64,9 @@ export function configToReferenceLine(
     label: config.label,
     color: config.color || "#FF0000",
     style: config.style || "solid",
-    labelOffset: config.labelOffset
+    labelOffset: config.labelOffset,
+    strokeWidth: config.strokeWidth,
+    labelStyle: config.labelStyle
   }
 }
 
@@ -68,6 +79,10 @@ export function referenceLineToConfig(
     color?: string
     style?: LineStyle
     labelOffset?: { x: number; y: number }
+    strokeWidth?: number
+    labelStyle?: {
+      fontSize?: number
+    }
   }
 ): ReferenceLineConfig {
   return {
@@ -83,6 +98,8 @@ export function referenceLineToConfig(
     axisNo: 1,
     color: line.color,
     style: line.style,
-    labelOffset: line.labelOffset
+    labelOffset: line.labelOffset,
+    strokeWidth: line.strokeWidth,
+    labelStyle: line.labelStyle
   }
 }
