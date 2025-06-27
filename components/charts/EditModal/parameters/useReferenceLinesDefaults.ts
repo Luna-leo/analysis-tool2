@@ -4,7 +4,12 @@ import { useOptimizedChart } from "@/hooks/useOptimizedChart"
 
 export function useReferenceLinesDefaults(
   editingChart: ChartComponent,
-  selectedDataSourceItems: EventInfo[]
+  selectedDataSourceItems: EventInfo[],
+  currentScales?: {
+    xDomain: [any, any]
+    yDomain: [number, number]
+    xAxisType: string
+  } | null
 ) {
   // Load actual chart data
   const { data: chartData } = useOptimizedChart({
@@ -18,8 +23,63 @@ export function useReferenceLinesDefaults(
     let defaultXValue = ""
     let defaultYValue = ""
 
-    // Calculate default Y value based on Y-axis range
-    if (editingChart.yAxisParams && editingChart.yAxisParams.length > 0) {
+    // If current scales are available, use them for midpoint calculation
+    if (currentScales) {
+      // Use visible Y domain for Y value
+      if (currentScales.yDomain) {
+        const [yMin, yMax] = currentScales.yDomain
+        defaultYValue = ((yMin + yMax) / 2).toString()
+        
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[useReferenceLinesDefaults] Using current visible Y domain:', {
+            yMin,
+            yMax,
+            midpoint: (yMin + yMax) / 2
+          })
+        }
+      }
+      
+      // Use visible X domain for X value
+      if (currentScales.xDomain) {
+        const [xMin, xMax] = currentScales.xDomain
+        
+        if (currentScales.xAxisType === "datetime") {
+          // For datetime axis, calculate midpoint between dates
+          const minTime = xMin instanceof Date ? xMin.getTime() : new Date(xMin).getTime()
+          const maxTime = xMax instanceof Date ? xMax.getTime() : new Date(xMax).getTime()
+          const midTime = new Date((minTime + maxTime) / 2)
+          defaultXValue = formatDateTimeForInput(midTime)
+          
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[useReferenceLinesDefaults] Using current visible X domain (datetime):', {
+              xMin,
+              xMax,
+              midTime
+            })
+          }
+        } else {
+          // For numeric axes
+          const midpoint = (Number(xMin) + Number(xMax)) / 2
+          defaultXValue = midpoint.toString()
+          
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[useReferenceLinesDefaults] Using current visible X domain (numeric):', {
+              xMin,
+              xMax,
+              midpoint
+            })
+          }
+        }
+      }
+      
+      // If we have both values from current scales, return early
+      if (defaultXValue && defaultYValue) {
+        return { defaultXValue, defaultYValue }
+      }
+    }
+
+    // Fallback: Calculate default Y value based on Y-axis range
+    if (!defaultYValue && editingChart.yAxisParams && editingChart.yAxisParams.length > 0) {
       // Debug logging
       if (process.env.NODE_ENV === 'development') {
         console.log('[useReferenceLinesDefaults] Y-axis params:', editingChart.yAxisParams)
@@ -138,50 +198,52 @@ export function useReferenceLinesDefaults(
       }
     }
 
-    // Calculate default X value based on chart's X-axis type
-    const xAxisType = editingChart.xAxisType || "datetime"
-    
-    if (xAxisType === "datetime") {
-      // If data sources are available and have valid dates, use their midpoint
-      if (selectedDataSourceItems.length > 0) {
-        const validDates: Date[] = []
+    // Fallback: Calculate default X value based on chart's X-axis type
+    if (!defaultXValue) {
+      const xAxisType = editingChart.xAxisType || "datetime"
+      
+      if (xAxisType === "datetime") {
+        // If data sources are available and have valid dates, use their midpoint
+        if (selectedDataSourceItems.length > 0) {
+          const validDates: Date[] = []
 
-        selectedDataSourceItems.forEach(dataSource => {
-          const startTime = new Date(dataSource.start)
-          const endTime = new Date(dataSource.end)
+          selectedDataSourceItems.forEach(dataSource => {
+            const startTime = new Date(dataSource.start)
+            const endTime = new Date(dataSource.end)
 
-          if (!isNaN(startTime.getTime())) {
-            validDates.push(startTime)
+            if (!isNaN(startTime.getTime())) {
+              validDates.push(startTime)
+            }
+            if (!isNaN(endTime.getTime())) {
+              validDates.push(endTime)
+            }
+          })
+          
+          if (validDates.length >= 2) {
+            const sortedDates = validDates.sort((a, b) => a.getTime() - b.getTime())
+            const earliestStart = sortedDates[0]
+            const latestEnd = sortedDates[sortedDates.length - 1]
+            const midTime = new Date((earliestStart.getTime() + latestEnd.getTime()) / 2)
+            defaultXValue = formatDateTimeForInput(midTime)
+          } else {
+            // Default: midpoint between 1 month ago and now
+            const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+            const midTime = new Date((oneMonthAgo.getTime() + now.getTime()) / 2)
+            defaultXValue = formatDateTimeForInput(midTime)
           }
-          if (!isNaN(endTime.getTime())) {
-            validDates.push(endTime)
-          }
-        })
-        
-        if (validDates.length >= 2) {
-          const sortedDates = validDates.sort((a, b) => a.getTime() - b.getTime())
-          const earliestStart = sortedDates[0]
-          const latestEnd = sortedDates[sortedDates.length - 1]
-          const midTime = new Date((earliestStart.getTime() + latestEnd.getTime()) / 2)
-          defaultXValue = formatDateTimeForInput(midTime)
         } else {
           // Default: midpoint between 1 month ago and now
           const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
           const midTime = new Date((oneMonthAgo.getTime() + now.getTime()) / 2)
           defaultXValue = formatDateTimeForInput(midTime)
         }
+      } else if (xAxisType === "time") {
+        // Time (elapsed): midpoint of 0-30 minutes
+        defaultXValue = "15"
       } else {
-        // Default: midpoint between 1 month ago and now
-        const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-        const midTime = new Date((oneMonthAgo.getTime() + now.getTime()) / 2)
-        defaultXValue = formatDateTimeForInput(midTime)
+        // Parameter: midpoint of 0-100
+        defaultXValue = "50"
       }
-    } else if (xAxisType === "time") {
-      // Time (elapsed): midpoint of 0-30 minutes
-      defaultXValue = "15"
-    } else {
-      // Parameter: midpoint of 0-100
-      defaultXValue = "50"
     }
 
     return { defaultXValue, defaultYValue }

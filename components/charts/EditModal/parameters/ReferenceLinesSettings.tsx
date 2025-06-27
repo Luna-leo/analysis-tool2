@@ -15,6 +15,11 @@ interface ReferenceLinesSettingsProps {
   isOpen?: boolean
   onOpenChange?: (open: boolean) => void
   selectedDataSourceItems: EventInfo[]
+  currentScales?: {
+    xDomain: [any, any]
+    yDomain: [number, number]
+    xAxisType: string
+  } | null
 }
 
 export function ReferenceLinesSettings({ 
@@ -23,10 +28,11 @@ export function ReferenceLinesSettings({
   onUpdateReferenceLines, 
   isOpen = false,
   onOpenChange,
-  selectedDataSourceItems 
+  selectedDataSourceItems,
+  currentScales 
 }: ReferenceLinesSettingsProps) {
   
-  const { getDefaultValues } = useReferenceLinesDefaults(editingChart, selectedDataSourceItems)
+  const { getDefaultValues } = useReferenceLinesDefaults(editingChart, selectedDataSourceItems, currentScales)
 
   const handleAddVerticalLine = () => {
     onOpenChange?.(true)

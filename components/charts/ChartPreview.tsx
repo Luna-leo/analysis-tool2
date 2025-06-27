@@ -28,9 +28,14 @@ interface ChartPreviewProps {
   enableZoom?: boolean
   enablePan?: boolean
   zoomMode?: 'x' | 'xy' | 'auto'
+  onScalesUpdate?: (scales: {
+    xDomain: [any, any]
+    yDomain: [number, number]
+    xAxisType: string
+  }) => void
 }
 
-export const ChartPreview = ({ editingChart, selectedDataSourceItems, setEditingChart, dataSourceStyles, chartSettings, enableZoom = true, enablePan = true, zoomMode = 'auto' }: ChartPreviewProps) => {
+export const ChartPreview = ({ editingChart, selectedDataSourceItems, setEditingChart, dataSourceStyles, chartSettings, enableZoom = true, enablePan = true, zoomMode = 'auto', onScalesUpdate }: ChartPreviewProps) => {
   
   // Debug logging for reference lines
   React.useEffect(() => {
@@ -56,6 +61,7 @@ export const ChartPreview = ({ editingChart, selectedDataSourceItems, setEditing
           enablePan={enablePan}
           zoomMode={zoomMode}
           showZoomControls={true}
+          onScalesUpdate={onScalesUpdate}
         />
       </div>
       <div className="flex-1 overflow-y-auto">

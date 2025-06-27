@@ -72,6 +72,12 @@ interface ChartPreviewGraphProps {
     columns: number
     rows: number
   }
+  // Callback to notify parent of scale updates
+  onScalesUpdate?: (scales: {
+    xDomain: [any, any]
+    yDomain: [number, number]
+    xAxisType: string
+  }) => void
 }
 
 
@@ -83,7 +89,8 @@ const chartPreviewGraphPropsAreEqual = (prevProps: ChartPreviewGraphProps, nextP
     prevProps.enablePan !== nextProps.enablePan ||
     prevProps.zoomMode !== nextProps.zoomMode ||
     prevProps.showZoomControls !== nextProps.showZoomControls ||
-    prevProps.isCompactLayout !== nextProps.isCompactLayout
+    prevProps.isCompactLayout !== nextProps.isCompactLayout ||
+    prevProps.onScalesUpdate !== nextProps.onScalesUpdate
   ) {
     return false
   }
@@ -148,7 +155,7 @@ const chartPreviewGraphPropsAreEqual = (prevProps: ChartPreviewGraphProps, nextP
   return true
 }
 
-export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints, dataSourceStyles, chartSettings, enableZoom = true, enablePan = true, zoomMode = 'auto', showZoomControls = true, isCompactLayout = false, gridLayout }: ChartPreviewGraphProps) => {
+export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceItems, setEditingChart, maxDataPoints, dataSourceStyles, chartSettings, enableZoom = true, enablePan = true, zoomMode = 'auto', showZoomControls = true, isCompactLayout = false, gridLayout, onScalesUpdate }: ChartPreviewGraphProps) => {
   const [isShiftPressed, setIsShiftPressed] = React.useState(false)
   const [isRangeSelectionMode, setIsRangeSelectionMode] = React.useState(false)
   const { settings } = useSettingsStore()
@@ -423,8 +430,20 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
 
       // Force re-render
       setZoomVersion(v => v + 1)
+      
+      // Notify parent of scale updates
+      if (onScalesUpdate) {
+        const xDomain = newXScale.domain()
+        const yDomain = newYScale.domain()
+        
+        onScalesUpdate({
+          xDomain: xDomain as [any, any],
+          yDomain: yDomain as [number, number],
+          xAxisType: mergedChart.xAxisType || "datetime"
+        })
+      }
     }
-  }, [zoomMode, mergedChart.type])
+  }, [zoomMode, mergedChart.type, onScalesUpdate])
   
   // Throttle zoom transform to 60fps to prevent race conditions during rapid movements
   const handleZoomTransform = useThrottle(handleZoomTransformBase, 16)
@@ -543,6 +562,23 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           hasCurrentScales
         })
         setScalesReady(true)
+      }
+      
+      // Notify parent of scale updates
+      if (onScalesUpdate) {
+        const scale = renderScalesRef.current.xScale || currentScalesRef.current.xScale || baseScalesRef.current.xScale
+        const yScale = renderScalesRef.current.yScale || currentScalesRef.current.yScale || baseScalesRef.current.yScale
+        
+        if (scale && yScale) {
+          const xDomain = scale.domain()
+          const yDomain = yScale.domain()
+          
+          onScalesUpdate({
+            xDomain: xDomain as [any, any],
+            yDomain: yDomain as [number, number],
+            xAxisType: mergedChart.xAxisType || "datetime"
+          })
+        }
       }
     } else if (scalesReady) {
       // Reset if scales are cleared

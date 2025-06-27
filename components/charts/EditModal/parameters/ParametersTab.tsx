@@ -11,6 +11,11 @@ interface ParametersTabProps {
   setEditingChart: (chart: ChartComponent) => void
   selectedDataSourceItems: EventInfo[]
   isBulkEdit?: boolean
+  currentScales?: {
+    xDomain: [any, any]
+    yDomain: [number, number]
+    xAxisType: string
+  } | null
 }
 
 interface ReferenceLineConfig {
@@ -28,7 +33,7 @@ interface ReferenceLineConfig {
   }
 }
 
-export function ParametersTab({ editingChart, setEditingChart, selectedDataSourceItems, isBulkEdit = false }: ParametersTabProps) {
+export function ParametersTab({ editingChart, setEditingChart, selectedDataSourceItems, isBulkEdit = false, currentScales }: ParametersTabProps) {
   const [isReferenceLinesOpen, setIsReferenceLinesOpen] = useState(false)
   const [referenceLineConfigs, setReferenceLineConfigs] = useState<ReferenceLineConfig[]>([])
 
@@ -115,6 +120,7 @@ export function ParametersTab({ editingChart, setEditingChart, selectedDataSourc
         isOpen={isReferenceLinesOpen}
         onOpenChange={setIsReferenceLinesOpen}
         selectedDataSourceItems={selectedDataSourceItems}
+        currentScales={currentScales}
       />
     </div>
   )

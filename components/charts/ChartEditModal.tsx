@@ -43,6 +43,11 @@ export function ChartEditModal() {
   const [bulkApplyDialogOpen, setBulkApplyDialogOpen] = useState(false)
   const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false)
   const [showTemplateListDialog, setShowTemplateListDialog] = useState(false)
+  const [currentScales, setCurrentScales] = useState<{
+    xDomain: [any, any]
+    yDomain: [number, number]
+    xAxisType: string
+  } | null>(null)
 
   // Keyboard shortcut handlers
   React.useEffect(() => {
@@ -442,6 +447,7 @@ export function ChartEditModal() {
                 selectedDataSourceItems={selectedDataSourceItems}
                 setSelectedDataSourceItems={handleSetSelectedDataSourceItems}
                 includeDataSourceTab={true}
+                currentScales={currentScales}
               />
             </div>
           </div>
@@ -512,6 +518,7 @@ export function ChartEditModal() {
                   enableZoom={true}
                   enablePan={true}
                   zoomMode="auto"
+                  onScalesUpdate={setCurrentScales}
                 />
               ) : (
                 <div className="h-full flex flex-col">
