@@ -65,7 +65,9 @@ export function VerticalReferenceLine({
   })()
   
   if (!isScaleValid) {
-    console.warn('Invalid xScale provided to VerticalReferenceLine')
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Invalid xScale provided to VerticalReferenceLine')
+    }
     return null
   }
   
@@ -78,21 +80,27 @@ export function VerticalReferenceLine({
     if ((xAxisType || "datetime") === "datetime") {
       // Skip empty string values
       if (!line.value || line.value === "") {
-        console.warn('Empty date value for vertical reference line')
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Empty date value for vertical reference line')
+        }
         return null
       }
       const date = new Date(line.value)
       if (!isNaN(date.getTime())) {
         xPos = xScale(date)
       } else {
-        console.warn('Invalid date for vertical reference line:', line.value)
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Invalid date for vertical reference line:', line.value)
+        }
         return null
       }
     } else if ((xAxisType || "datetime") === "time") {
       // For time axis, value should be in minutes
       const minutes = typeof line.value === 'number' ? line.value : parseFloat(line.value)
       if (isNaN(minutes)) {
-        console.warn('Invalid time value for vertical reference line:', line.value)
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Invalid time value for vertical reference line:', line.value)
+        }
         return null
       }
       xPos = (xScale as d3.ScaleLinear<number, number>)(minutes)
@@ -100,7 +108,9 @@ export function VerticalReferenceLine({
       // For parameter axis, value should be 0-100
       const paramValue = typeof line.value === 'number' ? line.value : parseFloat(line.value)
       if (isNaN(paramValue)) {
-        console.warn('Invalid parameter value for vertical reference line:', line.value)
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Invalid parameter value for vertical reference line:', line.value)
+        }
         return null
       }
       xPos = (xScale as d3.ScaleLinear<number, number>)(paramValue)

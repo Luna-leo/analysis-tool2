@@ -2,14 +2,10 @@
  * Reference line related constants
  */
 
-// Type definitions for improved type safety
-export interface ReferenceLineDragEvent {
-  x: number
-  y: number
-  subject?: any
-  sourceEvent?: MouseEvent | TouchEvent
-}
+// Re-export types from the main types file
+export type { ReferenceLineDragEvent, DragState } from "@/types/reference-line-types"
 
+// Label drag data interface
 export interface ReferenceLineLabelDragData {
   offsetX: number
   offsetY: number
