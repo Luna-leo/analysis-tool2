@@ -8,6 +8,18 @@ import { HorizontalReferenceLine } from "./HorizontalReferenceLine"
 import { useReferenceLineDrag } from "./useReferenceLineDrag"
 import { useFileStore } from "@/stores/useFileStore"
 
+// Performance monitoring helper
+const measurePerformance = (label: string, fn: () => void) => {
+  if (process.env.NODE_ENV === 'development') {
+    performance.mark(`${label}-start`)
+    fn()
+    performance.mark(`${label}-end`)
+    performance.measure(label, `${label}-start`, `${label}-end`)
+  } else {
+    fn()
+  }
+}
+
 interface ReferenceLinesProps {
   svgRef: React.RefObject<SVGSVGElement | null>
   editingChart: ChartComponent
@@ -49,21 +61,18 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
     editingChartRef.current = editingChart
   }, [editingChart])
   
-  // Track scale changes with fingerprinting
+  // Track scale changes with fingerprinting - optimized to avoid JSON.stringify
   const scaleFingerprint = useMemo(() => {
     if (!scalesRef.current.xScale || !scalesRef.current.yScale) return null
     
     const xDomain = scalesRef.current.xScale.domain()
-    const xRange = scalesRef.current.xScale.range()
     const yDomain = scalesRef.current.yScale.domain()
-    const yRange = scalesRef.current.yScale.range()
     
-    return JSON.stringify({
-      xDomain: xDomain.map(d => d instanceof Date ? d.getTime() : d),
-      xRange,
-      yDomain,
-      yRange
-    })
+    // Use primitive values for comparison instead of JSON.stringify
+    const xd0 = xDomain[0] instanceof Date ? xDomain[0].getTime() : xDomain[0]
+    const xd1 = xDomain[1] instanceof Date ? xDomain[1].getTime() : xDomain[1]
+    
+    return `${xd0}-${xd1}-${yDomain[0]}-${yDomain[1]}`
   }, [scalesRef.current.xScale, scalesRef.current.yScale, zoomVersion])
 
   useEffect(() => {
@@ -147,31 +156,25 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
         .style("pointer-events", isInteractive ? "auto" : "none")
     }
     
-    // Always bring reference lines layer to front
-    // Use setTimeout to ensure this happens after all chart rendering
-    setTimeout(() => {
-      refLinesLayer.raise()
-    }, 0)
-
-    
-    // Force update of existing lines when dimensions change
-    // Remove all existing lines to ensure clean redraw
-    clipGroup.selectAll(".reference-line-group").remove()
-    labelsGroup.selectAll(".reference-label-group").remove()
-    
-    // Always draw reference lines
-    drawReferenceLines(
-      clipGroup,
-      labelsGroup,
-      scalesRef.current.xScale,
-      scalesRef.current.yScale,
-      width,
-      height
-    )
+    // Always draw reference lines with performance monitoring
+    if (scalesRef.current.xScale && scalesRef.current.yScale) {
+      measurePerformance('reference-lines-render', () => {
+        drawReferenceLines(
+          clipGroup,
+          labelsGroup,
+          scalesRef.current.xScale!,
+          scalesRef.current.yScale!,
+          width,
+          height
+        )
+      })
+    }
     
     // Ensure reference lines are on top after drawing
-    // This is important because chart rendering might have added elements after our layer
-    refLinesLayer.raise()
+    // Use requestAnimationFrame to batch DOM operations
+    requestAnimationFrame(() => {
+      refLinesLayer.raise()
+    })
   }, [
     // Use specific properties to avoid unnecessary re-renders
     editingChart.referenceLines,
@@ -211,9 +214,9 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
         updateFileCharts(fileId, updatedCharts)
       }
     }
-  }, [setEditingChart, openTabs, updateFileCharts])
+  }, [setEditingChart, updateFileCharts]) // Removed openTabs dependency - accessed via closure
 
-  const drawReferenceLines = (
+  const drawReferenceLines = useCallback((
     linesGroup: d3.Selection<SVGGElement, unknown, null, undefined>, 
     labelsGroup: d3.Selection<SVGGElement, unknown, null, undefined>,
     xScale: d3.ScaleTime<number, number> | d3.ScaleLinear<number, number>, 
@@ -371,7 +374,7 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
         })
       }
     })
-  }
+  }, [updateReferenceLines]) // Memoized with stable dependency
 
   return null // This component doesn't render anything directly
 }

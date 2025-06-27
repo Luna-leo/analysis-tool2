@@ -1,9 +1,9 @@
 "use client"
 
-import React from "react"
 import * as d3 from "d3"
 import { ChartComponent, ReferenceLine } from "@/types"
 import { formatDateToISOWithoutMillis } from "@/utils/dateUtils"
+import { getCachedBBox, getCachedBBoxDimensions } from "@/utils/performance/bboxCache"
 import { 
   REFERENCE_LINE_VISIBILITY_THRESHOLD, 
   REFERENCE_LINE_CURSORS, 
@@ -56,17 +56,16 @@ export function VerticalReferenceLine({
   const color = line.color || REFERENCE_LINE_STYLES.DEFAULT_COLOR
   const strokeDasharray = REFERENCE_LINE_STYLES.STYLES[line.style || "solid"]
   
-  // Validate scale before using
-  if (!xScale || typeof xScale !== 'function') {
-    console.warn('Invalid xScale provided to VerticalReferenceLine')
-    return null
-  }
+  // Validate scale
+  const isScaleValid = (() => {
+    if (!xScale || typeof xScale !== 'function') return false
+    const domain = xScale.domain()
+    const range = xScale.range()
+    return domain?.length === 2 && range?.length === 2
+  })()
   
-  // Validate scale domain/range
-  const domain = xScale.domain()
-  const range = xScale.range()
-  if (!domain || !range || domain.length !== 2 || range.length !== 2) {
-    console.warn('Invalid scale domain or range in VerticalReferenceLine')
+  if (!isScaleValid) {
+    console.warn('Invalid xScale provided to VerticalReferenceLine')
     return null
   }
   
@@ -141,7 +140,7 @@ export function VerticalReferenceLine({
       
       // Create drag behavior
       let labelOffsetX: number | null = null
-      const drag = d3.drag<SVGLineElement, unknown>()
+      const dragBehavior = d3.drag<SVGLineElement, unknown>()
         .on("start", function() {
           onDragStart()
           // Store the current label offset at drag start
@@ -159,30 +158,34 @@ export function VerticalReferenceLine({
           const [x, _] = d3.pointer(event, this.parentNode as SVGGElement)
           const clampedX = Math.max(0, Math.min(width, x))
           
-          
           onDrag(clampedX)
           
           // Update visual elements directly without re-render
           const currentGroup = d3.select(this.parentNode as SVGGElement)
-          currentGroup.select(".main-line")
+          currentGroup.selectAll(".main-line, .interactive-line")
             .attr("x1", clampedX)
             .attr("x2", clampedX)
-          currentGroup.select(".interactive-line")
-            .attr("x1", clampedX)
-            .attr("x2", clampedX)
+          
           const currentLabelGroup = currentGroup.select(".line-label-group")
           if (!currentLabelGroup.empty() && labelOffsetX !== null) {
             // Update label and background position maintaining the offset
             const currentLabel = currentLabelGroup.select(".line-label")
-            currentLabel.attr("x", clampedX + labelOffsetX)
+            const newLabelX = clampedX + labelOffsetX
+            currentLabel.attr("x", newLabelX)
+            
+            // Get current Y position
+            const labelY = parseFloat(currentLabel.attr("y"))
             
             // Update background position
-            const textBBox = (currentLabel.node() as SVGTextElement).getBBox()
-            currentLabelGroup.select(".line-label-background")
-              .attr("x", textBBox.x - REFERENCE_LINE_LABEL.PADDING.HORIZONTAL)
-              .attr("y", textBBox.y - REFERENCE_LINE_LABEL.PADDING.VERTICAL)
-              .attr("width", textBBox.width + REFERENCE_LINE_LABEL.PADDING.HORIZONTAL * 2)
-              .attr("height", textBBox.height + REFERENCE_LINE_LABEL.PADDING.VERTICAL * 2)
+            const labelNode = currentLabel.node() as SVGTextElement
+            if (labelNode) {
+              const dimensions = getCachedBBoxDimensions(labelNode)
+              currentLabelGroup.select(".line-label-background")
+                .attr("x", newLabelX - REFERENCE_LINE_LABEL.PADDING.HORIZONTAL)
+                .attr("y", labelY - dimensions.height + REFERENCE_LINE_LABEL.PADDING.VERTICAL)
+                .attr("width", dimensions.width + REFERENCE_LINE_LABEL.PADDING.HORIZONTAL * 2)
+                .attr("height", dimensions.height + REFERENCE_LINE_LABEL.PADDING.VERTICAL * 2)
+            }
           }
         })
         .on("end", function(event) {
@@ -198,7 +201,6 @@ export function VerticalReferenceLine({
             const localISOString = new Date(newDate.getTime() - newDate.getTimezoneOffset() * 60000)
               .toISOString()
               .slice(0, 19)
-            
             
             newValue = localISOString
           } else {
@@ -220,8 +222,10 @@ export function VerticalReferenceLine({
           .style("pointer-events", "stroke")
       }
       
-      // Re-apply drag behavior (D3 will automatically replace existing drag)
-      interactiveLine.call(drag)
+      // Apply drag behavior if available
+      if (dragBehavior) {
+        interactiveLine.call(dragBehavior)
+      }
       
       interactiveLine
         .attr("x1", xPos)
@@ -276,46 +280,49 @@ export function VerticalReferenceLine({
       }
       
       // Create label drag behavior
-      if (isInteractive) {
-        const labelDrag = d3.drag<SVGGElement, unknown>()
-          .on("start", function() {
-            onLabelDragStart()
-          })
-          .on("drag", function(event) {
-            // Use d3.pointer for label drag as well
-            const [x, y] = d3.pointer(event, this)
-            onLabelDrag(x, y)
-            
-            const g = d3.select(this)
-            g.select(".line-label")
-              .attr("x", x)
-              .attr("y", y)
-            
-            // Update background position based on text
-            const textBBox = (g.select(".line-label").node() as SVGTextElement).getBBox()
-            g.select(".line-label-background")
-              .attr("x", textBBox.x - REFERENCE_LINE_LABEL.PADDING.HORIZONTAL)
-              .attr("y", textBBox.y - REFERENCE_LINE_LABEL.PADDING.VERTICAL)
-              .attr("width", textBBox.width + REFERENCE_LINE_LABEL.PADDING.HORIZONTAL * 2)
-              .attr("height", textBBox.height + REFERENCE_LINE_LABEL.PADDING.VERTICAL * 2)
-          })
-          .on("end", function(event) {
-            // Use d3.pointer for accurate coordinates
-            const [x, y] = d3.pointer(event, this)
-            
-            // Get the current line position from DOM
-            // Line is in the group (clip area), need to find it
-            const mainLine = group.select(".main-line")
-            const lineX = parseFloat(mainLine.attr("x1"))
-            
-            // Calculate offset from actual line position
-            const offsetX = x - lineX
-            const offsetY = y
-            
-            onLabelDragEnd(offsetX, offsetY)
-          })
+      const labelDragBehavior = isInteractive ? d3.drag<SVGGElement, unknown>()
+        .on("start", function() {
+          onLabelDragStart()
+        })
+        .on("drag", function(event) {
+          // Use d3.pointer for label drag as well
+          const [x, y] = d3.pointer(event, this)
+          onLabelDrag(x, y)
           
-        labelGroupElement.call(labelDrag)
+          const g = d3.select(this)
+          g.select(".line-label")
+            .attr("x", x)
+            .attr("y", y)
+          
+          // Update background position based on label position
+          const labelNode = g.select(".line-label").node() as SVGTextElement
+          if (labelNode) {
+            const dimensions = getCachedBBoxDimensions(labelNode)
+            g.select(".line-label-background")
+              .attr("x", x - REFERENCE_LINE_LABEL.PADDING.HORIZONTAL)
+              .attr("y", y - dimensions.height + REFERENCE_LINE_LABEL.PADDING.VERTICAL)
+              .attr("width", dimensions.width + REFERENCE_LINE_LABEL.PADDING.HORIZONTAL * 2)
+              .attr("height", dimensions.height + REFERENCE_LINE_LABEL.PADDING.VERTICAL * 2)
+          }
+        })
+        .on("end", function(event) {
+          // Use d3.pointer for accurate coordinates
+          const [x, y] = d3.pointer(event, this)
+          
+          // Get the current line position from DOM
+          // Line is in the group (clip area), need to find it
+          const mainLine = group.select(".main-line")
+          const lineX = parseFloat(mainLine.attr("x1"))
+          
+          // Calculate offset from actual line position
+          const offsetX = x - lineX
+          const offsetY = y
+          
+          onLabelDragEnd(offsetX, offsetY)
+        }) : null
+      
+      if (labelDragBehavior) {
+        labelGroupElement.call(labelDragBehavior)
       }
       
       labelText
@@ -326,12 +333,17 @@ export function VerticalReferenceLine({
         .text(line.label)
       
       // Update background to match text size
-      const textBBox = (labelText.node() as SVGTextElement).getBBox()
-      labelBackground
-        .attr("x", textBBox.x - REFERENCE_LINE_LABEL.PADDING.HORIZONTAL)
-        .attr("y", textBBox.y - REFERENCE_LINE_LABEL.PADDING.VERTICAL)
-        .attr("width", textBBox.width + REFERENCE_LINE_LABEL.PADDING.HORIZONTAL * 2)
-        .attr("height", textBBox.height + REFERENCE_LINE_LABEL.PADDING.VERTICAL * 2)
+      const labelNode = labelText.node() as SVGTextElement
+      if (labelNode) {
+        const dimensions = getCachedBBoxDimensions(labelNode)
+        // Position background relative to label position
+        // Text baseline is at labelY, so we need to adjust for text height
+        labelBackground
+          .attr("x", labelX - REFERENCE_LINE_LABEL.PADDING.HORIZONTAL)
+          .attr("y", labelY - dimensions.height + REFERENCE_LINE_LABEL.PADDING.VERTICAL)
+          .attr("width", dimensions.width + REFERENCE_LINE_LABEL.PADDING.HORIZONTAL * 2)
+          .attr("height", dimensions.height + REFERENCE_LINE_LABEL.PADDING.VERTICAL * 2)
+      }
       
       // Ensure label group is on top
       labelGroupElement.raise()
@@ -343,6 +355,4 @@ export function VerticalReferenceLine({
     // Remove any existing handle (no handle for vertical lines)
     group.select(".line-handle").remove()
   }
-  
-  return null
 }
