@@ -115,6 +115,9 @@ export function VerticalReferenceLine({
     const y1 = 0
     const y2 = height
     
+    // Check if line is completely outside plot area
+    const lineThreshold = 5 // Allow a few pixels of tolerance
+    const isLineVisible = xPos >= -lineThreshold && xPos <= width + lineThreshold
     
     mainLine
       .attr("x1", xPos)
@@ -124,6 +127,7 @@ export function VerticalReferenceLine({
       .attr("stroke", color)
       .attr("stroke-width", 1)
       .attr("stroke-dasharray", strokeDasharray)
+      .style("display", isLineVisible ? "block" : "none")
     
     // Update or create interactive area
     if (isInteractive) {
@@ -218,11 +222,8 @@ export function VerticalReferenceLine({
         .attr("x2", xPos)
         .attr("y1", y1)
         .attr("y2", y2)
+        .style("display", isLineVisible ? "block" : "none")
     }
-    
-    // Check if line is completely outside plot area
-    const lineThreshold = 5 // Allow a few pixels of tolerance
-    const isLineVisible = xPos >= -lineThreshold && xPos <= width + lineThreshold
     
     // Update or create label - in the separate label group
     if (line.label && isLineVisible) {

@@ -85,6 +85,9 @@ export function HorizontalReferenceLine({
     const x1 = 0
     const x2 = width
     
+    // Check if line is completely outside plot area
+    const lineThreshold = 5 // Allow a few pixels of tolerance
+    const isLineVisible = yPos >= -lineThreshold && yPos <= height + lineThreshold
     
     mainLine
       .attr("x1", x1)
@@ -94,6 +97,7 @@ export function HorizontalReferenceLine({
       .attr("stroke", color)
       .attr("stroke-width", 1)
       .attr("stroke-dasharray", strokeDasharray)
+      .style("display", isLineVisible ? "block" : "none")
     
     // Update or create interactive area
     if (isInteractive) {
@@ -170,11 +174,8 @@ export function HorizontalReferenceLine({
         .attr("x2", x2)
         .attr("y1", yPos)
         .attr("y2", yPos)
+        .style("display", isLineVisible ? "block" : "none")
     }
-    
-    // Check if line is completely outside plot area
-    const lineThreshold = 5 // Allow a few pixels of tolerance
-    const isLineVisible = yPos >= -lineThreshold && yPos <= height + lineThreshold
     
     // Update or create label - in the separate label group
     if (line.label && isLineVisible) {
