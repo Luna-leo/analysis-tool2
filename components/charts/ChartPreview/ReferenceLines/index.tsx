@@ -261,18 +261,27 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
     // Create observer to watch for new elements being added
     const observer = new MutationObserver((mutations) => {
       let shouldRaise = false
+      const labelsNode = labelsTopLayer.node() as SVGGElement | null
+      if (!labelsNode) return
       
+      // Only check if elements were added after our labels layer
       for (const mutation of mutations) {
         if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-          // Check if any nodes were added after our labels layer
-          const labelsNode = labelsTopLayer.node()
+          // Get the position of our labels layer
+          const labelsIndex = Array.from(svg.children).indexOf(labelsNode)
+          
           for (const addedNode of mutation.addedNodes) {
-            if (addedNode !== labelsNode && addedNode.nodeType === Node.ELEMENT_NODE) {
-              shouldRaise = true
-              break
+            if (addedNode.nodeType === Node.ELEMENT_NODE) {
+              const addedIndex = Array.from(svg.children).indexOf(addedNode as Element)
+              // Only raise if element was added after our labels layer
+              if (addedIndex > labelsIndex) {
+                shouldRaise = true
+                break
+              }
             }
           }
         }
+        if (shouldRaise) break
       }
       
       if (shouldRaise) {

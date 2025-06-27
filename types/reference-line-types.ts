@@ -12,6 +12,29 @@ export interface ReferenceLineDragEvent {
   subject: ReferenceLine
 }
 
+// Error states for reference lines
+export interface ReferenceLineError {
+  type: 'invalid_scale' | 'invalid_value' | 'empty_value' | 'parse_error'
+  message: string
+  lineId: string
+  value?: any
+}
+
+// Scale validation result
+export interface ScaleValidationResult {
+  isValid: boolean
+  error?: ReferenceLineError
+}
+
+// Drag state
+export interface DragState {
+  id: string
+  type: 'vertical' | 'horizontal'
+  startPosition: number
+  currentPosition: number
+  startValue: string | number
+}
+
 // Drag behavior types
 export type LineDragBehavior = d3.DragBehavior<SVGLineElement, ReferenceLine, ReferenceLine>
 export type LabelDragBehavior = d3.DragBehavior<SVGGElement, ReferenceLine, ReferenceLine>

@@ -62,7 +62,9 @@ export function HorizontalReferenceLine({
   })()
   
   if (!isScaleValid) {
-    console.warn('Invalid yScale provided to HorizontalReferenceLine')
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('Invalid yScale provided to HorizontalReferenceLine')
+    }
     return null
   }
   
@@ -74,7 +76,9 @@ export function HorizontalReferenceLine({
   } else {
     const yValue = typeof line.value === 'number' ? line.value : parseFloat(line.value)
     if (isNaN(yValue)) {
-      console.warn('Invalid y value for horizontal reference line:', line.value)
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Invalid y value for horizontal reference line:', line.value)
+      }
       return null
     }
     yPos = yScale(yValue)
