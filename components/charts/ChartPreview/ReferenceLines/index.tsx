@@ -71,11 +71,6 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
     
     // Wait a bit for scales to be ready if they're not yet available
     if (!scalesRef.current.xScale || !scalesRef.current.yScale) {
-      console.log('[ReferenceLines] Scales not ready yet, waiting...', {
-        chartId: editingChart.id,
-        hasXScale: !!scalesRef.current.xScale,
-        hasYScale: !!scalesRef.current.yScale
-      })
       
       // Try again after a short delay
       const timer = setTimeout(() => {
@@ -95,18 +90,6 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
     
     // Debug log dimensions and state
     if (process.env.NODE_ENV === 'development') {
-      console.log('[ReferenceLines] Rendering:', {
-        chartId: editingChart.id,
-        hasReferenceLines: !!editingChart.referenceLines?.length,
-        referenceLineCount: editingChart.referenceLines?.length || 0,
-        rawDimensions: dimensions,
-        margin,
-        calculatedWidth: width,
-        calculatedHeight: height,
-        svgRect: svgRef.current?.getBoundingClientRect(),
-        hasScales: !!scalesRef.current.xScale && !!scalesRef.current.yScale,
-        isInteractive: !!setEditingChart
-      })
     }
 
     const isInteractive = !!setEditingChart

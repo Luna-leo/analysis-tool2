@@ -340,13 +340,6 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       prevSettings.yAxisTickPrecision !== currentSettings.yAxisTickPrecision ||
       prevSettings.showGrid !== currentSettings.showGrid
     ) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[ChartPreviewGraph] Axis settings changed, clearing scales:', {
-          chartId: mergedChart.id,
-          prev: prevSettings,
-          current: currentSettings
-        })
-      }
       
       // Clear scales to force recreation with new settings
       baseScalesRef.current = { xScale: null, yScale: null }
@@ -612,18 +605,6 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         left: Math.round(dimensions.width * 0.10)     // 10%
       }
       
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[ChartPreviewGraph] Computed 4x4 margins:', {
-          margin,
-          dimensions,
-          percentages: {
-            top: '3%',
-            right: '4%',
-            bottom: '6%',
-            left: '10%'
-          }
-        })
-      }
     } else {
       // Check if we have percentage margins
       const hasPercentageMargins = mergedChart.margins && 
@@ -700,14 +681,6 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       prevParamsRef.current.gridLayout !== currentParams.gridLayout // Check layout changes
     
     if (hasParamsChanged && prevParamsRef.current.xParameter !== undefined) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[ChartPreviewGraph] Parameters or layout changed, resetting scales:', {
-          chartId: mergedChart.id,
-          layoutChanged: prevParamsRef.current.gridLayout !== currentParams.gridLayout,
-          prevLayout: prevParamsRef.current.gridLayout,
-          newLayout: currentParams.gridLayout
-        })
-      }
       
       // Reset all scale-related state
       isInitialRenderComplete.current = false
@@ -786,12 +759,6 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     
     if (dimensionsChanged && isInitialRenderComplete.current) {
       // Dimensions changed after initial render - need to update scale ranges
-      if (process.env.NODE_ENV === 'development') {
-        console.log(`[Chart ${chartRenderProps.id}] Dimensions changed:`, {
-          prev: prevDims,
-          new: dimensions
-        })
-      }
       
       // Force a re-render to update scale ranges
       setZoomVersion(v => v + 1)
@@ -1384,14 +1351,6 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           const margin = computedMargins
           
           // Debug logging
-          if (process.env.NODE_ENV === 'development' && gridLayout?.columns === 4 && gridLayout?.rows === 4) {
-            console.log('[ChartPreviewGraph] Using pre-computed margins:', {
-              chartId: mergedChart.id,
-              margin,
-              dimensions,
-              gridLayout
-            })
-          }
           
           const width = dimensions.width - margin.left - margin.right
           const height = dimensions.height - margin.top - margin.bottom
@@ -1424,18 +1383,6 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               console.log(`[Chart ${chartRenderProps.id}] Rendering with zoom version:`, zoomVersion)
             }
             
-            // Debug log scales information
-            if (process.env.NODE_ENV === 'development' && baseScalesRef.current.xScale) {
-              const domain = baseScalesRef.current.xScale.domain()
-              console.log('[ChartPreviewGraph] Current scales:', {
-                chartId: chartRenderProps.id,
-                usingCurrentScales: scalesToUse === currentScalesRef,
-                baseScaleDomain: domain,
-                baseScaleDomainStart: domain[0] instanceof Date ? domain[0].toISOString() : domain[0],
-                baseScaleDomainEnd: domain[1] instanceof Date ? domain[1].toISOString() : domain[1],
-                hasCurrentScales: hasValidCurrentScales
-              })
-            }
             
             
             // Apply quality optimization if enabled
@@ -1534,13 +1481,6 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               
               // Draw selection rectangle within the plot area (only if actively selecting)
               if (selectionState.isSelecting) {
-                if (process.env.NODE_ENV === 'development') {
-                  console.log(`[ChartPreviewGraph ${editingChart.id}] Drawing selection rect:`, {
-                    selectionState,
-                    plotDimensions: { width, height },
-                    margin
-                  });
-                }
                 
                 // Create a unique clip path for selection
                 const selectionClipId = `selection-clip-${Math.random().toString(36).substr(2, 9)}`;
@@ -1561,14 +1501,6 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
                 const rectWidth = Math.abs(selectionState.endX - selectionState.startX);
                 const rectHeight = Math.abs(selectionState.endY - selectionState.startY);
                 
-                if (process.env.NODE_ENV === 'development') {
-                  console.log(`[ChartPreviewGraph ${editingChart.id}] Selection rect attributes:`, {
-                    x: rectX,
-                    y: rectY,
-                    width: rectWidth,
-                    height: rectHeight
-                  });
-                }
                 
                 selectionGroup.append("rect")
                   .attr("x", rectX)
@@ -1627,9 +1559,6 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               animationFrameRef.current = null
               unregisterRendering(editingChart.id)  // Unregister after paint
               
-              if (process.env.NODE_ENV === 'development') {
-                console.log(`[Chart ${editingChart.id}] Rendering complete (after paint)`)
-              }
             })
           })
         } catch (error) {
@@ -1685,18 +1614,6 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         if (prevRenderDeps.current.xAxisTickPrecision !== currentDeps.xAxisTickPrecision) changes.push('xAxisTickPrecision')
         if (prevRenderDeps.current.yAxisTickPrecision !== currentDeps.yAxisTickPrecision) changes.push('yAxisTickPrecision')
         
-        if (process.env.NODE_ENV === 'development' && changes.length > 0) {
-          console.log(`[Chart ${chartRenderProps.id}] Render triggered by changes in:`, changes)
-          // Log axis settings specifically if they changed
-          if (changes.some(c => c.includes('Axis'))) {
-            console.log('[ChartPreviewGraph] Axis settings in render:', {
-              xAxisTicks: chartRenderProps.xAxisTicks,
-              yAxisTicks: chartRenderProps.yAxisTicks,
-              xAxisTickPrecision: chartRenderProps.xAxisTickPrecision,
-              yAxisTickPrecision: chartRenderProps.yAxisTickPrecision
-            })
-          }
-        }
       }
       
       prevRenderDeps.current = currentDeps

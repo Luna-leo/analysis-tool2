@@ -30,13 +30,6 @@ export function useReferenceLinesDefaults(
         const [yMin, yMax] = currentScales.yDomain
         defaultYValue = ((yMin + yMax) / 2).toString()
         
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[useReferenceLinesDefaults] Using current visible Y domain:', {
-            yMin,
-            yMax,
-            midpoint: (yMin + yMax) / 2
-          })
-        }
       }
       
       // Use visible X domain for X value
@@ -50,25 +43,11 @@ export function useReferenceLinesDefaults(
           const midTime = new Date((minTime + maxTime) / 2)
           defaultXValue = formatDateTimeForInput(midTime)
           
-          if (process.env.NODE_ENV === 'development') {
-            console.log('[useReferenceLinesDefaults] Using current visible X domain (datetime):', {
-              xMin,
-              xMax,
-              midTime
-            })
-          }
         } else {
           // For numeric axes
           const midpoint = (Number(xMin) + Number(xMax)) / 2
           defaultXValue = midpoint.toString()
           
-          if (process.env.NODE_ENV === 'development') {
-            console.log('[useReferenceLinesDefaults] Using current visible X domain (numeric):', {
-              xMin,
-              xMax,
-              midpoint
-            })
-          }
         }
       }
       
@@ -80,18 +59,6 @@ export function useReferenceLinesDefaults(
 
     // Fallback: Calculate default Y value based on Y-axis range
     if (!defaultYValue && editingChart.yAxisParams && editingChart.yAxisParams.length > 0) {
-      // Debug logging
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[useReferenceLinesDefaults] Y-axis params:', editingChart.yAxisParams)
-        console.log('[useReferenceLinesDefaults] Actual chart data from useOptimizedChart:', {
-          hasData: !!chartData,
-          dataLength: chartData?.length || 0,
-          dataType: typeof chartData,
-          sampleData: chartData?.slice(0, 3),
-          chartId: editingChart.id,
-          chartTitle: editingChart.title
-        })
-      }
       
       // Find the first Y parameter with a manual range (auto = false)
       const paramWithRange = editingChart.yAxisParams.find(param => 
@@ -106,9 +73,6 @@ export function useReferenceLinesDefaults(
         const midpoint = (paramWithRange.range.min + paramWithRange.range.max) / 2
         defaultYValue = midpoint.toString()
         
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[useReferenceLinesDefaults] Found manual range:', paramWithRange.range, 'midpoint:', midpoint)
-        }
       } else {
         // If no manual range is set, try to calculate from actual chart data
         if (chartData && chartData.length > 0) {
@@ -116,10 +80,6 @@ export function useReferenceLinesDefaults(
           const yValues: number[] = []
           
           chartData.forEach((dataPoint: any, index: number) => {
-            // Debug first few data points
-            if (process.env.NODE_ENV === 'development' && index < 3) {
-              console.log('[useReferenceLinesDefaults] Actual data point:', index, dataPoint)
-            }
             
             // The chartData from useOptimizedChart has y values directly
             if (typeof dataPoint.y === 'number') {
@@ -169,31 +129,15 @@ export function useReferenceLinesDefaults(
             const midpoint = (niceMin + niceMax) / 2
             defaultYValue = midpoint.toString()
             
-            if (process.env.NODE_ENV === 'development') {
-              console.log('[useReferenceLinesDefaults] Calculated Y range from data:', {
-                dataMin: min,
-                dataMax: max,
-                niceMin,
-                niceMax,
-                midpoint,
-                yValuesCount: yValues.length
-              })
-            }
           } else {
             // No valid Y values found in data
             defaultYValue = "50"
             
-            if (process.env.NODE_ENV === 'development') {
-              console.log('[useReferenceLinesDefaults] No valid Y values in data, using default 50')
-            }
           }
         } else {
           // No data available
           defaultYValue = "50"
           
-          if (process.env.NODE_ENV === 'development') {
-            console.log('[useReferenceLinesDefaults] No chart data available, using default 50')
-          }
         }
       }
     }

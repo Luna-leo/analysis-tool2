@@ -100,20 +100,6 @@ export function VerticalReferenceLine({
       xPos = (xScale as d3.ScaleLinear<number, number>)(paramValue)
     }
     
-    // Debug log initial position
-    if (process.env.NODE_ENV === 'development' && !isDragging) {
-      const domain = xScale.domain()
-      console.log('[VerticalReferenceLine] Initial position:', {
-        lineId: line.id,
-        lineValue: line.value,
-        xAxisType: xAxisType || "datetime",
-        xPos,
-        xScaleDomain: domain,
-        domainStart: domain[0] instanceof Date ? domain[0].toISOString() : domain[0],
-        domainEnd: domain[1] instanceof Date ? domain[1].toISOString() : domain[1],
-        xScaleRange: xScale.range()
-      })
-    }
   }
   
   // Always render the line, even if it's outside the visible area
@@ -129,16 +115,6 @@ export function VerticalReferenceLine({
     const y1 = 0
     const y2 = height
     
-    // Debug log line dimensions
-    if (process.env.NODE_ENV === 'development' && line.label === "V-Line 1") {
-      console.log('[VerticalReferenceLine] Line dimensions:', {
-        lineId: line.id,
-        height,
-        y1,
-        y2,
-        xPos
-      })
-    }
     
     mainLine
       .attr("x1", xPos)
@@ -173,20 +149,6 @@ export function VerticalReferenceLine({
           const [x, _] = d3.pointer(event, this.parentNode as SVGGElement)
           const clampedX = Math.max(0, Math.min(width, x))
           
-          // Debug logging
-          if (process.env.NODE_ENV === 'development') {
-            const domain = xScale.domain()
-            console.log('[VerticalReferenceLine] Drag:', {
-              eventX: event.x,
-              pointerX: x,
-              clampedX,
-              width,
-              xScaleDomain: domain,
-              domainStart: domain[0] instanceof Date ? domain[0].toISOString() : domain[0],
-              domainEnd: domain[1] instanceof Date ? domain[1].toISOString() : domain[1],
-              xScaleRange: xScale.range()
-            })
-          }
           
           onDrag(clampedX)
           
@@ -227,23 +189,6 @@ export function VerticalReferenceLine({
               .toISOString()
               .slice(0, 19)
             
-            // Debug logging
-            if (process.env.NODE_ENV === 'development') {
-              const domain = xScale.domain()
-              console.log('[VerticalReferenceLine] Drag end:', {
-                eventX: event.x,
-                pointerX: x,
-                clampedX,
-                newDate,
-                newDateLocal: newDate.toString(),
-                formattedDateUTC: formatDateToISOWithoutMillis(newDate),
-                formattedDateLocal: localISOString,
-                xScaleDomain: domain,
-                domainStart: domain[0] instanceof Date ? domain[0].toISOString() : domain[0],
-                domainEnd: domain[1] instanceof Date ? domain[1].toISOString() : domain[1],
-                xScaleRange: xScale.range()
-              })
-            }
             
             newValue = localISOString
           } else {

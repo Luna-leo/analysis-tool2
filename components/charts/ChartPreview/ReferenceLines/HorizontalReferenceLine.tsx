@@ -85,16 +85,6 @@ export function HorizontalReferenceLine({
     const x1 = 0
     const x2 = width
     
-    // Debug log line dimensions
-    if (process.env.NODE_ENV === 'development' && line.label === "H-Line 1") {
-      console.log('[HorizontalReferenceLine] Line dimensions:', {
-        lineId: line.id,
-        width,
-        x1,
-        x2,
-        yPos
-      })
-    }
     
     mainLine
       .attr("x1", x1)
