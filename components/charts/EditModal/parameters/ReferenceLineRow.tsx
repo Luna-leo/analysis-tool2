@@ -5,15 +5,10 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
 import { ChartComponent } from "@/types"
+import { ReferenceLineConfig } from "@/types/reference-line"
 
-export interface ReferenceLineConfig {
-  id: string
-  type: "vertical" | "horizontal"
-  label: string
-  xValue?: string
-  yValue?: string
-  axisNo?: number
-}
+// Re-export for backward compatibility
+export type { ReferenceLineConfig }
 
 interface ReferenceLineRowProps {
   line: ReferenceLineConfig

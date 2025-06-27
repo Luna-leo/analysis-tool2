@@ -1,70 +1,28 @@
 "use client"
 
 import { useState, useCallback, useEffect } from 'react'
-import { ChartComponent, ReferenceLine } from '@/types'
-
-// Import the shared type from ReferenceLineRow
-import type { ReferenceLineConfig } from '@/components/charts/EditModal/parameters/ReferenceLineRow'
-
-// Extend the base type to include additional properties
-interface ExtendedReferenceLineConfig extends ReferenceLineConfig {
-  color?: string
-  style?: "solid" | "dashed" | "dotted"
-  labelOffset?: {
-    x: number
-    y: number
-  }
-}
+import { ChartComponent } from '@/types'
+import { ReferenceLineConfig, configToReferenceLine, referenceLineToConfig } from '@/types/reference-line'
 
 export function useReferenceLines(
   editingChart: ChartComponent,
   setEditingChart: (chart: ChartComponent) => void
 ) {
-  const [referenceLineConfigs, setReferenceLineConfigs] = useState<ExtendedReferenceLineConfig[]>([])
+  const [referenceLineConfigs, setReferenceLineConfigs] = useState<ReferenceLineConfig[]>([])
 
-  // Convert ChartComponent.referenceLines to ExtendedReferenceLineConfig format
+  // Convert ChartComponent.referenceLines to ReferenceLineConfig format
   useEffect(() => {
-    const newConfigs: ExtendedReferenceLineConfig[] = (editingChart.referenceLines || []).map(line => {
-      return {
-        id: line.id,
-        type: line.type === "vertical" ? "vertical" as const : "horizontal" as const,
-        label: line.label,
-        xValue: line.type === "vertical" ? (typeof line.value === 'string' ? line.value : line.value?.toString()) : undefined,
-        yValue: line.type === "horizontal" ? line.value?.toString() : undefined,
-        axisNo: 1,
-        color: line.color,
-        style: line.style,
-        labelOffset: line.labelOffset
-      }
-    })
+    const newConfigs = (editingChart.referenceLines || []).map(referenceLineToConfig)
     setReferenceLineConfigs(newConfigs)
   }, [editingChart.referenceLines])
 
-  // Convert ExtendedReferenceLineConfig back to ReferenceLine format and update chart
-  const handleUpdateReferenceLines = useCallback((updatedConfigs: ExtendedReferenceLineConfig[]) => {
+  // Convert ReferenceLineConfig back to ReferenceLine format and update chart
+  const handleUpdateReferenceLines = useCallback((updatedConfigs: ReferenceLineConfig[]) => {
     setReferenceLineConfigs(updatedConfigs)
     
-    const referenceLines: ReferenceLine[] = updatedConfigs.map(config => {
-      let value: number | string = ""
-      
-      if (config.type === "vertical" && config.xValue) {
-        value = config.xValue
-      } else if (config.type === "horizontal" && config.yValue) {
-        value = parseFloat(config.yValue)
-      }
-
-      const baseLine: ReferenceLine = {
-        id: config.id,
-        type: config.type,
-        label: config.label,
-        value: value,
-        color: config.color || "#FF0000",
-        style: config.style || "solid",
-        labelOffset: config.labelOffset
-      }
-
-      return baseLine
-    })
+    const referenceLines = updatedConfigs.map(config => 
+      configToReferenceLine(config, editingChart.xAxisType)
+    )
 
     setEditingChart({
       ...editingChart,
@@ -73,7 +31,7 @@ export function useReferenceLines(
   }, [editingChart, setEditingChart])
 
   const addReferenceLine = useCallback((type: "vertical" | "horizontal", defaultValue: string, label: string) => {
-    const newConfig: ExtendedReferenceLineConfig = {
+    const newConfig: ReferenceLineConfig = {
       id: Date.now().toString(),
       type,
       label,
@@ -93,7 +51,7 @@ export function useReferenceLines(
     handleUpdateReferenceLines(updatedConfigs)
   }, [referenceLineConfigs, handleUpdateReferenceLines])
 
-  const updateReferenceLine = useCallback((id: string, updates: Partial<ExtendedReferenceLineConfig>) => {
+  const updateReferenceLine = useCallback((id: string, updates: Partial<ReferenceLineConfig>) => {
     const updatedConfigs = referenceLineConfigs.map(line => 
       line.id === id ? { ...line, ...updates } : line
     )

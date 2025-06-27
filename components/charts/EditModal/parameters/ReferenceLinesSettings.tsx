@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { ChevronDown, ChevronRight } from "lucide-react"
 import { ChartComponent, EventInfo } from "@/types"
-import { ReferenceLineRow, ReferenceLineConfig } from "./ReferenceLineRow"
+import { ReferenceLineConfig } from "@/types/reference-line"
+import { ReferenceLineRow } from "./ReferenceLineRow"
 import { useReferenceLinesDefaults } from "./useReferenceLinesDefaults"
 
 interface ReferenceLinesSettingsProps {
