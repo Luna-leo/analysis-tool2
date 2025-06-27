@@ -28,6 +28,7 @@ import {
   MarginValue
 } from "@/utils/chart/marginCalculator"
 import { arePlotStylesEqual } from "@/utils/plotStylesComparison"
+import { ChartScalesContext } from "@/contexts/ChartScalesContext"
 
 interface ChartPreviewGraphProps {
   editingChart: ChartComponent
@@ -160,6 +161,10 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   const [isRangeSelectionMode, setIsRangeSelectionMode] = React.useState(false)
   const { settings } = useSettingsStore()
   const { registerRendering, unregisterRendering } = useChartLoadingStore()
+  
+  // Try to use ChartScalesContext if available
+  const scalesContext = React.useContext(ChartScalesContext)
+  const updateScalesContext = scalesContext?.updateScales || null
   
   // Extract only what we need from settings to avoid unnecessary re-renders
   const enableSampling = settings.performanceSettings.dataProcessing.enableSampling
@@ -424,19 +429,34 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       // Force re-render
       setZoomVersion(v => v + 1)
       
-      // Notify parent of scale updates
-      if (onScalesUpdate) {
-        const xDomain = newXScale.domain()
-        const yDomain = newYScale.domain()
+      // Notify parent of scale updates (only when domains change)
+      const xDomain = newXScale.domain()
+      const yDomain = newYScale.domain()
+      const xDomainStr = JSON.stringify(xDomain)
+      const yDomainStr = JSON.stringify(yDomain)
+      
+      if (prevScaleDomainsRef.current.xDomain !== xDomainStr || 
+          prevScaleDomainsRef.current.yDomain !== yDomainStr) {
+        prevScaleDomainsRef.current.xDomain = xDomainStr
+        prevScaleDomainsRef.current.yDomain = yDomainStr
         
-        onScalesUpdate({
+        const scaleData = {
           xDomain: xDomain as [any, any],
           yDomain: yDomain as [number, number],
           xAxisType: mergedChart.xAxisType || "datetime"
-        })
+        }
+        
+        if (onScalesUpdate) {
+          onScalesUpdate(scaleData)
+        }
+        
+        // Also update context if available
+        if (updateScalesContext) {
+          updateScalesContext(scaleData)
+        }
       }
     }
-  }, [zoomMode, mergedChart.type, onScalesUpdate])
+  }, [zoomMode, mergedChart.type, mergedChart.xAxisType, onScalesUpdate, updateScalesContext])
   
   // Throttle zoom transform to 60fps to prevent race conditions during rapid movements
   const handleZoomTransform = useThrottle(handleZoomTransformBase, 16)
@@ -509,6 +529,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     maxDataPoints: effectiveMaxDataPoints
   })
   
+  
   // Memoize chartData to prevent unnecessary re-renders
   // Only create new reference when data actually changes
   const memoizedChartData = useMemo(() => {
@@ -539,45 +560,11 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   // Track when scales are ready
   const [scalesReady, setScalesReady] = React.useState(false)
   
-  // Check for scale readiness more frequently
-  React.useEffect(() => {
-    // Check all possible scale sources
-    const hasBaseScales = baseScalesRef.current.xScale && baseScalesRef.current.yScale
-    const hasRenderScales = renderScalesRef.current.xScale && renderScalesRef.current.yScale
-    const hasCurrentScales = currentScalesRef.current.xScale && currentScalesRef.current.yScale
-    
-    if (hasBaseScales || hasRenderScales || hasCurrentScales) {
-      if (!scalesReady) {
-        console.log('[ChartPreviewGraph] Scales ready:', {
-          chartId: mergedChart.id,
-          hasBaseScales,
-          hasRenderScales,
-          hasCurrentScales
-        })
-        setScalesReady(true)
-      }
-      
-      // Notify parent of scale updates
-      if (onScalesUpdate) {
-        const scale = renderScalesRef.current.xScale || currentScalesRef.current.xScale || baseScalesRef.current.xScale
-        const yScale = renderScalesRef.current.yScale || currentScalesRef.current.yScale || baseScalesRef.current.yScale
-        
-        if (scale && yScale) {
-          const xDomain = scale.domain()
-          const yDomain = yScale.domain()
-          
-          onScalesUpdate({
-            xDomain: xDomain as [any, any],
-            yDomain: yDomain as [number, number],
-            xAxisType: mergedChart.xAxisType || "datetime"
-          })
-        }
-      }
-    } else if (scalesReady) {
-      // Reset if scales are cleared
-      setScalesReady(false)
-    }
-  })
+  // Store previous scale domains to detect changes
+  const prevScaleDomainsRef = useRef<{
+    xDomain: string | null
+    yDomain: string | null
+  }>({ xDomain: null, yDomain: null })
   
   // Calculate margins based on current state
   const computedMargins = useMemo(() => {
@@ -1363,6 +1350,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           const mainGroup = svg.append("g")
             .attr("transform", `translate(${margin.left},${margin.top})`)
 
+          
           if (memoizedChartData && memoizedChartData.length > 0) {
             // Use baseScalesRef for initial render, currentScalesRef for zoomed state
             // Check if we have valid current scales (they would be set after zoom)
@@ -1463,6 +1451,32 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               if (pendingZoomTransform.current) {
                 // Apply pending zoom transform
                 handleZoomTransform(pendingZoomTransform.current);
+              }
+              
+              // Notify parent and context of scale updates (only when scales change)
+              const xDomain = baseScalesRef.current.xScale.domain()
+              const yDomain = baseScalesRef.current.yScale.domain()
+              const xDomainStr = JSON.stringify(xDomain)
+              const yDomainStr = JSON.stringify(yDomain)
+              
+              if (prevScaleDomainsRef.current.xDomain !== xDomainStr || 
+                  prevScaleDomainsRef.current.yDomain !== yDomainStr) {
+                prevScaleDomainsRef.current.xDomain = xDomainStr
+                prevScaleDomainsRef.current.yDomain = yDomainStr
+                
+                const scaleData = {
+                  xDomain: xDomain as [any, any],
+                  yDomain: yDomain as [number, number],
+                  xAxisType: mergedChart.xAxisType || "datetime"
+                }
+                
+                if (onScalesUpdate) {
+                  onScalesUpdate(scaleData)
+                }
+                
+                if (updateScalesContext) {
+                  updateScalesContext(scaleData)
+                }
               }
             }
             

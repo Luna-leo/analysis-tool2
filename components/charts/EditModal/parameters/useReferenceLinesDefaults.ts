@@ -1,6 +1,8 @@
 import { ChartComponent, EventInfo } from "@/types"
 import { formatDateTimeForInput } from "@/utils/dateUtils"
 import { useOptimizedChart } from "@/hooks/useOptimizedChart"
+import { ChartScalesContext } from "@/contexts/ChartScalesContext"
+import { useContext } from "react"
 
 export function useReferenceLinesDefaults(
   editingChart: ChartComponent,
@@ -11,6 +13,12 @@ export function useReferenceLinesDefaults(
     xAxisType: string
   } | null
 ) {
+  // Try to get scales from context if not provided
+  const contextScales = useContext(ChartScalesContext)
+  
+  // Use provided scales or context scales
+  const scalesData = currentScales || (contextScales?.scales?.xDomain && contextScales?.scales?.yDomain ? contextScales.scales : null)
+  
   // Load actual chart data
   const { data: chartData } = useOptimizedChart({
     editingChart,
@@ -24,19 +32,19 @@ export function useReferenceLinesDefaults(
     let defaultYValue = ""
 
     // If current scales are available, use them for midpoint calculation
-    if (currentScales) {
+    if (scalesData) {
       // Use visible Y domain for Y value
-      if (currentScales.yDomain) {
-        const [yMin, yMax] = currentScales.yDomain
+      if (scalesData.yDomain) {
+        const [yMin, yMax] = scalesData.yDomain
         defaultYValue = ((yMin + yMax) / 2).toString()
         
       }
       
       // Use visible X domain for X value
-      if (currentScales.xDomain) {
-        const [xMin, xMax] = currentScales.xDomain
+      if (scalesData.xDomain) {
+        const [xMin, xMax] = scalesData.xDomain
         
-        if (currentScales.xAxisType === "datetime") {
+        if (scalesData.xAxisType === "datetime") {
           // For datetime axis, calculate midpoint between dates
           const minTime = xMin instanceof Date ? xMin.getTime() : new Date(xMin).getTime()
           const maxTime = xMax instanceof Date ? xMax.getTime() : new Date(xMax).getTime()

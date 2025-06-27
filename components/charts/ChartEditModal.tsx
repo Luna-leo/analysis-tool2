@@ -20,6 +20,7 @@ import { PlotStyleTemplate } from "@/types/plot-style-template"
 import { PlotStyleApplicator } from "@/utils/plotStyleApplicator"
 import { toast } from "sonner"
 import { useSharedDataCache } from "@/hooks/useSharedDataCache"
+import { ChartScalesProvider } from "@/contexts/ChartScalesContext"
 
 export function ChartEditModal() {
   const { 
@@ -43,11 +44,6 @@ export function ChartEditModal() {
   const [bulkApplyDialogOpen, setBulkApplyDialogOpen] = useState(false)
   const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false)
   const [showTemplateListDialog, setShowTemplateListDialog] = useState(false)
-  const [currentScales, setCurrentScales] = useState<{
-    xDomain: [any, any]
-    yDomain: [number, number]
-    xAxisType: string
-  } | null>(null)
 
   // Keyboard shortcut handlers
   React.useEffect(() => {
@@ -415,23 +411,24 @@ export function ChartEditModal() {
   }
 
   return (
-    <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
-      <DialogContent className="max-w-[95vw] w-[95vw] h-[95vh] flex flex-col overflow-hidden" hideCloseButton>
-        <DialogDescription className="sr-only">
-          Edit chart settings including data source, parameters, and appearance
-        </DialogDescription>
-        <ModalHeader
-          title={editingChart.title}
-          onCancel={handleCancel}
-          onSave={() => handleSave(true)}
-          currentIndex={editingChartIndex}
-          totalCharts={allCharts.length}
-          onPreviousChart={() => navigateToPreviousChart(allCharts)}
-          onNextChart={() => navigateToNextChart(allCharts)}
-          onSaveAndNext={handleSaveAndNext}
-          onSaveAsTemplate={() => setShowSaveTemplateDialog(true)}
-          onApplyTemplate={() => setShowTemplateListDialog(true)}
-        />
+    <ChartScalesProvider>
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent className="max-w-[95vw] w-[95vw] h-[95vh] flex flex-col overflow-hidden" hideCloseButton>
+          <DialogDescription className="sr-only">
+            Edit chart settings including data source, parameters, and appearance
+          </DialogDescription>
+          <ModalHeader
+            title={editingChart.title}
+            onCancel={handleCancel}
+            onSave={() => handleSave(true)}
+            currentIndex={editingChartIndex}
+            totalCharts={allCharts.length}
+            onPreviousChart={() => navigateToPreviousChart(allCharts)}
+            onNextChart={() => navigateToNextChart(allCharts)}
+            onSaveAndNext={handleSaveAndNext}
+            onSaveAsTemplate={() => setShowSaveTemplateDialog(true)}
+            onApplyTemplate={() => setShowTemplateListDialog(true)}
+          />
 
 
         <div className="grid grid-cols-2 gap-4 flex-1 min-h-0 mt-4">
@@ -447,7 +444,6 @@ export function ChartEditModal() {
                 selectedDataSourceItems={selectedDataSourceItems}
                 setSelectedDataSourceItems={handleSetSelectedDataSourceItems}
                 includeDataSourceTab={true}
-                currentScales={currentScales}
               />
             </div>
           </div>
@@ -518,7 +514,6 @@ export function ChartEditModal() {
                   enableZoom={true}
                   enablePan={true}
                   zoomMode="auto"
-                  onScalesUpdate={setCurrentScales}
                 />
               ) : (
                 <div className="h-full flex flex-col">
@@ -639,5 +634,6 @@ export function ChartEditModal() {
         hasMultipleCharts={allCharts.length > 1}
       />
     </Dialog>
+    </ChartScalesProvider>
   )
 }
