@@ -526,11 +526,29 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   
   // Track when scales are ready
   const [scalesReady, setScalesReady] = React.useState(false)
+  
+  // Check for scale readiness more frequently
   React.useEffect(() => {
-    if (baseScalesRef.current.xScale && baseScalesRef.current.yScale) {
-      setScalesReady(true)
+    // Check all possible scale sources
+    const hasBaseScales = baseScalesRef.current.xScale && baseScalesRef.current.yScale
+    const hasRenderScales = renderScalesRef.current.xScale && renderScalesRef.current.yScale
+    const hasCurrentScales = currentScalesRef.current.xScale && currentScalesRef.current.yScale
+    
+    if (hasBaseScales || hasRenderScales || hasCurrentScales) {
+      if (!scalesReady) {
+        console.log('[ChartPreviewGraph] Scales ready:', {
+          chartId: mergedChart.id,
+          hasBaseScales,
+          hasRenderScales,
+          hasCurrentScales
+        })
+        setScalesReady(true)
+      }
+    } else if (scalesReady) {
+      // Reset if scales are cleared
+      setScalesReady(false)
     }
-  }, [zoomVersion]) // Update when zoom changes
+  })
   
   // Calculate margins based on current state
   const computedMargins = useMemo(() => {
@@ -662,7 +680,13 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       renderScalesRef.current = { xScale: null, yScale: null } // Reset render scales too
       pendingZoomTransform.current = null
       isWaitingForNewDataRef.current = true // Mark that we're waiting for new data
-      setScalesReady(false) // Reset scales ready state for ReferenceLines
+      
+      // Don't immediately set scalesReady to false, wait for actual scale clearing
+      setTimeout(() => {
+        if (!baseScalesRef.current.xScale && !currentScalesRef.current.xScale && !renderScalesRef.current.xScale) {
+          setScalesReady(false)
+        }
+      }, 0)
       
       // Reset zoom if available
       if (resetZoomRef.current) {
@@ -1351,9 +1375,12 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
             const scalesToUse = isInitialRenderComplete.current && hasValidCurrentScales ? currentScalesRef : baseScalesRef
             
             // Store the scales we're using for rendering to ensure ReferenceLines uses the same
-            renderScalesRef.current = {
-              xScale: scalesToUse.current.xScale,
-              yScale: scalesToUse.current.yScale
+            // Always update renderScalesRef with the current scales being used
+            if (scalesToUse.current.xScale && scalesToUse.current.yScale) {
+              renderScalesRef.current = {
+                xScale: scalesToUse.current.xScale,
+                yScale: scalesToUse.current.yScale
+              }
             }
             
             // Only log significant state changes
@@ -1435,8 +1462,19 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               currentScalesRef.current.xScale = baseScalesRef.current.xScale
               currentScalesRef.current.yScale = baseScalesRef.current.yScale
               isInitialRenderComplete.current = true
-              // Initial render complete, scales ready
-              setScalesReady(true) // Mark scales as ready for ReferenceLines
+            }
+            
+            // Mark scales as ready for ReferenceLines as soon as we have valid scales
+            if (baseScalesRef.current.xScale && baseScalesRef.current.yScale) {
+              setScalesReady(true)
+              
+              // Also update renderScalesRef if it's not set yet
+              if (!renderScalesRef.current.xScale || !renderScalesRef.current.yScale) {
+                renderScalesRef.current = {
+                  xScale: baseScalesRef.current.xScale,
+                  yScale: baseScalesRef.current.yScale
+                }
+              }
               
               // Apply pending zoom transform if any
               if (pendingZoomTransform.current) {
@@ -1785,17 +1823,29 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           dataSourceStyles={dataSourceStyles}
         />
       )}
-      {!isLoadingData && scalesReady && renderScalesRef.current.xScale && renderScalesRef.current.yScale && (
-        <ReferenceLines
-          svgRef={svgRef}
-          editingChart={mergedChart}
-          setEditingChart={setEditingChart}
-          scalesRef={renderScalesRef}
-          dimensions={dimensions}
-          margins={computedMargins}
-          zoomVersion={zoomVersion}
-        />
-      )}
+      {!isLoadingData && scalesReady && (() => {
+        // Use any available scales for reference lines
+        const availableScalesRef = 
+          (renderScalesRef.current.xScale && renderScalesRef.current.yScale) ? renderScalesRef :
+          (currentScalesRef.current.xScale && currentScalesRef.current.yScale) ? currentScalesRef :
+          (baseScalesRef.current.xScale && baseScalesRef.current.yScale) ? baseScalesRef :
+          null;
+        
+        if (availableScalesRef) {
+          return (
+            <ReferenceLines
+              svgRef={svgRef}
+              editingChart={mergedChart}
+              setEditingChart={setEditingChart}
+              scalesRef={availableScalesRef}
+              dimensions={dimensions}
+              margins={computedMargins}
+              zoomVersion={zoomVersion}
+            />
+          );
+        }
+        return null;
+      })()}
       {enableZoom && showZoomControls && (
         <>
           {/* Check if this is being used in ChartCard (has chartSettings) */}

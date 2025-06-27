@@ -129,6 +129,16 @@ export function VerticalReferenceLine({
     const y1 = 0
     const y2 = height
     
+    // Debug log line dimensions
+    if (process.env.NODE_ENV === 'development' && line.label === "V-Line 1") {
+      console.log('[VerticalReferenceLine] Line dimensions:', {
+        lineId: line.id,
+        height,
+        y1,
+        y2,
+        xPos
+      })
+    }
     
     mainLine
       .attr("x1", xPos)

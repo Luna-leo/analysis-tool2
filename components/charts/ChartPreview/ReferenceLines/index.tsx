@@ -23,6 +23,7 @@ interface ReferenceLinesProps {
 
 export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRef, dimensions, margins, zoomVersion }: ReferenceLinesProps) {
   const { updateFileCharts, openTabs } = useFileStore()
+  const [dummyState, setDummyState] = React.useState(0) // For forcing re-renders
   
   const {
     draggingLine,
@@ -66,23 +67,58 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
   }, [scalesRef.current.xScale, scalesRef.current.yScale, zoomVersion])
 
   useEffect(() => {
-    if (!svgRef.current || !scalesRef.current.xScale || !scalesRef.current.yScale) return
+    if (!svgRef.current) return
+    
+    // Wait a bit for scales to be ready if they're not yet available
+    if (!scalesRef.current.xScale || !scalesRef.current.yScale) {
+      console.log('[ReferenceLines] Scales not ready yet, waiting...', {
+        chartId: editingChart.id,
+        hasXScale: !!scalesRef.current.xScale,
+        hasYScale: !!scalesRef.current.yScale
+      })
+      
+      // Try again after a short delay
+      const timer = setTimeout(() => {
+        if (scalesRef.current.xScale && scalesRef.current.yScale && svgRef.current) {
+          // Force re-render by updating a dummy state
+          setDummyState(prev => prev + 1)
+        }
+      }, 100)
+      
+      return () => clearTimeout(timer)
+    }
 
     const svg = d3.select(svgRef.current)
     const margin = margins || { top: 20, right: 40, bottom: 60, left: 60 }
     const width = (dimensions?.width || 400) - margin.left - margin.right
     const height = (dimensions?.height || 300) - margin.top - margin.bottom
+    
+    // Debug log dimensions and state
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[ReferenceLines] Rendering:', {
+        chartId: editingChart.id,
+        hasReferenceLines: !!editingChart.referenceLines?.length,
+        referenceLineCount: editingChart.referenceLines?.length || 0,
+        rawDimensions: dimensions,
+        margin,
+        calculatedWidth: width,
+        calculatedHeight: height,
+        svgRect: svgRef.current?.getBoundingClientRect(),
+        hasScales: !!scalesRef.current.xScale && !!scalesRef.current.yScale,
+        isInteractive: !!setEditingChart
+      })
+    }
 
     const isInteractive = !!setEditingChart
 
     // Create or update clip path for reference lines
     const clipId = `reference-lines-clip-${editingChart.id}`
-    let defs = svg.select("defs")
+    let defs = svg.select<SVGDefsElement>("defs")
     if (defs.empty()) {
-      defs = svg.append("defs")
+      defs = svg.append<SVGDefsElement>("defs")
     }
     
-    let clipPath = defs.select(`#${clipId}`)
+    let clipPath = defs.select<SVGClipPathElement>(`#${clipId}`)
     if (clipPath.empty()) {
       clipPath = defs.append("clipPath")
         .attr("id", clipId)
@@ -116,8 +152,8 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
         .attr("class", "reference-lines-clip-group")
     }
     
-    // Apply clip path to lines group only
-    clipGroup.attr("clip-path", `url(#${clipId})`)
+    // Remove clip path - reference lines should extend to full plot area
+    // clipGroup.attr("clip-path", `url(#${clipId})`)
     
     // Create or select labels group (no clip path)
     let labelsGroup = refLinesLayer.select<SVGGElement>(".reference-labels-group")
@@ -134,6 +170,11 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
       refLinesLayer.raise()
     }, 0)
 
+    
+    // Force update of existing lines when dimensions change
+    // Remove all existing lines to ensure clean redraw
+    clipGroup.selectAll(".reference-line-group").remove()
+    labelsGroup.selectAll(".reference-label-group").remove()
     
     // Always draw reference lines
     drawReferenceLines(
@@ -158,7 +199,8 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
     scaleFingerprint, // Track actual scale changes
     dimensions,
     margins,
-    zoomVersion
+    zoomVersion,
+    dummyState // For forced re-renders when scales become available
   ])
 
   // Helper function to update reference lines in both UIStore and FileStore
