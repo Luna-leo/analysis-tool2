@@ -1,134 +1,213 @@
 "use client"
 
-import { useCallback, useRef } from 'react'
+import { useCallback } from 'react'
 import * as d3 from 'd3'
 import { ReferenceLine } from '@/types'
 
-interface DragHandlers {
-  onDragStart?: (line: ReferenceLine) => void
-  onDrag?: (line: ReferenceLine, newValue: number | string) => void
-  onDragEnd?: (line: ReferenceLine, newValue: number | string) => void
+interface LineDragCallbacks {
+  onDragStart: () => void
+  onDrag: (position: number) => void
+  onDragEnd: (newValue: number | string) => void
 }
 
-interface UseReferenceLineDragOptions {
-  xScale: d3.ScaleTime<number, number> | d3.ScaleLinear<number, number> | null
-  yScale: d3.ScaleLinear<number, number> | null
-  width: number
-  height: number
-  onUpdateReferenceLine: (lineId: string, newValue: number | string) => void
-  handlers?: DragHandlers
+interface LabelDragCallbacks {
+  onLabelDragStart: () => void
+  onLabelDrag: (x: number, y: number) => void
+  onLabelDragEnd: (offsetX: number, offsetY: number) => void
 }
 
-export function useReferenceLineDrag({
-  xScale,
-  yScale,
-  width,
-  height,
-  onUpdateReferenceLine,
-  handlers = {}
-}: UseReferenceLineDragOptions) {
-  const draggedLineRef = useRef<ReferenceLine | null>(null)
-  const initialValueRef = useRef<number | string | null>(null)
-
-  const createDragBehavior = useCallback(() => {
-    return d3.drag<SVGGElement, ReferenceLine>()
-      .on("start", function(event, d) {
-        // Store the initial value for potential cancellation
-        draggedLineRef.current = d
-        initialValueRef.current = d.value
-        
-        // Add dragging class for visual feedback
-        d3.select(this).classed("dragging", true)
-        
-        // Call custom handler if provided
-        handlers.onDragStart?.(d)
+export function useReferenceLineDrag() {
+  
+  const createVerticalLineDrag = useCallback((
+    xScale: d3.ScaleTime<number, number> | d3.ScaleLinear<number, number>,
+    width: number,
+    xAxisType: string,
+    callbacks: LineDragCallbacks
+  ) => {
+    let labelOffsetX: number | null = null
+    
+    return d3.drag<SVGLineElement, unknown>()
+      .on("start", function() {
+        callbacks.onDragStart()
+        // Store the current label offset at drag start
+        const currentGroup = d3.select(this.parentNode as SVGGElement)
+        const currentLabelGroup = currentGroup.select(".line-label-group")
+        if (!currentLabelGroup.empty()) {
+          const currentLabel = currentLabelGroup.select(".line-label")
+          const labelX = parseFloat(currentLabel.attr("x"))
+          const lineX = parseFloat(currentGroup.select(".main-line").attr("x1"))
+          labelOffsetX = labelX - lineX
+        }
       })
-      .on("drag", function(event, d) {
-        if (!xScale || !yScale) return
-
-        let newValue: number | string
+      .on("drag", function(event) {
+        // Use d3.pointer to get accurate coordinates relative to the parent group
+        const [x, _] = d3.pointer(event, this.parentNode as SVGGElement)
+        const clampedX = Math.max(0, Math.min(width, x))
         
-        if (d.type === "vertical") {
-          // Constrain to chart bounds
-          const constrainedX = Math.max(0, Math.min(width, event.x))
+        callbacks.onDrag(clampedX)
+        
+        // Update visual elements directly without re-render
+        const currentGroup = d3.select(this.parentNode as SVGGElement)
+        currentGroup.select(".main-line")
+          .attr("x1", clampedX)
+          .attr("x2", clampedX)
+        currentGroup.select(".interactive-line")
+          .attr("x1", clampedX)
+          .attr("x2", clampedX)
+        const currentLabelGroup = currentGroup.select(".line-label-group")
+        if (!currentLabelGroup.empty() && labelOffsetX !== null) {
+          // Update label and background position maintaining the offset
+          const currentLabel = currentLabelGroup.select(".line-label")
+          currentLabel.attr("x", clampedX + labelOffsetX)
           
-          // Convert pixel position to data value
-          const xDomain = xScale.domain()
-          if (xDomain[0] instanceof Date) {
-            // Time scale
-            newValue = (xScale as d3.ScaleTime<number, number>).invert(constrainedX).toISOString()
-          } else {
-            // Linear scale
-            newValue = (xScale as d3.ScaleLinear<number, number>).invert(constrainedX)
-          }
+          // Update background position
+          const textBBox = (currentLabel.node() as SVGTextElement).getBBox()
+          currentLabelGroup.select(".line-label-background")
+            .attr("x", textBBox.x - 4)
+            .attr("y", textBBox.y - 2)
+            .attr("width", textBBox.width + 8)
+            .attr("height", textBBox.height + 4)
+        }
+      })
+      .on("end", function(event) {
+        // Use d3.pointer to get accurate coordinates relative to the parent group
+        const [x, _] = d3.pointer(event, this.parentNode as SVGGElement)
+        const clampedX = Math.max(0, Math.min(width, x))
+        
+        let newValue: string | number
+        if ((xAxisType || "datetime") === "datetime") {
+          const newDate = (xScale as d3.ScaleTime<number, number>).invert(clampedX)
           
-          // Update line position
-          d3.select(this)
-            .select("line")
-            .attr("x1", constrainedX)
-            .attr("x2", constrainedX)
-            
-          // Update label position
-          d3.select(this)
-            .select("text")
-            .attr("x", constrainedX)
+          // Format date in local timezone to match the data
+          const localISOString = new Date(newDate.getTime() - newDate.getTimezoneOffset() * 60000)
+            .toISOString()
+            .slice(0, 19)
+          
+          newValue = localISOString
         } else {
-          // Horizontal line
-          const constrainedY = Math.max(0, Math.min(height, event.y))
-          newValue = yScale.invert(constrainedY)
-          
-          // Update line position
-          d3.select(this)
-            .select("line")
-            .attr("y1", constrainedY)
-            .attr("y2", constrainedY)
-            
-          // Update label position
-          d3.select(this)
-            .select("text")
-            .attr("y", constrainedY)
+          // For time or parameter axis
+          const numValue = (xScale as d3.ScaleLinear<number, number>).invert(clampedX)
+          // Keep decimal precision
+          newValue = Math.round(numValue * 1000) / 1000 // 3 decimal places
         }
         
-        // Call custom handler if provided
-        handlers.onDrag?.(d, newValue)
+        callbacks.onDragEnd(newValue)
       })
-      .on("end", function(event, d) {
-        if (!xScale || !yScale || !draggedLineRef.current) return
+  }, [])
 
-        let finalValue: number | string
-        
-        if (d.type === "vertical") {
-          const constrainedX = Math.max(0, Math.min(width, event.x))
-          const xDomain = xScale.domain()
-          
-          if (xDomain[0] instanceof Date) {
-            finalValue = (xScale as d3.ScaleTime<number, number>).invert(constrainedX).toISOString()
-          } else {
-            finalValue = (xScale as d3.ScaleLinear<number, number>).invert(constrainedX)
-          }
-        } else {
-          const constrainedY = Math.max(0, Math.min(height, event.y))
-          finalValue = yScale.invert(constrainedY)
+  const createHorizontalLineDrag = useCallback((
+    yScale: d3.ScaleLinear<number, number>,
+    height: number,
+    callbacks: LineDragCallbacks
+  ) => {
+    let labelOffsetY: number | null = null
+    
+    return d3.drag<SVGLineElement, unknown>()
+      .on("start", function() {
+        callbacks.onDragStart()
+        // Store the current label offset at drag start
+        const currentGroup = d3.select(this.parentNode as SVGGElement)
+        const currentLabelGroup = currentGroup.select(".line-label-group")
+        if (!currentLabelGroup.empty()) {
+          const currentLabel = currentLabelGroup.select(".line-label")
+          const labelY = parseFloat(currentLabel.attr("y"))
+          const lineY = parseFloat(currentGroup.select(".main-line").attr("y1"))
+          labelOffsetY = labelY - lineY
         }
-        
-        // Remove dragging class
-        d3.select(this).classed("dragging", false)
-        
-        // Update the reference line value
-        onUpdateReferenceLine(d.id, finalValue)
-        
-        // Call custom handler if provided
-        handlers.onDragEnd?.(d, finalValue)
-        
-        // Clear refs
-        draggedLineRef.current = null
-        initialValueRef.current = null
       })
-  }, [xScale, yScale, width, height, onUpdateReferenceLine, handlers])
+      .on("drag", function(event) {
+        // Use d3.pointer to get accurate coordinates relative to the parent group
+        const [_, y] = d3.pointer(event, this.parentNode as SVGGElement)
+        const clampedY = Math.max(0, Math.min(height, y))
+        callbacks.onDrag(clampedY)
+        
+        // Update visual elements directly without re-render
+        const currentGroup = d3.select(this.parentNode as SVGGElement)
+        currentGroup.select(".main-line")
+          .attr("y1", clampedY)
+          .attr("y2", clampedY)
+        currentGroup.select(".interactive-line")
+          .attr("y1", clampedY)
+          .attr("y2", clampedY)
+        const currentLabelGroup = currentGroup.select(".line-label-group")
+        if (!currentLabelGroup.empty() && labelOffsetY !== null) {
+          // Update label and background position maintaining the offset
+          const currentLabel = currentLabelGroup.select(".line-label")
+          currentLabel.attr("y", clampedY + labelOffsetY)
+          
+          // Update background position
+          const textBBox = (currentLabel.node() as SVGTextElement).getBBox()
+          currentLabelGroup.select(".line-label-background")
+            .attr("x", textBBox.x - 4)
+            .attr("y", textBBox.y - 2)
+            .attr("width", textBBox.width + 8)
+            .attr("height", textBBox.height + 4)
+        }
+      })
+      .on("end", function(event) {
+        // Use d3.pointer to get accurate coordinates relative to the parent group
+        const [_, y] = d3.pointer(event, this.parentNode as SVGGElement)
+        const clampedY = Math.max(0, Math.min(height, y))
+        const numValue = yScale.invert(clampedY)
+        // Keep decimal precision
+        const newValue = Math.round(numValue * 1000) / 1000 // 3 decimal places
+        callbacks.onDragEnd(newValue)
+      })
+  }, [])
+
+  const createLabelDrag = useCallback((
+    isVertical: boolean,
+    group: d3.Selection<SVGGElement, unknown, null, undefined>,
+    callbacks: LabelDragCallbacks
+  ) => {
+    return d3.drag<SVGGElement, unknown>()
+      .on("start", function() {
+        callbacks.onLabelDragStart()
+      })
+      .on("drag", function(event) {
+        // Use d3.pointer for label drag as well
+        const [x, y] = d3.pointer(event, this)
+        callbacks.onLabelDrag(x, y)
+        
+        const g = d3.select(this)
+        g.select(".line-label")
+          .attr("x", x)
+          .attr("y", y)
+        
+        // Update background position based on text
+        const textBBox = (g.select(".line-label").node() as SVGTextElement).getBBox()
+        g.select(".line-label-background")
+          .attr("x", textBBox.x - 4)
+          .attr("y", textBBox.y - 2)
+          .attr("width", textBBox.width + 8)
+          .attr("height", textBBox.height + 4)
+      })
+      .on("end", function(event) {
+        // Use d3.pointer for accurate coordinates
+        const [x, y] = d3.pointer(event, this)
+        
+        // Get the current line position from DOM
+        const mainLine = group.select(".main-line")
+        
+        if (isVertical) {
+          const lineX = parseFloat(mainLine.attr("x1"))
+          // Calculate offset from actual line position
+          const offsetX = x - lineX
+          const offsetY = y
+          callbacks.onLabelDragEnd(offsetX, offsetY)
+        } else {
+          const lineY = parseFloat(mainLine.attr("y1"))
+          // Calculate offset from actual line position
+          const offsetX = x
+          const offsetY = y - lineY
+          callbacks.onLabelDragEnd(offsetX, offsetY)
+        }
+      })
+  }, [])
 
   return {
-    createDragBehavior,
-    draggedLine: draggedLineRef.current,
-    initialValue: initialValueRef.current
+    createVerticalLineDrag,
+    createHorizontalLineDrag,
+    createLabelDrag
   }
 }

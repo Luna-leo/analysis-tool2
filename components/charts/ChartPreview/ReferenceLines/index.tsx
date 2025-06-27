@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useRef, useMemo } from "react"
+import React, { useEffect, useRef, useMemo, useCallback } from "react"
 import * as d3 from "d3"
 import { ChartComponent } from "@/types"
 import { VerticalReferenceLine } from "./VerticalReferenceLine"
@@ -187,7 +187,7 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
   ])
 
   // Helper function to update reference lines in both UIStore and FileStore
-  const updateReferenceLines = (updatedReferenceLines: typeof editingChart.referenceLines) => {
+  const updateReferenceLines = useCallback((updatedReferenceLines: typeof editingChart.referenceLines) => {
     if (!setEditingChart) return
     
     const currentChart = editingChartRef.current
@@ -211,7 +211,7 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
         updateFileCharts(fileId, updatedCharts)
       }
     }
-  }
+  }, [setEditingChart, openTabs, updateFileCharts])
 
   const drawReferenceLines = (
     linesGroup: d3.Selection<SVGGElement, unknown, null, undefined>, 
