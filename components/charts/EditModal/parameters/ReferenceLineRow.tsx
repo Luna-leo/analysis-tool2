@@ -4,8 +4,9 @@ import React, { useCallback } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { X } from "lucide-react"
-import { ChartComponent } from "@/types"
+import { ChartComponent, ReferenceLine } from "@/types"
 import { ReferenceLineConfig } from "@/types/reference-line"
+import { ReferenceLineStylePopover } from "./ReferenceLineStylePopover"
 
 // Re-export for backward compatibility
 export type { ReferenceLineConfig }
@@ -42,6 +43,22 @@ export const ReferenceLineRow = React.memo(({
   const handleRemove = useCallback(() => {
     onRemoveReferenceLine(line.id)
   }, [onRemoveReferenceLine, line.id])
+
+  const handleStyleUpdate = useCallback((updates: Partial<ReferenceLine>) => {
+    // Handle each update property appropriately
+    Object.entries(updates).forEach(([key, value]) => {
+      if (key === 'labelStyle' && value && typeof value === 'object') {
+        // For labelStyle, merge with existing values
+        const currentLabelStyle = line.labelStyle || {}
+        const mergedLabelStyle = { ...currentLabelStyle, ...value }
+        onUpdateReferenceLine(line.id, 'labelStyle', mergedLabelStyle)
+      } else {
+        // For primitive values, update directly
+        onUpdateReferenceLine(line.id, key as keyof ReferenceLineConfig, value)
+      }
+    })
+  }, [onUpdateReferenceLine, line.id, line.labelStyle])
+
   return (
     <div className="flex gap-2 p-1">
       <div className="w-16">
@@ -100,6 +117,12 @@ export const ReferenceLineRow = React.memo(({
         ) : (
           <div className="h-7" />
         )}
+      </div>
+      <div className="w-7">
+        <ReferenceLineStylePopover
+          line={line}
+          onUpdate={handleStyleUpdate}
+        />
       </div>
       <div className="w-7">
         <Button

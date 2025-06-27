@@ -56,3 +56,11 @@ export const REFERENCE_LINE_STYLES = {
     dotted: "2,2"
   }
 } as const
+
+// Default style values (simplified)
+export const REFERENCE_LINE_DEFAULTS = {
+  STROKE_WIDTH: 1,
+  LABEL_STYLE: {
+    FONT_SIZE: 12
+  }
+} as const

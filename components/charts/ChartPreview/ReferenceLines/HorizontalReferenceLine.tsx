@@ -8,7 +8,8 @@ import {
   REFERENCE_LINE_CURSORS, 
   REFERENCE_LINE_INTERACTIVE_AREA, 
   REFERENCE_LINE_LABEL, 
-  REFERENCE_LINE_STYLES
+  REFERENCE_LINE_STYLES,
+  REFERENCE_LINE_DEFAULTS
 } from "@/constants/referenceLine"
 
 interface HorizontalReferenceLineProps {
@@ -104,7 +105,7 @@ export function HorizontalReferenceLine({
       .attr("y1", yPos)
       .attr("y2", yPos)
       .attr("stroke", color)
-      .attr("stroke-width", REFERENCE_LINE_STYLES.STROKE_WIDTH)
+      .attr("stroke-width", line.strokeWidth || REFERENCE_LINE_DEFAULTS.STROKE_WIDTH)
       .attr("stroke-dasharray", strokeDasharray)
       .style("display", isLineVisible ? "block" : "none")
     
@@ -119,7 +120,12 @@ export function HorizontalReferenceLine({
             onDragStart()
             // Store the current label offset at drag start
             const currentGroup = d3.select(this.parentNode as SVGGElement)
-            const currentLabelGroup = currentGroup.select(".line-label-group")
+            
+            // Find label group in the separate labels layer using data-line-id
+            const lineId = currentGroup.attr("data-line-id")
+            const svg = d3.select(this.closest("svg") as SVGSVGElement)
+            const currentLabelGroup = svg.select(`.reference-label-group[data-line-id="${lineId}"]`)
+            
             if (!currentLabelGroup.empty()) {
               const currentLabel = currentLabelGroup.select(".line-label")
               const labelY = parseFloat(currentLabel.attr("y"))
@@ -139,7 +145,11 @@ export function HorizontalReferenceLine({
               .attr("y1", clampedY)
               .attr("y2", clampedY)
             
-            const currentLabelGroup = currentGroup.select(".line-label-group")
+            // Find label group in the separate labels layer using data-line-id
+            const lineId = currentGroup.attr("data-line-id")
+            const svg = d3.select(this.closest("svg") as SVGSVGElement)
+            const currentLabelGroup = svg.select(`.reference-label-group[data-line-id="${lineId}"]`)
+            
             if (!currentLabelGroup.empty() && labelOffsetY !== null) {
               // Update label and background position maintaining the offset
               const currentLabel = currentLabelGroup.select(".line-label")
@@ -230,10 +240,13 @@ export function HorizontalReferenceLine({
           .style("filter", "drop-shadow(0 1px 3px rgba(0,0,0,0.2))")
       }
       
+      // Update stroke color every time (not just on creation)
+      labelBackground.attr("stroke", color)
+      
       if (labelText.empty()) {
         labelText = labelGroupElement.append("text")
           .attr("class", "line-label")
-          .style("font-size", REFERENCE_LINE_LABEL.FONT_SIZE)
+          .style("font-size", `${line.labelStyle?.fontSize || REFERENCE_LINE_DEFAULTS.LABEL_STYLE.FONT_SIZE}px`)
           .style("cursor", REFERENCE_LINE_CURSORS.LABEL)
       }
       
@@ -287,12 +300,14 @@ export function HorizontalReferenceLine({
         .attr("x", labelX)
         .attr("y", labelY)
         .attr("fill", color)
-        .style("font-weight", "normal")
+        .style("font-size", `${line.labelStyle?.fontSize || REFERENCE_LINE_DEFAULTS.LABEL_STYLE.FONT_SIZE}px`)
         .text(line.label)
       
       // Update background to match text size
       const labelNode = labelText.node() as SVGTextElement
       if (labelNode) {
+        // Ensure font size is applied before calculating bbox
+        // The updated bboxCache will handle font size changes automatically
         const dimensions = getCachedBBoxDimensions(labelNode)
         // Position background relative to label position
         // Text baseline is at labelY, so we need to adjust for text height

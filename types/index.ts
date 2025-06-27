@@ -70,6 +70,12 @@ export interface ReferenceLine {
     x: number
     y: number
   }
+  // Line style properties
+  strokeWidth?: number        // Line width (1-10), default: 1
+  // Label style properties
+  labelStyle?: {
+    fontSize?: number        // Font size in pixels (10-20), default: 12
+  }
   // For interlock type
   interlockId?: string
   interlockSource?: "master" | "custom"
