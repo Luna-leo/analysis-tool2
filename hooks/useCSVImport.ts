@@ -7,6 +7,7 @@ import { CSV_DEFAULTS, CSV_VALIDATION_MESSAGES, CSV_UI_TEXT } from '@/constants/
 import { useInputHistoryStore } from '@/stores/useInputHistoryStore'
 import { useCSVDataStore } from '@/stores/useCSVDataStore'
 import { parseCSVContent } from '@/utils/csvUtils'
+import { CSVErrorCollector, createErrorSummary } from '@/utils/csv/errorHandling'
 
 export function useCSVImport(onImportComplete?: () => void) {
   const [dataSourceType, setDataSourceType] = useState<CSVDataSourceType>(CSV_DEFAULTS.dataSourceType)
@@ -65,6 +66,9 @@ export function useCSVImport(onImportComplete?: () => void) {
 
     setIsImporting(true)
     setImportProgress(0)
+    
+    const errorCollector = new CSVErrorCollector()
+    
     try {
       const totalFiles = files.length
       let successCount = 0
@@ -75,15 +79,23 @@ export function useCSVImport(onImportComplete?: () => void) {
         setImportProgress(((i + 1) / totalFiles) * 100)
         
         try {
+          errorCollector.setCurrentFile(file.name)
+          
           // Read file content
           const content = await readFileContent(file)
           
-          // Parse CSV content
-          const parsedData = parseCSVContent(content, {
+          // Parse CSV content with progress tracking and error collection
+          const parsedData = await parseCSVContent(content, {
             plant,
             machineNo,
             sourceType: dataSourceType,
-            fileName: file.name
+            fileName: file.name,
+            onProgress: (fileProgress) => {
+              // Calculate overall progress including file parsing
+              const fileParseProgress = ((i + (fileProgress / 100)) / totalFiles) * 100
+              setImportProgress(fileParseProgress)
+            },
+            errorCollector
           })
           
           if (parsedData && parsedData.data.length > 0) {
@@ -101,19 +113,32 @@ export function useCSVImport(onImportComplete?: () => void) {
           }
         } catch (fileError) {
           console.error(`Failed to process file ${file.name}:`, fileError)
-          toast({
-            title: "File Processing Error",
-            description: `Failed to process ${file.name}: ${fileError instanceof Error ? fileError.message : 'Unknown error'}`,
-            variant: "destructive",
-          })
+          errorCollector.addParsingError(
+            fileError instanceof Error ? fileError.message : 'Unknown error'
+          )
         }
       }
       
+      // Show results with error summary if any
       if (successCount > 0) {
-        toast({
-          title: "Import Successful",
-          description: `Successfully imported ${successCount} of ${totalFiles} CSV files`,
-        })
+        const errorReport = errorCollector.getReport()
+        
+        if (errorReport.totalErrors > 0) {
+          // Some files succeeded but there were errors
+          toast({
+            title: "Import Completed with Errors",
+            description: `Imported ${successCount} of ${totalFiles} files. ${errorReport.totalErrors} error(s) encountered: ${createErrorSummary(errorReport.errors)}`,
+          })
+          
+          // Log detailed error report
+          console.error('CSV Import Error Report:', errorCollector.getFormattedMessage())
+        } else {
+          // All succeeded
+          toast({
+            title: "Import Successful",
+            description: `Successfully imported ${successCount} of ${totalFiles} CSV files`,
+          })
+        }
         
         // Save to history on successful import
         addPlantHistory(plant)
@@ -130,7 +155,12 @@ export function useCSVImport(onImportComplete?: () => void) {
         setAllFilePaths([])
         setFileNamePattern("")
       } else {
-        throw new Error("No files were successfully imported")
+        const errorReport = errorCollector.getReport()
+        throw new Error(
+          errorReport.totalErrors > 0 
+            ? `Import failed: ${createErrorSummary(errorReport.errors)}`
+            : "No files were successfully imported"
+        )
       }
     } catch (error) {
       toast({

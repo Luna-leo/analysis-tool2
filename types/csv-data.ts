@@ -21,7 +21,7 @@ export interface ParsedCSVData {
   columns?: ParsedCSVColumn[]
   metadata?: {
     fileName: string
-    format?: 'CASS' | 'standard' | 'CHINAMI' | 'SSAC'
+    format?: 'CASS' | 'standard' | 'CHINAMI' | 'SSAC' | 'streaming' | 'webstream'
     parameterInfo?: {
       ids: string[]
       parameters: string[]

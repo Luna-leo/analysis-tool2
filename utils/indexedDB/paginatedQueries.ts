@@ -1,9 +1,9 @@
 import { openDB, IDBPDatabase } from 'idb'
 import { CSVDataPoint } from '@/stores/useCSVDataStore'
 
-const DB_NAME = 'CSVDataStore'
+const DB_NAME = 'AnalysisToolDB'
 const DB_VERSION = 1
-const STORE_NAME = 'csvData'
+const STORE_NAME = 'csvDataStore'
 
 interface PaginatedResult<T> {
   data: T[]
@@ -19,11 +19,11 @@ async function getDB(): Promise<IDBPDatabase> {
   return openDB(DB_NAME, DB_VERSION, {
     upgrade(db) {
       if (!db.objectStoreNames.contains(STORE_NAME)) {
-        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' })
+        const store = db.createObjectStore(STORE_NAME, { keyPath: 'periodId' })
         // Create indexes for efficient querying
-        store.createIndex('dataSourceId', 'dataSourceId', { unique: false })
-        store.createIndex('timestamp', 'timestamp', { unique: false })
-        store.createIndex('dataSourceId_timestamp', ['dataSourceId', 'timestamp'], { unique: false })
+        store.createIndex('lastUpdated', 'metadata.lastUpdated', { unique: false })
+        store.createIndex('plant', 'metadata.plant', { unique: false })
+        store.createIndex('machineNo', 'metadata.machineNo', { unique: false })
       }
     }
   })
@@ -33,7 +33,7 @@ async function getDB(): Promise<IDBPDatabase> {
  * Get paginated data from IndexedDB using cursor-based pagination
  */
 export async function getPaginatedData(
-  dataSourceId: string,
+  periodId: string,
   page: number,
   pageSize: number,
   parameters?: string[]
@@ -41,100 +41,60 @@ export async function getPaginatedData(
   const db = await getDB()
   const tx = db.transaction(STORE_NAME, 'readonly')
   const store = tx.objectStore(STORE_NAME)
-  const index = store.index('dataSourceId_timestamp')
   
-  const data: CSVDataPoint[] = []
-  let total = 0
-  let hasMore = false
-  let nextCursor: any = null
+  // Get the CSV data for this periodId
+  const csvData = await store.get(periodId)
   
-  // Count total items
-  const countTx = db.transaction(STORE_NAME, 'readonly')
-  const countIndex = countTx.objectStore(STORE_NAME).index('dataSourceId')
-  total = await countIndex.count(dataSourceId)
+  if (!csvData || !csvData.data) {
+    return {
+      data: [],
+      total: 0,
+      hasMore: false
+    }
+  }
   
-  // Calculate skip count
+  const allData = csvData.data
+  const total = allData.length
+  
+  // Calculate pagination
   const skip = (page - 1) * pageSize
-  let skipped = 0
-  let collected = 0
+  const end = skip + pageSize
   
-  // Use cursor to iterate through data
-  const range = IDBKeyRange.bound(
-    [dataSourceId, -Infinity],
-    [dataSourceId, Infinity]
-  )
+  // Slice the data for this page
+  let pageData = allData.slice(skip, end)
   
-  let cursor = await index.openCursor(range)
-  
-  while (cursor) {
-    // Skip to the correct page
-    if (skipped < skip) {
-      skipped++
-      cursor = await cursor.continue()
-      continue
-    }
-    
-    // Collect page data
-    if (collected < pageSize) {
-      const value = cursor.value
-      
-      // Filter by parameters if specified
-      if (!parameters || parameters.length === 0) {
-        data.push(value)
-        collected++
-      } else {
-        // Check if data point has any of the requested parameters
-        const hasParameter = parameters.some(param => 
-          value.hasOwnProperty(param) && value[param] !== undefined
-        )
-        
-        if (hasParameter) {
-          // Only include requested parameters
-          const filteredPoint: CSVDataPoint = {
-            timestamp: value.timestamp,
-            dataSourceId: value.dataSourceId
-          }
-          
-          parameters.forEach(param => {
-            if (value[param] !== undefined) {
-              filteredPoint[param] = value[param]
-            }
-          })
-          
-          data.push(filteredPoint)
-          collected++
-        }
+  // Filter by parameters if specified
+  if (parameters && parameters.length > 0) {
+    pageData = pageData.map((point: CSVDataPoint) => {
+      const filteredPoint: CSVDataPoint = {
+        timestamp: point.timestamp
       }
       
-      // Check if there's more data
-      if (collected === pageSize) {
-        const nextCursorCheck = await cursor.continue()
-        if (nextCursorCheck) {
-          hasMore = true
-          nextCursor = cursor.key
+      parameters.forEach(param => {
+        if (point[param] !== undefined) {
+          filteredPoint[param] = point[param]
         }
-        break
-      }
-    }
-    
-    cursor = await cursor.continue()
+      })
+      
+      return filteredPoint
+    })
   }
   
   await tx.done
   
   return {
-    data,
+    data: pageData,
     total,
-    hasMore,
-    nextCursor
+    hasMore: end < total,
+    nextCursor: end < total ? end : undefined
   }
 }
 
 /**
- * Get paginated data for multiple data sources
+ * Get paginated data for multiple periods
  */
 export async function getPaginatedDataMultiple(
-  dataSourceIds: string[],
+  periodIds: string[],
   page: number,
   pageSize: number,
   parameters?: string[]
@@ -144,48 +104,22 @@ export async function getPaginatedDataMultiple(
   const store = tx.objectStore(STORE_NAME)
   
   const allData: CSVDataPoint[] = []
-  let total = 0
+  let totalCount = 0
   
-  // Get data from each source
-  for (const dataSourceId of dataSourceIds) {
-    const index = store.index('dataSourceId')
-    const range = IDBKeyRange.only(dataSourceId)
+  // Get data from each period
+  for (const periodId of periodIds) {
+    const csvData = await store.get(periodId)
     
-    // Count items for this source
-    const count = await index.count(range)
-    total += count
-    
-    // Get all data for this source (we'll paginate the combined result)
-    let cursor = await index.openCursor(range)
-    
-    while (cursor) {
-      const value = cursor.value
+    if (csvData && csvData.data) {
+      totalCount += csvData.data.length
       
-      if (!parameters || parameters.length === 0) {
-        allData.push(value)
-      } else {
-        // Filter by parameters
-        const hasParameter = parameters.some(param => 
-          value.hasOwnProperty(param) && value[param] !== undefined
-        )
-        
-        if (hasParameter) {
-          const filteredPoint: CSVDataPoint = {
-            timestamp: value.timestamp,
-            dataSourceId: value.dataSourceId
-          }
-          
-          parameters.forEach(param => {
-            if (value[param] !== undefined) {
-              filteredPoint[param] = value[param]
-            }
-          })
-          
-          allData.push(filteredPoint)
-        }
-      }
+      // Add periodId to each data point for tracking
+      const dataWithPeriodId = csvData.data.map((point: any) => ({
+        ...point,
+        periodId
+      }))
       
-      cursor = await cursor.continue()
+      allData.push(...dataWithPeriodId)
     }
   }
   
@@ -201,14 +135,31 @@ export async function getPaginatedDataMultiple(
   // Paginate the combined result
   const start = (page - 1) * pageSize
   const end = start + pageSize
-  const paginatedData = allData.slice(start, end)
-  const hasMore = end < allData.length
+  let paginatedData = allData.slice(start, end)
+  
+  // Filter by parameters if specified
+  if (parameters && parameters.length > 0) {
+    paginatedData = paginatedData.map((point: CSVDataPoint) => {
+      const filteredPoint: CSVDataPoint = {
+        timestamp: point.timestamp,
+        periodId: (point as any).periodId
+      }
+      
+      parameters.forEach(param => {
+        if (point[param] !== undefined) {
+          filteredPoint[param] = point[param]
+        }
+      })
+      
+      return filteredPoint
+    })
+  }
   
   return {
     data: paginatedData,
-    total: allData.length,
-    hasMore,
-    nextCursor: hasMore ? end : undefined
+    total: totalCount,
+    hasMore: end < allData.length,
+    nextCursor: end < allData.length ? end : undefined
   }
 }
 
@@ -216,46 +167,45 @@ export async function getPaginatedDataMultiple(
  * Get data in chunks for streaming/progressive loading
  */
 export async function* getDataInChunks(
-  dataSourceId: string,
+  periodId: string,
   chunkSize: number = 1000,
   parameters?: string[]
 ): AsyncGenerator<CSVDataPoint[], void, unknown> {
   const db = await getDB()
   const tx = db.transaction(STORE_NAME, 'readonly')
   const store = tx.objectStore(STORE_NAME)
-  const index = store.index('dataSourceId_timestamp')
   
-  const range = IDBKeyRange.bound(
-    [dataSourceId, -Infinity],
-    [dataSourceId, Infinity]
-  )
+  // Get the CSV data for this periodId
+  const csvData = await store.get(periodId)
   
-  let cursor = await index.openCursor(range)
+  if (!csvData || !csvData.data) {
+    await tx.done
+    return
+  }
+  
+  const allData = csvData.data
   let chunk: CSVDataPoint[] = []
   
-  while (cursor) {
-    const value = cursor.value
+  for (let i = 0; i < allData.length; i++) {
+    const point = allData[i]
     
     if (!parameters || parameters.length === 0) {
-      chunk.push(value)
+      chunk.push(point)
     } else {
       // Filter by parameters
-      const hasParameter = parameters.some(param => 
-        value.hasOwnProperty(param) && value[param] !== undefined
-      )
+      const filteredPoint: CSVDataPoint = {
+        timestamp: point.timestamp
+      }
       
-      if (hasParameter) {
-        const filteredPoint: CSVDataPoint = {
-          timestamp: value.timestamp,
-          dataSourceId: value.dataSourceId
+      let hasAnyParameter = false
+      parameters.forEach(param => {
+        if (point[param] !== undefined) {
+          filteredPoint[param] = point[param]
+          hasAnyParameter = true
         }
-        
-        parameters.forEach(param => {
-          if (value[param] !== undefined) {
-            filteredPoint[param] = value[param]
-          }
-        })
-        
+      })
+      
+      if (hasAnyParameter) {
         chunk.push(filteredPoint)
       }
     }
@@ -265,8 +215,6 @@ export async function* getDataInChunks(
       yield chunk
       chunk = []
     }
-    
-    cursor = await cursor.continue()
   }
   
   // Yield remaining data
