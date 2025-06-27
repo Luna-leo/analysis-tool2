@@ -5,6 +5,7 @@ import { ChartComponent, EventInfo } from "@/types"
 import { XParameterSettings } from "./XParameterSettings"
 import { YParametersSettings } from "./YParametersSettings"
 import { ReferenceLinesSettings } from "./ReferenceLinesSettings"
+import { useReferenceLines } from "@/hooks/useReferenceLines"
 
 interface ParametersTabProps {
   editingChart: ChartComponent
@@ -13,83 +14,15 @@ interface ParametersTabProps {
   isBulkEdit?: boolean
 }
 
-interface ReferenceLineConfig {
-  id: string
-  type: "vertical" | "horizontal"
-  label: string
-  xValue?: string
-  yValue?: string
-  axisNo?: number
-  color?: string
-  style?: "solid" | "dashed" | "dotted"
-  labelOffset?: {
-    x: number
-    y: number
-  }
-}
 
 export function ParametersTab({ editingChart, setEditingChart, selectedDataSourceItems, isBulkEdit = false }: ParametersTabProps) {
   const [isReferenceLinesOpen, setIsReferenceLinesOpen] = useState(false)
-  const [referenceLineConfigs, setReferenceLineConfigs] = useState<ReferenceLineConfig[]>([])
-
-  // Update referenceLineConfigs when editingChart.referenceLines changes
-  React.useEffect(() => {
-    const newConfigs = (editingChart.referenceLines || []).map(line => {
-      return {
-        id: line.id,
-        type: line.type === "vertical" ? "vertical" as const : "horizontal" as const,
-        label: line.label,
-        xValue: line.type === "vertical" ? (typeof line.value === 'string' ? line.value : line.value?.toString()) : undefined,
-        yValue: line.type === "horizontal" ? line.value?.toString() : undefined,
-        axisNo: 1,
-        color: line.color,
-        style: line.style,
-        labelOffset: line.labelOffset
-      }
-    })
-    setReferenceLineConfigs(newConfigs)
-  }, [editingChart.referenceLines])
-
-  const handleUpdateReferenceLines = (lines: ReferenceLineConfig[]) => {
-    // Update local state first
-    setReferenceLineConfigs(lines)
-    
-    // Convert to chart format
-    const convertedLines = lines.map(line => {
-      let value: number | string
-      
-      if (line.type === "vertical") {
-        // For vertical lines, check if it's datetime or numeric
-        if ((editingChart.xAxisType || "datetime") === "datetime") {
-          // Only set value if xValue is not empty
-          value = line.xValue || ""
-        } else {
-          // For numeric values, ensure we have a valid number
-          const numValue = parseFloat(line.xValue || "0")
-          value = isNaN(numValue) ? 0 : numValue
-        }
-      } else {
-        // For horizontal lines, always numeric
-        const numValue = parseFloat(line.yValue || "0")
-        value = isNaN(numValue) ? 0 : numValue
-      }
-      
-      return {
-        id: line.id,
-        type: line.type === "vertical" ? "vertical" as const : "horizontal" as const,
-        value: value,
-        label: line.label,
-        color: line.color || "#ff0000",
-        style: line.style || "solid" as const,
-        labelOffset: line.labelOffset
-      }
-    })
-
-    setEditingChart({
-      ...editingChart,
-      referenceLines: convertedLines
-    })
-  }
+  
+  // Use the new hook for reference line management
+  const { referenceLineConfigs, handleUpdateReferenceLines } = useReferenceLines(
+    editingChart,
+    setEditingChart
+  )
 
   return (
     <div className="flex flex-col space-y-4 pb-4">
