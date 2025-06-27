@@ -1324,8 +1324,10 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               const elem = d3.select(child);
               const tagName = child.tagName?.toLowerCase();
               
-              // Keep defs (for clipPaths) and reference-lines-layer
-              if (tagName === 'defs' || elem.classed('reference-lines-layer')) {
+              // Keep defs (for clipPaths), reference-lines-layer, and reference-labels-top-layer
+              if (tagName === 'defs' || 
+                  elem.classed('reference-lines-layer') || 
+                  elem.classed('reference-labels-top-layer')) {
                 return; // Keep these elements
               }
               

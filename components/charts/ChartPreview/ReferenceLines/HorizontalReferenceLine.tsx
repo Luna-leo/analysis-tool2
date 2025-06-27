@@ -299,8 +299,7 @@ export function HorizontalReferenceLine({
           .attr("height", dimensions.height + REFERENCE_LINE_LABEL.PADDING.VERTICAL * 2)
       }
       
-      // Ensure label group is on top
-      labelGroupElement.raise()
+      // Label z-index is managed at the layer level in index.tsx
     } else if (!isLineVisible && line.label) {
       // Remove label if line is not visible
       labelGroup.select(".line-label-group").remove()

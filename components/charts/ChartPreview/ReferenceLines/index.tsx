@@ -36,6 +36,7 @@ interface ReferenceLinesProps {
 export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRef, dimensions, margins, zoomVersion }: ReferenceLinesProps) {
   const { updateFileCharts, openTabs } = useFileStore()
   const [dummyState, setDummyState] = React.useState(0) // For forcing re-renders
+  const observerRef = useRef<MutationObserver | null>(null)
   
   const {
     draggingLine,
@@ -147,13 +148,24 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
     // Remove clip path - reference lines should extend to full plot area
     // clipGroup.attr("clip-path", `url(#${clipId})`)
     
-    // Create or select labels group (no clip path)
-    let labelsGroup = refLinesLayer.select<SVGGElement>(".reference-labels-group")
+    // Create a separate top-level layer for labels to ensure they're always on top
+    let labelsTopLayer = svg.select<SVGGElement>(".reference-labels-top-layer")
+    if (labelsTopLayer.empty()) {
+      labelsTopLayer = svg
+        .append<SVGGElement>("g")
+        .attr("class", "reference-labels-top-layer")
+        .style("pointer-events", isInteractive ? "auto" : "none")
+    }
+    
+    // Update transform for labels layer too
+    labelsTopLayer.attr("transform", `translate(${margin.left},${margin.top})`)
+    
+    // Create or select labels group within the top layer
+    let labelsGroup = labelsTopLayer.select<SVGGElement>(".reference-labels-group")
     if (labelsGroup.empty()) {
-      labelsGroup = refLinesLayer
+      labelsGroup = labelsTopLayer
         .append<SVGGElement>("g")
         .attr("class", "reference-labels-group")
-        .style("pointer-events", isInteractive ? "auto" : "none")
     }
     
     // Always draw reference lines with performance monitoring
@@ -170,10 +182,19 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
       })
     }
     
-    // Ensure reference lines are on top after drawing
+    // Ensure reference lines and labels are properly layered
     // Use requestAnimationFrame to batch DOM operations
     requestAnimationFrame(() => {
+      // First raise the lines layer
       refLinesLayer.raise()
+      // Then raise the labels layer to ensure it's always on top
+      labelsTopLayer.raise()
+      
+      // Double-check by moving labels to the end if there are any elements after it
+      const parent = labelsTopLayer.node()?.parentNode
+      if (parent) {
+        parent.appendChild(labelsTopLayer.node()!)
+      }
     })
   }, [
     // Use specific properties to avoid unnecessary re-renders
@@ -215,6 +236,64 @@ export function ReferenceLines({ svgRef, editingChart, setEditingChart, scalesRe
       }
     }
   }, [setEditingChart, updateFileCharts]) // Removed openTabs dependency - accessed via closure
+  
+  // Setup MutationObserver to ensure labels stay on top
+  useEffect(() => {
+    if (!svgRef.current) return
+    
+    const svg = svgRef.current
+    const labelsTopLayer = d3.select(svg).select(".reference-labels-top-layer")
+    
+    if (labelsTopLayer.empty()) return
+    
+    // Function to raise labels to top
+    const raiseLabels = () => {
+      const node = labelsTopLayer.node() as SVGGElement | null
+      if (node && node.parentNode) {
+        const parent = node.parentNode
+        // Only move if not already the last child
+        if (parent.lastChild !== node) {
+          parent.appendChild(node)
+        }
+      }
+    }
+    
+    // Create observer to watch for new elements being added
+    const observer = new MutationObserver((mutations) => {
+      let shouldRaise = false
+      
+      for (const mutation of mutations) {
+        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+          // Check if any nodes were added after our labels layer
+          const labelsNode = labelsTopLayer.node()
+          for (const addedNode of mutation.addedNodes) {
+            if (addedNode !== labelsNode && addedNode.nodeType === Node.ELEMENT_NODE) {
+              shouldRaise = true
+              break
+            }
+          }
+        }
+      }
+      
+      if (shouldRaise) {
+        requestAnimationFrame(raiseLabels)
+      }
+    })
+    
+    // Start observing the SVG for child list changes
+    observer.observe(svg, {
+      childList: true,
+      subtree: false // Only watch direct children of SVG
+    })
+    
+    observerRef.current = observer
+    
+    // Cleanup
+    return () => {
+      observer.disconnect()
+      observerRef.current = null
+    }
+  }, [svgRef])
 
   const drawReferenceLines = useCallback((
     linesGroup: d3.Selection<SVGGElement, unknown, null, undefined>, 
