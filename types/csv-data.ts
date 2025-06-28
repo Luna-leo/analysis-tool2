@@ -29,3 +29,26 @@ export interface ParsedCSVData {
     }
   }
 }
+
+// 時系列データポイント
+export interface CSVDataPoint {
+  timestamp: string
+  [key: string]: string | number | undefined
+}
+
+// CSVデータ（期間ベース - レガシー）
+export interface CSVData {
+  periodId: string
+  plant: string
+  machineNo: string
+  data: CSVDataPoint[]
+  metadata?: {
+    totalRecords: number
+    parameters: string[]
+    dateRange: {
+      start: string
+      end: string
+    }
+    lastUpdated: string
+  }
+}
