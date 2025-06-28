@@ -25,6 +25,7 @@ async function testDuckDBParquet() {
     const connection = DuckDBConnection.getInstance();
     await connection.initialize();
     log('✓ DuckDB接続初期化成功', 'green');
+    log(`  データパス: ${connection.getDataPath()}`, 'yellow');
 
     // テストデータを作成
     const testData: CSVDataPoint[] = [
@@ -35,6 +36,9 @@ async function testDuckDBParquet() {
 
     // Parquetファイルに書き込み
     const parquetUtils = new ParquetUtils();
+    const parquetPath = connection.getParquetPath('TestPlant', 'M001', '2024-01');
+    log(`  Parquetパス: ${parquetPath}`, 'yellow');
+    
     await parquetUtils.writeToParquet({
       plant: 'TestPlant',
       machineNo: 'M001',

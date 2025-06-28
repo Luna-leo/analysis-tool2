@@ -52,19 +52,22 @@ export class ParquetUtils {
           return;
         }
 
+        // Windowsパスをposix形式に変換
+        const posixPath = parquetPath.replace(/\\/g, '/');
+        
         const writeQuery = append && fileExists
           ? `
             CREATE OR REPLACE TEMPORARY TABLE existing_data AS
-            SELECT * FROM read_parquet('${parquetPath}');
+            SELECT * FROM read_parquet('${posixPath}');
             
             CREATE OR REPLACE TEMPORARY TABLE merged_data AS
             SELECT * FROM existing_data
             UNION ALL
             SELECT * FROM temp_data;
             
-            COPY merged_data TO '${parquetPath}' (FORMAT PARQUET, COMPRESSION 'SNAPPY');
+            COPY merged_data TO '${posixPath}' (FORMAT PARQUET, COMPRESSION 'SNAPPY');
           `
-          : `COPY temp_data TO '${parquetPath}' (FORMAT PARQUET, COMPRESSION 'SNAPPY');`;
+          : `COPY temp_data TO '${posixPath}' (FORMAT PARQUET, COMPRESSION 'SNAPPY');`;
 
         db.run(writeQuery, (err) => {
           if (err) {
@@ -90,9 +93,12 @@ export class ParquetUtils {
     }
 
     return new Promise((resolve, reject) => {
+      // Windowsパスをposix形式に変換（DuckDBはスラッシュ区切りを期待）
+      const posixFiles = parquetFiles.map(f => f.replace(/\\/g, '/'));
+      
       let query = `
         SELECT ${parameters ? parameters.join(', ') : '*'}
-        FROM read_parquet([${parquetFiles.map(f => `'${f}'`).join(', ')}])
+        FROM read_parquet([${posixFiles.map(f => `'${f}'`).join(', ')}])
       `;
 
       const conditions: string[] = [];
@@ -138,6 +144,8 @@ export class ParquetUtils {
         .filter(f => f.endsWith('.parquet'))
         .map(f => path.join(baseDir, f));
 
+      console.log('Found parquet files:', parquetFiles);
+
       if (!startDate && !endDate) {
         return parquetFiles;
       }
@@ -150,6 +158,8 @@ export class ParquetUtils {
         return true;
       });
     } catch (error) {
+      console.error('Error finding parquet files:', error);
+      console.error('Base directory:', baseDir);
       // ディレクトリが存在しない場合
       return [];
     }
@@ -187,6 +197,7 @@ export class ParquetUtils {
   // メタデータの更新
   async updateMetadata(plant: string, machineNo: string, yearMonth: string): Promise<void> {
     const catalogPath = this.connection.getCatalogPath();
+    // DuckDBは内部的にパスを処理するので、catalogPathはそのまま使用
     const catalogDb = new Database(catalogPath);
 
     return new Promise((resolve, reject) => {
@@ -211,17 +222,19 @@ export class ParquetUtils {
         }
 
         const parquetPath = this.connection.getParquetPath(plant, machineNo, yearMonth);
+        // Windowsパスをposix形式に変換
+        const posixPath = parquetPath.replace(/\\/g, '/');
         
         // Parquetファイルからメタデータを取得して更新
         catalogDb.run(`
           WITH data AS (
-            SELECT * FROM read_parquet('${parquetPath}')
+            SELECT * FROM read_parquet('${posixPath}')
           ),
           columns AS (
             SELECT DISTINCT column_name 
             FROM (
               SELECT name as column_name 
-              FROM parquet_schema('${parquetPath}')
+              FROM parquet_schema('${posixPath}')
             )
             WHERE column_name != 'timestamp'
           )
