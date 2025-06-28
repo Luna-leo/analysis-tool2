@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { apiClient } from '@/utils/api/client';
+import { DataUpload } from '@/components/server-sync/DataUpload';
+import { IndexedDBSync } from '@/components/server-sync/IndexedDBSync';
 
 export default function ServerSyncPage() {
   const { user, isAuthenticated, logout } = useAuthStore();
@@ -122,19 +124,10 @@ export default function ServerSyncPage() {
         </TabsContent>
 
         <TabsContent value="upload">
-          <Card>
-            <CardHeader>
-              <CardTitle>データアップロード</CardTitle>
-              <CardDescription>
-                ローカルデータをサーバーにアップロード
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                アップロード機能は実装中です
-              </p>
-            </CardContent>
-          </Card>
+          <div className="space-y-4">
+            <DataUpload />
+            <IndexedDBSync />
+          </div>
         </TabsContent>
 
         <TabsContent value="download">

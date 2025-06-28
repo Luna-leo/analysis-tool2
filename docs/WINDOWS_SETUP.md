@@ -4,36 +4,64 @@
 このドキュメントでは、Windows環境でサーバー連携機能を動作させるためのセットアップ手順を説明します。
 
 ## 前提条件
-- Node.js 18以上がインストールされていること
+- Node.js 18以上（64ビット版）がインストールされていること
 - npm または yarn が使用可能であること
 - Windows PowerShell または コマンドプロンプト
+- Microsoft Visual C++ Redistributable（推奨）
 
 ## エラー対処法
 
-### DuckDBバインディングエラー
-`Cannot find module ... node_modules\duckdb\lib\binding\duckdb.node` というエラーが発生した場合は、以下の手順で解決してください。
+### Next.js SWCバイナリエラー
+`Attempted to load @next/swc-win32-x64-msvc, but an error occurred: ... next-swc.win32-x64-msvc.node is not a valid Win32 application` というエラーが発生した場合は、以下の手順で解決してください。
 
 #### 原因
-WSL2（Linux）環境でインストールしたnode_modulesをWindows環境で使用しようとしているため、ネイティブバインディングが不一致となっています。
+Next.jsはRustベースのコンパイラSWCを使用しており、Windows環境では Microsoft Visual C++ Redistributable が必要です。
 
 #### 解決手順
 
-1. **node_modulesの削除**
+1. **Microsoft Visual C++ Redistributableのインストール（最も一般的な解決策）**
+   
+   以下のリンクからダウンロードしてインストール：
+   https://aka.ms/vs/17/release/vc_redist.x64.exe
+
+2. **クリーンインストール**
    ```powershell
    # PowerShellまたはコマンドプロンプトで実行
    cd C:\path\to\analysis-tool2
    rmdir /s /q node_modules
    del package-lock.json
-   ```
-
-2. **Windows環境での再インストール**
-   ```powershell
+   npm cache clean --force
    npm install
    ```
 
-3. **ビルドエラーが発生する場合**
+3. **SWCパッケージの再インストール**
+   ```powershell
+   npm i @next/swc-win32-x64-msvc
+   npm run build
+   npx next clear
+   npm run dev
+   ```
+
+4. **Node.jsアーキテクチャの確認**
+   ```powershell
+   node -p "process.arch"
+   ```
+   x64が表示されることを確認。ia32の場合は64ビット版のNode.jsを再インストール。
+
+5. **どうしても解決しない場合の代替方法**
    
-   Visual Studio Build Toolsのインストールが必要です：
+   `next.config.mjs`でSWCを無効化してBabelを使用：
+   ```javascript
+   const nextConfig = {
+     swcMinify: false,
+     // 他の設定...
+   }
+   ```
+
+### SQLite/Better-SQLite3エラー
+ネイティブモジュールのビルドエラーが発生する場合：
+
+1. **Visual Studio Build Toolsのインストール**
    
    a. [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022)をダウンロード
    
@@ -43,10 +71,9 @@ WSL2（Linux）環境でインストールしたnode_modulesをWindows環境で�
    
    c. インストール完了後、新しいPowerShellウィンドウで再度 `npm install`
 
-4. **代替方法：プリビルドバイナリの使用**
+2. **プリビルドバイナリの使用**
    ```powershell
-   # プリビルドバイナリを強制的に使用
-   npm install duckdb@1.3.1 better-sqlite3@12.1.1 --force
+   npm install better-sqlite3@12.1.1 --force
    ```
 
 ## セットアップ手順
@@ -68,7 +95,6 @@ WSL2（Linux）環境でインストールしたnode_modulesをWindows環境で�
    DATA_PATH=./data
    SQLITE_PATH=./data/users/app.db
    NODE_ENV=development
-   NEXT_PUBLIC_ENABLE_DUCKDB=true
    ```
 
 4. **テストデータの作成**
@@ -119,3 +145,5 @@ node_modulesフォルダをWindows Defenderのスキャン対象から除外す�
 - WSL2とWindows環境を行き来する場合は、それぞれの環境でnode_modulesを再インストールする必要があります
 - 本番環境へのデプロイ時は、Windows Server上で `npm ci --production` を実行してください
 - ファイルパスはすべて相対パスまたは環境変数で設定することを推奨します
+- Microsoft Visual C++ Redistributableは事前にインストールしておくことを強く推奨します
+- Node.jsは必ず64ビット版を使用してください（32ビット版ではSWCエラーが発生します）
