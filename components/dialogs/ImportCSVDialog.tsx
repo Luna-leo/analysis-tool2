@@ -38,7 +38,7 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
   const [eventDetail, setEventDetail] = useState("")
   const [isImporting, setIsImporting] = useState(false)
   const { toast } = useToast()
-  const { addPlantHistory, addMachineHistory } = useInputHistoryStore()
+  const { addPlantHistory, addMachineHistory, addLabelHistory, addEventHistory } = useInputHistoryStore()
   
   // Debug log to check onImport prop
   React.useEffect(() => {
@@ -144,6 +144,8 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
       // Save to history on successful import
       addPlantHistory(plant)
       addMachineHistory(machineNo)
+      addLabelHistory(label)
+      addEventHistory(event)
       
       handleClose()
     } catch (error) {
