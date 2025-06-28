@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { Database } from 'duckdb';
 import { DuckDBConnection } from './connection';
 import path from 'path';
@@ -212,6 +214,17 @@ export class ParquetUtils {
         
         // Parquetファイルからメタデータを取得して更新
         catalogDb.run(`
+          WITH data AS (
+            SELECT * FROM read_parquet('${parquetPath}')
+          ),
+          columns AS (
+            SELECT DISTINCT column_name 
+            FROM (
+              SELECT name as column_name 
+              FROM parquet_schema('${parquetPath}')
+            )
+            WHERE column_name != 'timestamp'
+          )
           INSERT OR REPLACE INTO metadata (
             plant, machine_no, year_month, record_count, 
             start_timestamp, end_timestamp, parameters, file_size
@@ -220,15 +233,11 @@ export class ParquetUtils {
             '${plant}' as plant,
             '${machineNo}' as machine_no,
             '${yearMonth}' as year_month,
-            COUNT(*) as record_count,
-            MIN(timestamp) as start_timestamp,
-            MAX(timestamp) as end_timestamp,
-            JSON_GROUP_ARRAY(DISTINCT column_name) as parameters,
+            (SELECT COUNT(*) FROM data) as record_count,
+            (SELECT MIN(timestamp) FROM data) as start_timestamp,
+            (SELECT MAX(timestamp) FROM data) as end_timestamp,
+            (SELECT JSON_GROUP_ARRAY(column_name) FROM columns) as parameters,
             0 as file_size
-          FROM (
-            SELECT * FROM read_parquet('${parquetPath}')
-          ) t, 
-          (SELECT column_name FROM parquet_schema('${parquetPath}') WHERE column_name != 'timestamp')
         `, (err) => {
           catalogDb.close();
           if (err) {

@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { Database } from 'duckdb';
 import path from 'path';
 import fs from 'fs/promises';

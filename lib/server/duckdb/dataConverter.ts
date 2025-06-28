@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { ParquetUtils } from './parquetUtils';
 import { PlantMachineData } from '@/types/plant-machine-data';
 import { CSVData, CSVDataPoint } from '@/types/csv-data';

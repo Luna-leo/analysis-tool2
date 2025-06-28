@@ -2,7 +2,7 @@ import { FormulaDefinition } from './formula'
 import { StandardizedCSVData } from './csv-data'
 import { ChartDataPoint } from './chart-data'
 
-export type ActiveView = "explorer" | "search" | "database" | "calculator" | "settings"
+export type ActiveView = "explorer" | "search" | "database" | "calculator" | "server" | "settings"
 
 export type ConditionMode = "predefined" | "manual"
 
