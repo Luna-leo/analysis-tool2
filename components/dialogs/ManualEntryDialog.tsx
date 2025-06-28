@@ -16,6 +16,7 @@ import { TimeAdjustmentSection } from "./TimeAdjustmentSection"
 import { PlantMachineFields } from "@/components/charts/EditModal/parameters/PlantMachineFields"
 import { useInputHistoryStore } from "@/stores/useInputHistoryStore"
 import { checkDataAvailability, DataAvailability } from "@/utils/dataAvailabilityUtils"
+import { getDataForManualEntry } from "@/utils/dataRetrievalUtils"
 import { Database } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
@@ -42,6 +43,11 @@ export const ManualEntryDialog: React.FC<ManualEntryDialogProps> = ({
   const { addPlantHistory, addMachineHistory } = useInputHistoryStore()
   const [dataAvailability, setDataAvailability] = useState<DataAvailability | null>(null)
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false)
+  const [useExistingData, setUseExistingData] = useState(false)
+  const [existingDataInfo, setExistingDataInfo] = useState<{
+    parameters: string[]
+    recordCount: number
+  } | null>(null)
 
   // Check data availability when plant/machine changes
   useEffect(() => {
@@ -73,13 +79,60 @@ export const ManualEntryDialog: React.FC<ManualEntryDialogProps> = ({
     )
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Save to history only for new entries
     if (!editingItemId) {
       addPlantHistory(data.plant)
       addMachineHistory(data.machineNo)
     }
+    
+    // Check if we should load existing data
+    if (useExistingData && data.start && data.end) {
+      const existingData = await getDataForManualEntry(
+        data.plant,
+        data.machineNo,
+        data.start,
+        data.end
+      )
+      
+      if (existingData.hasData) {
+        // Pass the data info along with the manual entry
+        const dataWithExisting = {
+          ...data,
+          useExistingData: true,
+          existingDataInfo: {
+            recordCount: existingData.data.length,
+            parameters: existingData.parameters,
+            data: existingData.data // Pass the actual data
+          }
+        }
+        onSave(dataWithExisting as any, editingItemId)
+        return
+      }
+    }
+    
     onSave(data, editingItemId)
+  }
+  
+  const handleUseExistingData = async () => {
+    if (!data.plant || !data.machineNo || !data.start || !data.end) {
+      return
+    }
+    
+    setUseExistingData(true)
+    const result = await getDataForManualEntry(
+      data.plant,
+      data.machineNo,
+      data.start,
+      data.end
+    )
+    
+    if (result.hasData) {
+      setExistingDataInfo({
+        parameters: result.parameters,
+        recordCount: result.data.length
+      })
+    }
   }
 
   return (
@@ -118,11 +171,23 @@ export const ManualEntryDialog: React.FC<ManualEntryDialogProps> = ({
                   </Alert>
                 ) : dataAvailability?.hasData ? (
                   <Alert className="py-2 border-green-200 bg-green-50">
-                    <div className="flex items-center gap-2">
-                      <Database className="h-4 w-4 text-green-600" />
-                      <AlertDescription className="text-sm text-green-800">
-                        Data is available for this Plant/Machine combination
-                      </AlertDescription>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Database className="h-4 w-4 text-green-600" />
+                        <AlertDescription className="text-sm text-green-800">
+                          Data is available for this Plant/Machine combination
+                        </AlertDescription>
+                      </div>
+                      {data.start && data.end && !useExistingData && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={handleUseExistingData}
+                          className="text-green-700 hover:text-green-800"
+                        >
+                          Use Existing Data
+                        </Button>
+                      )}
                     </div>
                   </Alert>
                 ) : (
@@ -136,6 +201,31 @@ export const ManualEntryDialog: React.FC<ManualEntryDialogProps> = ({
                   </Alert>
                 )}
               </div>
+            )}
+            
+            {/* Show existing data info if using existing data */}
+            {useExistingData && existingDataInfo && (
+              <Alert className="py-2 border-blue-200 bg-blue-50">
+                <div className="space-y-1">
+                  <AlertDescription className="text-sm font-medium text-blue-800">
+                    Using existing data
+                  </AlertDescription>
+                  <AlertDescription className="text-xs text-blue-700">
+                    {existingDataInfo.recordCount} records with {existingDataInfo.parameters.length} parameters
+                  </AlertDescription>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setUseExistingData(false)
+                      setExistingDataInfo(null)
+                    }}
+                    className="text-xs text-blue-600 hover:text-blue-700 p-0 h-auto"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </Alert>
             )}
             
             {/* Legend Field */}
