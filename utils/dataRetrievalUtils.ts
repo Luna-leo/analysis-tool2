@@ -6,6 +6,18 @@ import { createLogger } from './logger'
 
 const logger = createLogger('DataRetrievalUtils')
 
+// Define error types for better error handling
+export class DataRetrievalError extends Error {
+  constructor(
+    message: string,
+    public code: 'PLANT_MACHINE_ERROR' | 'PERIOD_STORE_ERROR' | 'NO_DATA' | 'UNKNOWN_ERROR',
+    public details?: any
+  ) {
+    super(message)
+    this.name = 'DataRetrievalError'
+  }
+}
+
 /**
  * Get data for a specific period from Plant/Machine store or period-based store
  */
@@ -72,7 +84,17 @@ export async function getDataForPeriod(
     
   } catch (error) {
     logger.error('Error retrieving data for period:', error)
-    return []
+    
+    // Re-throw as a structured error for better handling
+    if (error instanceof DataRetrievalError) {
+      throw error
+    }
+    
+    throw new DataRetrievalError(
+      'Failed to retrieve data for period',
+      'UNKNOWN_ERROR',
+      { plant, machineNo, startDate, endDate, originalError: error }
+    )
   }
 }
 
@@ -137,8 +159,10 @@ export async function searchDataWithConditions(
   conditions: SearchCondition[]
 ): Promise<SearchResult[]> {
   const results: SearchResult[] = []
+  const errors: Array<{ periodId: string; error: any }> = []
   
-  for (const period of periods) {
+  // Process periods in parallel for better performance
+  const searchPromises = periods.map(async (period) => {
     try {
       // Get data for this period
       const periodData = await getDataForPeriod(
@@ -152,6 +176,8 @@ export async function searchDataWithConditions(
         dataPoints: periodData.length,
         conditions: conditions.length
       })
+      
+      const periodResults: SearchResult[] = []
       
       // Evaluate each data point against conditions
       periodData.forEach((dataPoint, index) => {
@@ -174,7 +200,7 @@ export async function searchDataWithConditions(
             }
           })
           
-          results.push({
+          periodResults.push({
             id: `${period.id}_result_${index}_${Date.now()}`,
             timestamp: dataPoint.timestamp,
             plant: period.plant,
@@ -187,15 +213,33 @@ export async function searchDataWithConditions(
         }
       })
       
+      return periodResults
+      
     } catch (error) {
       logger.error(`Error searching data for period ${period.id}:`, error)
+      errors.push({ periodId: period.id, error })
+      return []
     }
-  }
+  })
+  
+  // Wait for all searches to complete
+  const allResults = await Promise.all(searchPromises)
+  
+  // Flatten results
+  allResults.forEach(periodResults => {
+    results.push(...periodResults)
+  })
   
   logger.info('Search completed', {
     totalResults: results.length,
-    periodsSearched: periods.length
+    periodsSearched: periods.length,
+    errorsCount: errors.length
   })
+  
+  // Log errors if any occurred
+  if (errors.length > 0) {
+    logger.warn('Some periods had errors during search', { errors })
+  }
   
   return results
 }
@@ -213,29 +257,40 @@ export async function getDataForManualEntry(
   data: CSVDataPoint[]
   parameters: string[]
 }> {
-  const data = await getDataForPeriod(plant, machineNo, startDate, endDate)
-  
-  if (data.length === 0) {
+  try {
+    const data = await getDataForPeriod(plant, machineNo, startDate, endDate)
+    
+    if (data.length === 0) {
+      return {
+        hasData: false,
+        data: [],
+        parameters: []
+      }
+    }
+    
+    // Extract available parameters
+    const parameterSet = new Set<string>()
+    data.forEach(point => {
+      Object.keys(point).forEach(key => {
+        if (key !== 'timestamp' && key !== 'periodId') {
+          parameterSet.add(key)
+        }
+      })
+    })
+    
+    return {
+      hasData: true,
+      data,
+      parameters: Array.from(parameterSet).sort()
+    }
+  } catch (error) {
+    logger.error('Error getting data for manual entry:', error)
+    
+    // Return empty data on error but log the issue
     return {
       hasData: false,
       data: [],
       parameters: []
     }
-  }
-  
-  // Extract available parameters
-  const parameterSet = new Set<string>()
-  data.forEach(point => {
-    Object.keys(point).forEach(key => {
-      if (key !== 'timestamp' && key !== 'periodId') {
-        parameterSet.add(key)
-      }
-    })
-  })
-  
-  return {
-    hasData: true,
-    data,
-    parameters: Array.from(parameterSet).sort()
   }
 }

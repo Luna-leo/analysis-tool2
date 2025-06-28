@@ -11,9 +11,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { EventInfo } from "@/types"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Search, Database } from "lucide-react"
+import { Search, Database, AlertCircle } from "lucide-react"
 import { formatDateTimeForDisplay } from "@/utils/dateUtils"
-import { batchCheckDataAvailability, DataAvailability } from "@/utils/dataAvailabilityUtils"
+import { batchCheckDataAvailability, DataAvailability, calculatePeriodCoverage } from "@/utils/dataAvailabilityUtils"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface EventSelectionDialogProps {
@@ -32,6 +32,7 @@ export const EventSelectionDialog: React.FC<EventSelectionDialogProps> = ({
   const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set())
   const [searchQuery, setSearchQuery] = useState('')
   const [dataAvailability, setDataAvailability] = useState<Map<string, DataAvailability>>(new Map())
+  const [periodCoverage, setPeriodCoverage] = useState<Map<string, number>>(new Map())
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false)
 
   // Check data availability when dialog opens or events change
@@ -56,6 +57,22 @@ export const EventSelectionDialog: React.FC<EventSelectionDialogProps> = ({
       
       const availability = await batchCheckDataAvailability(uniqueItems)
       setDataAvailability(availability)
+      
+      // Calculate period coverage for events with data
+      const coverageMap = new Map<string, number>()
+      for (const event of events) {
+        const key = `${event.plant}_${event.machineNo}`
+        if (availability.get(key)?.hasData) {
+          const coverage = await calculatePeriodCoverage(
+            event.plant,
+            event.machineNo,
+            event.start,
+            event.end
+          )
+          coverageMap.set(event.id, coverage.coveragePercentage)
+        }
+      }
+      setPeriodCoverage(coverageMap)
     } catch (error) {
       console.error('Error checking data availability:', error)
     } finally {
@@ -164,18 +181,45 @@ export const EventSelectionDialog: React.FC<EventSelectionDialogProps> = ({
                       <td className="px-2 py-1 bg-white group-hover:bg-blue-50 text-center">
                         {(() => {
                           const availability = dataAvailability.get(`${event.plant}_${event.machineNo}`)
+                          const coverage = periodCoverage.get(event.id)
+                          
                           if (isCheckingAvailability) {
                             return <div className="animate-pulse text-gray-400">...</div>
                           }
+                          
                           if (availability?.hasData) {
+                            const hasPartialData = coverage !== undefined && coverage < 80
                             return (
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger>
-                                    <Database className="h-4 w-4 text-green-600 mx-auto" />
+                                    <div className="flex items-center justify-center gap-1">
+                                      <Database 
+                                        className={`h-4 w-4 ${
+                                          hasPartialData ? 'text-yellow-600' : 'text-green-600'
+                                        }`} 
+                                      />
+                                      {hasPartialData && (
+                                        <span className="text-xs text-yellow-600 font-medium">
+                                          {Math.round(coverage)}%
+                                        </span>
+                                      )}
+                                    </div>
                                   </TooltipTrigger>
                                   <TooltipContent>
-                                    <p>Data available</p>
+                                    <div className="space-y-1">
+                                      <p>Data available</p>
+                                      {coverage !== undefined && (
+                                        <p className="text-xs">
+                                          Coverage: {Math.round(coverage)}%
+                                        </p>
+                                      )}
+                                      {hasPartialData && (
+                                        <p className="text-xs text-yellow-600">
+                                          Partial data - gaps may exist
+                                        </p>
+                                      )}
+                                    </div>
                                   </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
