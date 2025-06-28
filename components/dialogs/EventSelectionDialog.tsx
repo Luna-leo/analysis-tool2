@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -11,8 +11,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { EventInfo } from "@/types"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Search } from "lucide-react"
+import { Search, Database } from "lucide-react"
 import { formatDateTimeForDisplay } from "@/utils/dateUtils"
+import { batchCheckDataAvailability, DataAvailability } from "@/utils/dataAvailabilityUtils"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 interface EventSelectionDialogProps {
   isOpen: boolean
@@ -29,6 +31,37 @@ export const EventSelectionDialog: React.FC<EventSelectionDialogProps> = ({
 }) => {
   const [selectedEventIds, setSelectedEventIds] = useState<Set<string>>(new Set())
   const [searchQuery, setSearchQuery] = useState('')
+  const [dataAvailability, setDataAvailability] = useState<Map<string, DataAvailability>>(new Map())
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false)
+
+  // Check data availability when dialog opens or events change
+  useEffect(() => {
+    if (isOpen && events.length > 0) {
+      checkAvailability()
+    }
+  }, [isOpen, events])
+
+  const checkAvailability = async () => {
+    setIsCheckingAvailability(true)
+    try {
+      const items = events.map(event => ({
+        plant: event.plant,
+        machineNo: event.machineNo
+      }))
+      
+      // Remove duplicates
+      const uniqueItems = Array.from(
+        new Map(items.map(item => [`${item.plant}_${item.machineNo}`, item])).values()
+      )
+      
+      const availability = await batchCheckDataAvailability(uniqueItems)
+      setDataAvailability(availability)
+    } catch (error) {
+      console.error('Error checking data availability:', error)
+    } finally {
+      setIsCheckingAvailability(false)
+    }
+  }
 
   const filteredEvents = events.filter(event => {
     if (!searchQuery) return true
@@ -103,6 +136,7 @@ export const EventSelectionDialog: React.FC<EventSelectionDialogProps> = ({
                     </th>
                     <th className="bg-gray-50 px-2 py-2 text-sm font-semibold text-gray-700 text-left" style={{ width: '100px' }}>Plant</th>
                     <th className="bg-gray-50 px-2 py-2 text-sm font-semibold text-gray-700 text-left" style={{ width: '120px' }}>Machine No</th>
+                    <th className="bg-gray-50 px-2 py-2 text-sm font-semibold text-gray-700 text-center" style={{ width: '60px' }}>Data</th>
                     <th className="bg-gray-50 px-2 py-2 text-sm font-semibold text-gray-700 text-left">Label</th>
                     <th className="bg-gray-50 px-2 py-2 text-sm font-semibold text-gray-700 text-left">Event</th>
                     <th className="bg-gray-50 px-2 py-2 text-sm font-semibold text-gray-700 text-left" style={{ width: '100px' }}>Start</th>
@@ -127,6 +161,29 @@ export const EventSelectionDialog: React.FC<EventSelectionDialogProps> = ({
                       </td>
                       <td className="px-2 py-1 bg-white group-hover:bg-blue-50">{event.plant}</td>
                       <td className="px-2 py-1 bg-white group-hover:bg-blue-50">{event.machineNo}</td>
+                      <td className="px-2 py-1 bg-white group-hover:bg-blue-50 text-center">
+                        {(() => {
+                          const availability = dataAvailability.get(`${event.plant}_${event.machineNo}`)
+                          if (isCheckingAvailability) {
+                            return <div className="animate-pulse text-gray-400">...</div>
+                          }
+                          if (availability?.hasData) {
+                            return (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Database className="h-4 w-4 text-green-600 mx-auto" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Data available</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )
+                          }
+                          return <span className="text-gray-300">-</span>
+                        })()}
+                      </td>
                       <td className="px-2 py-1 bg-white group-hover:bg-blue-50">
                         <div className="leading-tight">
                           <div className="text-sm">{event.label}</div>

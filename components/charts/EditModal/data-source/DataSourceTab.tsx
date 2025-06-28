@@ -25,6 +25,14 @@ import { StandardizedCSVData } from "@/types/csv-data"
 import { Checkbox } from "@/components/ui/checkbox"
 import { createLogger } from "@/utils/logger"
 import {
+  generatePlantMachineId,
+  getPlantMachineData,
+  savePlantMachineData,
+  mergeAndDeduplicateData,
+  updatePlantMachineMetadata
+} from "@/utils/plantMachineDataUtils"
+import { PlantMachineData, ImportHistoryRecord } from "@/types/plant-machine-data"
+import {
   TimeOffsetSettings,
   SelectedDataSourceTable,
   PeriodPool,
@@ -466,6 +474,102 @@ export function DataSourceTab({
       
       await saveCSVData(periodId, allStandardizedData, updatedMetadata || { fileName: fileNames[0] || 'unknown' })
       logger.debug('CSV data saved successfully')
+
+      // Step 6.5: Save to Plant/Machine data store
+      logger.debug('Saving to Plant/Machine data store', {
+        plant: data.plant,
+        machineNo: data.machineNo,
+        dataLength: allStandardizedData.length
+      })
+
+      try {
+        const plantMachineId = generatePlantMachineId(data.plant, data.machineNo)
+        
+        // Get existing data if any
+        const existingData = await getPlantMachineData(plantMachineId)
+        logger.debug('Existing Plant/Machine data found:', !!existingData)
+
+        // Convert StandardizedCSVData to CSVDataPoint format
+        const csvDataPoints = allStandardizedData.map(row => {
+          const dataPoint: any = {
+            timestamp: row.timestamp!
+          }
+          
+          // Copy all non-standard fields as data fields
+          Object.keys(row).forEach(key => {
+            if (!['plant', 'machineNo', 'sourceType', 'rowNumber', 'timestamp'].includes(key)) {
+              dataPoint[key] = row[key]
+            }
+          })
+          
+          return dataPoint
+        })
+
+        // Create import history record
+        const importHistoryRecord: ImportHistoryRecord = {
+          periodId,
+          importedAt: new Date().toISOString(),
+          startDate: overallMinDate.toISOString(),
+          endDate: overallMaxDate.toISOString(),
+          dataSourceType: data.dataSourceType,
+          fileCount: csvFiles.length,
+          recordCount: allStandardizedData.length,
+          eventInfo: {
+            label: data.label,
+            labelDescription: data.labelDescription || '',
+            event: data.event,
+            eventDetail: data.eventDetail || ''
+          }
+        }
+
+        let plantMachineData: PlantMachineData
+
+        if (existingData) {
+          // Merge with existing data
+          const mergedData = mergeAndDeduplicateData(existingData.data, csvDataPoints, true)
+          const updatedMetadata = updatePlantMachineMetadata(mergedData, existingData.metadata)
+          
+          plantMachineData = {
+            ...existingData,
+            data: mergedData,
+            importHistory: [...existingData.importHistory, importHistoryRecord],
+            metadata: updatedMetadata
+          }
+          
+          logger.debug('Merged data statistics', {
+            existingRecords: existingData.data.length,
+            newRecords: csvDataPoints.length,
+            mergedRecords: mergedData.length,
+            duplicatesRemoved: existingData.data.length + csvDataPoints.length - mergedData.length
+          })
+        } else {
+          // Create new Plant/Machine data
+          const metadata = updatePlantMachineMetadata(csvDataPoints)
+          
+          plantMachineData = {
+            id: plantMachineId,
+            plant: data.plant,
+            machineNo: data.machineNo,
+            data: csvDataPoints,
+            importHistory: [importHistoryRecord],
+            metadata
+          }
+          
+          logger.debug('Created new Plant/Machine data', {
+            id: plantMachineId,
+            records: csvDataPoints.length
+          })
+        }
+
+        // Save to Plant/Machine store
+        await savePlantMachineData(plantMachineData)
+        logger.debug('Plant/Machine data saved successfully')
+
+      } catch (plantMachineError) {
+        // Log error but don't fail the import - Plant/Machine is supplementary
+        logger.error('Error saving to Plant/Machine store:', plantMachineError)
+        console.error('Plant/Machine save error:', plantMachineError)
+      }
 
       // Step 7: Add to CollectedPeriod store
       logger.debug('Adding to CollectedPeriod store', collectedPeriod)
