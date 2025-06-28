@@ -15,9 +15,9 @@ import { ManualEntryData } from "@/hooks/useManualEntry"
 import { TimeAdjustmentSection } from "./TimeAdjustmentSection"
 import { PlantMachineFields } from "@/components/charts/EditModal/parameters/PlantMachineFields"
 import { useInputHistoryStore } from "@/stores/useInputHistoryStore"
-import { checkDataAvailability, DataAvailability } from "@/utils/dataAvailabilityUtils"
+import { checkDataAvailability, DataAvailability, getSuggestedPeriods, calculatePeriodCoverage } from "@/utils/dataAvailabilityUtils"
 import { getDataForManualEntry } from "@/utils/dataRetrievalUtils"
-import { Database } from "lucide-react"
+import { Database, Calendar } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface ManualEntryDialogProps {
@@ -48,6 +48,8 @@ export const ManualEntryDialog: React.FC<ManualEntryDialogProps> = ({
     parameters: string[]
     recordCount: number
   } | null>(null)
+  const [suggestedPeriods, setSuggestedPeriods] = useState<Array<{ start: string; end: string; coverage: number; dataPoints: number }>>([])  
+  const [periodCoverage, setPeriodCoverage] = useState<{ coveragePercentage: number; gaps: Array<{ start: string; end: string }> } | null>(null)
 
   // Check data availability when plant/machine changes
   useEffect(() => {
@@ -55,19 +57,52 @@ export const ManualEntryDialog: React.FC<ManualEntryDialogProps> = ({
       checkAvailability()
     } else {
       setDataAvailability(null)
+      setSuggestedPeriods([])
     }
   }, [data.plant, data.machineNo, editingItemId])
+  
+  // Check period coverage when dates change
+  useEffect(() => {
+    if (data.plant && data.machineNo && data.start && data.end && dataAvailability?.hasData) {
+      checkPeriodCoverage()
+    } else {
+      setPeriodCoverage(null)
+    }
+  }, [data.start, data.end, dataAvailability])
 
   const checkAvailability = async () => {
     setIsCheckingAvailability(true)
     try {
       const availability = await checkDataAvailability(data.plant, data.machineNo)
       setDataAvailability(availability)
+      
+      // Get suggested periods if data exists
+      if (availability.hasData) {
+        const suggestions = await getSuggestedPeriods(data.plant, data.machineNo, 3)
+        setSuggestedPeriods(suggestions)
+      }
     } catch (error) {
       console.error('Error checking data availability:', error)
       setDataAvailability(null)
     } finally {
       setIsCheckingAvailability(false)
+    }
+  }
+  
+  const checkPeriodCoverage = async () => {
+    try {
+      const coverage = await calculatePeriodCoverage(
+        data.plant,
+        data.machineNo,
+        data.start,
+        data.end
+      )
+      setPeriodCoverage({
+        coveragePercentage: coverage.coveragePercentage,
+        gaps: coverage.gaps
+      })
+    } catch (error) {
+      console.error('Error calculating period coverage:', error)
     }
   }
 
@@ -170,26 +205,62 @@ export const ManualEntryDialog: React.FC<ManualEntryDialogProps> = ({
                     </div>
                   </Alert>
                 ) : dataAvailability?.hasData ? (
-                  <Alert className="py-2 border-green-200 bg-green-50">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Database className="h-4 w-4 text-green-600" />
-                        <AlertDescription className="text-sm text-green-800">
-                          Data is available for this Plant/Machine combination
-                        </AlertDescription>
+                  <div className="space-y-2">
+                    <Alert className="py-2 border-green-200 bg-green-50">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Database className="h-4 w-4 text-green-600" />
+                          <AlertDescription className="text-sm text-green-800">
+                            Data is available for this Plant/Machine combination
+                          </AlertDescription>
+                        </div>
+                        {data.start && data.end && !useExistingData && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleUseExistingData}
+                            className="text-green-700 hover:text-green-800"
+                          >
+                            Use Existing Data
+                          </Button>
+                        )}
                       </div>
-                      {data.start && data.end && !useExistingData && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={handleUseExistingData}
-                          className="text-green-700 hover:text-green-800"
-                        >
-                          Use Existing Data
-                        </Button>
-                      )}
-                    </div>
-                  </Alert>
+                    </Alert>
+                    
+                    {/* Suggested Periods */}
+                    {suggestedPeriods.length > 0 && (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Calendar className="h-4 w-4 text-blue-600" />
+                          <span className="text-sm font-medium text-blue-800">Suggested Periods:</span>
+                        </div>
+                        <div className="space-y-1">
+                          {suggestedPeriods.map((period, index) => (
+                            <button
+                              key={index}
+                              type="button"
+                              onClick={() => {
+                                onUpdateData({
+                                  start: period.start,
+                                  end: period.end
+                                })
+                              }}
+                              className="w-full text-left p-2 text-xs bg-white hover:bg-blue-100 rounded border border-blue-200 transition-colors"
+                            >
+                              <div className="flex justify-between items-center">
+                                <span>
+                                  {new Date(period.start).toLocaleString()} - {new Date(period.end).toLocaleString()}
+                                </span>
+                                <span className="text-blue-600 font-medium">
+                                  {Math.round(period.coverage)}% coverage
+                                </span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <Alert className="py-2 border-gray-200 bg-gray-50">
                     <div className="flex items-center gap-2">
@@ -224,6 +295,34 @@ export const ManualEntryDialog: React.FC<ManualEntryDialogProps> = ({
                   >
                     Cancel
                   </Button>
+                </div>
+              </Alert>
+            )}
+            
+            {/* Period Coverage Alert */}
+            {periodCoverage && data.start && data.end && (
+              <Alert className={`py-2 ${
+                periodCoverage.coveragePercentage < 50 
+                  ? 'border-red-200 bg-red-50' 
+                  : periodCoverage.coveragePercentage < 80 
+                  ? 'border-yellow-200 bg-yellow-50'
+                  : 'border-green-200 bg-green-50'
+              }`}>
+                <div className="flex items-center gap-2">
+                  <AlertDescription className={`text-sm ${
+                    periodCoverage.coveragePercentage < 50 
+                      ? 'text-red-800' 
+                      : periodCoverage.coveragePercentage < 80 
+                      ? 'text-yellow-800'
+                      : 'text-green-800'
+                  }`}>
+                    Period coverage: {Math.round(periodCoverage.coveragePercentage)}%
+                    {periodCoverage.gaps.length > 0 && (
+                      <span className="ml-2">
+                        ({periodCoverage.gaps.length} gap{periodCoverage.gaps.length > 1 ? 's' : ''} detected)
+                      </span>
+                    )}
+                  </AlertDescription>
                 </div>
               </Alert>
             )}
