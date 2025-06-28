@@ -82,7 +82,7 @@ export function mergeCSVDataByTimestamp(
             const key = keys[j]
             const value = row[key]
             
-            if (!standardFieldsSet.has(key) && value !== null && value !== undefined) {
+            if (!standardFieldsSet.has(key as any) && value !== null && value !== undefined) {
               // Check if this parameter already exists with a different value
               if (existingRow[key] !== undefined && existingRow[key] !== value) {
                 if (warnings.length < CSV_IMPORT_CONFIG.MAX_WARNINGS) { // Limit warnings to prevent memory issues
@@ -112,7 +112,7 @@ export function mergeCSVDataByTimestamp(
             const key = keys[j]
             const value = row[key]
             
-            if (!standardFieldsSet.has(key) && value !== null && value !== undefined) {
+            if (!standardFieldsSet.has(key as any) && value !== null && value !== undefined) {
               newRow[key] = value
             }
           }
@@ -208,4 +208,288 @@ export function getMergedFileName(fileNames: string[]): string {
     .trim()
 
   return `${baseName}_merged.csv`
+}
+
+/**
+ * Convert wide format data to long format (normalized form)
+ * Each row becomes multiple rows: one for each parameter
+ */
+interface LongFormatRow {
+  timestamp: string
+  parameterName: string
+  value: number | string | null
+  unit: string
+  plant: string
+  machineNo: string
+  sourceType: string
+}
+
+function convertToLongFormat(
+  dataArray: StandardizedCSVData[],
+  parameterInfo?: { parameters: string[]; units: string[] }
+): LongFormatRow[] {
+  const longFormatData: LongFormatRow[] = []
+  const standardFields = new Set(CSV_IMPORT_CONFIG.STANDARD_FIELDS)
+  
+  // Build parameter-unit map
+  const paramUnitMap = new Map<string, string>()
+  if (parameterInfo) {
+    parameterInfo.parameters.forEach((param, index) => {
+      paramUnitMap.set(param, parameterInfo.units[index] || '')
+    })
+  }
+  
+  // Process in batches to avoid stack overflow
+  const batchSize = 1000
+  console.log(`Converting ${dataArray.length} rows to long format in batches of ${batchSize}`)
+  
+  for (let i = 0; i < dataArray.length; i += batchSize) {
+    const batch = dataArray.slice(i, Math.min(i + batchSize, dataArray.length))
+    
+    for (let j = 0; j < batch.length; j++) {
+      const row = batch[j]
+      if (!row.timestamp) continue
+      
+      // Extract parameter values from each row
+      const keys = Object.keys(row)
+      for (let k = 0; k < keys.length; k++) {
+        const key = keys[k]
+        if (!standardFields.has(key as any)) {
+          const value = row[key]
+          if (value !== null && value !== undefined) {
+            longFormatData.push({
+              timestamp: row.timestamp!,
+              parameterName: key,
+              value: value as number | string,
+              unit: paramUnitMap.get(key) || '',
+              plant: row.plant,
+              machineNo: row.machineNo,
+              sourceType: row.sourceType as string
+            })
+          }
+        }
+      }
+    }
+    
+    if (i % (batchSize * 10) === 0 && i > 0) {
+      console.log(`Converted ${i} / ${dataArray.length} rows to long format`)
+    }
+  }
+  
+  console.log(`Long format conversion complete: ${longFormatData.length} entries`)
+  return longFormatData
+}
+
+/**
+ * Convert long format data back to wide format
+ */
+function convertToWideFormat(longFormatData: LongFormatRow[]): StandardizedCSVData[] {
+  const wideFormatMap = new Map<string, StandardizedCSVData>()
+  
+  // Process in batches to avoid stack overflow
+  const batchSize = 10000
+  console.log(`Processing ${longFormatData.length} rows in batches of ${batchSize}`)
+  
+  for (let i = 0; i < longFormatData.length; i += batchSize) {
+    const batch = longFormatData.slice(i, Math.min(i + batchSize, longFormatData.length))
+    
+    batch.forEach(row => {
+      const key = row.timestamp
+      
+      if (!wideFormatMap.has(key)) {
+        wideFormatMap.set(key, {
+          timestamp: row.timestamp,
+          plant: row.plant,
+          machineNo: row.machineNo,
+          sourceType: row.sourceType as any,
+          rowNumber: 0 // Will be set later
+        })
+      }
+      
+      const wideRow = wideFormatMap.get(key)!
+      wideRow[row.parameterName] = row.value as any
+    })
+    
+    if (i % (batchSize * 10) === 0 && i > 0) {
+      console.log(`Processed ${i} rows...`)
+    }
+  }
+  
+  // Convert to array and sort by timestamp
+  const wideFormatData = Array.from(wideFormatMap.values())
+  wideFormatData.sort((a, b) => {
+    if (!a.timestamp || !b.timestamp) return 0
+    return a.timestamp.localeCompare(b.timestamp)
+  })
+  
+  // Re-number rows
+  wideFormatData.forEach((row, index) => {
+    row.rowNumber = index + 1
+  })
+  
+  return wideFormatData
+}
+
+/**
+ * Universal merge function that handles both time-split and parameter-split files
+ * Converts to long format, merges, then converts back to wide format
+ */
+export function mergeCSVDataUniversal(
+  dataArrays: StandardizedCSVData[][],
+  parameterInfos: Array<{ parameters: string[]; units: string[] } | undefined>
+): MergeResult {
+  // Temporarily comment out debug logging to avoid stack overflow
+  // logger.debug('mergeCSVDataUniversal started', {
+  //   filesCount: dataArrays.length,
+  //   totalRows: dataArrays.reduce((sum, arr) => sum + arr.length, 0)
+  // })
+  console.log('mergeCSVDataUniversal started', dataArrays.length, 'files')
+  
+  if (dataArrays.length === 0) {
+    return {
+      mergedData: [],
+      parameterInfo: { parameters: [], units: [] }
+    }
+  }
+
+  // If only one array, return as is
+  if (dataArrays.length === 1) {
+    const params = parameterInfos[0] || { parameters: [], units: [] }
+    
+    // Extract parameters from data if not provided
+    if (params.parameters.length === 0) {
+      const standardFields = new Set(CSV_IMPORT_CONFIG.STANDARD_FIELDS)
+      const paramSet = new Set<string>()
+      
+      dataArrays[0].forEach(row => {
+        Object.keys(row).forEach(key => {
+          if (!standardFields.has(key as any)) {
+            paramSet.add(key)
+          }
+        })
+      })
+      
+      params.parameters = Array.from(paramSet)
+      params.units = new Array(params.parameters.length).fill('')
+    }
+    
+    return {
+      mergedData: dataArrays[0],
+      parameterInfo: params
+    }
+  }
+
+  // Convert all data to long format
+  console.log('Converting to long format...')
+  const allLongFormatData: LongFormatRow[] = []
+  
+  for (let index = 0; index < dataArrays.length; index++) {
+    const dataArray = dataArrays[index]
+    const paramInfo = parameterInfos[index]
+    console.log(`Converting file ${index + 1} (${dataArray.length} rows) to long format...`)
+    
+    const longData = convertToLongFormat(dataArray, paramInfo)
+    console.log(`File ${index + 1}: ${longData.length} long format rows`)
+    
+    // Avoid spread operator for large arrays - use concat or manual pushing
+    if (longData.length > 50000) {
+      console.log(`Large dataset detected (${longData.length} rows), using batch concat...`)
+      // For very large arrays, concat in smaller chunks
+      const chunkSize = 10000
+      for (let i = 0; i < longData.length; i += chunkSize) {
+        const chunk = longData.slice(i, i + chunkSize)
+        for (let j = 0; j < chunk.length; j++) {
+          allLongFormatData.push(chunk[j])
+        }
+        if (i % (chunkSize * 5) === 0 && i > 0) {
+          console.log(`Merged ${i} / ${longData.length} long format rows`)
+        }
+      }
+    } else {
+      // For smaller arrays, simple push
+      for (let i = 0; i < longData.length; i++) {
+        allLongFormatData.push(longData[i])
+      }
+    }
+  }
+  
+  // Check for duplicates (same timestamp + parameter)
+  console.log('Checking for duplicates...')
+  const warnings: string[] = []
+  const seenKeys = new Set<string>()
+  const duplicateKeys = new Set<string>()
+  
+  allLongFormatData.forEach(row => {
+    const key = `${row.timestamp}|${row.parameterName}`
+    if (seenKeys.has(key)) {
+      duplicateKeys.add(key)
+    }
+    seenKeys.add(key)
+  })
+  
+  if (duplicateKeys.size > 0 && warnings.length < CSV_IMPORT_CONFIG.MAX_WARNINGS) {
+    warnings.push(`Found ${duplicateKeys.size} duplicate timestamp-parameter combinations`)
+  }
+  
+  // Remove duplicates (keep the last occurrence)
+  console.log('Removing duplicates...')
+  const uniqueDataMap = new Map<string, LongFormatRow>()
+  
+  // Process in batches
+  const batchSize = 10000
+  for (let i = 0; i < allLongFormatData.length; i += batchSize) {
+    const batch = allLongFormatData.slice(i, Math.min(i + batchSize, allLongFormatData.length))
+    
+    batch.forEach(row => {
+      const key = `${row.timestamp}|${row.parameterName}`
+      if (uniqueDataMap.has(key) && warnings.length < CSV_IMPORT_CONFIG.MAX_WARNINGS) {
+        const existing = uniqueDataMap.get(key)!
+        if (existing.value !== row.value) {
+          warnings.push(
+            `Duplicate data for ${row.parameterName} at ${row.timestamp}: ${existing.value} vs ${row.value}`
+          )
+        }
+      }
+      uniqueDataMap.set(key, row)
+    })
+    
+    if (i % (batchSize * 10) === 0 && i > 0) {
+      console.log(`Processed ${i} duplicate checks...`)
+    }
+  }
+  
+  const uniqueLongData = Array.from(uniqueDataMap.values())
+  console.log(`After deduplication: ${uniqueLongData.length} rows`)
+  
+  // Convert back to wide format
+  console.log('Converting back to wide format...')
+  const mergedData = convertToWideFormat(uniqueLongData)
+  console.log(`Final merged data: ${mergedData.length} rows`)
+  
+  // Collect all unique parameters and their units
+  const parameterMap = new Map<string, string>() // parameter -> unit
+  
+  uniqueLongData.forEach(row => {
+    if (!parameterMap.has(row.parameterName)) {
+      parameterMap.set(row.parameterName, row.unit)
+    }
+  })
+  
+  const finalParameters = Array.from(parameterMap.keys())
+  const finalUnits = finalParameters.map(param => parameterMap.get(param) || '')
+  
+  console.log('Merge complete', {
+    totalRows: mergedData.length,
+    totalParameters: finalParameters.length,
+    warnings: warnings.length
+  })
+
+  return {
+    mergedData,
+    parameterInfo: {
+      parameters: finalParameters,
+      units: finalUnits
+    },
+    warnings: warnings.length > 0 ? warnings : undefined
+  }
 }

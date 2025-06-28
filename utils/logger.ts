@@ -15,8 +15,8 @@ class Logger {
 
   constructor(config: LoggerConfig = { enabled: false }) {
     this.config = {
-      enabled: process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_DEBUG_LOGS === 'true',
-      ...config
+      ...config,
+      enabled: process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_ENABLE_DEBUG_LOGS === 'true'
     }
   }
 
