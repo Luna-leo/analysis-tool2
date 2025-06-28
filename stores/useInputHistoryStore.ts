@@ -17,15 +17,23 @@ interface InputHistoryState {
   // State
   plantHistory: InputHistoryItem[]
   machineHistory: InputHistoryItem[]
+  labelHistory: InputHistoryItem[]
+  eventHistory: InputHistoryItem[]
   
   // Actions
   addPlantHistory: (plant: string) => void
   addMachineHistory: (machine: string) => void
+  addLabelHistory: (label: string) => void
+  addEventHistory: (event: string) => void
   getPlantSuggestions: () => string[]
   getMachineSuggestions: () => string[]
+  getLabelSuggestions: () => string[]
+  getEventSuggestions: () => string[]
   clearHistory: () => void
   clearPlantHistory: () => void
   clearMachineHistory: () => void
+  clearLabelHistory: () => void
+  clearEventHistory: () => void
 }
 
 const MAX_HISTORY_ITEMS = 20
@@ -74,6 +82,8 @@ export const useInputHistoryStore = create<InputHistoryState>()(
       // Initial state
       plantHistory: [],
       machineHistory: [],
+      labelHistory: [],
+      eventHistory: [],
       
       // Add plant to history
       addPlantHistory: (plant: string) => {
@@ -93,6 +103,24 @@ export const useInputHistoryStore = create<InputHistoryState>()(
         }))
       },
       
+      // Add label to history
+      addLabelHistory: (label: string) => {
+        if (!label.trim()) return
+        
+        set((state) => ({
+          labelHistory: addToHistory(state.labelHistory, label)
+        }))
+      },
+      
+      // Add event to history
+      addEventHistory: (event: string) => {
+        if (!event.trim()) return
+        
+        set((state) => ({
+          eventHistory: addToHistory(state.eventHistory, event)
+        }))
+      },
+      
       // Get plant suggestions sorted by frequency
       getPlantSuggestions: () => {
         const { plantHistory } = get()
@@ -105,9 +133,21 @@ export const useInputHistoryStore = create<InputHistoryState>()(
         return machineHistory.map(item => item.value)
       },
       
+      // Get label suggestions sorted by frequency
+      getLabelSuggestions: () => {
+        const { labelHistory } = get()
+        return labelHistory.map(item => item.value)
+      },
+      
+      // Get event suggestions sorted by frequency
+      getEventSuggestions: () => {
+        const { eventHistory } = get()
+        return eventHistory.map(item => item.value)
+      },
+      
       // Clear all history
       clearHistory: () => {
-        set({ plantHistory: [], machineHistory: [] })
+        set({ plantHistory: [], machineHistory: [], labelHistory: [], eventHistory: [] })
       },
       
       // Clear plant history only
@@ -118,6 +158,16 @@ export const useInputHistoryStore = create<InputHistoryState>()(
       // Clear machine history only
       clearMachineHistory: () => {
         set({ machineHistory: [] })
+      },
+      
+      // Clear label history only
+      clearLabelHistory: () => {
+        set({ labelHistory: [] })
+      },
+      
+      // Clear event history only
+      clearEventHistory: () => {
+        set({ eventHistory: [] })
       }
     }),
     {

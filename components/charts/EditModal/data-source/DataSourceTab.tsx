@@ -6,6 +6,7 @@ import { TriggerSignalDialog } from "../../../dialogs/TriggerSignalDialog"
 import { EventSelectionDialog } from "../../../dialogs/EventSelectionDialog"
 import { ImportCSVDialog } from "../../../dialogs/ImportCSVDialog"
 import { TriggerConditionEditDialog } from "../../../dialogs/TriggerConditionEditDialog"
+import { AddDataWizardDialog } from "../../../dialogs/AddDataWizardDialog"
 import { useManualEntry } from "@/hooks/useManualEntry"
 import { useDataSourceManagement } from "@/hooks/useDataSourceManagement"
 import { useTimeOffset } from "@/hooks/useTimeOffset"
@@ -16,6 +17,7 @@ import { CSVMetadata } from "@/stores/useCSVDataStore"
 import { useToast } from "@/hooks/use-toast"
 import { useCollectedPeriodStore } from "@/stores/useCollectedPeriodStore"
 import { useCSVDataStore } from "@/stores/useCSVDataStore"
+import { useEventMasterStore } from "@/stores/useEventMasterStore"
 import { parseCSVFiles, validateCSVStructure, mapCSVDataToStandardFormat } from "@/utils/csvUtils"
 import { mergeCSVDataUniversal, getMergedFileName } from "@/utils/csv/mergeUtils"
 import { extractDateRangeFromCSV } from "@/utils/csvDateRangeUtils"
@@ -65,6 +67,7 @@ export function DataSourceTab({
   const [eventSelectionOpen, setEventSelectionOpen] = useState(false)
   const [triggerSignalDialogOpen, setTriggerSignalDialogOpen] = useState(false)
   const [importCSVOpen, setImportCSVOpen] = useState(false)
+  const [addDataWizardOpen, setAddDataWizardOpen] = useState(false)
   const [periodPoolOpen, setPeriodPoolOpen] = useState(true)
   const [searchResultsOpen, setSearchResultsOpen] = useState(true)
   
@@ -74,52 +77,8 @@ export function DataSourceTab({
   const { toast } = useToast()
   const { addPeriod, periods: collectedPeriods } = useCollectedPeriodStore()
   const { saveCSVData } = useCSVDataStore()
+  const { addEvent } = useEventMasterStore()
   
-  // Sync CollectedPeriodStore with periodPool on mount
-  React.useEffect(() => {
-    logger.debug('Initial sync: CollectedPeriodStore with periodPool', {
-      collectedPeriodsCount: collectedPeriods.length,
-      currentPeriodPoolCount: dataSource.periodPool.length
-    })
-    
-    if (collectedPeriods.length === 0) {
-      logger.debug('No collected periods to sync')
-      return
-    }
-    
-    // Convert CollectedPeriod to EventInfo format
-    const collectedPeriodsAsEventInfo = collectedPeriods.map(period => ({
-      id: period.id,
-      plant: period.plant,
-      machineNo: period.machineNo,
-      label: `${period.dataSourceType} Period`,
-      labelDescription: `Imported ${period.fileCount || 1} file(s)`,
-      event: `${new Date(period.startDate).toLocaleDateString()} - ${new Date(period.endDate).toLocaleDateString()}`,
-      eventDetail: JSON.stringify(period),
-      start: period.startDate,
-      end: period.endDate
-    }))
-    
-    // Add all collected periods to the pool (setPeriodPool will handle duplicates)
-    dataSource.setPeriodPool(currentPool => {
-      // Filter out any duplicates
-      const existingIds = new Set(currentPool.map(p => p.id))
-      const newPeriods = collectedPeriodsAsEventInfo.filter(p => !existingIds.has(p.id))
-      
-      if (newPeriods.length === 0) {
-        logger.debug('All collected periods already in pool')
-        return currentPool
-      }
-      
-      const updatedPool = [...currentPool, ...newPeriods]
-      logger.debug('Initial sync: Added periods to pool', {
-        previousCount: currentPool.length,
-        newCount: updatedPool.length,
-        addedCount: newPeriods.length
-      })
-      return updatedPool
-    })
-  }, []) // Only run on mount
 
   const handleSaveManualEntry = (data: ManualEntryInput, editingItemId: string | null) => {
     const processedData = processManualEntryData(data)
@@ -413,10 +372,10 @@ export function DataSourceTab({
       id: periodId,
       plant: data.plant,
       machineNo: data.machineNo,
-      label: `${data.dataSourceType} Period`,
-      labelDescription: `${csvFiles.length} files imported`,
-      event: `${overallMinDate.toLocaleDateString()} - ${overallMaxDate.toLocaleDateString()}`,
-      eventDetail: JSON.stringify(collectedPeriod),
+      label: data.label,
+      labelDescription: data.labelDescription,
+      event: data.event,
+      eventDetail: data.eventDetail,
       start: collectedPeriod.startDate,
       end: collectedPeriod.endDate
     }
@@ -548,6 +507,33 @@ export function DataSourceTab({
         throw setPeriodPoolError
       }
       
+      // Step 9: Add to EventMaster store for From Events functionality
+      logger.debug('Adding event to EventMaster store', {
+        eventId: periodEvent.id,
+        label: periodEvent.label,
+        event: periodEvent.event
+      })
+      
+      try {
+        const eventMasterData = {
+          id: periodEvent.id,
+          plant: periodEvent.plant,
+          machineNo: periodEvent.machineNo,
+          label: periodEvent.label,
+          labelDescription: periodEvent.labelDescription || '',
+          event: periodEvent.event,
+          eventDetail: periodEvent.eventDetail || '',
+          start: periodEvent.start,
+          end: periodEvent.end
+        }
+        
+        addEvent(eventMasterData)
+        logger.debug('Event successfully added to EventMaster store')
+      } catch (addEventError) {
+        logger.error('Error adding event to EventMaster store:', addEventError)
+        // Don't throw - this is not critical for CSV import success
+      }
+      
       logger.debug('About to call setSelectedPoolIds')
       try {
         dataSource.setSelectedPoolIds((currentIds) => {
@@ -642,9 +628,7 @@ export function DataSourceTab({
           onRemoveFromPool={dataSource.handleRemoveFromPool}
           onEditPeriod={handleEditPeriod}
           onAddToDataSource={handleAddToDataSource}
-          onManualEntry={manualEntry.openForNew}
-          onFromEvents={() => setEventSelectionOpen(true)}
-          onImportCSV={() => setImportCSVOpen(true)}
+          onAddData={() => setAddDataWizardOpen(true)}
           activeFilterId={dataSource.activeFilterId}
           onFilterChange={dataSource.handleApplyFilter}
         />
@@ -720,6 +704,23 @@ export function DataSourceTab({
           )}
         </div>
       </div>
+
+      <AddDataWizardDialog
+        isOpen={addDataWizardOpen}
+        onClose={() => setAddDataWizardOpen(false)}
+        onManualEntry={() => {
+          setAddDataWizardOpen(false)
+          manualEntry.openForNew()
+        }}
+        onFromEvents={() => {
+          setAddDataWizardOpen(false)
+          setEventSelectionOpen(true)
+        }}
+        onImportCSV={() => {
+          setAddDataWizardOpen(false)
+          setImportCSVOpen(true)
+        }}
+      />
 
       <ManualEntryDialog
         isOpen={manualEntry.isOpen}
