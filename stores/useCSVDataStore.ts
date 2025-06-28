@@ -81,7 +81,14 @@ export const useCSVDataStore = create<CSVDataStore>()(
       datasets: new Map(),
 
       saveCSVData: async (periodId, standardizedData, metadata) => {
+        console.log('[DEBUG] CSVDataStore.saveCSVData called', {
+          periodId,
+          dataLength: standardizedData.length,
+          hasMetadata: !!metadata
+        })
+        
         if (standardizedData.length === 0) {
+          console.warn('[DEBUG] CSVDataStore.saveCSVData: No data to save')
           return
         }
 
@@ -155,9 +162,11 @@ export const useCSVDataStore = create<CSVDataStore>()(
         }
         
         try {
+          console.log('[DEBUG] Saving to IndexedDB...', { periodId })
           await saveCSVDataToDB(indexedDBData)
+          console.log('[DEBUG] IndexedDB save successful', { periodId })
         } catch (error) {
-          console.error('Failed to save to IndexedDB:', error)
+          console.error('[DEBUG] Failed to save to IndexedDB:', error)
           // Continue even if IndexedDB fails
         }
         
@@ -179,9 +188,19 @@ export const useCSVDataStore = create<CSVDataStore>()(
           // Ensure datasets is a Map
           datasets = ensureMap<string, CSVDataSet>(datasets)
           
+          console.log('[DEBUG] CSVDataStore state update', {
+            currentDatasetsSize: datasets.size,
+            addingPeriodId: periodId
+          })
+          
           // Simply add the new dataset
           const newDatasets = new Map(datasets)
           newDatasets.set(periodId, dataset)
+          
+          console.log('[DEBUG] CSVDataStore new state', {
+            newDatasetsSize: newDatasets.size,
+            allPeriodIds: Array.from(newDatasets.keys())
+          })
           
           return { datasets: newDatasets }
         })

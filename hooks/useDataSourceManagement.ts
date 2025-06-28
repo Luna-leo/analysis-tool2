@@ -24,8 +24,28 @@ export function useDataSourceManagement() {
     setEvents(eventInfoData)
   }, [eventMasterData])
 
-  const [periodPool, setPeriodPool] = useState<EventInfo[]>([])
+  const [periodPool, setPeriodPoolInternal] = useState<EventInfo[]>([])
   const [selectedPoolIds, setSelectedPoolIds] = useState<Set<string>>(new Set())
+  
+  // Wrapper for setPeriodPool with logging and verification
+  const setPeriodPool = (newPool: EventInfo[] | ((prev: EventInfo[]) => EventInfo[])) => {
+    console.log('[DEBUG] setPeriodPool called', {
+      isFunction: typeof newPool === 'function',
+      currentPoolLength: periodPool.length
+    })
+    
+    setPeriodPoolInternal((prev) => {
+      const nextPool = typeof newPool === 'function' ? newPool(prev) : newPool
+      console.log('[DEBUG] periodPool update', {
+        previousLength: prev.length,
+        newLength: nextPool.length,
+        addedItems: nextPool.filter(item => !prev.find(p => p.id === item.id)).map(item => ({ id: item.id, label: item.label })),
+        removedItems: prev.filter(item => !nextPool.find(p => p.id === item.id)).map(item => ({ id: item.id, label: item.label })),
+        allIds: nextPool.map(p => p.id)
+      })
+      return nextPool
+    })
+  }
   
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [selectedResultIds, setSelectedResultIds] = useState<Set<string>>(new Set())
@@ -39,41 +59,64 @@ export function useDataSourceManagement() {
   const { getConditionById } = useTriggerConditionStore()
 
   const handleAddEventsToPool = (eventsToAdd: EventInfo[]) => {
-    const newPool = [...periodPool]
+    console.log('[DEBUG] handleAddEventsToPool called with', eventsToAdd.length, 'events')
     const newlyAddedIds: string[] = []
-    eventsToAdd.forEach((event) => {
-      if (!newPool.find((p) => p.id === event.id)) {
-        newPool.push(event)
-        newlyAddedIds.push(event.id)
-      }
+    
+    setPeriodPool((currentPool) => {
+      console.log('[DEBUG] Inside setPeriodPool callback, current pool:', currentPool.length)
+      const newPool = [...currentPool]
+      eventsToAdd.forEach((event) => {
+        if (!newPool.find((p) => p.id === event.id)) {
+          newPool.push(event)
+          newlyAddedIds.push(event.id)
+          console.log('[DEBUG] Adding event to pool:', event.id)
+        }
+      })
+      console.log('[DEBUG] New pool will have', newPool.length, 'items')
+      return newPool
     })
-    setPeriodPool(newPool)
+    
     // Automatically select newly added periods
-    setSelectedPoolIds(new Set([...selectedPoolIds, ...newlyAddedIds]))
+    setTimeout(() => {
+      setSelectedPoolIds((currentIds) => {
+        console.log('[DEBUG] Auto-selecting', newlyAddedIds.length, 'newly added items')
+        return new Set([...currentIds, ...newlyAddedIds])
+      })
+    }, 0)
   }
 
   const handleRemoveFromPool = (periodId: string) => {
-    setPeriodPool(periodPool.filter(p => p.id !== periodId))
-    selectedPoolIds.delete(periodId)
-    setSelectedPoolIds(new Set(selectedPoolIds))
+    setPeriodPool((currentPool) => currentPool.filter(p => p.id !== periodId))
+    setSelectedPoolIds((currentIds) => {
+      const newIds = new Set(currentIds)
+      newIds.delete(periodId)
+      return newIds
+    })
   }
 
   const handleTogglePeriod = (periodId: string) => {
-    const newSelectedIds = new Set(selectedPoolIds)
-    if (newSelectedIds.has(periodId)) {
-      newSelectedIds.delete(periodId)
-    } else {
-      newSelectedIds.add(periodId)
-    }
-    setSelectedPoolIds(newSelectedIds)
+    setSelectedPoolIds((currentIds) => {
+      const newSelectedIds = new Set(currentIds)
+      if (newSelectedIds.has(periodId)) {
+        newSelectedIds.delete(periodId)
+      } else {
+        newSelectedIds.add(periodId)
+      }
+      return newSelectedIds
+    })
   }
 
   const handleSelectAll = () => {
-    if (selectedPoolIds.size === periodPool.length) {
-      setSelectedPoolIds(new Set())
-    } else {
-      setSelectedPoolIds(new Set(periodPool.map(p => p.id)))
-    }
+    setPeriodPoolInternal((currentPool) => {
+      setSelectedPoolIds((currentIds) => {
+        if (currentIds.size === currentPool.length) {
+          return new Set()
+        } else {
+          return new Set(currentPool.map(p => p.id))
+        }
+      })
+      return currentPool // Don't modify the periodPool
+    })
   }
 
   const handleToggleResult = (resultId: string) => {
@@ -118,9 +161,13 @@ export function useDataSourceManagement() {
     setAppliedConditions(conditions)
     setIsSearching(true)
     
-    const periodsToSearch = selectedPoolIds.size > 0 
-      ? periodPool.filter(p => selectedPoolIds.has(p.id))
-      : periodPool
+    // Use refs to get current state - simpler approach
+    const currentPeriodPool = periodPool // This will be the current value at time of call
+    const currentSelectedIds = selectedPoolIds
+    
+    const periodsToSearch = currentSelectedIds.size > 0 
+      ? currentPeriodPool.filter(p => currentSelectedIds.has(p.id))
+      : currentPeriodPool
     
     await new Promise(resolve => setTimeout(resolve, 1000))
     
@@ -236,9 +283,16 @@ export function useDataSourceManagement() {
 
   // Get filtered or unfiltered pool
   const displayedPeriodPool = useMemo(() => {
-    if (!filteredPoolIds) return periodPool
-    return periodPool.filter(item => filteredPoolIds.has(item.id))
-  }, [periodPool, filteredPoolIds])
+    const result = !filteredPoolIds ? periodPool : periodPool.filter(item => filteredPoolIds.has(item.id))
+    console.log('[DEBUG] displayedPeriodPool computed', {
+      periodPoolLength: periodPool.length,
+      hasFilter: !!filteredPoolIds,
+      filteredPoolIdsSize: filteredPoolIds?.size,
+      displayedLength: result.length,
+      activeFilterId
+    })
+    return result
+  }, [periodPool, filteredPoolIds, activeFilterId])
 
   return {
     events,

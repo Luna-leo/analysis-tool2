@@ -52,71 +52,106 @@ export function mergeCSVDataByTimestamp(
   })
 
   // Get all data keys (excluding standard fields)
-  const standardFields = ['plant', 'machineNo', 'sourceType', 'rowNumber', 'timestamp']
+  const standardFieldsSet = new Set(['plant', 'machineNo', 'sourceType', 'rowNumber', 'timestamp'])
 
   // Track warnings for duplicate parameters with different values
   const warnings: string[] = []
 
   // Process each data array
   dataArrays.forEach((dataArray, fileIndex) => {
-    dataArray.forEach((row) => {
-      if (!row.timestamp) return
-
-      const existingRow = mergedMap.get(row.timestamp)
+    console.log(`[mergeCSVDataByTimestamp] Processing file ${fileIndex + 1}, rows: ${dataArray.length}`)
+    
+    // Process in batches to avoid stack overflow
+    const batchSize = 1000
+    for (let i = 0; i < dataArray.length; i += batchSize) {
+      const batch = dataArray.slice(i, Math.min(i + batchSize, dataArray.length))
       
-      if (existingRow) {
-        // Merge data from this row into existing row
-        Object.entries(row).forEach(([key, value]) => {
-          if (!standardFields.includes(key) && value !== null && value !== undefined) {
-            // Check if this parameter already exists with a different value
-            if (existingRow[key] !== undefined && existingRow[key] !== value) {
-              warnings.push(
-                `Parameter "${key}" at timestamp ${row.timestamp} has conflicting values: ${existingRow[key]} (file ${fileIndex}) vs ${value} (file ${fileIndex + 1})`
-              )
-            }
+      batch.forEach((row) => {
+        if (!row.timestamp) return
+
+        const existingRow = mergedMap.get(row.timestamp)
+        
+        if (existingRow) {
+          // Merge data from this row into existing row - use Object.keys for better performance
+          const keys = Object.keys(row)
+          for (let j = 0; j < keys.length; j++) {
+            const key = keys[j]
+            const value = row[key]
             
-            // Add or update the data field
-            existingRow[key] = value
+            if (!standardFieldsSet.has(key) && value !== null && value !== undefined) {
+              // Check if this parameter already exists with a different value
+              if (existingRow[key] !== undefined && existingRow[key] !== value) {
+                if (warnings.length < 100) { // Limit warnings to prevent memory issues
+                  warnings.push(
+                    `Parameter "${key}" at timestamp ${row.timestamp} has conflicting values: ${existingRow[key]} (file ${fileIndex}) vs ${value} (file ${fileIndex + 1})`
+                  )
+                }
+              }
+              
+              // Add or update the data field
+              existingRow[key] = value
+            }
           }
-        })
-      } else {
-        // Create new row
-        const newRow: StandardizedCSVData = {
-          plant: row.plant,
-          machineNo: row.machineNo,
-          sourceType: row.sourceType,
-          rowNumber: row.rowNumber,
-          timestamp: row.timestamp
+        } else {
+          // Create new row - copy standard fields first
+          const newRow: StandardizedCSVData = {
+            plant: row.plant,
+            machineNo: row.machineNo,
+            sourceType: row.sourceType,
+            rowNumber: row.rowNumber,
+            timestamp: row.timestamp
+          }
+
+          // Add all data fields - use Object.keys for better performance
+          const keys = Object.keys(row)
+          for (let j = 0; j < keys.length; j++) {
+            const key = keys[j]
+            const value = row[key]
+            
+            if (!standardFieldsSet.has(key) && value !== null && value !== undefined) {
+              newRow[key] = value
+            }
+          }
+
+          mergedMap.set(row.timestamp, newRow)
         }
-
-        // Add all data fields
-        Object.entries(row).forEach(([key, value]) => {
-          if (!standardFields.includes(key) && value !== null && value !== undefined) {
-            newRow[key] = value
-          }
-        })
-
-        mergedMap.set(row.timestamp, newRow)
+      })
+      
+      // Log progress for large datasets
+      if (dataArray.length > 1000 && i % 1000 === 0) {
+        console.log(`[mergeCSVDataByTimestamp] Processed ${i + batch.length} / ${dataArray.length} rows`)
       }
-    })
+    }
   })
 
-  // Convert map back to array and sort by timestamp
-  const mergedData = Array.from(mergedMap.values()).sort((a, b) => {
+  console.log(`[mergeCSVDataByTimestamp] Converting map to array, size: ${mergedMap.size}`)
+  
+  // Convert map back to array
+  const mergedData = Array.from(mergedMap.values())
+  
+  console.log(`[mergeCSVDataByTimestamp] Sorting ${mergedData.length} rows by timestamp`)
+  
+  // Sort by timestamp - avoid creating Date objects for every comparison
+  mergedData.sort((a, b) => {
     if (!a.timestamp || !b.timestamp) return 0
-    const timeA = new Date(a.timestamp).getTime()
-    const timeB = new Date(b.timestamp).getTime()
-    return timeA - timeB
+    // Direct string comparison works for ISO date strings
+    return a.timestamp.localeCompare(b.timestamp)
   })
 
+  console.log(`[mergeCSVDataByTimestamp] Re-numbering rows`)
+  
   // Re-number rows
-  mergedData.forEach((row, index) => {
-    row.rowNumber = index + 1
-  })
+  for (let i = 0; i < mergedData.length; i++) {
+    mergedData[i].rowNumber = i + 1
+  }
 
   // Build final parameter info
+  console.log(`[mergeCSVDataByTimestamp] Building final parameter info, count: ${allParameters.size}`)
+  
   const finalParameters = Array.from(allParameters)
   const finalUnits = finalParameters.map(param => parameterUnitMap.get(param) || '')
+
+  console.log(`[mergeCSVDataByTimestamp] Merge complete. Total rows: ${mergedData.length}, Total parameters: ${finalParameters.length}`)
 
   return {
     mergedData,

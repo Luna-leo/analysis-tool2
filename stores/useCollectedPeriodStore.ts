@@ -17,9 +17,28 @@ export const useCollectedPeriodStore = create<CollectedPeriodStore>()(
       periods: [],
 
       addPeriod: (period) => {
-        set((state) => ({
-          periods: [...state.periods, period]
-        }))
+        console.log('[DEBUG] CollectedPeriodStore.addPeriod called', {
+          periodId: period.id,
+          period
+        })
+        
+        set((state) => {
+          console.log('[DEBUG] CollectedPeriodStore state before add', {
+            currentPeriodsCount: state.periods.length,
+            existingIds: state.periods.map(p => p.id)
+          })
+          
+          const newState = {
+            periods: [...state.periods, period]
+          }
+          
+          console.log('[DEBUG] CollectedPeriodStore state after add', {
+            newPeriodsCount: newState.periods.length,
+            allIds: newState.periods.map(p => p.id)
+          })
+          
+          return newState
+        })
       },
 
       updatePeriod: (id, updates) => {

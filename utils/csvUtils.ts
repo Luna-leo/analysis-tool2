@@ -113,10 +113,25 @@ export async function parseCSVFiles(files: File[]): Promise<CSVParseResult> {
       data: parsedFiles
     }
   } catch (error) {
-    console.error('[parseCSVFiles] Error:', error)
+    console.error('[parseCSVFiles] Error details:', {
+      error,
+      errorType: typeof error,
+      errorMessage: error instanceof Error ? error.message : String(error),
+      errorStack: error instanceof Error ? error.stack : undefined,
+      filesAttempted: files.map(f => ({ name: f.name, size: f.size }))
+    })
+    
+    // Create a more informative error message
+    let errorMessage = "CSV解析中にエラーが発生しました"
+    if (error instanceof Error) {
+      errorMessage = error.message
+    } else if (typeof error === 'string') {
+      errorMessage = error
+    }
+    
     return {
       success: false,
-      error: error instanceof Error ? error.message : "CSV解析中にエラーが発生しました"
+      error: errorMessage
     }
   }
 }
@@ -131,7 +146,7 @@ function containsGarbledText(text: string): boolean {
 }
 
 async function parseCSV(text: string, fileName: string, options?: { useStreaming?: boolean, onProgress?: (progress: number) => void, errorCollector?: CSVErrorCollector }): Promise<ParsedCSVData> {
-  console.log(`[parseCSV] Parsing file: ${fileName}`)
+  console.log(`[parseCSV] Parsing file: ${fileName}, text length: ${text.length}, options:`, options)
   
   // Check if we should use streaming parser
   const shouldUseStreaming = options?.useStreaming || text.length > STREAMING_THRESHOLD
@@ -162,7 +177,15 @@ async function parseCSV(text: string, fileName: string, options?: { useStreaming
   // Remove BOM if present
   const cleanText = removeBOM(text)
   const lines = cleanText.trim().split('\n')
-  console.log(`[parseCSV] Total lines: ${lines.length}, first line:`, lines[0]?.substring(0, 100))
+  console.log(`[parseCSV] After cleaning - total lines: ${lines.length}, first line:`, lines[0]?.substring(0, 100))
+  
+  if (lines.length === 0) {
+    throw new Error(`File ${fileName} is empty`)
+  }
+  
+  if (lines.length === 1 && lines[0].trim() === '') {
+    throw new Error(`File ${fileName} contains no data`)
+  }
   
   // Check if this is a test data file that should be treated as CHINAMI format
   const isTestDataFile = checkTestDataFile(fileName)
