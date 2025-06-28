@@ -87,7 +87,8 @@ export const useCSVDataStore = create<CSVDataStore>()(
         logger.debug('saveCSVData called', {
           periodId,
           dataLength: standardizedData.length,
-          hasMetadata: !!metadata
+          hasMetadata: !!metadata,
+          metadataParamCount: metadata?.parameterInfo?.parameters?.length || 0
         })
         
         if (standardizedData.length === 0) {
@@ -99,13 +100,6 @@ export const useCSVDataStore = create<CSVDataStore>()(
         let parameters: string[] = []
         const units: Record<string, string> = {}
         
-        logger.debug('saveCSVData called:', {
-          periodId,
-          firstDataKeys: Object.keys(first),
-          metadata,
-          parameterInfoProvided: !!metadata?.parameterInfo?.parameters
-        })
-        
         // Use metadata parameterInfo if available (prioritize this for merged data)
         if (metadata?.parameterInfo?.parameters && metadata.parameterInfo.parameters.length > 0) {
           parameters = [...metadata.parameterInfo.parameters]
@@ -116,28 +110,46 @@ export const useCSVDataStore = create<CSVDataStore>()(
               units[param] = metadata.parameterInfo.units[index]
             }
           })
+          
+          logger.debug('Using parameters from metadata:', {
+            periodId,
+            parameterCount: parameters.length,
+            parameters: parameters,
+            units: Object.keys(units).length
+          })
         } else {
-          // Fallback: Extract parameter names from all data rows to ensure we catch all parameters
+          // Fallback: Extract parameter names from ALL data rows to ensure we catch all parameters
           const excludedKeys = ['plant', 'machineNo', 'sourceType', 'rowNumber', 'timestamp']
           const allParameters = new Set<string>()
           
-          // Scan multiple rows to find all parameters (some might be null in first row)
-          const rowsToScan = Math.min(10, standardizedData.length)
-          for (let i = 0; i < rowsToScan; i++) {
-            Object.keys(standardizedData[i]).forEach(key => {
+          // Scan ALL rows to find all parameters (important for merged data)
+          logger.debug('Scanning all rows for parameters...')
+          standardizedData.forEach((row, index) => {
+            Object.keys(row).forEach(key => {
               if (!excludedKeys.includes(key)) {
                 allParameters.add(key)
               }
             })
-          }
+            
+            // Log progress for large datasets
+            if (index > 0 && index % 1000 === 0) {
+              logger.debug(`Scanned ${index} rows, found ${allParameters.size} parameters so far`)
+            }
+          })
           
           parameters = Array.from(allParameters)
+          
+          logger.warn('No metadata parameter info provided, extracted from data:', {
+            periodId,
+            parameterCount: parameters.length,
+            parameters: parameters
+          })
         }
 
-        logger.debug('Extracted parameters:', {
+        logger.debug('Final parameters to save:', {
           periodId,
           parameterCount: parameters.length,
-          parameters: parameters.slice(0, 10), // Show first 10 for debugging
+          parameters: parameters,
           fromMetadata: !!metadata?.parameterInfo?.parameters
         })
 

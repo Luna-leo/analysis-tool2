@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -33,6 +33,15 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
   const [isImporting, setIsImporting] = useState(false)
   const { toast } = useToast()
   const { addPlantHistory, addMachineHistory } = useInputHistoryStore()
+  
+  // Debug log to check onImport prop
+  React.useEffect(() => {
+    console.log('[ImportCSVDialog] Component mounted/updated', {
+      hasOnImport: !!onImport,
+      onImportType: typeof onImport,
+      isFunction: typeof onImport === 'function'
+    })
+  }, [onImport])
 
   const handleClose = () => {
     onOpenChange(false)
@@ -52,6 +61,8 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
   }
 
   const handleImport = async () => {
+    console.log('[ImportCSVDialog] handleImport called')
+    
     // Manual validation
     const errors: string[] = []
     if (!plant?.trim()) {
@@ -73,14 +84,42 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
       return
     }
 
+    console.log('[ImportCSVDialog] Validation passed, starting import', {
+      files: files.map(f => ({ name: f.name, size: f.size })),
+      plant,
+      machineNo,
+      dataSourceType
+    })
+
     setIsImporting(true)
     try {
-      await onImport({
+      console.log('[ImportCSVDialog] Calling onImport', {
+        hasOnImport: !!onImport,
+        onImportType: typeof onImport
+      })
+      
+      if (!onImport) {
+        throw new Error('onImport callback is not defined')
+      }
+      
+      const importData = {
         files,
         plant,
         machineNo,
         dataSourceType
-      })
+      }
+      
+      console.log('[ImportCSVDialog] Calling onImport with data:', importData)
+      
+      try {
+        const result = await onImport(importData)
+        console.log('[ImportCSVDialog] onImport returned:', result)
+      } catch (onImportError) {
+        console.error('[ImportCSVDialog] onImport threw error:', onImportError)
+        throw onImportError
+      }
+      
+      console.log('[ImportCSVDialog] onImport completed successfully')
       
       // Save to history on successful import
       addPlantHistory(plant)

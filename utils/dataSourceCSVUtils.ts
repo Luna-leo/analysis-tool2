@@ -1,6 +1,9 @@
 import { EventInfo } from '@/types'
 import { EnhancedParameter } from './dataSourceParameterUtils'
 import { CSVDataSet } from '@/stores/useCSVDataStore'
+import { createLogger } from '@/utils/logger'
+
+const logger = createLogger('dataSourceCSVUtils')
 
 /**
  * Find CSV data that matches the given EventInfo (data source)
@@ -12,12 +15,23 @@ export function findCSVDataForEventInfo(
 ): CSVDataSet[] {
   const matchingDatasets: CSVDataSet[] = []
   
+  logger.debug('findCSVDataForEventInfo called', {
+    eventInfoId: eventInfo.id,
+    plant: eventInfo.plant,
+    machineNo: eventInfo.machineNo,
+    availableDatasetIds: Array.from(csvDatasets.keys())
+  })
+  
   // First, try to find by exact EventInfo ID match
   // This handles DataSourceTab imports where EventInfo.id === periodId
   if (csvDatasets.has(eventInfo.id)) {
     const dataset = csvDatasets.get(eventInfo.id)
     if (dataset) {
       matchingDatasets.push(dataset)
+      logger.debug('Found exact match by EventInfo ID', {
+        eventInfoId: eventInfo.id,
+        parameters: dataset.parameters
+      })
       return matchingDatasets // Return early if exact match found
     }
   }
@@ -32,6 +46,12 @@ export function findCSVDataForEventInfo(
     }
   })
   
+  logger.debug('findCSVDataForEventInfo results', {
+    eventInfoId: eventInfo.id,
+    matchCount: matchingDatasets.length,
+    parameterCounts: matchingDatasets.map(d => d.parameters.length)
+  })
+  
   return matchingDatasets
 }
 
@@ -44,7 +64,18 @@ export function extractParametersFromCSVDatasets(
 ): EnhancedParameter[] {
   const parameterMap = new Map<string, EnhancedParameter>()
   
-  datasets.forEach(dataset => {
+  logger.debug('extractParametersFromCSVDatasets called', {
+    datasetCount: datasets.length,
+    eventInfoId: eventInfo.id
+  })
+  
+  datasets.forEach((dataset, index) => {
+    logger.debug(`Processing dataset ${index + 1}`, {
+      periodId: dataset.periodId,
+      parameterCount: dataset.parameters.length,
+      parameters: dataset.parameters
+    })
+    
     dataset.parameters.forEach(paramName => {
       const unit = dataset.units[paramName] || ''
       const key = `${paramName}|${unit}`
@@ -64,7 +95,13 @@ export function extractParametersFromCSVDatasets(
     })
   })
   
-  return Array.from(parameterMap.values())
+  const result = Array.from(parameterMap.values())
+  logger.debug('extractParametersFromCSVDatasets results', {
+    uniqueParameterCount: result.length,
+    parameters: result.map(p => `${p.name} (${p.unit})`)
+  })
+  
+  return result
 }
 
 /**
@@ -75,6 +112,12 @@ export function getParametersFromDataSources(
   csvDatasets: Map<string, CSVDataSet>
 ): EnhancedParameter[] {
   const allParameters = new Map<string, EnhancedParameter>()
+  
+  logger.debug('getParametersFromDataSources called', {
+    eventInfoCount: eventInfoList.length,
+    csvDatasetCount: csvDatasets.size,
+    eventInfoIds: eventInfoList.map(e => e.id)
+  })
   
   eventInfoList.forEach(eventInfo => {
     const matchingDatasets = findCSVDataForEventInfo(eventInfo, csvDatasets)
@@ -89,5 +132,11 @@ export function getParametersFromDataSources(
     })
   })
   
-  return Array.from(allParameters.values())
+  const result = Array.from(allParameters.values())
+  logger.debug('getParametersFromDataSources final results', {
+    totalUniqueParameters: result.length,
+    parameters: result.map(p => `${p.name} (${p.unit})`)
+  })
+  
+  return result
 }

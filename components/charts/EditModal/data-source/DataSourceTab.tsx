@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useCallback } from "react"
 import { ManualEntryDialog } from "../../../dialogs/ManualEntryDialog"
 import { TriggerSignalDialog } from "../../../dialogs/TriggerSignalDialog"
 import { EventSelectionDialog } from "../../../dialogs/EventSelectionDialog"
@@ -9,7 +9,7 @@ import { TriggerConditionEditDialog } from "../../../dialogs/TriggerConditionEdi
 import { useManualEntry } from "@/hooks/useManualEntry"
 import { useDataSourceManagement } from "@/hooks/useDataSourceManagement"
 import { useTimeOffset } from "@/hooks/useTimeOffset"
-import { EventInfo, SearchResult, CSVImportData } from "@/types"
+import { EventInfo, SearchResult, CSVImportData, CSVDataSourceType } from "@/types"
 import { processManualEntryData, createEventFromSearchResult } from "@/utils/dataSourceUtils"
 import { ManualEntryInput, ManualEntryOutput } from "@/types/data-source"
 import { CSVMetadata } from "@/stores/useCSVDataStore"
@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useCollectedPeriodStore } from "@/stores/useCollectedPeriodStore"
 import { useCSVDataStore } from "@/stores/useCSVDataStore"
 import { parseCSVFiles, validateCSVStructure, mapCSVDataToStandardFormat } from "@/utils/csvUtils"
-import { mergeCSVDataByTimestamp, shouldMergeFiles, getMergedFileName } from "@/utils/csv/mergeUtils"
+import { mergeCSVDataUniversal, getMergedFileName } from "@/utils/csv/mergeUtils"
 import { extractDateRangeFromCSV } from "@/utils/csvDateRangeUtils"
 import { StandardizedCSVData } from "@/types/csv-data"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -72,9 +72,54 @@ export function DataSourceTab({
   const [originalSearchResults, setOriginalSearchResults] = useState<Map<string, SearchResult>>(new Map())
   
   const { toast } = useToast()
-  const { addPeriod } = useCollectedPeriodStore()
+  const { addPeriod, periods: collectedPeriods } = useCollectedPeriodStore()
   const { saveCSVData } = useCSVDataStore()
   
+  // Sync CollectedPeriodStore with periodPool on mount
+  React.useEffect(() => {
+    logger.debug('Initial sync: CollectedPeriodStore with periodPool', {
+      collectedPeriodsCount: collectedPeriods.length,
+      currentPeriodPoolCount: dataSource.periodPool.length
+    })
+    
+    if (collectedPeriods.length === 0) {
+      logger.debug('No collected periods to sync')
+      return
+    }
+    
+    // Convert CollectedPeriod to EventInfo format
+    const collectedPeriodsAsEventInfo = collectedPeriods.map(period => ({
+      id: period.id,
+      plant: period.plant,
+      machineNo: period.machineNo,
+      label: `${period.dataSourceType} Period`,
+      labelDescription: `Imported ${period.fileCount || 1} file(s)`,
+      event: `${new Date(period.startDate).toLocaleDateString()} - ${new Date(period.endDate).toLocaleDateString()}`,
+      eventDetail: JSON.stringify(period),
+      start: period.startDate,
+      end: period.endDate
+    }))
+    
+    // Add all collected periods to the pool (setPeriodPool will handle duplicates)
+    dataSource.setPeriodPool(currentPool => {
+      // Filter out any duplicates
+      const existingIds = new Set(currentPool.map(p => p.id))
+      const newPeriods = collectedPeriodsAsEventInfo.filter(p => !existingIds.has(p.id))
+      
+      if (newPeriods.length === 0) {
+        logger.debug('All collected periods already in pool')
+        return currentPool
+      }
+      
+      const updatedPool = [...currentPool, ...newPeriods]
+      logger.debug('Initial sync: Added periods to pool', {
+        previousCount: currentPool.length,
+        newCount: updatedPool.length,
+        addedCount: newPeriods.length
+      })
+      return updatedPool
+    })
+  }, []) // Only run on mount
 
   const handleSaveManualEntry = (data: ManualEntryInput, editingItemId: string | null) => {
     const processedData = processManualEntryData(data)
@@ -223,7 +268,7 @@ export function DataSourceTab({
 
   const parseAndValidateCSVFiles = async (
     csvFiles: File[], 
-    dataSourceType: string, 
+    dataSourceType: CSVDataSourceType, 
     plant: string, 
     machineNo: string
   ) => {
@@ -271,13 +316,13 @@ export function DataSourceTab({
     parameterInfos: Array<{ parameters: string[]; units: string[] } | undefined>,
     combinedMetadata: CSVMetadata | null
   ) => {
-    const shouldMerge = shouldMergeFiles(fileNames)
     let allStandardizedData: StandardizedCSVData[] = []
     const warnings: string[] = []
 
-    if (shouldMerge && dataArrays.length > 1) {
+    // Always merge multiple files
+    if (dataArrays.length > 1) {
       logger.debug('Merging data from multiple files...')
-      const mergeResult = mergeCSVDataByTimestamp(dataArrays, parameterInfos)
+      const mergeResult = mergeCSVDataUniversal(dataArrays, parameterInfos)
       allStandardizedData = mergeResult.mergedData
 
       // Update combined metadata with merged parameter info
@@ -292,8 +337,16 @@ export function DataSourceTab({
         warnings.push(...mergeResult.warnings)
       }
     } else {
-      // No merge needed, flatten all data arrays
+      // Single file, no merge needed
       allStandardizedData = dataArrays.flat()
+      
+      // Ensure parameter info is set
+      if (parameterInfos[0]) {
+        combinedMetadata = {
+          ...combinedMetadata,
+          parameterInfo: parameterInfos[0]
+        }
+      }
     }
 
     return { allStandardizedData, combinedMetadata, warnings }
@@ -301,7 +354,7 @@ export function DataSourceTab({
 
   const extractOverallDateRange = (
     parseData: any[], 
-    dataSourceType: string
+    dataSourceType: CSVDataSourceType
   ) => {
     let overallMinDate: Date | null = null
     let overallMaxDate: Date | null = null
@@ -371,24 +424,37 @@ export function DataSourceTab({
     return { periodId, collectedPeriod, periodEvent }
   }
 
-  const handleCSVImport = async (data: CSVImportData) => {
-    logger.debug('handleCSVImport started', {
-      plant: data.plant,
-      machineNo: data.machineNo,
-      dataSourceType: data.dataSourceType,
-      filesCount: data.files.length,
-      fileNames: Array.from(data.files).map(f => f.name)
-    })
+  const handleCSVImport = useCallback(async (data: CSVImportData) => {
+    console.log('[DataSourceTab] handleCSVImport called!')
     
     try {
+      console.log('[DataSourceTab] About to log debug info')
+      logger.debug('handleCSVImport started', {
+        plant: data.plant,
+        machineNo: data.machineNo,
+        dataSourceType: data.dataSourceType,
+        filesCount: data.files.length,
+        fileNames: Array.from(data.files).map(f => f.name)
+      })
+      console.log('[DataSourceTab] Debug info logged successfully')
+    } catch (logError) {
+      console.error('[DataSourceTab] Error in logger.debug:', logError)
+    }
+    
+    try {
+      console.log('[DataSourceTab] Starting CSV import process...')
+      
       // Step 1: Prepare CSV files
+      console.log('[DataSourceTab] Step 1: Preparing CSV files')
       const csvFiles = prepareCSVFiles(data.files)
+      console.log('[DataSourceTab] CSV files prepared:', csvFiles.length)
       logger.debug('CSV files filtered', {
         csvFilesCount: csvFiles.length,
         csvFileNames: csvFiles.map(f => f.name)
       })
 
       // Step 2: Parse and validate CSV files
+      console.log('[DataSourceTab] Step 2: Parsing and validating CSV files')
       logger.debug('About to parse CSV files...')
       const { dataArrays, parameterInfos, combinedMetadata } = await parseAndValidateCSVFiles(
         csvFiles,
@@ -444,8 +510,19 @@ export function DataSourceTab({
 
       // Step 7: Add to CollectedPeriod store
       logger.debug('Adding to CollectedPeriod store', collectedPeriod)
+      logger.debug('Current collectedPeriods count before add:', collectedPeriods.length)
       addPeriod(collectedPeriod)
       logger.debug('Added to CollectedPeriod store')
+      
+      // Verify the addition
+      setTimeout(() => {
+        logger.debug('Verification: CollectedPeriodStore state after add', {
+          totalPeriodsInStore: collectedPeriods.length,
+          periodIds: collectedPeriods.map(p => p.id),
+          addedPeriodId: collectedPeriod.id,
+          wasAdded: collectedPeriods.some(p => p.id === collectedPeriod.id)
+        })
+      }, 100)
 
       // Step 8: Add to period pool and auto-select
       logger.debug('Adding periodEvent to pool', {
@@ -511,6 +588,14 @@ export function DataSourceTab({
       })
       
     } catch (error) {
+      console.error('[DataSourceTab] CSV Import Error occurred:', error);
+      console.error('[DataSourceTab] Error details:', {
+        type: typeof error,
+        constructor: error?.constructor?.name,
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : 'No stack trace'
+      });
+      
       // Enhanced error logging - use console.log to avoid Next.js error interception
       logger.error('CSV Import Error occurred');
       logger.error('Error type:', typeof error);
@@ -539,7 +624,7 @@ export function DataSourceTab({
         periodPoolIds: dataSource.periodPool.map(p => p.id)
       })
     }
-  }
+  }, [addPeriod, saveCSVData, toast]) // Remove dataSource to avoid circular dependencies
 
 
   return (
@@ -673,6 +758,15 @@ export function DataSourceTab({
         onOpenChange={setImportCSVOpen}
         onImport={handleCSVImport}
       />
+      
+      {/* Debug: Log handleCSVImport reference */}
+      {React.useEffect(() => {
+        logger.debug('DataSourceTab: handleCSVImport reference', {
+          hasHandleCSVImport: !!handleCSVImport,
+          type: typeof handleCSVImport,
+          isFunction: typeof handleCSVImport === 'function'
+        })
+      }, [handleCSVImport])}
 
       <TriggerConditionEditDialog />
     </>
