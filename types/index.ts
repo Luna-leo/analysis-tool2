@@ -196,6 +196,10 @@ export interface CSVImportData {
   plant: string
   machineNo: string
   files: File[]
+  label: string
+  labelDescription: string
+  event: string
+  eventDetail: string
 }
 
 // Re-export sidebar types

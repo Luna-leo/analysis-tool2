@@ -6,6 +6,7 @@ import { TriggerSignalDialog } from "../../../dialogs/TriggerSignalDialog"
 import { EventSelectionDialog } from "../../../dialogs/EventSelectionDialog"
 import { ImportCSVDialog } from "../../../dialogs/ImportCSVDialog"
 import { TriggerConditionEditDialog } from "../../../dialogs/TriggerConditionEditDialog"
+import { AddDataWizardDialog } from "../../../dialogs/AddDataWizardDialog"
 import { useManualEntry } from "@/hooks/useManualEntry"
 import { useDataSourceManagement } from "@/hooks/useDataSourceManagement"
 import { useTimeOffset } from "@/hooks/useTimeOffset"
@@ -16,12 +17,21 @@ import { CSVMetadata } from "@/stores/useCSVDataStore"
 import { useToast } from "@/hooks/use-toast"
 import { useCollectedPeriodStore } from "@/stores/useCollectedPeriodStore"
 import { useCSVDataStore } from "@/stores/useCSVDataStore"
+import { useEventMasterStore } from "@/stores/useEventMasterStore"
 import { parseCSVFiles, validateCSVStructure, mapCSVDataToStandardFormat } from "@/utils/csvUtils"
 import { mergeCSVDataUniversal, getMergedFileName } from "@/utils/csv/mergeUtils"
 import { extractDateRangeFromCSV } from "@/utils/csvDateRangeUtils"
 import { StandardizedCSVData } from "@/types/csv-data"
 import { Checkbox } from "@/components/ui/checkbox"
 import { createLogger } from "@/utils/logger"
+import {
+  generatePlantMachineId,
+  getPlantMachineData,
+  savePlantMachineData,
+  mergeAndDeduplicateData,
+  updatePlantMachineMetadata
+} from "@/utils/plantMachineDataUtils"
+import { PlantMachineData, ImportHistoryRecord } from "@/types/plant-machine-data"
 import {
   TimeOffsetSettings,
   SelectedDataSourceTable,
@@ -65,6 +75,7 @@ export function DataSourceTab({
   const [eventSelectionOpen, setEventSelectionOpen] = useState(false)
   const [triggerSignalDialogOpen, setTriggerSignalDialogOpen] = useState(false)
   const [importCSVOpen, setImportCSVOpen] = useState(false)
+  const [addDataWizardOpen, setAddDataWizardOpen] = useState(false)
   const [periodPoolOpen, setPeriodPoolOpen] = useState(true)
   const [searchResultsOpen, setSearchResultsOpen] = useState(true)
   
@@ -74,52 +85,8 @@ export function DataSourceTab({
   const { toast } = useToast()
   const { addPeriod, periods: collectedPeriods } = useCollectedPeriodStore()
   const { saveCSVData } = useCSVDataStore()
+  const { addEvent } = useEventMasterStore()
   
-  // Sync CollectedPeriodStore with periodPool on mount
-  React.useEffect(() => {
-    logger.debug('Initial sync: CollectedPeriodStore with periodPool', {
-      collectedPeriodsCount: collectedPeriods.length,
-      currentPeriodPoolCount: dataSource.periodPool.length
-    })
-    
-    if (collectedPeriods.length === 0) {
-      logger.debug('No collected periods to sync')
-      return
-    }
-    
-    // Convert CollectedPeriod to EventInfo format
-    const collectedPeriodsAsEventInfo = collectedPeriods.map(period => ({
-      id: period.id,
-      plant: period.plant,
-      machineNo: period.machineNo,
-      label: `${period.dataSourceType} Period`,
-      labelDescription: `Imported ${period.fileCount || 1} file(s)`,
-      event: `${new Date(period.startDate).toLocaleDateString()} - ${new Date(period.endDate).toLocaleDateString()}`,
-      eventDetail: JSON.stringify(period),
-      start: period.startDate,
-      end: period.endDate
-    }))
-    
-    // Add all collected periods to the pool (setPeriodPool will handle duplicates)
-    dataSource.setPeriodPool(currentPool => {
-      // Filter out any duplicates
-      const existingIds = new Set(currentPool.map(p => p.id))
-      const newPeriods = collectedPeriodsAsEventInfo.filter(p => !existingIds.has(p.id))
-      
-      if (newPeriods.length === 0) {
-        logger.debug('All collected periods already in pool')
-        return currentPool
-      }
-      
-      const updatedPool = [...currentPool, ...newPeriods]
-      logger.debug('Initial sync: Added periods to pool', {
-        previousCount: currentPool.length,
-        newCount: updatedPool.length,
-        addedCount: newPeriods.length
-      })
-      return updatedPool
-    })
-  }, []) // Only run on mount
 
   const handleSaveManualEntry = (data: ManualEntryInput, editingItemId: string | null) => {
     const processedData = processManualEntryData(data)
@@ -413,10 +380,10 @@ export function DataSourceTab({
       id: periodId,
       plant: data.plant,
       machineNo: data.machineNo,
-      label: `${data.dataSourceType} Period`,
-      labelDescription: `${csvFiles.length} files imported`,
-      event: `${overallMinDate.toLocaleDateString()} - ${overallMaxDate.toLocaleDateString()}`,
-      eventDetail: JSON.stringify(collectedPeriod),
+      label: data.label,
+      labelDescription: data.labelDescription,
+      event: data.event,
+      eventDetail: data.eventDetail,
       start: collectedPeriod.startDate,
       end: collectedPeriod.endDate
     }
@@ -508,6 +475,102 @@ export function DataSourceTab({
       await saveCSVData(periodId, allStandardizedData, updatedMetadata || { fileName: fileNames[0] || 'unknown' })
       logger.debug('CSV data saved successfully')
 
+      // Step 6.5: Save to Plant/Machine data store
+      logger.debug('Saving to Plant/Machine data store', {
+        plant: data.plant,
+        machineNo: data.machineNo,
+        dataLength: allStandardizedData.length
+      })
+
+      try {
+        const plantMachineId = generatePlantMachineId(data.plant, data.machineNo)
+        
+        // Get existing data if any
+        const existingData = await getPlantMachineData(plantMachineId)
+        logger.debug('Existing Plant/Machine data found:', !!existingData)
+
+        // Convert StandardizedCSVData to CSVDataPoint format
+        const csvDataPoints = allStandardizedData.map(row => {
+          const dataPoint: any = {
+            timestamp: row.timestamp!
+          }
+          
+          // Copy all non-standard fields as data fields
+          Object.keys(row).forEach(key => {
+            if (!['plant', 'machineNo', 'sourceType', 'rowNumber', 'timestamp'].includes(key)) {
+              dataPoint[key] = row[key]
+            }
+          })
+          
+          return dataPoint
+        })
+
+        // Create import history record
+        const importHistoryRecord: ImportHistoryRecord = {
+          periodId,
+          importedAt: new Date().toISOString(),
+          startDate: overallMinDate.toISOString(),
+          endDate: overallMaxDate.toISOString(),
+          dataSourceType: data.dataSourceType,
+          fileCount: csvFiles.length,
+          recordCount: allStandardizedData.length,
+          eventInfo: {
+            label: data.label,
+            labelDescription: data.labelDescription || '',
+            event: data.event,
+            eventDetail: data.eventDetail || ''
+          }
+        }
+
+        let plantMachineData: PlantMachineData
+
+        if (existingData) {
+          // Merge with existing data
+          const mergedData = mergeAndDeduplicateData(existingData.data, csvDataPoints, true)
+          const updatedMetadata = updatePlantMachineMetadata(mergedData, existingData.metadata)
+          
+          plantMachineData = {
+            ...existingData,
+            data: mergedData,
+            importHistory: [...existingData.importHistory, importHistoryRecord],
+            metadata: updatedMetadata
+          }
+          
+          logger.debug('Merged data statistics', {
+            existingRecords: existingData.data.length,
+            newRecords: csvDataPoints.length,
+            mergedRecords: mergedData.length,
+            duplicatesRemoved: existingData.data.length + csvDataPoints.length - mergedData.length
+          })
+        } else {
+          // Create new Plant/Machine data
+          const metadata = updatePlantMachineMetadata(csvDataPoints)
+          
+          plantMachineData = {
+            id: plantMachineId,
+            plant: data.plant,
+            machineNo: data.machineNo,
+            data: csvDataPoints,
+            importHistory: [importHistoryRecord],
+            metadata
+          }
+          
+          logger.debug('Created new Plant/Machine data', {
+            id: plantMachineId,
+            records: csvDataPoints.length
+          })
+        }
+
+        // Save to Plant/Machine store
+        await savePlantMachineData(plantMachineData)
+        logger.debug('Plant/Machine data saved successfully')
+
+      } catch (plantMachineError) {
+        // Log error but don't fail the import - Plant/Machine is supplementary
+        logger.error('Error saving to Plant/Machine store:', plantMachineError)
+        console.error('Plant/Machine save error:', plantMachineError)
+      }
+
       // Step 7: Add to CollectedPeriod store
       logger.debug('Adding to CollectedPeriod store', collectedPeriod)
       logger.debug('Current collectedPeriods count before add:', collectedPeriods.length)
@@ -546,6 +609,33 @@ export function DataSourceTab({
       } catch (setPeriodPoolError) {
         logger.error('Error in setPeriodPool:', setPeriodPoolError)
         throw setPeriodPoolError
+      }
+      
+      // Step 9: Add to EventMaster store for From Events functionality
+      logger.debug('Adding event to EventMaster store', {
+        eventId: periodEvent.id,
+        label: periodEvent.label,
+        event: periodEvent.event
+      })
+      
+      try {
+        const eventMasterData = {
+          id: periodEvent.id,
+          plant: periodEvent.plant,
+          machineNo: periodEvent.machineNo,
+          label: periodEvent.label,
+          labelDescription: periodEvent.labelDescription || '',
+          event: periodEvent.event,
+          eventDetail: periodEvent.eventDetail || '',
+          start: periodEvent.start,
+          end: periodEvent.end
+        }
+        
+        addEvent(eventMasterData)
+        logger.debug('Event successfully added to EventMaster store')
+      } catch (addEventError) {
+        logger.error('Error adding event to EventMaster store:', addEventError)
+        // Don't throw - this is not critical for CSV import success
       }
       
       logger.debug('About to call setSelectedPoolIds')
@@ -642,9 +732,7 @@ export function DataSourceTab({
           onRemoveFromPool={dataSource.handleRemoveFromPool}
           onEditPeriod={handleEditPeriod}
           onAddToDataSource={handleAddToDataSource}
-          onManualEntry={manualEntry.openForNew}
-          onFromEvents={() => setEventSelectionOpen(true)}
-          onImportCSV={() => setImportCSVOpen(true)}
+          onAddData={() => setAddDataWizardOpen(true)}
           activeFilterId={dataSource.activeFilterId}
           onFilterChange={dataSource.handleApplyFilter}
         />
@@ -720,6 +808,23 @@ export function DataSourceTab({
           )}
         </div>
       </div>
+
+      <AddDataWizardDialog
+        isOpen={addDataWizardOpen}
+        onClose={() => setAddDataWizardOpen(false)}
+        onManualEntry={() => {
+          setAddDataWizardOpen(false)
+          manualEntry.openForNew()
+        }}
+        onFromEvents={() => {
+          setAddDataWizardOpen(false)
+          setEventSelectionOpen(true)
+        }}
+        onImportCSV={() => {
+          setAddDataWizardOpen(false)
+          setImportCSVOpen(true)
+        }}
+      />
 
       <ManualEntryDialog
         isOpen={manualEntry.isOpen}

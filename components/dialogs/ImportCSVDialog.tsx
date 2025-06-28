@@ -17,7 +17,9 @@ import { getDataSourceTypes } from "@/data/dataSourceTypes"
 import { useToast } from "@/hooks/use-toast"
 import { validateCSVFiles } from "@/utils/csv/parseUtils"
 import { PlantMachineFields } from "@/components/charts/EditModal/parameters/PlantMachineFields"
+import { EventFields } from "@/components/charts/EditModal/parameters/EventFields"
 import { useInputHistoryStore } from "@/stores/useInputHistoryStore"
+import { Separator } from "@/components/ui/separator"
 
 interface ImportCSVDialogProps {
   open: boolean
@@ -30,6 +32,10 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
   const [plant, setPlant] = useState("")
   const [machineNo, setMachineNo] = useState("")
   const [dataSourceType, setDataSourceType] = useState<CSVDataSourceType>('CASS')
+  const [label, setLabel] = useState("")
+  const [labelDescription, setLabelDescription] = useState("")
+  const [event, setEvent] = useState("")
+  const [eventDetail, setEventDetail] = useState("")
   const [isImporting, setIsImporting] = useState(false)
   const { toast } = useToast()
   const { addPlantHistory, addMachineHistory } = useInputHistoryStore()
@@ -50,6 +56,10 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
     setPlant("")
     setMachineNo("")
     setDataSourceType('CASS')
+    setLabel("")
+    setLabelDescription("")
+    setEvent("")
+    setEventDetail("")
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,6 +83,12 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
     }
     if (!files || files.length === 0) {
       errors.push('Please select at least one CSV file')
+    }
+    if (!label?.trim()) {
+      errors.push('Label is required')
+    }
+    if (!event?.trim()) {
+      errors.push('Event is required')
     }
     
     if (errors.length > 0) {
@@ -106,7 +122,11 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
         files,
         plant,
         machineNo,
-        dataSourceType
+        dataSourceType,
+        label,
+        labelDescription,
+        event,
+        eventDetail
       }
       
       console.log('[ImportCSVDialog] Calling onImport with data:', importData)
@@ -147,7 +167,7 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
     }
   }
 
-  const isValid = plant && machineNo && files.length > 0
+  const isValid = plant && machineNo && files.length > 0 && label && event
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -186,6 +206,25 @@ export function ImportCSVDialog({ open, onOpenChange, onImport }: ImportCSVDialo
               onPlantChange={setPlant}
               machineNo={machineNo}
               onMachineNoChange={setMachineNo}
+              disabled={isImporting}
+            />
+          </div>
+
+          <Separator />
+
+          <div className="space-y-2">
+            <div className="text-sm font-medium mb-2">
+              Event Information (Label & Event are required)
+            </div>
+            <EventFields
+              label={label}
+              onLabelChange={setLabel}
+              labelDescription={labelDescription}
+              onLabelDescriptionChange={setLabelDescription}
+              event={event}
+              onEventChange={setEvent}
+              eventDetail={eventDetail}
+              onEventDetailChange={setEventDetail}
               disabled={isImporting}
             />
           </div>

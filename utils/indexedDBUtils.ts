@@ -1,8 +1,9 @@
 // IndexedDB utility functions for CSV data storage
 
 const DB_NAME = 'AnalysisToolDB'
-const DB_VERSION = 1
+const DB_VERSION = 2  // Updated to match plantMachineDataUtils
 const CSV_STORE_NAME = 'csvDataStore'
+const PLANT_MACHINE_STORE_NAME = 'plantMachineDataStore'
 
 export interface IndexedDBCSVData {
   periodId: string
@@ -28,7 +29,9 @@ export const initDB = (): Promise<IDBDatabase> => {
     const request = indexedDB.open(DB_NAME, DB_VERSION)
 
     request.onerror = () => {
-      reject(new Error('Failed to open IndexedDB'))
+      const error = request.error
+      console.error('IndexedDB open error:', error)
+      reject(new Error(`Failed to open IndexedDB: ${error?.message || 'Unknown error'}`))
     }
 
     request.onsuccess = () => {
@@ -37,11 +40,27 @@ export const initDB = (): Promise<IDBDatabase> => {
 
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result
+      const oldVersion = event.oldVersion
+
+      console.log(`IndexedDB upgrade needed: ${oldVersion} -> ${DB_VERSION}`)
 
       // Create CSV data store if it doesn't exist
       if (!db.objectStoreNames.contains(CSV_STORE_NAME)) {
         const store = db.createObjectStore(CSV_STORE_NAME, { keyPath: 'periodId' })
         store.createIndex('lastUpdated', 'metadata.lastUpdated', { unique: false })
+      }
+
+      // Add new Plant/Machine store in version 2
+      if (oldVersion < 2 && !db.objectStoreNames.contains(PLANT_MACHINE_STORE_NAME)) {
+        const plantMachineStore = db.createObjectStore(PLANT_MACHINE_STORE_NAME, { keyPath: 'id' })
+        
+        // Indexes for efficient querying
+        plantMachineStore.createIndex('plant', 'plant', { unique: false })
+        plantMachineStore.createIndex('machineNo', 'machineNo', { unique: false })
+        plantMachineStore.createIndex('lastUpdated', 'metadata.lastUpdated', { unique: false })
+        
+        // Compound index for plant+machine queries
+        plantMachineStore.createIndex('plant_machine', ['plant', 'machineNo'], { unique: false })
       }
     }
   })

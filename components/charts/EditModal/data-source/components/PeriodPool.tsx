@@ -2,7 +2,7 @@
 
 import React from "react"
 import { Button } from "@/components/ui/button"
-import { Check, Filter, Trash2, Pencil, ChevronDown, ChevronRight, Plus, Calendar, FileText } from "lucide-react"
+import { Check, Filter, Trash2, Pencil, ChevronDown, ChevronRight, Plus } from "lucide-react"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -21,9 +21,7 @@ interface PeriodPoolProps {
   onRemoveFromPool: (periodId: string) => void
   onEditPeriod: (period: EventInfo) => void
   onAddToDataSource: () => void
-  onManualEntry: () => void
-  onFromEvents: () => void
-  onImportCSV: () => void
+  onAddData: () => void
   activeFilterId: string | null
   onFilterChange: (filterId: string | null) => void
 }
@@ -39,9 +37,7 @@ export function PeriodPool({
   onRemoveFromPool,
   onEditPeriod,
   onAddToDataSource,
-  onManualEntry,
-  onFromEvents,
-  onImportCSV,
+  onAddData,
   activeFilterId,
   onFilterChange,
 }: PeriodPoolProps) {
@@ -65,26 +61,10 @@ export function PeriodPool({
               <Button
                 size="sm"
                 variant="outline"
-                onClick={onManualEntry}
+                onClick={onAddData}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Manual Entry
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onFromEvents}
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                From Events
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onImportCSV}
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                Import CSV
+                Add Data
               </Button>
             </div>
           </div>
@@ -169,7 +149,7 @@ export function PeriodPool({
               </div>
             ) : (
               <div className="text-center py-8 text-sm text-muted-foreground">
-                No collected periods. Use Manual Entry, From Events, or Import CSV to add periods.
+                No collected periods. Click "Add Data" to get started.
               </div>
             )}
 
