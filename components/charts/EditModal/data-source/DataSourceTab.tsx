@@ -21,12 +21,15 @@ import { mergeCSVDataByTimestamp, shouldMergeFiles, getMergedFileName } from "@/
 import { extractDateRangeFromCSV } from "@/utils/csvDateRangeUtils"
 import { StandardizedCSVData } from "@/types/csv-data"
 import { Checkbox } from "@/components/ui/checkbox"
+import { createLogger } from "@/utils/logger"
 import {
   TimeOffsetSettings,
   SelectedDataSourceTable,
   PeriodPool,
   SearchResults
 } from "./components"
+
+const logger = createLogger('DataSourceTab')
 
 interface DataSourceTabProps {
   selectedDataSourceItems: EventInfo[]
@@ -211,8 +214,165 @@ export function DataSourceTab({
     setSelectedDataSourceItems(selectedDataSourceItems.filter(i => i.id !== item.id))
   }
 
+  // Helper functions for CSV import
+  const prepareCSVFiles = (files: File[]) => {
+    return Array.from(files).filter(file => 
+      file.name.endsWith('.csv') || file.name.endsWith('.CSV')
+    )
+  }
+
+  const parseAndValidateCSVFiles = async (
+    csvFiles: File[], 
+    dataSourceType: string, 
+    plant: string, 
+    machineNo: string
+  ) => {
+    const parseResult = await parseCSVFiles(csvFiles)
+    
+    if (!parseResult.success || !parseResult.data) {
+      throw new Error(parseResult.error || "CSV解析に失敗しました")
+    }
+
+    const dataArrays: StandardizedCSVData[][] = []
+    const parameterInfos: Array<{ parameters: string[]; units: string[] } | undefined> = []
+    let combinedMetadata: CSVMetadata | null = null
+
+    for (const parsedFile of parseResult.data) {
+      // Validate CSV structure
+      const validation = validateCSVStructure(parsedFile.headers, dataSourceType, parsedFile.metadata)
+      if (!validation.valid) {
+        const fileName = parsedFile.metadata?.fileName || 'unknown'
+        throw new Error(`ファイル ${fileName} の必須カラムが不足しています: ${validation.missingColumns?.join(', ')}`)
+      }
+
+      // Convert to standardized format
+      const standardizedData = mapCSVDataToStandardFormat(
+        parsedFile,
+        dataSourceType,
+        plant,
+        machineNo
+      )
+
+      dataArrays.push(standardizedData)
+      parameterInfos.push(parsedFile.metadata?.parameterInfo)
+
+      // Store metadata from first file
+      if (!combinedMetadata && parsedFile.metadata) {
+        combinedMetadata = parsedFile.metadata
+      }
+    }
+
+    return { dataArrays, parameterInfos, combinedMetadata }
+  }
+
+  const mergeCSVDataIfNeeded = (
+    fileNames: string[], 
+    dataArrays: StandardizedCSVData[][], 
+    parameterInfos: Array<{ parameters: string[]; units: string[] } | undefined>,
+    combinedMetadata: CSVMetadata | null
+  ) => {
+    const shouldMerge = shouldMergeFiles(fileNames)
+    let allStandardizedData: StandardizedCSVData[] = []
+    const warnings: string[] = []
+
+    if (shouldMerge && dataArrays.length > 1) {
+      logger.debug('Merging data from multiple files...')
+      const mergeResult = mergeCSVDataByTimestamp(dataArrays, parameterInfos)
+      allStandardizedData = mergeResult.mergedData
+
+      // Update combined metadata with merged parameter info
+      combinedMetadata = {
+        ...combinedMetadata,
+        parameterInfo: mergeResult.parameterInfo,
+        fileName: getMergedFileName(fileNames)
+      }
+
+      // Collect merge warnings
+      if (mergeResult.warnings && mergeResult.warnings.length > 0) {
+        warnings.push(...mergeResult.warnings)
+      }
+    } else {
+      // No merge needed, flatten all data arrays
+      allStandardizedData = dataArrays.flat()
+    }
+
+    return { allStandardizedData, combinedMetadata, warnings }
+  }
+
+  const extractOverallDateRange = (
+    parseData: any[], 
+    dataSourceType: string
+  ) => {
+    let overallMinDate: Date | null = null
+    let overallMaxDate: Date | null = null
+    let dateColumnName: string | null = null
+
+    for (const parsedFile of parseData) {
+      const dateRange = extractDateRangeFromCSV(parsedFile, dataSourceType)
+      
+      if (dateRange.minDate && dateRange.maxDate) {
+        if (!overallMinDate || dateRange.minDate < overallMinDate) {
+          overallMinDate = dateRange.minDate
+        }
+        if (!overallMaxDate || dateRange.maxDate > overallMaxDate) {
+          overallMaxDate = dateRange.maxDate
+        }
+        if (!dateColumnName && dateRange.dateColumnName) {
+          dateColumnName = dateRange.dateColumnName
+        }
+      }
+    }
+
+    if (!overallMinDate || !overallMaxDate) {
+      throw new Error("CSVファイルから日付範囲を抽出できませんでした")
+    }
+
+    return { overallMinDate, overallMaxDate, dateColumnName }
+  }
+
+  const createPeriodFromCSVData = (
+    data: CSVImportData,
+    csvFiles: File[],
+    overallMinDate: Date,
+    overallMaxDate: Date,
+    dateColumnName: string | null,
+    combinedMetadata: CSVMetadata | null
+  ) => {
+    const fileNames = csvFiles.map(f => f.name)
+    const fileName = combinedMetadata?.fileName || fileNames[0] || 'unknown'
+    const periodId = `${data.plant}_${data.machineNo}_${data.dataSourceType}_${fileName.replace('.csv', '')}_${Date.now()}`
+
+    const collectedPeriod = {
+      id: periodId,
+      plant: data.plant,
+      machineNo: data.machineNo,
+      dataSourceType: data.dataSourceType,
+      startDate: overallMinDate.toISOString(),
+      endDate: overallMaxDate.toISOString(),
+      fileCount: csvFiles.length,
+      importedAt: new Date().toISOString(),
+      metadata: {
+        dateColumnName: dateColumnName || undefined
+      }
+    }
+
+    const periodEvent: EventInfo = {
+      id: periodId,
+      plant: data.plant,
+      machineNo: data.machineNo,
+      label: `${data.dataSourceType} Period`,
+      labelDescription: `${csvFiles.length} files imported`,
+      event: `${overallMinDate.toLocaleDateString()} - ${overallMaxDate.toLocaleDateString()}`,
+      eventDetail: JSON.stringify(collectedPeriod),
+      start: collectedPeriod.startDate,
+      end: collectedPeriod.endDate
+    }
+
+    return { periodId, collectedPeriod, periodEvent }
+  }
+
   const handleCSVImport = async (data: CSVImportData) => {
-    console.log('[DEBUG] handleCSVImport started', {
+    logger.debug('handleCSVImport started', {
       plant: data.plant,
       machineNo: data.machineNo,
       dataSourceType: data.dataSourceType,
@@ -221,212 +381,74 @@ export function DataSourceTab({
     })
     
     try {
-      // Convert File[] to the internal files array format
-      const csvFiles = Array.from(data.files).filter(file => 
-        file.name.endsWith('.csv') || file.name.endsWith('.CSV')
-      )
-      
-      console.log('[DEBUG] CSV files filtered', {
+      // Step 1: Prepare CSV files
+      const csvFiles = prepareCSVFiles(data.files)
+      logger.debug('CSV files filtered', {
         csvFilesCount: csvFiles.length,
         csvFileNames: csvFiles.map(f => f.name)
       })
-      
-      
-      // Parse CSV files directly
-      console.log('[DEBUG] About to parse CSV files...')
-      let parseResult
-      try {
-        parseResult = await parseCSVFiles(csvFiles)
-        console.log('[DEBUG] parseCSVFiles completed, success:', parseResult.success)
-      } catch (parseError) {
-        console.log('[DEBUG] Error in parseCSVFiles:', parseError)
-        throw parseError
-      }
-      
-      if (!parseResult.success || !parseResult.data) {
-        console.log('[DEBUG] Parse failed - success:', parseResult.success, 'has data:', !!parseResult.data)
-        throw new Error(parseResult.error || "CSV解析に失敗しました")
-      }
-      
-      console.log('[DEBUG] CSV files parsed successfully', {
-        filesCount: parseResult.data.length
+
+      // Step 2: Parse and validate CSV files
+      logger.debug('About to parse CSV files...')
+      const { dataArrays, parameterInfos, combinedMetadata } = await parseAndValidateCSVFiles(
+        csvFiles,
+        data.dataSourceType,
+        data.plant,
+        data.machineNo
+      )
+      logger.debug('CSV files parsed successfully', {
+        filesCount: dataArrays.length
       })
-      
-      // Check if files should be merged
+
+      // Step 3: Extract overall date range
+      const parseResult = await parseCSVFiles(csvFiles) // Need this for date extraction
+      const { overallMinDate, overallMaxDate, dateColumnName } = extractOverallDateRange(
+        parseResult.data || [],
+        data.dataSourceType
+      )
+
+      // Step 4: Merge data if needed
       const fileNames = csvFiles.map(f => f.name)
-      const shouldMerge = shouldMergeFiles(fileNames)
-      
-      let allStandardizedData: StandardizedCSVData[] = []
-      let overallMinDate: Date | null = null
-      let overallMaxDate: Date | null = null
-      let dateColumnName: string | null = null
-      let combinedMetadata: CSVMetadata | null = null
-      const warnings: string[] = []
-      
-      // Arrays for merge processing
-      const dataArrays: StandardizedCSVData[][] = []
-      const parameterInfos: Array<{ parameters: string[]; units: string[] } | undefined> = []
-      
-      // Process each parsed file
-      for (let i = 0; i < parseResult.data.length; i++) {
-        const parsedFile = parseResult.data[i]
-        
-        // Validate CSV structure
-        const validation = validateCSVStructure(parsedFile.headers, data.dataSourceType, parsedFile.metadata)
-        if (!validation.valid) {
-          const fileName = parsedFile.metadata?.fileName || 'unknown'
-          throw new Error(`ファイル ${fileName} の必須カラムが不足しています: ${validation.missingColumns?.join(', ')}`)
-        }
-        
-        // Convert to standardized format
-        const standardizedData = mapCSVDataToStandardFormat(
-          parsedFile,
-          data.dataSourceType,
-          data.plant,
-          data.machineNo
-        )
-        
-        // If merging, collect data for merge processing
-        if (shouldMerge && parseResult.data.length > 1) {
-          dataArrays.push(standardizedData)
-          parameterInfos.push(parsedFile.metadata?.parameterInfo)
-        } else {
-          allStandardizedData.push(...standardizedData)
-        }
-        
-        // Extract date range from this file
-        const dateRange = extractDateRangeFromCSV(parsedFile, data.dataSourceType)
-        
-        if (dateRange.minDate && dateRange.maxDate) {
-          if (!overallMinDate || dateRange.minDate < overallMinDate) {
-            overallMinDate = dateRange.minDate
-          }
-          if (!overallMaxDate || dateRange.maxDate > overallMaxDate) {
-            overallMaxDate = dateRange.maxDate
-          }
-          if (!dateColumnName && dateRange.dateColumnName) {
-            dateColumnName = dateRange.dateColumnName
-          }
-        }
-        
-        // Store metadata from first file
-        if (!combinedMetadata && parsedFile.metadata) {
-          combinedMetadata = parsedFile.metadata
-        }
-      }
-      
-      // Perform merge if needed
-      if (shouldMerge && dataArrays.length > 1) {
-        console.log('[DEBUG] Merging data from multiple files...')
-        console.log('[DEBUG] Data arrays info:', {
-          arrayCount: dataArrays.length,
-          arraySizes: dataArrays.map(arr => arr.length),
-          totalRows: dataArrays.reduce((sum, arr) => sum + arr.length, 0),
-          firstArraySample: dataArrays[0].length > 0 ? {
-            keys: Object.keys(dataArrays[0][0]),
-            keyCount: Object.keys(dataArrays[0][0]).length
-          } : null
-        })
-        
-        let mergeResult
-        try {
-          mergeResult = mergeCSVDataByTimestamp(dataArrays, parameterInfos)
-          console.log('[DEBUG] Merge completed successfully')
-        } catch (mergeError) {
-          console.log('[DEBUG] Error during merge:', mergeError)
-          throw mergeError
-        }
-        allStandardizedData = mergeResult.mergedData
-        
-        // Update combined metadata with merged parameter info
-        combinedMetadata = {
-          ...combinedMetadata,
-          parameterInfo: mergeResult.parameterInfo,
-          fileName: getMergedFileName(fileNames)
-        }
-        
-        // Collect merge warnings
-        if (mergeResult.warnings && mergeResult.warnings.length > 0) {
-          warnings.push(...mergeResult.warnings)
-        }
-      }
-      
-      if (!overallMinDate || !overallMaxDate) {
-        throw new Error("CSVファイルから日付範囲を抽出できませんでした")
-      }
-      
-      console.log('[DEBUG] Import processing complete', {
+      const { allStandardizedData, combinedMetadata: updatedMetadata, warnings } = mergeCSVDataIfNeeded(
+        fileNames,
+        dataArrays,
+        parameterInfos,
+        combinedMetadata
+      )
+
+      logger.debug('Import processing complete', {
         dataLength: allStandardizedData.length,
         dateRange: { minDate: overallMinDate, maxDate: overallMaxDate },
         warnings: warnings.length
       })
-      
-      // Generate periodId
-      const fileName = combinedMetadata?.fileName || fileNames[0] || 'unknown'
-      const periodId = `${data.plant}_${data.machineNo}_${data.dataSourceType}_${fileName.replace('.csv', '')}_${Date.now()}`
-      
-      // Save to CSV data store
-      console.log('[DEBUG] Saving to CSV data store', {
-        periodId,
-        dataLength: allStandardizedData.length,
-        metadata: combinedMetadata
-      })
-      
-      try {
-        await saveCSVData(periodId, allStandardizedData, combinedMetadata || { fileName })
-        console.log('[DEBUG] CSV data saved successfully')
-      } catch (saveError) {
-        console.log('[DEBUG] Error saving CSV data:', saveError)
-        throw saveError
-      }
-      
-      // Create a CollectedPeriod entry
-      const collectedPeriod = {
-        id: periodId,
-        plant: data.plant,
-        machineNo: data.machineNo,
-        dataSourceType: data.dataSourceType,
-        startDate: overallMinDate.toISOString(),
-        endDate: overallMaxDate.toISOString(),
-        fileCount: csvFiles.length,
-        importedAt: new Date().toISOString(),
-        metadata: {
-          dateColumnName: dateColumnName || undefined
-        }
-      }
-      
-      // Add to CollectedPeriod store
-      console.log('[DEBUG] Adding to CollectedPeriod store', collectedPeriod)
-      try {
-        addPeriod(collectedPeriod)
-        console.log('[DEBUG] Added to CollectedPeriod store')
-      } catch (addPeriodError) {
-        console.log('[DEBUG] Error adding to CollectedPeriod store:', addPeriodError)
-        throw addPeriodError
-      }
-      
-      // Create an EventInfo entry for the period pool
-      console.log('[DEBUG] Creating periodEvent with dates:', {
+
+      // Step 5: Create period objects
+      const { periodId, collectedPeriod, periodEvent } = createPeriodFromCSVData(
+        data,
+        csvFiles,
         overallMinDate,
         overallMaxDate,
-        startDate: collectedPeriod.startDate,
-        endDate: collectedPeriod.endDate
+        dateColumnName,
+        updatedMetadata
+      )
+
+      // Step 6: Save to CSV data store
+      logger.debug('Saving to CSV data store', {
+        periodId,
+        dataLength: allStandardizedData.length,
+        metadata: updatedMetadata
       })
       
-      const periodEvent: EventInfo = {
-        id: periodId,
-        plant: data.plant,
-        machineNo: data.machineNo,
-        label: `${data.dataSourceType} Period`,
-        labelDescription: `${csvFiles.length} files imported`,
-        event: `${overallMinDate.toLocaleDateString()} - ${overallMaxDate.toLocaleDateString()}`,
-        eventDetail: JSON.stringify(collectedPeriod),
-        start: collectedPeriod.startDate,
-        end: collectedPeriod.endDate
-      }
-      
-      // Add to period pool and auto-select
-      console.log('[DEBUG] Adding periodEvent to pool', {
+      await saveCSVData(periodId, allStandardizedData, updatedMetadata || { fileName: fileNames[0] || 'unknown' })
+      logger.debug('CSV data saved successfully')
+
+      // Step 7: Add to CollectedPeriod store
+      logger.debug('Adding to CollectedPeriod store', collectedPeriod)
+      addPeriod(collectedPeriod)
+      logger.debug('Added to CollectedPeriod store')
+
+      // Step 8: Add to period pool and auto-select
+      logger.debug('Adding periodEvent to pool', {
         periodId: periodEvent.id,
         plant: periodEvent.plant,
         machineNo: periodEvent.machineNo,
@@ -435,38 +457,38 @@ export function DataSourceTab({
       })
       
       // Use functional update to ensure we have the latest state
-      console.log('[DEBUG] About to call setPeriodPool')
+      logger.debug('About to call setPeriodPool')
       try {
         dataSource.setPeriodPool((currentPool) => {
-          console.log('[DEBUG] Inside setPeriodPool - current pool length:', currentPool.length)
+          logger.debug('Inside setPeriodPool - current pool length:', currentPool.length)
           const newPool = [...currentPool, periodEvent]
-          console.log('[DEBUG] New pool will have length:', newPool.length)
+          logger.debug('New pool will have length:', newPool.length)
           return newPool
         })
-        console.log('[DEBUG] setPeriodPool completed')
+        logger.debug('setPeriodPool completed')
       } catch (setPeriodPoolError) {
-        console.log('[DEBUG] Error in setPeriodPool:', setPeriodPoolError)
+        logger.error('Error in setPeriodPool:', setPeriodPoolError)
         throw setPeriodPoolError
       }
       
-      console.log('[DEBUG] About to call setSelectedPoolIds')
+      logger.debug('About to call setSelectedPoolIds')
       try {
         dataSource.setSelectedPoolIds((currentIds) => {
-          console.log('[DEBUG] Inside setSelectedPoolIds - current size:', currentIds.size)
-          console.log('[DEBUG] Adding period ID:', periodEvent.id)
+          logger.debug('Inside setSelectedPoolIds - current size:', currentIds.size)
+          logger.debug('Adding period ID:', periodEvent.id)
           const newIds = new Set([...currentIds, periodEvent.id])
-          console.log('[DEBUG] New selected IDs size:', newIds.size)
+          logger.debug('New selected IDs size:', newIds.size)
           return newIds
         })
-        console.log('[DEBUG] setSelectedPoolIds completed')
+        logger.debug('setSelectedPoolIds completed')
       } catch (setSelectedPoolIdsError) {
-        console.log('[DEBUG] Error in setSelectedPoolIds:', setSelectedPoolIdsError)
+        logger.error('Error in setSelectedPoolIds:', setSelectedPoolIdsError)
         throw setSelectedPoolIdsError
       }
       
       // Add a small delay to ensure state updates are processed
       setTimeout(() => {
-        console.log('[DEBUG] State after updates:', {
+        logger.debug('State after updates:', {
           periodPoolLength: dataSource.periodPool.length,
           selectedPoolIdsSize: dataSource.selectedPoolIds.size,
           lastAddedId: periodEvent.id,
@@ -490,17 +512,17 @@ export function DataSourceTab({
       
     } catch (error) {
       // Enhanced error logging - use console.log to avoid Next.js error interception
-      console.log('[DEBUG] CSV Import Error occurred');
-      console.log('[DEBUG] Error type:', typeof error);
-      console.log('[DEBUG] Error constructor:', error?.constructor?.name);
-      console.log('[DEBUG] Error message:', error instanceof Error ? error.message : String(error));
-      console.log('[DEBUG] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      logger.error('CSV Import Error occurred');
+      logger.error('Error type:', typeof error);
+      logger.error('Error constructor:', error?.constructor?.name);
+      logger.error('Error message:', error instanceof Error ? error.message : String(error));
+      logger.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       
       // Try to safely stringify the error
       try {
-        console.log('[DEBUG] Error stringified:', JSON.stringify(error, null, 2));
+        logger.error('Error stringified:', JSON.stringify(error, null, 2));
       } catch (stringifyError) {
-        console.log('[DEBUG] Could not stringify error:', stringifyError);
+        logger.error('Could not stringify error:', stringifyError);
       }
       
       
@@ -511,7 +533,7 @@ export function DataSourceTab({
       })
       
       // Log current state for debugging
-      console.log('[DEBUG] Current state after error:', {
+      logger.debug('Current state after error:', {
         periodPoolLength: dataSource.periodPool.length,
         selectedPoolIdsSize: dataSource.selectedPoolIds.size,
         periodPoolIds: dataSource.periodPool.map(p => p.id)

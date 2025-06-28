@@ -1,4 +1,8 @@
 import { StandardizedCSVData } from '@/types/csv-data'
+import { createLogger } from '@/utils/logger'
+import { CSV_IMPORT_CONFIG } from '@/constants/csvImportConstants'
+
+const logger = createLogger('mergeUtils')
 
 export interface MergeResult {
   mergedData: StandardizedCSVData[]
@@ -52,17 +56,17 @@ export function mergeCSVDataByTimestamp(
   })
 
   // Get all data keys (excluding standard fields)
-  const standardFieldsSet = new Set(['plant', 'machineNo', 'sourceType', 'rowNumber', 'timestamp'])
+  const standardFieldsSet = new Set(CSV_IMPORT_CONFIG.STANDARD_FIELDS)
 
   // Track warnings for duplicate parameters with different values
   const warnings: string[] = []
 
   // Process each data array
   dataArrays.forEach((dataArray, fileIndex) => {
-    console.log(`[mergeCSVDataByTimestamp] Processing file ${fileIndex + 1}, rows: ${dataArray.length}`)
+    logger.debug(`Processing file ${fileIndex + 1}, rows: ${dataArray.length}`)
     
     // Process in batches to avoid stack overflow
-    const batchSize = 1000
+    const batchSize = CSV_IMPORT_CONFIG.BATCH_SIZE
     for (let i = 0; i < dataArray.length; i += batchSize) {
       const batch = dataArray.slice(i, Math.min(i + batchSize, dataArray.length))
       
@@ -81,7 +85,7 @@ export function mergeCSVDataByTimestamp(
             if (!standardFieldsSet.has(key) && value !== null && value !== undefined) {
               // Check if this parameter already exists with a different value
               if (existingRow[key] !== undefined && existingRow[key] !== value) {
-                if (warnings.length < 100) { // Limit warnings to prevent memory issues
+                if (warnings.length < CSV_IMPORT_CONFIG.MAX_WARNINGS) { // Limit warnings to prevent memory issues
                   warnings.push(
                     `Parameter "${key}" at timestamp ${row.timestamp} has conflicting values: ${existingRow[key]} (file ${fileIndex}) vs ${value} (file ${fileIndex + 1})`
                   )
@@ -118,18 +122,18 @@ export function mergeCSVDataByTimestamp(
       })
       
       // Log progress for large datasets
-      if (dataArray.length > 1000 && i % 1000 === 0) {
-        console.log(`[mergeCSVDataByTimestamp] Processed ${i + batch.length} / ${dataArray.length} rows`)
+      if (dataArray.length > CSV_IMPORT_CONFIG.BATCH_SIZE && i % CSV_IMPORT_CONFIG.BATCH_SIZE === 0) {
+        logger.debug(`Processed ${i + batch.length} / ${dataArray.length} rows`)
       }
     }
   })
 
-  console.log(`[mergeCSVDataByTimestamp] Converting map to array, size: ${mergedMap.size}`)
+  logger.debug(`Converting map to array, size: ${mergedMap.size}`)
   
   // Convert map back to array
   const mergedData = Array.from(mergedMap.values())
   
-  console.log(`[mergeCSVDataByTimestamp] Sorting ${mergedData.length} rows by timestamp`)
+  logger.debug(`Sorting ${mergedData.length} rows by timestamp`)
   
   // Sort by timestamp - avoid creating Date objects for every comparison
   mergedData.sort((a, b) => {
@@ -138,7 +142,7 @@ export function mergeCSVDataByTimestamp(
     return a.timestamp.localeCompare(b.timestamp)
   })
 
-  console.log(`[mergeCSVDataByTimestamp] Re-numbering rows`)
+  logger.debug(`Re-numbering rows`)
   
   // Re-number rows
   for (let i = 0; i < mergedData.length; i++) {
@@ -146,12 +150,12 @@ export function mergeCSVDataByTimestamp(
   }
 
   // Build final parameter info
-  console.log(`[mergeCSVDataByTimestamp] Building final parameter info, count: ${allParameters.size}`)
+  logger.debug(`Building final parameter info, count: ${allParameters.size}`)
   
   const finalParameters = Array.from(allParameters)
   const finalUnits = finalParameters.map(param => parameterUnitMap.get(param) || '')
 
-  console.log(`[mergeCSVDataByTimestamp] Merge complete. Total rows: ${mergedData.length}, Total parameters: ${finalParameters.length}`)
+  logger.debug(`Merge complete. Total rows: ${mergedData.length}, Total parameters: ${finalParameters.length}`)
 
   return {
     mergedData,
@@ -176,9 +180,9 @@ export function shouldMergeFiles(fileNames: string[]): boolean {
     const withoutExt = name.replace(/\.(csv|CSV)$/, '')
     // Remove common split patterns: "横1", "横2", " - コピー", etc.
     return withoutExt
-      .replace(/\s*[-－]\s*横\d+\s*$/, '')
-      .replace(/\s*[-－]\s*\d+\s*$/, '')
-      .replace(/\s*[-－]\s*コピー.*$/, '')
+      .replace(CSV_IMPORT_CONFIG.MERGE_PATTERNS.HORIZONTAL_SPLIT, '')
+      .replace(CSV_IMPORT_CONFIG.MERGE_PATTERNS.NUMBERED_SPLIT, '')
+      .replace(CSV_IMPORT_CONFIG.MERGE_PATTERNS.COPY_PATTERN, '')
       .trim()
   })
 
@@ -198,9 +202,9 @@ export function getMergedFileName(fileNames: string[]): string {
   const firstName = fileNames[0]
   const baseName = firstName
     .replace(/\.(csv|CSV)$/, '')
-    .replace(/\s*[-－]\s*横\d+\s*$/, '')
-    .replace(/\s*[-－]\s*\d+\s*$/, '')
-    .replace(/\s*[-－]\s*コピー.*$/, '')
+    .replace(CSV_IMPORT_CONFIG.MERGE_PATTERNS.HORIZONTAL_SPLIT, '')
+    .replace(CSV_IMPORT_CONFIG.MERGE_PATTERNS.NUMBERED_SPLIT, '')
+    .replace(CSV_IMPORT_CONFIG.MERGE_PATTERNS.COPY_PATTERN, '')
     .trim()
 
   return `${baseName}_merged.csv`
