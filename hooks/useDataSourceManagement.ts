@@ -2,6 +2,10 @@ import { useState, useEffect, useMemo } from "react"
 import { EventInfo, SearchCondition, SearchResult, PredefinedCondition } from "@/types"
 import { useEventMasterStore } from "@/stores/useEventMasterStore"
 import { useTriggerConditionStore } from "@/stores/useTriggerConditionStore"
+import { searchDataWithConditions } from "@/utils/dataRetrievalUtils"
+import { createLogger } from "@/utils/logger"
+
+const logger = createLogger('useDataSourceManagement')
 
 export function useDataSourceManagement() {
   const eventMasterData = useEventMasterStore((state) => state.events)
@@ -161,48 +165,52 @@ export function useDataSourceManagement() {
     setAppliedConditions(conditions)
     setIsSearching(true)
     
-    // Use refs to get current state - simpler approach
-    const currentPeriodPool = periodPool // This will be the current value at time of call
-    const currentSelectedIds = selectedPoolIds
-    
-    const periodsToSearch = currentSelectedIds.size > 0 
-      ? currentPeriodPool.filter(p => currentSelectedIds.has(p.id))
-      : currentPeriodPool
-    
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    const mockResults: SearchResult[] = []
-    
-    periodsToSearch.forEach((period) => {
-      const resultsCount = 2 + Math.floor(Math.random() * 2)
-      for (let i = 0; i < resultsCount; i++) {
-        const startTime = new Date(period.start)
-        const endTime = new Date(period.end)
-        const timeDiff = endTime.getTime() - startTime.getTime()
-        const randomTime = new Date(startTime.getTime() + Math.random() * timeDiff)
-        
-        mockResults.push({
-          id: `${period.id}_result_${i}`,
-          timestamp: randomTime.toISOString(),
-          plant: period.plant,
-          machineNo: period.machineNo,
-          parameters: { 
-            temperature: 80 + Math.random() * 20, 
-            pressure: 10 + Math.random() * 5, 
-            flow: 40 + Math.random() * 20, 
-            speed: 50 + Math.random() * 20 
-          },
-          matchedConditions: conditions.map(c => `${c.parameter} ${c.operator} ${c.value}`)
-        })
+    try {
+      logger.debug('Applying search conditions', {
+        conditionsCount: conditions.length,
+        selectedPoolIds: selectedPoolIds.size,
+        periodPoolLength: periodPool.length
+      })
+      
+      // Get periods to search
+      const currentPeriodPool = periodPool
+      const currentSelectedIds = selectedPoolIds
+      
+      const periodsToSearch = currentSelectedIds.size > 0 
+        ? currentPeriodPool.filter(p => currentSelectedIds.has(p.id))
+        : currentPeriodPool
+      
+      if (periodsToSearch.length === 0) {
+        logger.warn('No periods selected for search')
+        setSearchResults([])
+        setIsSearching(false)
+        return
       }
-    })
-    
-    setSearchResults(mockResults)
-    setIsSearching(false)
+      
+      logger.info('Searching data in periods', {
+        periodsCount: periodsToSearch.length,
+        periodIds: periodsToSearch.map(p => p.id)
+      })
+      
+      // Search for real data
+      const results = await searchDataWithConditions(periodsToSearch, conditions)
+      
+      logger.info('Search completed', {
+        resultsCount: results.length
+      })
+      
+      setSearchResults(results)
+      
+    } catch (error) {
+      logger.error('Error applying search conditions:', error)
+      setSearchResults([])
+    } finally {
+      setIsSearching(false)
+    }
   }
 
   // Evaluate if an item matches the filter conditions
-  const evaluateItemAgainstConditions = (item: EventInfo, conditions: SearchCondition[]): boolean => {
+  const evaluateItemAgainstConditions = (_item: EventInfo, conditions: SearchCondition[]): boolean => {
     // For now, simple mock evaluation - in real implementation, this would check actual data
     return conditions.length === 0 || Math.random() > 0.3
   }

@@ -88,7 +88,7 @@ export function DataSourceTab({
   const { addEvent } = useEventMasterStore()
   
 
-  const handleSaveManualEntry = (data: ManualEntryInput, editingItemId: string | null) => {
+  const handleSaveManualEntry = async (data: ManualEntryInput, editingItemId: string | null) => {
     const processedData = processManualEntryData(data)
 
     if (editingItemId) {
@@ -126,6 +126,38 @@ export function DataSourceTab({
         end: '',
         ...processedData
       }
+      
+      // Check if using existing data
+      if ((data as any).useExistingData && (data as any).existingDataInfo?.data) {
+        logger.debug('Manual entry with existing data', {
+          periodId: newEntry.id,
+          dataLength: (data as any).existingDataInfo.data.length,
+          parameters: (data as any).existingDataInfo.parameters
+        })
+        
+        // Save the existing data to CSV data store
+        const metadata: CSVMetadata = {
+          fileName: `Manual Entry - ${newEntry.plant}_${newEntry.machineNo}`,
+          parameterInfo: {
+            parameters: (data as any).existingDataInfo.parameters,
+            units: [] // Units not available in existing data
+          }
+        }
+        
+        try {
+          await saveCSVData(newEntry.id, (data as any).existingDataInfo.data, metadata)
+          logger.debug('Existing data saved to CSV store successfully')
+        } catch (error) {
+          logger.error('Failed to save existing data to CSV store:', error)
+          toast({
+            title: "Error",
+            description: "Failed to save existing data",
+            variant: "destructive",
+          })
+          return
+        }
+      }
+      
       dataSource.setPeriodPool([...dataSource.periodPool, newEntry])
       // Automatically select the newly added period
       dataSource.setSelectedPoolIds(new Set([...dataSource.selectedPoolIds, newEntry.id]))
