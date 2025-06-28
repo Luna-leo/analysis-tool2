@@ -3,7 +3,6 @@
 import React, { useEffect } from "react"
 import { FileNode } from "@/types"
 import { VirtualizedChartGrid } from "./VirtualizedChartGrid"
-import { CSVImportPage } from "@/components/csv-import"
 import { EventMasterPage } from "@/components/event-master"
 import { InterlockMasterPageWrapper } from "@/components/interlock-master/InterlockMasterPageWrapper"
 import { FormulaMasterPage } from "@/components/formula-master"
@@ -22,15 +21,10 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
   // Initialize settings if they don't exist
   useEffect(() => {
     const layoutStore = useLayoutStore.getState()
-    if (!layoutSettingsMap[file.id] && file.id !== 'csv-import') {
+    if (!layoutSettingsMap[file.id]) {
       layoutStore.initializeSettings(file.id)
     }
   }, [file.id, layoutSettingsMap])
-  
-  // Check if this is a CSV Import tab
-  if (file.id === 'csv-import') {
-    return <CSVImportPage fileId={file.id} />
-  }
 
   // Check if this is an Event Master tab
   if (file.id === 'event-master') {

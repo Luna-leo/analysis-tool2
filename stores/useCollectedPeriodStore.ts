@@ -1,6 +1,9 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { CollectedPeriod } from '@/types/collected-period'
+import { createLogger } from '@/utils/logger'
+
+const logger = createLogger('CollectedPeriodStore')
 
 interface CollectedPeriodStore {
   periods: CollectedPeriod[]
@@ -17,9 +20,28 @@ export const useCollectedPeriodStore = create<CollectedPeriodStore>()(
       periods: [],
 
       addPeriod: (period) => {
-        set((state) => ({
-          periods: [...state.periods, period]
-        }))
+        logger.debug('addPeriod called', {
+          periodId: period.id,
+          period
+        })
+        
+        set((state) => {
+          logger.debug('state before add', {
+            currentPeriodsCount: state.periods.length,
+            existingIds: state.periods.map(p => p.id)
+          })
+          
+          const newState = {
+            periods: [...state.periods, period]
+          }
+          
+          logger.debug('state after add', {
+            newPeriodsCount: newState.periods.length,
+            allIds: newState.periods.map(p => p.id)
+          })
+          
+          return newState
+        })
       },
 
       updatePeriod: (id, updates) => {

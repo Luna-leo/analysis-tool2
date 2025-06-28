@@ -11,6 +11,9 @@ import {
   clearAllCSVDataFromDB,
   IndexedDBCSVData 
 } from '@/utils/indexedDBUtils'
+import { createLogger } from '@/utils/logger'
+
+const logger = createLogger('CSVDataStore')
 
 export interface CSVMetadata {
   parameterInfo?: {
@@ -81,40 +84,62 @@ export const useCSVDataStore = create<CSVDataStore>()(
       datasets: new Map(),
 
       saveCSVData: async (periodId, standardizedData, metadata) => {
+        logger.debug('saveCSVData called', {
+          periodId,
+          dataLength: standardizedData.length,
+          hasMetadata: !!metadata
+        })
+        
         if (standardizedData.length === 0) {
+          logger.warn('saveCSVData: No data to save')
           return
         }
 
         const first = standardizedData[0]
-        const parameters: string[] = []
+        let parameters: string[] = []
         const units: Record<string, string> = {}
         
-        console.log('saveCSVData called:', {
+        logger.debug('saveCSVData called:', {
           periodId,
           firstDataKeys: Object.keys(first),
-          metadata
+          metadata,
+          parameterInfoProvided: !!metadata?.parameterInfo?.parameters
         })
         
-        // Extract parameter names from actual data keys (more reliable)
-        const excludedKeys = ['plant', 'machineNo', 'sourceType', 'rowNumber', 'timestamp']
-        Object.keys(first).forEach(key => {
-          if (!excludedKeys.includes(key)) {
-            parameters.push(key)
-          }
-        })
-        
-        // Extract units from metadata if available
-        if (metadata?.parameterInfo) {
-          // Map parameter names to units based on the headers
-          const headers = Object.keys(first).filter(k => !excludedKeys.includes(k))
-          headers.forEach((header) => {
-            // Find matching parameter in metadata
-            const paramIndex = metadata.parameterInfo?.parameters.findIndex((p: string) => p === header) ?? -1
-            if (paramIndex !== -1 && metadata.parameterInfo?.units?.[paramIndex]) {
-              units[header] = metadata.parameterInfo.units[paramIndex]
+        // Use metadata parameterInfo if available (prioritize this for merged data)
+        if (metadata?.parameterInfo?.parameters && metadata.parameterInfo.parameters.length > 0) {
+          parameters = [...metadata.parameterInfo.parameters]
+          
+          // Map units from metadata
+          metadata.parameterInfo.parameters.forEach((param, index) => {
+            if (metadata.parameterInfo?.units?.[index]) {
+              units[param] = metadata.parameterInfo.units[index]
             }
           })
+        } else {
+          // Fallback: Extract parameter names from all data rows to ensure we catch all parameters
+          const excludedKeys = ['plant', 'machineNo', 'sourceType', 'rowNumber', 'timestamp']
+          const allParameters = new Set<string>()
+          
+          // Scan multiple rows to find all parameters (some might be null in first row)
+          const rowsToScan = Math.min(10, standardizedData.length)
+          for (let i = 0; i < rowsToScan; i++) {
+            Object.keys(standardizedData[i]).forEach(key => {
+              if (!excludedKeys.includes(key)) {
+                allParameters.add(key)
+              }
+            })
+          }
+          
+          parameters = Array.from(allParameters)
         }
+
+        logger.debug('Extracted parameters:', {
+          periodId,
+          parameterCount: parameters.length,
+          parameters: parameters.slice(0, 10), // Show first 10 for debugging
+          fromMetadata: !!metadata?.parameterInfo?.parameters
+        })
 
         // Convert standardized data to CSVDataPoint format
         const dataPoints = transformToDataPoints(standardizedData, parameters, 'timestamp')
@@ -140,9 +165,11 @@ export const useCSVDataStore = create<CSVDataStore>()(
         }
         
         try {
+          logger.debug('Saving to IndexedDB...', { periodId })
           await saveCSVDataToDB(indexedDBData)
+          logger.debug('IndexedDB save successful', { periodId })
         } catch (error) {
-          console.error('Failed to save to IndexedDB:', error)
+          logger.error('Failed to save to IndexedDB:', error)
           // Continue even if IndexedDB fails
         }
         
@@ -164,9 +191,19 @@ export const useCSVDataStore = create<CSVDataStore>()(
           // Ensure datasets is a Map
           datasets = ensureMap<string, CSVDataSet>(datasets)
           
+          logger.debug('CSVDataStore state update', {
+            currentDatasetsSize: datasets.size,
+            addingPeriodId: periodId
+          })
+          
           // Simply add the new dataset
           const newDatasets = new Map(datasets)
           newDatasets.set(periodId, dataset)
+          
+          logger.debug('CSVDataStore new state', {
+            newDatasetsSize: newDatasets.size,
+            allPeriodIds: Array.from(newDatasets.keys())
+          })
           
           return { datasets: newDatasets }
         })
@@ -191,7 +228,7 @@ export const useCSVDataStore = create<CSVDataStore>()(
         
         const dataset = datasets.get(periodId)
         if (!dataset) {
-          console.warn('No dataset found for periodId:', periodId)
+          logger.warn('No dataset found for periodId:', periodId)
           return undefined
         }
 
@@ -200,7 +237,7 @@ export const useCSVDataStore = create<CSVDataStore>()(
         
         // If not in memory, try to load from IndexedDB
         if (!memoryData) {
-          console.log('Loading data from IndexedDB for periodId:', periodId)
+          logger.debug('Loading data from IndexedDB for periodId:', periodId)
           try {
             const dbData = await getCSVDataFromDB(periodId)
             if (dbData && dbData.data) {
@@ -209,17 +246,17 @@ export const useCSVDataStore = create<CSVDataStore>()(
               memoryData = dbData.data
             }
           } catch (error) {
-            console.error('Failed to load from IndexedDB:', error)
+            logger.error('Failed to load from IndexedDB:', error)
           }
         }
         
         if (!memoryData) {
-          console.warn('No data found in memory or IndexedDB for periodId:', periodId)
+          logger.warn('No data found in memory or IndexedDB for periodId:', periodId)
           return undefined
         }
 
         // Debug logging
-        console.log('getParameterData called:', {
+        logger.debug('getParameterData called:', {
           periodId,
           requestedParameters: parameters,
           availableParameters: dataset.parameters,
@@ -246,7 +283,7 @@ export const useCSVDataStore = create<CSVDataStore>()(
             total: result.total
           }
         } catch (error) {
-          console.error('Failed to get paginated data:', error)
+          logger.error('Failed to get paginated data:', error)
           // Fallback to in-memory data
           const allData = await get().getParameterData(periodId, parameters)
           if (!allData) return { data: [], total: 0 }
@@ -284,7 +321,7 @@ export const useCSVDataStore = create<CSVDataStore>()(
         try {
           await deleteCSVDataFromDB(periodId)
         } catch (error) {
-          console.error('Failed to delete from IndexedDB:', error)
+          logger.error('Failed to delete from IndexedDB:', error)
         }
         
         set(state => {
@@ -307,7 +344,7 @@ export const useCSVDataStore = create<CSVDataStore>()(
         try {
           await clearAllCSVDataFromDB()
         } catch (error) {
-          console.error('Failed to clear IndexedDB:', error)
+          logger.error('Failed to clear IndexedDB:', error)
         }
         
         set({ datasets: new Map() })
@@ -375,7 +412,7 @@ export const useCSVDataStore = create<CSVDataStore>()(
           const data = await getCSVDataFromDB(periodId)
           return !!(data && data.data && data.data.length > 0)
         } catch (error) {
-          console.error('Error checking data existence:', error)
+          logger.error('Error checking data existence:', error)
           return false
         }
       },
@@ -436,7 +473,7 @@ export const useCSVDataStore = create<CSVDataStore>()(
               version: 0
             }
           } catch (error) {
-            console.error('Error loading CSV data store:', error)
+            logger.error('Error loading CSV data store:', error)
             return null
           }
         },
@@ -454,7 +491,7 @@ export const useCSVDataStore = create<CSVDataStore>()(
           } catch (e) {
             // If localStorage is full, just log the error
             // The actual data is in memory, so the app will continue to work
-            console.warn('LocalStorage save failed (data is preserved in memory):', e)
+            logger.warn('LocalStorage save failed (data is preserved in memory):', e)
           }
         },
         removeItem: (name) => {

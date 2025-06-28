@@ -12,6 +12,17 @@ export function findCSVDataForEventInfo(
 ): CSVDataSet[] {
   const matchingDatasets: CSVDataSet[] = []
   
+  // First, try to find by exact EventInfo ID match
+  // This handles DataSourceTab imports where EventInfo.id === periodId
+  if (csvDatasets.has(eventInfo.id)) {
+    const dataset = csvDatasets.get(eventInfo.id)
+    if (dataset) {
+      matchingDatasets.push(dataset)
+      return matchingDatasets // Return early if exact match found
+    }
+  }
+  
+  // Fallback: Match by plant and machineNo
   csvDatasets.forEach((dataset) => {
     // Match by plant and machineNo
     if (dataset.plant === eventInfo.plant && dataset.machineNo === eventInfo.machineNo) {
