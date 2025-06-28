@@ -1,7 +1,9 @@
-import { DuckDBConnection } from '../utils/duckdb/connection';
-import { ParquetUtils } from '../utils/duckdb/parquetUtils';
-import { DataConverter } from '../utils/duckdb/dataConverter';
-import { SQLiteDatabase } from '../utils/sqlite/database';
+// テスト環境用の設定
+// @ts-ignore
+process.env.NODE_ENV = 'test';
+
+import { SQLiteDatabase } from '../lib/server/sqlite/database';
+import { TimeseriesUtils } from '../lib/server/sqlite/timeseriesUtils';
 import { CSVDataPoint } from '../types/csv-data';
 
 // 色付きコンソール出力用
@@ -17,15 +19,14 @@ function log(message: string, color: keyof typeof colors = 'reset') {
   console.log(`${colors[color]}${message}${colors.reset}`);
 }
 
-async function testDuckDBParquet() {
-  log('\n=== DuckDB + Parquet テスト ===', 'blue');
+async function testSQLiteTimeseries() {
+  log('\n=== SQLite 時系列データテスト ===', 'blue');
   
   try {
-    // DuckDB接続を初期化
-    const connection = DuckDBConnection.getInstance();
-    await connection.initialize();
-    log('✓ DuckDB接続初期化成功', 'green');
-    log(`  データパス: ${connection.getDataPath()}`, 'yellow');
+    // SQLiteデータベースを初期化
+    const db = SQLiteDatabase.getInstance();
+    await db.initialize();
+    log('✓ SQLite初期化成功', 'green');
 
     // テストデータを作成
     const testData: CSVDataPoint[] = [
@@ -34,37 +35,36 @@ async function testDuckDBParquet() {
       { timestamp: '2024-01-01T02:00:00', temperature: 26.1, pressure: 1013.35 },
     ];
 
-    // Parquetファイルに書き込み
-    const parquetUtils = new ParquetUtils();
-    const parquetPath = connection.getParquetPath('TestPlant', 'M001', '2024-01');
-    log(`  Parquetパス: ${parquetPath}`, 'yellow');
-    
-    await parquetUtils.writeToParquet({
+    // 時系列データを書き込み
+    const timeseriesUtils = new TimeseriesUtils();
+    await timeseriesUtils.writeTimeseries({
       plant: 'TestPlant',
       machineNo: 'M001',
-      yearMonth: '2024-01',
-      data: testData,
-      append: false
+      data: testData
     });
-    log('✓ Parquetファイル書き込み成功', 'green');
+    log('✓ 時系列データ書き込み成功', 'green');
 
-    // Parquetファイルから読み込み
-    const readData = await parquetUtils.readFromParquet({
+    // 時系列データを読み込み
+    const readData = await timeseriesUtils.readTimeseries({
       plant: 'TestPlant',
       machineNo: 'M001',
       startDate: '2024-01-01',
       endDate: '2024-01-31'
     });
-    log(`✓ Parquetファイル読み込み成功: ${readData.length}件のデータ`, 'green');
+    log(`✓ 時系列データ読み込み成功: ${readData.length}件のデータ`, 'green');
     console.log('  読み込みデータ例:', readData[0]);
 
-    // メタデータ更新
-    await parquetUtils.updateMetadata('TestPlant', 'M001', '2024-01');
-    log('✓ メタデータ更新成功', 'green');
+    // メタデータ取得
+    const metadata = await timeseriesUtils.getMetadata('TestPlant', 'M001');
+    if (metadata) {
+      log('✓ メタデータ取得成功', 'green');
+      log(`  レコード数: ${metadata.recordCount}`, 'green');
+      log(`  パラメータ: ${metadata.parameters.join(', ')}`, 'green');
+    }
 
-    await connection.close();
+    db.close();
   } catch (error) {
-    log(`✗ DuckDB/Parquetテスト失敗: ${error}`, 'red');
+    log(`✗ SQLite時系列テスト失敗: ${error}`, 'red');
   }
 }
 
@@ -113,38 +113,11 @@ async function testSQLiteUserManagement() {
   }
 }
 
-async function testDataConversion() {
-  log('\n=== データ変換テスト ===', 'blue');
-  
-  try {
-    const converter = new DataConverter();
-    
-    // 既存のIndexedDBデータがある場合は変換をテスト
-    log('※ IndexedDBからの変換は、実際のデータがある場合に実行されます', 'yellow');
-    
-    // テスト用のPlantMachineData形式でParquet読み込みテスト
-    const data = await converter.readParquetAsPlantMachineData(
-      'TestPlant',
-      'M001',
-      '2024-01-01',
-      '2024-01-31'
-    );
-    
-    if (data) {
-      log(`✓ Parquet→PlantMachineData変換成功: ${data.metadata.totalRecords}件`, 'green');
-      log(`  パラメータ: ${data.metadata.parameters.join(', ')}`, 'green');
-    }
-  } catch (error) {
-    log(`✗ データ変換テスト失敗: ${error}`, 'red');
-  }
-}
-
 async function main() {
   log('サーバー連携基盤の動作確認を開始します...', 'yellow');
   
-  await testDuckDBParquet();
+  await testSQLiteTimeseries();
   await testSQLiteUserManagement();
-  await testDataConversion();
   
   log('\n動作確認完了！', 'green');
 }

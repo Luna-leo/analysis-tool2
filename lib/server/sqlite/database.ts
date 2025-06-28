@@ -1,4 +1,3 @@
-import 'server-only';
 
 import Database from 'better-sqlite3';
 import path from 'path';
@@ -99,11 +98,26 @@ export class SQLiteDatabase {
       )
     `);
 
+    // 時系列データテーブル
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS timeseries_data (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        plant TEXT NOT NULL,
+        machine_no TEXT NOT NULL,
+        timestamp TEXT NOT NULL,
+        parameters TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // インデックスを作成
     this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token);
       CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
       CREATE INDEX IF NOT EXISTS idx_settings_user ON app_settings(user_id);
+      CREATE INDEX IF NOT EXISTS idx_timeseries_plant_machine ON timeseries_data(plant, machine_no);
+      CREATE INDEX IF NOT EXISTS idx_timeseries_timestamp ON timeseries_data(timestamp);
+      CREATE INDEX IF NOT EXISTS idx_timeseries_composite ON timeseries_data(plant, machine_no, timestamp);
     `);
   }
 

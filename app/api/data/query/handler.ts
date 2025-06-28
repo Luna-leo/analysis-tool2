@@ -1,7 +1,6 @@
 import 'server-only';
 import { NextRequest, NextResponse } from 'next/server';
-import { DuckDBConnection } from '@/lib/server/duckdb/connection';
-import { ParquetUtils } from '@/lib/server/duckdb/parquetUtils';
+import { TimeseriesUtils } from '@/lib/server/sqlite/timeseriesUtils';
 
 export async function handler(request: NextRequest) {
   try {
@@ -16,20 +15,9 @@ export async function handler(request: NextRequest) {
 
     console.log('Query parameters:', { plant, machineNo, startDate, endDate });
 
-    // DuckDB接続を初期化
-    const connection = DuckDBConnection.getInstance();
-    console.log('Data path:', connection.getDataPath());
-    
-    await connection.initialize();
-    console.log('DuckDB initialized');
-
-    // Parquetパスの確認
-    const parquetPath = connection.getParquetPath(plant, machineNo, '2024-01');
-    console.log('Parquet path:', parquetPath);
-
-    // Parquetからデータを読み込み
-    const parquetUtils = new ParquetUtils();
-    const data = await parquetUtils.readFromParquet({
+    // SQLiteで時系列データを読み込み
+    const timeseriesUtils = new TimeseriesUtils();
+    const data = await timeseriesUtils.readTimeseries({
       plant,
       machineNo,
       startDate,

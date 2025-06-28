@@ -158,7 +158,7 @@ export default function ServerSyncPage() {
             <CardHeader>
               <CardTitle>テストクエリ</CardTitle>
               <CardDescription>
-                DuckDB/Parquetのクエリテスト
+                SQLiteデータベースのクエリテスト
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

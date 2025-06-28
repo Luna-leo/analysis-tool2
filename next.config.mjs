@@ -29,7 +29,7 @@ const nextConfig = {
     optimizePackageImports: ['d3', 'lodash'], // lucide-reactを除外
   },
   // サーバーサイド専用パッケージ
-  serverExternalPackages: ['duckdb', 'better-sqlite3', '@mapbox/node-pre-gyp', 'mock-aws-s3', 'aws-sdk', 'nock'],
+  serverExternalPackages: ['better-sqlite3'],
   // Webpack configuration for server-side modules
   webpack: (config, { isServer, webpack }) => {
     if (!isServer) {
@@ -48,14 +48,7 @@ const nextConfig = {
       // エイリアスでモックモジュールに置き換え
       config.resolve.alias = {
         ...config.resolve.alias,
-        'duckdb': path.resolve(__dirname, './lib/client-mocks/duckdb.js'),
         'better-sqlite3': path.resolve(__dirname, './lib/client-mocks/sqlite.js'),
-        'mock-aws-s3': path.resolve(__dirname, './lib/client-mocks/empty.js'),
-        'aws-sdk': path.resolve(__dirname, './lib/client-mocks/empty.js'),
-        'nock': path.resolve(__dirname, './lib/client-mocks/empty.js'),
-        '@mapbox/node-pre-gyp': path.resolve(__dirname, './lib/client-mocks/empty.js'),
-        'node-pre-gyp': path.resolve(__dirname, './lib/client-mocks/empty.js'),
-        'fs/promises': path.resolve(__dirname, './lib/client-mocks/fs.js'),
       };
     }
     
