@@ -392,7 +392,7 @@ export function DataSourceTab({
   ) => {
     const fileNames = csvFiles.map(f => f.name)
     const fileName = combinedMetadata?.fileName || fileNames[0] || 'unknown'
-    const periodId = `${data.plant}_${data.machineNo}_${data.dataSourceType}_${fileName.replace('.csv', '')}_${Date.now()}`
+    const periodId = `${data.plant}_${data.machineNo}_${data.dataSourceType}_${fileName.replace('.csv', '')}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
 
     const collectedPeriod = {
       id: periodId,
@@ -633,6 +633,14 @@ export function DataSourceTab({
       try {
         dataSource.setPeriodPool((currentPool) => {
           logger.debug('Inside setPeriodPool - current pool length:', currentPool.length)
+          
+          // Check for duplicate ID
+          const isDuplicate = currentPool.some(item => item.id === periodEvent.id)
+          if (isDuplicate) {
+            logger.warn('Duplicate ID detected, skipping:', periodEvent.id)
+            return currentPool
+          }
+          
           const newPool = [...currentPool, periodEvent]
           logger.debug('New pool will have length:', newPool.length)
           return newPool
