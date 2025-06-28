@@ -86,35 +86,50 @@ export const useCSVDataStore = create<CSVDataStore>()(
         }
 
         const first = standardizedData[0]
-        const parameters: string[] = []
+        let parameters: string[] = []
         const units: Record<string, string> = {}
         
         console.log('saveCSVData called:', {
           periodId,
           firstDataKeys: Object.keys(first),
-          metadata
+          metadata,
+          parameterInfoProvided: !!metadata?.parameterInfo?.parameters
         })
         
-        // Extract parameter names from actual data keys (more reliable)
-        const excludedKeys = ['plant', 'machineNo', 'sourceType', 'rowNumber', 'timestamp']
-        Object.keys(first).forEach(key => {
-          if (!excludedKeys.includes(key)) {
-            parameters.push(key)
-          }
-        })
-        
-        // Extract units from metadata if available
-        if (metadata?.parameterInfo) {
-          // Map parameter names to units based on the headers
-          const headers = Object.keys(first).filter(k => !excludedKeys.includes(k))
-          headers.forEach((header) => {
-            // Find matching parameter in metadata
-            const paramIndex = metadata.parameterInfo?.parameters.findIndex((p: string) => p === header) ?? -1
-            if (paramIndex !== -1 && metadata.parameterInfo?.units?.[paramIndex]) {
-              units[header] = metadata.parameterInfo.units[paramIndex]
+        // Use metadata parameterInfo if available (prioritize this for merged data)
+        if (metadata?.parameterInfo?.parameters && metadata.parameterInfo.parameters.length > 0) {
+          parameters = [...metadata.parameterInfo.parameters]
+          
+          // Map units from metadata
+          metadata.parameterInfo.parameters.forEach((param, index) => {
+            if (metadata.parameterInfo?.units?.[index]) {
+              units[param] = metadata.parameterInfo.units[index]
             }
           })
+        } else {
+          // Fallback: Extract parameter names from all data rows to ensure we catch all parameters
+          const excludedKeys = ['plant', 'machineNo', 'sourceType', 'rowNumber', 'timestamp']
+          const allParameters = new Set<string>()
+          
+          // Scan multiple rows to find all parameters (some might be null in first row)
+          const rowsToScan = Math.min(10, standardizedData.length)
+          for (let i = 0; i < rowsToScan; i++) {
+            Object.keys(standardizedData[i]).forEach(key => {
+              if (!excludedKeys.includes(key)) {
+                allParameters.add(key)
+              }
+            })
+          }
+          
+          parameters = Array.from(allParameters)
         }
+
+        console.log('Extracted parameters:', {
+          periodId,
+          parameterCount: parameters.length,
+          parameters: parameters.slice(0, 10), // Show first 10 for debugging
+          fromMetadata: !!metadata?.parameterInfo?.parameters
+        })
 
         // Convert standardized data to CSVDataPoint format
         const dataPoints = transformToDataPoints(standardizedData, parameters, 'timestamp')

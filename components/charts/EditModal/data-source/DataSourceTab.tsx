@@ -18,6 +18,7 @@ import { StandardizedCSVData } from "@/types/csv-data"
 import { useToast } from "@/hooks/use-toast"
 import { useCollectedPeriodStore } from "@/stores/useCollectedPeriodStore"
 import { useCSVDataStore } from "@/stores/useCSVDataStore"
+import { mergeCSVDataByTimestamp, shouldMergeFiles, getMergedFileName } from '@/utils/csv/mergeUtils'
 import { extractDateRangeFromCSV } from "@/utils/csvDateRangeUtils"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -212,12 +213,20 @@ export function DataSourceTab({
         throw new Error(parseResult.error || "CSV解析に失敗しました")
       }
 
+      // Check if files should be merged
+      const fileNames = data.files.map(f => f.name)
+      const shouldMerge = shouldMergeFiles(fileNames)
+      
       // Process and standardize CSV data
       let allStandardizedData: StandardizedCSVData[] = []
       let overallMinDate: Date | null = null
       let overallMaxDate: Date | null = null
       let dateColumnName: string | null = null
       let combinedMetadata: CSVMetadata | null = null
+      
+      // Arrays for merge processing
+      const dataArrays: StandardizedCSVData[][] = []
+      const parameterInfos: Array<{ parameters: string[]; units: string[] } | undefined> = []
       
       for (const parsedFile of parseResult.data) {
         // Validate CSV structure
@@ -242,7 +251,14 @@ export function DataSourceTab({
           data.plant,
           data.machineNo
         )
-        allStandardizedData.push(...standardizedData)
+        
+        // If merging, collect data for merge processing
+        if (shouldMerge && parseResult.data.length > 1) {
+          dataArrays.push(standardizedData)
+          parameterInfos.push(parsedFile.metadata?.parameterInfo)
+        } else {
+          allStandardizedData.push(...standardizedData)
+        }
 
         // Extract date range from this file
         const dateRange = extractDateRangeFromCSV(parsedFile, data.dataSourceType)
@@ -259,9 +275,27 @@ export function DataSourceTab({
           }
         }
 
-        // Store metadata from first file
+        // Store metadata from first file (for non-merge case)
         if (!combinedMetadata && parsedFile.metadata) {
           combinedMetadata = parsedFile.metadata
+        }
+      }
+      
+      // Perform merge if needed
+      if (shouldMerge && dataArrays.length > 1) {
+        const mergeResult = mergeCSVDataByTimestamp(dataArrays, parameterInfos)
+        allStandardizedData = mergeResult.mergedData
+        
+        // Update combined metadata with merged parameter info
+        combinedMetadata = {
+          ...combinedMetadata,
+          parameterInfo: mergeResult.parameterInfo,
+          fileName: getMergedFileName(fileNames)
+        }
+        
+        // Log merge warnings if any
+        if (mergeResult.warnings && mergeResult.warnings.length > 0) {
+          console.warn('CSV Merge Warnings:', mergeResult.warnings)
         }
       }
 

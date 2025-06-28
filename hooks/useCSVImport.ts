@@ -8,6 +8,7 @@ import { useInputHistoryStore } from '@/stores/useInputHistoryStore'
 import { useCSVDataStore } from '@/stores/useCSVDataStore'
 import { parseCSVContent } from '@/utils/csvUtils'
 import { CSVErrorCollector, createErrorSummary } from '@/utils/csv/errorHandling'
+import { mergeCSVDataByTimestamp, shouldMergeFiles, getMergedFileName } from '@/utils/csv/mergeUtils'
 
 export function useCSVImport(onImportComplete?: () => void) {
   const [dataSourceType, setDataSourceType] = useState<CSVDataSourceType>(CSV_DEFAULTS.dataSourceType)
@@ -73,49 +74,141 @@ export function useCSVImport(onImportComplete?: () => void) {
       const totalFiles = files.length
       let successCount = 0
       
-      for (let i = 0; i < totalFiles; i++) {
-        const file = files[i]
-        setImportStatus(`Processing file ${i + 1} of ${totalFiles}: ${file.name}`)
-        setImportProgress(((i + 1) / totalFiles) * 100)
+      // Check if files should be merged (horizontal split)
+      const fileNames = files.map(f => f.name)
+      const shouldMerge = shouldMergeFiles(fileNames)
+      
+      if (shouldMerge && totalFiles > 1) {
+        // Process files for merging
+        setImportStatus(`Processing ${totalFiles} files for merging...`)
         
-        try {
-          errorCollector.setCurrentFile(file.name)
+        const allParsedData: Awaited<ReturnType<typeof parseCSVContent>>[] = []
+        
+        // Parse all files first
+        for (let i = 0; i < totalFiles; i++) {
+          const file = files[i]
+          setImportStatus(`Reading file ${i + 1} of ${totalFiles}: ${file.name}`)
+          setImportProgress(((i + 0.5) / totalFiles) * 100)
           
-          // Read file content
-          const content = await readFileContent(file)
-          
-          // Parse CSV content with progress tracking and error collection
-          const parsedData = await parseCSVContent(content, {
-            plant,
-            machineNo,
-            sourceType: dataSourceType,
-            fileName: file.name,
-            onProgress: (fileProgress) => {
-              // Calculate overall progress including file parsing
-              const fileParseProgress = ((i + (fileProgress / 100)) / totalFiles) * 100
-              setImportProgress(fileParseProgress)
-            },
-            errorCollector
-          })
-          
-          if (parsedData && parsedData.data.length > 0) {
-            // Generate periodId
-            const periodId = `${plant}_${machineNo}_${dataSourceType}_${file.name.replace('.csv', '')}_${Date.now()}`
+          try {
+            errorCollector.setCurrentFile(file.name)
             
-            // Save to CSV data store
-            await saveCSVData(periodId, parsedData.data, {
-              parameterInfo: parsedData.parameterInfo,
+            // Read file content
+            const content = await readFileContent(file)
+            
+            // Parse CSV content
+            const parsedData = await parseCSVContent(content, {
+              plant,
+              machineNo,
+              sourceType: dataSourceType,
               fileName: file.name,
-              format: parsedData.format
+              onProgress: (fileProgress) => {
+                const fileParseProgress = ((i + 0.5 + (fileProgress / 200)) / totalFiles) * 100
+                setImportProgress(fileParseProgress)
+              },
+              errorCollector
             })
             
-            successCount++
+            if (parsedData && parsedData.data.length > 0) {
+              allParsedData.push(parsedData)
+            }
+          } catch (fileError) {
+            console.error(`Failed to process file ${file.name}:`, fileError)
+            errorCollector.addParsingError(
+              fileError instanceof Error ? fileError.message : 'Unknown error'
+            )
           }
-        } catch (fileError) {
-          console.error(`Failed to process file ${file.name}:`, fileError)
-          errorCollector.addParsingError(
-            fileError instanceof Error ? fileError.message : 'Unknown error'
-          )
+        }
+        
+        // Merge the data if we have multiple successful parses
+        if (allParsedData.length > 1) {
+          setImportStatus('Merging data from multiple files...')
+          
+          const dataArrays = allParsedData.filter(pd => pd !== null).map(pd => pd!.data)
+          const parameterInfos = allParsedData.filter(pd => pd !== null).map(pd => pd!.parameterInfo)
+          
+          const mergeResult = mergeCSVDataByTimestamp(dataArrays, parameterInfos)
+          
+          // Check for warnings from merge
+          if (mergeResult.warnings && mergeResult.warnings.length > 0) {
+            console.warn('CSV Merge Warnings:', mergeResult.warnings)
+            // Add warnings to error collector for reporting
+            mergeResult.warnings.forEach(warning => {
+              errorCollector.addParsingError(`Merge warning: ${warning}`)
+            })
+          }
+          
+          // Generate a single periodId for merged data
+          const mergedFileName = getMergedFileName(fileNames)
+          const periodId = `${plant}_${machineNo}_${dataSourceType}_${mergedFileName.replace('.csv', '')}_${Date.now()}`
+          
+          // Save merged data
+          await saveCSVData(periodId, mergeResult.mergedData, {
+            parameterInfo: mergeResult.parameterInfo,
+            fileName: mergedFileName,
+            format: allParsedData[0]?.format
+          })
+          
+          successCount = 1 // Count as one successful import
+        } else if (allParsedData.length === 1 && allParsedData[0] !== null) {
+          // Only one file parsed successfully, save it normally
+          const parsedData = allParsedData[0]
+          const periodId = `${plant}_${machineNo}_${dataSourceType}_${files[0].name.replace('.csv', '')}_${Date.now()}`
+          
+          await saveCSVData(periodId, parsedData.data, {
+            parameterInfo: parsedData.parameterInfo,
+            fileName: files[0].name,
+            format: parsedData.format
+          })
+          
+          successCount = 1
+        }
+      } else {
+        // Process files individually (original logic)
+        for (let i = 0; i < totalFiles; i++) {
+          const file = files[i]
+          setImportStatus(`Processing file ${i + 1} of ${totalFiles}: ${file.name}`)
+          setImportProgress(((i + 1) / totalFiles) * 100)
+          
+          try {
+            errorCollector.setCurrentFile(file.name)
+            
+            // Read file content
+            const content = await readFileContent(file)
+            
+            // Parse CSV content with progress tracking and error collection
+            const parsedData = await parseCSVContent(content, {
+              plant,
+              machineNo,
+              sourceType: dataSourceType,
+              fileName: file.name,
+              onProgress: (fileProgress) => {
+                // Calculate overall progress including file parsing
+                const fileParseProgress = ((i + (fileProgress / 100)) / totalFiles) * 100
+                setImportProgress(fileParseProgress)
+              },
+              errorCollector
+            })
+            
+            if (parsedData && parsedData.data.length > 0) {
+              // Generate periodId
+              const periodId = `${plant}_${machineNo}_${dataSourceType}_${file.name.replace('.csv', '')}_${Date.now()}`
+              
+              // Save to CSV data store
+              await saveCSVData(periodId, parsedData.data, {
+                parameterInfo: parsedData.parameterInfo,
+                fileName: file.name,
+                format: parsedData.format
+              })
+              
+              successCount++
+            }
+          } catch (fileError) {
+            console.error(`Failed to process file ${file.name}:`, fileError)
+            errorCollector.addParsingError(
+              fileError instanceof Error ? fileError.message : 'Unknown error'
+            )
+          }
         }
       }
       

@@ -25,37 +25,49 @@ export function getParametersFromCSVData(selectedDataSourceItems?: EventInfo[]):
 
   // Extract parameters from each selected data source
   selectedDataSourceItems.forEach(eventInfo => {
-    // Try different periodId formats to find matching CSV data
-    const possiblePeriodIds = [
-      getPeriodIdFromEventInfo(eventInfo),
-      // Also try with the event ID directly as some CSV data might use that
-      eventInfo.id,
-      // Try without timestamps for batch imports
-      `${eventInfo.plant}_${eventInfo.machineNo}`
-    ]
-
-    for (const periodId of possiblePeriodIds) {
-      const availableParams = csvStore.getAvailableParameters(periodId)
-      
-      if (availableParams.length > 0) {
-        // Found parameters for this data source
-        availableParams.forEach(param => {
-          const key = `${param.name}|${param.unit}`
-          
-          if (!allParameters.has(key)) {
-            allParameters.set(key, {
-              id: `ds_${param.name}`,
-              name: param.name,
-              unit: param.unit,
-              plant: eventInfo.plant,
-              machineNo: eventInfo.machineNo,
-              source: 'DataSource',
-              isFromDataSource: true
-            })
-          }
-        })
-        break // Found data, no need to try other periodId formats
-      }
+    // Check if the EventInfo ID already matches a CSV dataset
+    // This handles both DataSourceTab imports (collected_xxx format) and direct imports
+    if (csvStore.getAvailableParameters(eventInfo.id).length > 0) {
+      const availableParams = csvStore.getAvailableParameters(eventInfo.id)
+      availableParams.forEach(param => {
+        const key = `${param.name}|${param.unit}`
+        
+        if (!allParameters.has(key)) {
+          allParameters.set(key, {
+            id: `ds_${param.name}`,
+            name: param.name,
+            unit: param.unit,
+            plant: eventInfo.plant,
+            machineNo: eventInfo.machineNo,
+            source: 'DataSource',
+            isFromDataSource: true
+          })
+        }
+      })
+    } else {
+      // If not found, try to find CSV data by matching plant and machineNo
+      // This is for backward compatibility
+      const datasets = csvStore.datasets
+      datasets.forEach((dataset, periodId) => {
+        if (dataset.plant === eventInfo.plant && dataset.machineNo === eventInfo.machineNo) {
+          dataset.parameters.forEach(paramName => {
+            const unit = dataset.units[paramName] || ''
+            const key = `${paramName}|${unit}`
+            
+            if (!allParameters.has(key)) {
+              allParameters.set(key, {
+                id: `ds_${paramName}`,
+                name: paramName,
+                unit: unit,
+                plant: eventInfo.plant,
+                machineNo: eventInfo.machineNo,
+                source: 'DataSource',
+                isFromDataSource: true
+              })
+            }
+          })
+        }
+      })
     }
   })
 
