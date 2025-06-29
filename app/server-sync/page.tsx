@@ -10,12 +10,15 @@ import { useToast } from '@/hooks/use-toast';
 import { apiClient } from '@/utils/api/client';
 import { DataUpload } from '@/components/server-sync/DataUpload';
 import { IndexedDBSync } from '@/components/server-sync/IndexedDBSync';
+import { ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function ServerSyncPage() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const [queryResult, setQueryResult] = useState<any>(null);
   const [isQuerying, setIsQuerying] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleTestQuery = async () => {
     setIsQuerying(true);
@@ -66,7 +69,17 @@ export default function ServerSyncPage() {
   if (!isAuthenticated) {
     return (
       <div className="container mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-6">サーバー連携</h1>
+        <div className="flex items-center gap-4 mb-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push('/')}
+            title="メインアプリケーションに戻る"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-3xl font-bold">サーバー連携</h1>
+        </div>
         <div className="flex justify-center">
           <LoginForm />
         </div>
@@ -77,7 +90,17 @@ export default function ServerSyncPage() {
   return (
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">サーバー連携</h1>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.push('/')}
+            title="メインアプリケーションに戻る"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-3xl font-bold">サーバー連携</h1>
+        </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-muted-foreground">
             ログイン中: {user?.username}
