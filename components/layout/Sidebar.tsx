@@ -17,7 +17,8 @@ import {
   Tag,
   Gauge,
   FileUp,
-  Cloud
+  Cloud,
+  Server
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -72,6 +73,13 @@ const SYSTEM_NODES: Record<string, SystemNodeConfig> = {
     type: 'unit-converter-formula-master',
     icon: ArrowLeftRight,
     viewType: 'calculator'
+  },
+  serverSync: {
+    id: 'server-sync',
+    name: 'サーバー連携',
+    type: 'server-sync',
+    icon: Server,
+    viewType: 'server'
   },
   settings: {
     id: 'settings',
@@ -250,11 +258,9 @@ export function Sidebar() {
             <h2 className="text-base font-semibold px-4 py-3">Server Sync</h2>
             <div className="px-2 space-y-1">
               <SidebarButton
-                icon={Cloud}
-                label="サーバー連携"
-                onClick={() => {
-                  window.location.href = '/server-sync';
-                }}
+                icon={SYSTEM_NODES.serverSync.icon}
+                label={SYSTEM_NODES.serverSync.name}
+                onClick={() => openSystemNode(SYSTEM_NODES.serverSync)}
               />
             </div>
           </>
