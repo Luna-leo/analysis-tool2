@@ -9,6 +9,7 @@ import { determineLODLevel, getRenderMethod } from "./LODRenderer"
 import { renderWithOptimizedCanvas } from "./OptimizedCanvasRenderer"
 import { performanceTracker } from "@/utils/performanceTracking"
 import { defaultChartColors } from "@/utils/chartColors"
+import { getRenderMethodWithWebGL } from "./WebGLRenderer"
 
 interface ScatterDataPoint {
   x: number | string | Date
@@ -30,6 +31,9 @@ interface ScatterPlotConfig extends BaseChartConfig {
   enableSampling?: boolean
   disableTooltips?: boolean
 }
+
+// Export for external use
+export { ScatterPlot as ScatterPlotRenderer }
 
 /**
  * ScatterPlot using BaseChart architecture
@@ -113,7 +117,7 @@ class ScatterPlot extends BaseChart<ScatterDataPoint> {
     // Determine LOD level and render method
     const viewportSize = { width: this.width, height: this.height }
     const lodConfig = determineLODLevel(this.data.length, 1, viewportSize)
-    const renderMethod = getRenderMethod(this.data.length, viewportSize)
+    const renderMethod = getRenderMethodWithWebGL(this.data.length, viewportSize)
     
     // Add event listener to close tooltips on wheel/drag
     const svg = this.g.node()?.ownerSVGElement

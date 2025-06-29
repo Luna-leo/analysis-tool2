@@ -13,11 +13,23 @@ type IdleRequestOptions = {
   timeout?: number
 }
 
+// Check if we're in a browser environment
+const isBrowser = typeof window !== 'undefined'
+
 // Create a polyfill for requestIdleCallback
 const requestIdleCallbackPolyfill = (
   callback: IdleRequestCallback,
   options?: IdleRequestOptions
 ): number => {
+  if (!isBrowser) {
+    // In SSR, execute callback immediately
+    callback({
+      didTimeout: false,
+      timeRemaining: () => 0
+    })
+    return 0
+  }
+  
   const start = Date.now()
   return window.setTimeout(() => {
     callback({
@@ -28,7 +40,9 @@ const requestIdleCallbackPolyfill = (
 }
 
 const cancelIdleCallbackPolyfill = (handle: number): void => {
-  window.clearTimeout(handle)
+  if (isBrowser) {
+    window.clearTimeout(handle)
+  }
 }
 
 // Export the appropriate function based on browser support
@@ -36,10 +50,14 @@ export const requestIdleCallback: (
   callback: IdleRequestCallback,
   options?: IdleRequestOptions
 ) => number = 
-  (window as any).requestIdleCallback || requestIdleCallbackPolyfill
+  isBrowser && (window as any).requestIdleCallback 
+    ? (window as any).requestIdleCallback 
+    : requestIdleCallbackPolyfill
 
 export const cancelIdleCallback: (handle: number) => void = 
-  (window as any).cancelIdleCallback || cancelIdleCallbackPolyfill
+  isBrowser && (window as any).cancelIdleCallback 
+    ? (window as any).cancelIdleCallback 
+    : cancelIdleCallbackPolyfill
 
 /**
  * Priority levels for idle tasks
@@ -63,6 +81,16 @@ export class IdleTaskQueue {
   private idleCallbackId: number | null = null
 
   addTask(task: () => void, priority: IdleTaskPriority = IdleTaskPriority.NORMAL) {
+    if (!isBrowser) {
+      // Execute immediately in SSR
+      try {
+        task()
+      } catch (error) {
+        console.error('Error in idle task:', error)
+      }
+      return
+    }
+    
     const taskList = this.tasks.get(priority)!
     taskList.push(task)
     
@@ -72,6 +100,8 @@ export class IdleTaskQueue {
   }
 
   private scheduleProcessing() {
+    if (!isBrowser) return
+    
     if (this.idleCallbackId !== null) {
       cancelIdleCallback(this.idleCallbackId)
     }
@@ -108,7 +138,7 @@ export class IdleTaskQueue {
   }
 
   clear() {
-    if (this.idleCallbackId !== null) {
+    if (isBrowser && this.idleCallbackId !== null) {
       cancelIdleCallback(this.idleCallbackId)
       this.idleCallbackId = null
     }

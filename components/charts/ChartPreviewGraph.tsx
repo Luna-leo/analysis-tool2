@@ -5,6 +5,7 @@ import * as d3 from "d3"
 import { ChartComponent, EventInfo, DataSourceStyle } from "@/types"
 import {
   renderScatterPlot,
+  cleanupWebGLRenderer,
   ReferenceLines
 } from "./ChartPreview/index"
 import { ChartLegend } from "./ChartLegend"
@@ -1572,6 +1573,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           // Store cleanup function
           cleanupRef.current = () => {
             hideAllTooltips()
+            cleanupWebGLRenderer()
           }
           
           // Add drag handlers for labels after rendering
@@ -1766,6 +1768,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       }
       // Clear any pending idle tasks for this chart
       globalIdleTaskQueue.clear()
+      // Clean up WebGL renderer
+      cleanupWebGLRenderer()
     }
   }, [cleanupQuality, editingChart.id, unregisterRendering])
 

@@ -24,6 +24,8 @@
     "rebuild:windows": "npm run clean:windows && npm run setup:windows"
   },
   "dependencies": {
+    "@deck.gl/core": "^9.1.12",
+    "@deck.gl/layers": "^9.1.12",
     "@hookform/resolvers": "^5.0.1",
     "@radix-ui/react-accordion": "1.2.2",
     "@radix-ui/react-alert-dialog": "^1.1.4",
@@ -62,6 +64,7 @@
     "cmdk": "1.0.4",
     "d3": "^7.9.0",
     "date-fns": "^3.6.0",
+    "deck.gl": "^9.1.12",
     "embla-carousel-react": "8.5.1",
     "framer-motion": "^12.19.1",
     "idb": "^8.0.3",
