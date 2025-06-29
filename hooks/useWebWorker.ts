@@ -29,10 +29,10 @@ export function useWebWorker(options: UseWebWorkerOptions = {}) {
 
     try {
       // Create worker with Next.js compatible path
-      workerRef.current = new Worker(
-        new URL('../workers/chartDataProcessor.worker.ts', import.meta.url),
-        { type: 'module' }
-      )
+      const workerUrl = new URL('../workers/chartDataProcessor.worker.ts', import.meta.url)
+      console.log('Creating Web Worker from URL:', workerUrl.href)
+      
+      workerRef.current = new Worker(workerUrl, { type: 'module' })
 
       // Handle worker messages
       workerRef.current.onmessage = (event: MessageEvent<WorkerResponse>) => {
@@ -67,17 +67,26 @@ export function useWebWorker(options: UseWebWorkerOptions = {}) {
       }
 
       // Handle worker errors
-      workerRef.current.onerror = (error) => {
-        console.error('Worker error:', error)
+      workerRef.current.onerror = (event: ErrorEvent) => {
+        const errorMessage = event.message || 'Worker initialization error'
+        const errorDetails = {
+          message: event.message,
+          filename: event.filename,
+          lineno: event.lineno,
+          colno: event.colno
+        }
+        console.error('Worker error:', errorMessage, errorDetails)
+        setWorkerInitError(errorMessage)
         if (options.onError) {
-          options.onError('Worker initialization error')
+          options.onError(errorMessage)
         }
       }
     } catch (error) {
-      console.error('Failed to create worker:', error)
-      setWorkerInitError('Worker initialization failed')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create worker'
+      console.error('Failed to create worker:', errorMessage, error)
+      setWorkerInitError(errorMessage)
       if (options.onError) {
-        options.onError('Failed to create worker')
+        options.onError(errorMessage)
       }
     }
 

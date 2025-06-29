@@ -3,7 +3,7 @@
  * Handles data sampling, coordinate transformation, and other CPU-intensive tasks
  */
 
-import { SamplingMethod, SamplingOptions, sampleMultipleSeries } from '@/utils/sampling'
+import { SamplingMethod, SamplingOptions, sampleMultipleSeries } from '../utils/sampling'
 
 // Worker message types
 export interface WorkerRequest {
@@ -43,9 +43,14 @@ self.addEventListener('message', async (event: MessageEvent<WorkerRequest>) => {
         sendError(id, `Unknown request type: ${type}`)
     }
   } catch (error) {
-    sendError(id, error instanceof Error ? error.message : 'Unknown error')
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    console.error('Worker processing error:', errorMessage, error)
+    sendError(id, errorMessage)
   }
 })
+
+// Log worker initialization
+console.log('Chart data processor worker initialized')
 
 /**
  * Handle data sampling
