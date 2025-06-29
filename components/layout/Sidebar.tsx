@@ -16,7 +16,8 @@ import {
   Hash,
   Tag,
   Gauge,
-  FileUp
+  FileUp,
+  Cloud
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -86,6 +87,7 @@ const ACTIVITY_BAR_ITEMS: ActivityBarItem[] = [
   { view: 'search', icon: Search },
   { view: 'database', icon: Database },
   { view: 'calculator', icon: Calculator },
+  { view: 'server', icon: Cloud },
   { view: 'settings', icon: Settings }
 ]
 
@@ -238,6 +240,21 @@ export function Sidebar() {
                 icon={SYSTEM_NODES.unitConverterFormulaMaster.icon}
                 label="Unit Convert Formula Master"
                 onClick={() => openSystemNode(SYSTEM_NODES.unitConverterFormulaMaster)}
+              />
+            </div>
+          </>
+        )
+      case "server":
+        return (
+          <>
+            <h2 className="text-base font-semibold px-4 py-3">Server Sync</h2>
+            <div className="px-2 space-y-1">
+              <SidebarButton
+                icon={Cloud}
+                label="サーバー連携"
+                onClick={() => {
+                  window.location.href = '/server-sync';
+                }}
               />
             </div>
           </>
