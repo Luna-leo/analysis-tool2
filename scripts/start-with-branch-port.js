@@ -21,6 +21,8 @@ function getPortForBranch(branch) {
       return 3000;
     case 'dev':
       return 3001;
+    case 'feature/enhanced-upload-functionality':
+      return 3003;
     default:
       // Default to 3000 for other branches
       return 3000;

@@ -21,6 +21,8 @@ function getPortForBranch(branch) {
       return 3000;
     case 'dev':
       return 3001;
+    case 'feature/enhanced-upload-functionality':
+      return 3003;
     default:
       return 3000;
   }
@@ -35,6 +37,7 @@ console.log(`Current branch: ${branch}`);
 console.log(`Assigned port: ${port}`);
 console.log('');
 console.log('Branch -> Port mapping:');
-console.log('  main  -> 3000');
-console.log('  dev   -> 3001');
-console.log('  other -> 3000 (default)');
+console.log('  main                                      -> 3000');
+console.log('  dev                                       -> 3001');
+console.log('  feature/enhanced-upload-functionality     -> 3003');
+console.log('  other                                     -> 3000 (default)');
