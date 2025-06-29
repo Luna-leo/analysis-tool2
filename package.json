@@ -16,6 +16,7 @@
     "lint": "next lint",
     "type-check": "tsc --noEmit",
     "test:server": "tsx scripts/test-server-integration.ts",
+    "init:db": "tsx scripts/init-db.ts",
     "setup:windows": "npm install --force",
     "clean:windows": "rmdir /s /q node_modules && del package-lock.json",
     "rebuild:windows": "npm run clean:windows && npm run setup:windows"
