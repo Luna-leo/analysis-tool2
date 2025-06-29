@@ -14,6 +14,7 @@ export interface IndexedDBCSVData {
     dataSourceType: string
     parameters: string[]
     units: Record<string, string>
+    recordCount: number
     lastUpdated: string
   }
 }

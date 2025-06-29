@@ -34,6 +34,7 @@ export interface CSVDataSet {
   parameters: string[]
   units: Record<string, string>
   data: CSVDataPoint[]
+  recordCount: number
   lastUpdated: string
 }
 
@@ -69,6 +70,9 @@ interface CSVDataStore {
   
   // Check if data exists for a period
   hasData: (periodId: string) => Promise<boolean>
+  
+  // Clear memory cache for specific periods or all
+  clearMemoryCache: (periodIds?: string[]) => void
 }
 
 
@@ -172,6 +176,7 @@ export const useCSVDataStore = create<CSVDataStore>()(
             dataSourceType: first.sourceType,
             parameters,
             units,
+            recordCount: sampledDataPoints.length,
             lastUpdated: new Date().toISOString()
           }
         }
@@ -194,6 +199,7 @@ export const useCSVDataStore = create<CSVDataStore>()(
           parameters,
           units,
           data: [], // Don't persist actual data in localStorage
+          recordCount: sampledDataPoints.length,
           lastUpdated: new Date().toISOString()
         }
 
@@ -394,6 +400,7 @@ export const useCSVDataStore = create<CSVDataStore>()(
                 parameters: item.metadata.parameters,
                 units: item.metadata.units,
                 data: [], // Don't load actual data into state
+                recordCount: item.metadata.recordCount || item.data?.length || 0, // Get count from metadata or actual data
                 lastUpdated: item.metadata.lastUpdated
               }
               newDatasets.set(item.periodId, dataset)
@@ -426,6 +433,20 @@ export const useCSVDataStore = create<CSVDataStore>()(
         } catch (error) {
           logger.error('Error checking data existence:', error)
           return false
+        }
+      },
+      
+      clearMemoryCache: (periodIds) => {
+        if (periodIds && periodIds.length > 0) {
+          // Clear specific periods
+          periodIds.forEach(periodId => {
+            inMemoryDataStore.delete(periodId)
+          })
+          logger.debug('Cleared memory cache for periods:', periodIds)
+        } else {
+          // Clear all
+          inMemoryDataStore.clear()
+          logger.debug('Cleared all memory cache')
         }
       },
     }),

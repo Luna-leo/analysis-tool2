@@ -1,16 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Label } from '@/components/ui/label';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Upload, Database, AlertCircle, RefreshCw, Eye, Plus, ArrowUpDown, ChevronDown, ChevronRight, HelpCircle } from 'lucide-react';
+import { Upload, Database, AlertCircle, RefreshCw, Eye, Plus, ArrowUpDown, ChevronDown, ChevronRight, Trash2, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCSVDataStore } from '@/stores/useCSVDataStore';
 import { CSVDataPoint } from '@/types/csv-data';
@@ -45,8 +45,13 @@ export function DataManager() {
   const [uploadMode, setUploadMode] = useState<UploadMode>('append');
   const [previewData, setPreviewData] = useState<{ dataset: DatasetOption; data: CSVDataPoint[]; parameters: string[] } | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [deleteConfirmData, setDeleteConfirmData] = useState<DatasetOption | null>(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isClearAllConfirmOpen, setIsClearAllConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
   const csvStore = useCSVDataStore();
+  const datasetGroupsRef = useRef<DatasetGroup[]>([]);
 
   const loadDatasets = async () => {
     setIsLoading(true);
@@ -59,15 +64,12 @@ export function DataManager() {
       const datasetOptions: DatasetOption[] = [];
 
       for (const [periodId, dataset] of datasetsMap) {
-        // 各データセットのレコード数を取得
-        const data = await csvStore.getParameterData(periodId, dataset.parameters);
-        
         datasetOptions.push({
           periodId,
           plant: dataset.plant,
           machineNo: dataset.machineNo,
           dataSourceType: dataset.dataSourceType,
-          recordCount: data?.length || 0,
+          recordCount: dataset.recordCount || 0, // 保存されているレコード数を使用
           lastUpdated: dataset.lastUpdated,
           selected: false
         });
@@ -121,13 +123,32 @@ export function DataManager() {
 
   useEffect(() => {
     loadDatasets();
-  }, []);
+    
+    // クリーンアップ: コンポーネントアンマウント時にメモリをクリア
+    return () => {
+      // refから現在のデータセットを取得
+      const periodIds = datasetGroupsRef.current.flatMap(group => 
+        group.datasets.map(ds => ds.periodId)
+      );
+      
+      // メモリキャッシュをクリア
+      if (periodIds.length > 0) {
+        csvStore.clearMemoryCache(periodIds);
+      }
+    };
+  }, []); // 空の依存配列に変更（初回マウント時のみ実行）
+  
+  // datasetGroupsが変更されたらrefを更新
+  useEffect(() => {
+    datasetGroupsRef.current = datasetGroups;
+  }, [datasetGroups]);
 
   const toggleGroupExpanded = (groupIndex: number) => {
     setDatasetGroups(prev => prev.map((group, index) => 
       index === groupIndex ? { ...group, expanded: !group.expanded } : group
     ));
   };
+
 
   const toggleGroupSelection = (groupIndex: number) => {
     setDatasetGroups(prev => prev.map((group, index) => {
@@ -188,9 +209,15 @@ export function DataManager() {
         return;
       }
 
-      // プレビュー用に最初の10件を取得
-      const allData = await csvStore.getParameterData(dataset.periodId, csvDataset.parameters);
-      if (!allData || allData.length === 0) {
+      // プレビュー用に最初の10件のみを取得（ページネーション使用）
+      const result = await csvStore.getParameterDataPaginated(
+        dataset.periodId, 
+        csvDataset.parameters,
+        1, // 最初のページ
+        10 // 10件のみ
+      );
+      
+      if (!result.data || result.data.length === 0) {
         toast({
           title: '情報',
           description: 'プレビューできるデータがありません',
@@ -198,10 +225,9 @@ export function DataManager() {
         return;
       }
 
-      const previewRows = allData.slice(0, 10);
       setPreviewData({
         dataset,
-        data: previewRows,
+        data: result.data,
         parameters: csvDataset.parameters
       });
       setIsPreviewOpen(true);
@@ -211,6 +237,64 @@ export function DataManager() {
         description: 'データのプレビューに失敗しました',
         variant: 'destructive'
       });
+    }
+  };
+
+  const handleDeleteConfirm = (dataset: DatasetOption) => {
+    setDeleteConfirmData(dataset);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteConfirmData) return;
+
+    setIsDeleting(true);
+    try {
+      await csvStore.removeCSVData(deleteConfirmData.periodId);
+      
+      toast({
+        title: '削除完了',
+        description: `${deleteConfirmData.plant} - ${deleteConfirmData.machineNo} のデータを削除しました`
+      });
+
+      setIsDeleteConfirmOpen(false);
+      setDeleteConfirmData(null);
+      
+      // データリストを再読み込み
+      await loadDatasets();
+    } catch (error) {
+      toast({
+        title: 'エラー',
+        description: 'データの削除に失敗しました',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleClearAllData = async () => {
+    setIsDeleting(true);
+    try {
+      await csvStore.clearAllData();
+      
+      toast({
+        title: '全データ削除完了',
+        description: 'IndexedDB内の全データを削除しました'
+      });
+
+      setIsClearAllConfirmOpen(false);
+      
+      // データリストを再読み込み
+      await loadDatasets();
+    } catch (error) {
+      toast({
+        title: 'エラー',
+        description: '全データの削除に失敗しました',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -240,20 +324,27 @@ export function DataManager() {
         const csvDataset = csvStore.getCSVData(dataset.periodId);
         if (!csvDataset) continue;
 
-        // データポイントを取得
-        const dataPoints = await csvStore.getParameterData(
-          dataset.periodId, 
-          csvDataset.parameters
-        );
-        
-        if (!dataPoints || dataPoints.length === 0) continue;
-
         // バッチサイズを定義
         const batchSize = 1000;
         let isFirstBatch = true;
+        let currentPage = 1;
+        let hasMoreData = true;
         
-        for (let i = 0; i < dataPoints.length; i += batchSize) {
-          const batch = dataPoints.slice(i, i + batchSize);
+        // ページ単位でデータを取得してアップロード
+        while (hasMoreData) {
+          const result = await csvStore.getParameterDataPaginated(
+            dataset.periodId,
+            csvDataset.parameters,
+            currentPage,
+            batchSize
+          );
+          
+          if (!result.data || result.data.length === 0) {
+            hasMoreData = false;
+            break;
+          }
+          
+          const batch = result.data;
 
           if (uploadMode === 'sync') {
             // 同期モード: /api/data/syncエンドポイントを使用
@@ -293,6 +384,12 @@ export function DataManager() {
 
           isFirstBatch = false;
           totalRecords += batch.length;
+          currentPage++;
+          
+          // 次のページがあるかチェック
+          if (result.data.length < batchSize) {
+            hasMoreData = false;
+          }
         }
 
         uploadedDatasets++;
@@ -392,11 +489,23 @@ export function DataManager() {
                 variant="outline"
                 size="sm"
                 onClick={loadDatasets}
-                disabled={isLoading || isUploading}
+                disabled={isLoading || isUploading || isDeleting}
               >
                 <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
                 更新
               </Button>
+              {datasetGroups.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsClearAllConfirmOpen(true)}
+                  disabled={isLoading || isUploading || isDeleting}
+                  className="text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  全削除
+                </Button>
+              )}
             </div>
           </div>
 
@@ -423,7 +532,7 @@ export function DataManager() {
                   <Checkbox
                     checked={datasetGroups.length > 0 && datasetGroups.every(group => group.groupSelected)}
                     onCheckedChange={toggleAllSelection}
-                    disabled={isUploading}
+                    disabled={isUploading || isDeleting}
                   />
                   <span className="text-sm font-medium">すべて選択</span>
                 </div>
@@ -433,11 +542,11 @@ export function DataManager() {
                       <Checkbox
                         checked={group.groupSelected}
                         onCheckedChange={() => toggleGroupSelection(groupIndex)}
-                        disabled={isUploading}
+                        disabled={isUploading || isDeleting}
                       />
                       <button
                         onClick={() => toggleGroupExpanded(groupIndex)}
-                        className="flex items-center gap-1 flex-1 text-left"
+                        className="flex items-center gap-1 flex-1 text-left hover:opacity-80 transition-opacity"
                       >
                         {group.expanded ? 
                           <ChevronDown className="h-4 w-4 text-muted-foreground" /> : 
@@ -465,7 +574,7 @@ export function DataManager() {
                             <Checkbox
                               checked={dataset.selected}
                               onCheckedChange={() => toggleDatasetSelection(groupIndex, datasetIndex)}
-                              disabled={isUploading}
+                              disabled={isUploading || isDeleting}
                             />
                             <div className="flex-1">
                               <div className="flex items-center gap-4 text-sm">
@@ -474,14 +583,41 @@ export function DataManager() {
                                 <span className="text-muted-foreground">[{dataset.dataSourceType}]</span>
                               </div>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handlePreview(dataset)}
-                              disabled={isUploading}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handlePreview(dataset)}
+                                      disabled={isUploading || isDeleting}
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>プレビュー</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleDeleteConfirm(dataset)}
+                                      disabled={isUploading || isDeleting}
+                                      className="text-destructive hover:text-destructive"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>削除</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -580,6 +716,108 @@ export function DataManager() {
               </div>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              データ削除の確認
+            </DialogTitle>
+            <DialogDescription>
+              {deleteConfirmData && (
+                <span>
+                  以下のデータを削除しますか？この操作は取り消せません。
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          {deleteConfirmData && (
+            <div className="mt-3 p-3 bg-muted rounded-md">
+              <div className="font-medium">{deleteConfirmData.plant} - {deleteConfirmData.machineNo}</div>
+              <div className="text-sm text-muted-foreground">
+                {formatDate(deleteConfirmData.lastUpdated)} インポート
+                （{deleteConfirmData.recordCount.toLocaleString()}件）
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteConfirmOpen(false)}
+              disabled={isDeleting}
+            >
+              キャンセル
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  削除中...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  削除
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isClearAllConfirmOpen} onOpenChange={setIsClearAllConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              全データ削除の確認
+            </DialogTitle>
+            <DialogDescription>
+              IndexedDB内の全てのデータを削除しますか？
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+            <div className="text-sm font-medium text-destructive">
+              警告: この操作は取り消せません
+            </div>
+            <div className="text-sm text-muted-foreground mt-1">
+              {datasetGroups.length}件のプラント・機械番号、
+              合計{totalDatasets}件のデータセットが削除されます。
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsClearAllConfirmOpen(false)}
+              disabled={isDeleting}
+            >
+              キャンセル
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleClearAllData}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  削除中...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  全データを削除
+                </>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
