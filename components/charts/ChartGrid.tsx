@@ -9,6 +9,7 @@ import { FormulaMasterPage } from "@/components/formula-master"
 import { TriggerConditionMasterPage } from "@/components/trigger-condition-master"
 import { UnitConverterFormulaMasterPage } from "@/components/unit-converter-formula"
 import { SettingsPage } from "@/components/settings"
+import { ServerSyncTab } from "@/components/server-sync/ServerSyncTab"
 import { useLayoutStore } from "@/stores/useLayoutStore"
 
 interface ChartGridProps {
@@ -54,6 +55,11 @@ export const ChartGrid = React.memo(function ChartGrid({ file }: ChartGridProps)
   // Check if this is a Settings tab
   if (file.id === 'settings') {
     return <SettingsPage />
+  }
+
+  // Check if this is a Server Sync tab
+  if (file.id === 'server-sync') {
+    return <ServerSyncTab />
   }
 
   // Always use virtualized grid for consistency
