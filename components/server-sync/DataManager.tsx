@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Upload, Database, AlertCircle, RefreshCw, Eye, Plus, ArrowUpDown, ChevronDown, ChevronRight } from 'lucide-react';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Upload, Database, AlertCircle, RefreshCw, Eye, Plus, ArrowUpDown, ChevronDown, ChevronRight, HelpCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCSVDataStore } from '@/stores/useCSVDataStore';
 import { CSVDataPoint } from '@/types/csv-data';
@@ -343,83 +344,81 @@ export function DataManager() {
 
   return (
     <>
-      <Card>
+      <Card className="flex flex-col h-full">
         <CardHeader>
           <CardTitle>IndexedDBデータ管理</CardTitle>
           <CardDescription>
             ローカルに保存されているデータをサーバーにアップロード・同期
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
+        <CardContent className="flex-1 overflow-hidden flex flex-col gap-3">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <Database className="h-5 w-5 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">
                 {datasetGroups.length}件のプラント・機械番号、{totalDatasets}件のデータセット
               </span>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={loadDatasets}
-              disabled={isLoading || isUploading}
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-              更新
-            </Button>
-          </div>
-
-          {/* アップロードモード選択 */}
-          <div className="border rounded-lg p-4 bg-muted/30">
-            <h4 className="font-medium mb-3 flex items-center gap-2">
-              <Upload className="h-4 w-4" />
-              アップロードモード
-            </h4>
-            <RadioGroup value={uploadMode} onValueChange={(value) => setUploadMode(value as UploadMode)}>
-              <div className="flex items-start space-x-2 mb-3">
-                <RadioGroupItem value="append" id="append" className="mt-1" />
-                <div className="flex-1">
-                  <Label htmlFor="append" className="flex items-center gap-2 cursor-pointer">
-                    <Plus className="h-4 w-4" />
-                    追加アップロード
-                  </Label>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    サーバーの既存データを保持したまま、新しいデータを追加します
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start space-x-2">
-                <RadioGroupItem value="sync" id="sync" className="mt-1" />
-                <div className="flex-1">
-                  <Label htmlFor="sync" className="flex items-center gap-2 cursor-pointer">
-                    <ArrowUpDown className="h-4 w-4" />
-                    完全同期
-                  </Label>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    サーバーの既存データを削除してから、選択したデータで置き換えます
-                  </p>
-                </div>
-              </div>
-            </RadioGroup>
+            
+            <div className="flex items-center gap-2">
+              <TooltipProvider>
+                <ToggleGroup type="single" value={uploadMode} onValueChange={(value) => value && setUploadMode(value as UploadMode)} className="h-8">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <ToggleGroupItem value="append" aria-label="追加アップロード" className="h-8 px-3">
+                        <Plus className="h-4 w-4 mr-1" />
+                        追加
+                      </ToggleGroupItem>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>既存データを保持したまま新しいデータを追加</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <ToggleGroupItem value="sync" aria-label="完全同期" className="h-8 px-3">
+                        <ArrowUpDown className="h-4 w-4 mr-1" />
+                        同期
+                      </ToggleGroupItem>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>既存データを削除してから置き換え</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </ToggleGroup>
+              </TooltipProvider>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={loadDatasets}
+                disabled={isLoading || isUploading}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                更新
+              </Button>
+            </div>
           </div>
 
           {isLoading ? (
-            <div className="text-center py-8">
+            <div className="flex-1 flex items-center justify-center">
               <div className="inline-flex items-center gap-2">
                 <RefreshCw className="h-5 w-5 animate-spin text-muted-foreground" />
                 <span className="text-sm text-muted-foreground">データを読み込み中...</span>
               </div>
             </div>
           ) : datasetGroups.length === 0 ? (
-            <div className="text-center py-8">
-              <Database className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">
-                アップロード可能なデータがありません
-              </p>
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <Database className="h-12 w-12 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  アップロード可能なデータがありません
+                </p>
+              </div>
             </div>
           ) : (
-            <>
-              <div className="border rounded-lg divide-y max-h-[calc(100vh-500px)] min-h-[300px] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 dark:scrollbar-thumb-gray-600 dark:scrollbar-track-gray-800">
+            <div className="flex-1 overflow-hidden">
+              <div className="border rounded-lg divide-y h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 dark:scrollbar-thumb-gray-600 dark:scrollbar-track-gray-800">
                 <div className="p-3 bg-muted/50 flex items-center gap-2 sticky top-0 z-10">
                   <Checkbox
                     checked={datasetGroups.length > 0 && datasetGroups.every(group => group.groupSelected)}
@@ -490,17 +489,19 @@ export function DataManager() {
                   </div>
                 ))}
               </div>
-
-              {selectedCount > 0 && (
-                <div className="text-sm text-muted-foreground text-center">
-                  {selectedCount}件のデータセットが選択されています
-                </div>
-              )}
-            </>
+            </div>
           )}
-
+        </CardContent>
+        
+        <CardFooter className="flex flex-col gap-3 border-t">
+          {selectedCount > 0 && (
+            <div className="text-sm text-muted-foreground text-center w-full">
+              {selectedCount}件のデータセットが選択されています
+            </div>
+          )}
+          
           {isUploading && (
-            <div className="space-y-2">
+            <div className="w-full space-y-2">
               <Progress value={uploadProgress} />
               <p className="text-sm text-center text-muted-foreground">
                 {actionText}中... {Math.round(uploadProgress)}%
@@ -517,17 +518,16 @@ export function DataManager() {
             {isUploading ? `${actionText}中...` : `選択したデータを${actionText}${selectedCount > 0 ? ` (${selectedCount}件)` : ''}`}
           </Button>
 
-          <div className="flex items-start gap-2 p-3 bg-muted rounded-lg">
-            <AlertCircle className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-            <p className="text-sm text-muted-foreground">
-              プラント・機械番号ごとにグループ化されています。
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <AlertCircle className="h-3 w-3 shrink-0" />
+            <span>
               {uploadMode === 'sync' 
-                ? '完全同期モードでは、サーバー上の既存データが削除されます。' 
-                : '追加アップロードモードでは、既存データに新しいデータが追加されます。'
+                ? '完全同期: サーバーの既存データを削除してから置き換えます' 
+                : '追加モード: 既存データに新しいデータを追加します'
               }
-            </p>
+            </span>
           </div>
-        </CardContent>
+        </CardFooter>
       </Card>
 
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>

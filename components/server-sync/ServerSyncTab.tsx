@@ -74,8 +74,8 @@ export function ServerSyncTab() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="h-full flex flex-col p-6">
+      <div className="flex justify-between items-center mb-6 flex-shrink-0">
         <h1 className="text-3xl font-bold">サーバー連携</h1>
         <div className="flex items-center gap-4">
           <span className="text-sm text-muted-foreground">
@@ -87,7 +87,7 @@ export function ServerSyncTab() {
         </div>
       </div>
 
-      <Tabs defaultValue="status" className="space-y-4">
+      <Tabs defaultValue="status" className="flex-1 flex flex-col overflow-hidden">
         <TabsList>
           <TabsTrigger value="status">ステータス</TabsTrigger>
           <TabsTrigger value="upload">アップロード</TabsTrigger>
@@ -122,7 +122,7 @@ export function ServerSyncTab() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="upload">
+        <TabsContent value="upload" className="flex-1 overflow-hidden">
           <DataManager />
         </TabsContent>
 
