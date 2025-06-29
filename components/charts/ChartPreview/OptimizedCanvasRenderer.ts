@@ -23,7 +23,7 @@ interface OptimizedCanvasRendererProps {
 
 // Canvas rendering pool to reuse canvases
 const canvasPool: HTMLCanvasElement[] = []
-const maxPoolSize = 5
+const maxPoolSize = 10
 
 function getPooledCanvas(): HTMLCanvasElement {
   if (canvasPool.length > 0) {

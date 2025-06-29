@@ -13,6 +13,7 @@ import { useOptimizedChart } from "@/hooks/useOptimizedChart"
 import { hideAllTooltips } from "@/utils/chartTooltip"
 import { useThrottle } from "@/hooks/useDebounce"
 import { useSettingsStore } from "@/stores/useSettingsStore"
+import { globalIdleTaskQueue, IdleTaskPriority } from "@/utils/requestIdleCallbackPolyfill"
 import { useChartLoadingStore } from "@/stores/useChartLoadingStore"
 import { useChartZoom } from "./ChartPreview/useChartZoom"
 import { ZoomControls } from "./ChartPreview/ZoomControls"
@@ -522,11 +523,15 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     }
   }, [mergedChart.legendPosition, dimensions])
   
+  // Track zoom level for data optimization
+  const [currentZoomLevel, setCurrentZoomLevel] = React.useState(1)
+  
   // Use optimized data loading hook
   const { data: chartData, isLoading: isLoadingData, error } = useOptimizedChart({
     editingChart: mergedChart,
     selectedDataSourceItems,
-    maxDataPoints: effectiveMaxDataPoints
+    maxDataPoints: effectiveMaxDataPoints,
+    zoomLevel: currentZoomLevel
   })
   
   
@@ -650,6 +655,11 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   useEffect(() => {
     resetZoomRef.current = resetZoom
   }, [resetZoom])
+  
+  // Update zoom level for data optimization
+  useEffect(() => {
+    setCurrentZoomLevel(zoomLevel)
+  }, [zoomLevel])
   
   // Reset scales when parameters or layout changes
   useEffect(() => {
@@ -1305,7 +1315,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       renderingRef.current = true
       registerRendering(editingChart.id)  // Register rendering start
       
-      animationFrameRef.current = requestAnimationFrame(() => {
+      // Use idle callback for non-critical rendering
+      const renderTask = () => {
         if (!svgRef.current) {
           renderingRef.current = false
           unregisterRendering(editingChart.id)  // Unregister if aborted
@@ -1583,7 +1594,16 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           animationFrameRef.current = null
           unregisterRendering(editingChart.id)  // Unregister on error
         }
-      })
+      }
+      
+      // Schedule render task with priority based on data size
+      const priority = memoizedChartData && memoizedChartData.length > 10000 
+        ? IdleTaskPriority.LOW 
+        : memoizedChartData && memoizedChartData.length > 1000
+        ? IdleTaskPriority.NORMAL
+        : IdleTaskPriority.HIGH
+        
+      globalIdleTaskQueue.addTask(renderTask, priority)
     }
 
   // Initial render and updates
@@ -1744,6 +1764,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       if (canvasRef.current && containerRef.current) {
         containerRef.current.removeChild(canvasRef.current)
       }
+      // Clear any pending idle tasks for this chart
+      globalIdleTaskQueue.clear()
     }
   }, [cleanupQuality, editingChart.id, unregisterRendering])
 
