@@ -54,19 +54,19 @@ export default function TestWorkerErrorPage() {
   
   const testChart: ChartComponent = {
     id: 'test-chart-error',
-    name: 'Test Chart (Error Handling)',
+    title: 'Test Chart (Error Handling)',
+    data: [],
     type: 'scatter',
     xAxisType: 'datetime',
     yAxisParams: [
-      { parameter: 'value1', parameterType: 'value' },
-      { parameter: 'value2', parameterType: 'value' }
+      { parameter: 'value1', parameterType: 'Parameter', axisName: 'Value 1' },
+      { parameter: 'value2', parameterType: 'Parameter', axisName: 'Value 2' }
     ],
     showLegend: true,
     showTitle: true,
     showXAxis: true,
     showYAxis: true,
-    showGrid: true,
-    enableAnimation: false
+    showGrid: true
   }
   
   const mockDataSources = generateMockDataSources()

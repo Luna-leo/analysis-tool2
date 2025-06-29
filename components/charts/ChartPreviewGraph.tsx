@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useRef, useMemo, useLayoutEffect, useCallback } from "react"
+import React, { useEffect, useRef, useMemo, useLayoutEffect, useCallback, useDeferredValue } from "react"
 import * as d3 from "d3"
 import { ChartComponent, EventInfo, DataSourceStyle } from "@/types"
 import {
@@ -33,6 +33,9 @@ import {
 } from "@/utils/chart/marginCalculator"
 import { arePlotStylesEqual } from "@/utils/plotStylesComparison"
 import { ChartScalesContext } from "@/contexts/ChartScalesContext"
+import { useChartRenderConfig } from "@/hooks/useChartRenderConfig"
+import { useStableMargins } from "@/hooks/useStableMargins"
+import { useChartInteractionState } from "@/hooks/useChartInteractionState"
 
 interface ChartPreviewGraphProps {
   editingChart: ChartComponent
@@ -167,6 +170,9 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   const { registerRendering, unregisterRendering } = useChartLoadingStore()
   const { error: recoveryError, recover, reportError } = useChartErrorRecovery()
   
+  // Use new performance optimization hooks
+  const { state: interactionState, actions: interactionActions, isInteracting } = useChartInteractionState()
+  
   // Try to use ChartScalesContext if available
   const scalesContext = React.useContext(ChartScalesContext)
   const updateScalesContext = scalesContext?.updateScales || null
@@ -245,6 +251,9 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   const animationFrameRef = useRef<number | null>(null)
   const cleanupRef = useRef<(() => void) | null>(null)
   const [dimensions, setDimensions] = React.useState({ width: 600, height: 400 })
+  // Use deferred value for dimension updates to prevent blocking renders
+  const deferredDimensions = useDeferredValue(dimensions)
+  
   const legendRef = useRef<HTMLDivElement>(null)
   const [legendPos, setLegendPos] = React.useState<{ x: number; y: number } | null>(null)
   const legendRatioRef = useRef<{ xRatio: number; yRatio: number } | null>(
@@ -369,39 +378,51 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     mergedChart.id
   ])
   
+  // Use the new chart render config hook for stable configuration
+  const renderConfig = useChartRenderConfig(mergedChart, {
+    maxDataPoints: maxDataPoints ?? defaultMaxDataPoints,
+    enableSampling,
+    isCompactLayout,
+    gridLayout,
+    enableZoom,
+    enablePan,
+    zoomMode,
+    showZoomControls
+  })
+  
   // Extract render-critical properties from mergedChart to optimize re-renders
   const chartRenderProps = useMemo(() => ({
-    id: mergedChart.id,
-    type: mergedChart.type,
-    showMarkers: mergedChart.showMarkers,
+    id: renderConfig.chartId,
+    type: renderConfig.chartType,
+    showMarkers: renderConfig.showMarkers,
     showLines: mergedChart.showLines,
     plotStyles: mergedChart.plotStyles,
     // Add display settings that affect rendering
     title: mergedChart.title,
-    showTitle: mergedChart.showTitle,
-    showGrid: mergedChart.showGrid,
+    showTitle: renderConfig.showTitle,
+    showGrid: renderConfig.showGrid,
     showXLabel: mergedChart.showXLabel,
     showYLabel: mergedChart.showYLabel,
     // Add axis tick settings
-    xAxisTicks: mergedChart.xAxisTicks,
-    yAxisTicks: mergedChart.yAxisTicks,
-    xAxisTickPrecision: mergedChart.xAxisTickPrecision,
-    yAxisTickPrecision: mergedChart.yAxisTickPrecision,
+    xAxisTicks: renderConfig.xAxisTicks,
+    yAxisTicks: renderConfig.yAxisTicks,
+    xAxisTickPrecision: renderConfig.xAxisTickPrecision,
+    yAxisTickPrecision: renderConfig.yAxisTickPrecision,
   }), [
-    mergedChart.id, 
-    mergedChart.type, 
-    mergedChart.showMarkers, 
-    mergedChart.showLines, 
+    renderConfig.chartId,
+    renderConfig.chartType,
+    renderConfig.showMarkers,
+    mergedChart.showLines,
     mergedChart.plotStyles,
     mergedChart.title,
-    mergedChart.showTitle,
-    mergedChart.showGrid,
+    renderConfig.showTitle,
+    renderConfig.showGrid,
     mergedChart.showXLabel,
     mergedChart.showYLabel,
-    mergedChart.xAxisTicks,
-    mergedChart.yAxisTicks,
-    mergedChart.xAxisTickPrecision,
-    mergedChart.yAxisTickPrecision
+    renderConfig.xAxisTicks,
+    renderConfig.yAxisTicks,
+    renderConfig.xAxisTickPrecision,
+    renderConfig.yAxisTickPrecision
   ])
   
 
@@ -412,10 +433,13 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       return;
     }
 
+    // Update interaction state
+    interactionActions.setZoom(transform)
+
     // Determine zoom mode based on chart type
-    const effectiveZoomMode = zoomMode === 'auto' 
-      ? (mergedChart.type === 'scatter' ? 'xy' : 'x')
-      : zoomMode
+    const effectiveZoomMode = renderConfig.zoomMode === 'auto' 
+      ? (renderConfig.chartType === 'scatter' ? 'xy' : 'x')
+      : renderConfig.zoomMode
 
     // Update current scales with zoom transform
     const newXScale = transform.rescaleX(baseScalesRef.current.xScale)
@@ -448,7 +472,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         const scaleData = {
           xDomain: xDomain as [any, any],
           yDomain: yDomain as [number, number],
-          xAxisType: mergedChart.xAxisType || "datetime"
+          xAxisType: renderConfig.xAxisType
         }
         
         if (onScalesUpdate) {
@@ -461,7 +485,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         }
       }
     }
-  }, [zoomMode, mergedChart.type, mergedChart.xAxisType, onScalesUpdate, updateScalesContext])
+  }, [renderConfig.zoomMode, renderConfig.chartType, renderConfig.xAxisType, onScalesUpdate, updateScalesContext, interactionActions])
   
   // Throttle zoom transform to 60fps to prevent race conditions during rapid movements
   const handleZoomTransform = useThrottle(handleZoomTransformBase, 16)
@@ -585,57 +609,30 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     yDomain: string | null
   }>({ xDomain: null, yDomain: null })
   
-  // Calculate margins based on current state
-  const computedMargins = useMemo(() => {
-    let margin = { top: 20, right: 40, bottom: 60, left: 60 }
-    
-    // Priority 1: Grid-wide chart settings margins (from Layout Settings)
-    if (chartSettings?.margins) {
-      margin = {
-        top: Number(chartSettings.margins.top) || 20,
-        right: Number(chartSettings.margins.right) || 40,
-        bottom: Number(chartSettings.margins.bottom) || 50,
-        left: Number(chartSettings.margins.left) || 55
-      }
-      
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[ChartPreviewGraph] Using grid-wide margins from chartSettings:', margin)
-      }
-    }
-    // Priority 2: 4x4 layout gets ultra-compact margins
-    else if (gridLayout?.columns === 4 && gridLayout?.rows === 4) {
-      margin = {
-        top: Math.round(dimensions.height * 0.03),    // 3%
-        right: Math.round(dimensions.width * 0.04),   // 4%
-        bottom: Math.round(dimensions.height * 0.06), // 6%
-        left: Math.round(dimensions.width * 0.10)     // 10%
-      }
-      
-    } else {
-      // Check if we have percentage margins
-      const hasPercentageMargins = mergedChart.margins && 
-        typeof mergedChart.margins.top === 'string' && 
-        (mergedChart.margins.top as string).endsWith('%')
-      
-      if ((chartSettings?.marginMode === 'unified' || chartSettings?.marginMode === 'percentage' || hasPercentageMargins) && gridLayout) {
-        // Use the new unified margin calculation with grid layout info
-        margin = calculateUnifiedMargins(dimensions.width, dimensions.height, DEFAULT_UNIFIED_MARGIN_CONFIG, gridLayout)
-      } else if (hasPercentageMargins && mergedChart.margins) {
-        // Convert percentage margins to pixels (for cases without gridLayout)
-        margin = {
-          top: calculateMarginInPixels(mergedChart.margins.top as MarginValue, dimensions.height),
-          right: calculateMarginInPixels(mergedChart.margins.right as MarginValue, dimensions.width),
-          bottom: calculateMarginInPixels(mergedChart.margins.bottom as MarginValue, dimensions.height),
-          left: calculateMarginInPixels(mergedChart.margins.left as MarginValue, dimensions.width)
-        }
-      } else if (mergedChart.margins) {
-        // Fall back to existing margins if not using unified mode
-        margin = mergedChart.margins as { top: number; right: number; bottom: number; left: number }
-      }
-    }
-    
-    return margin
-  }, [dimensions, gridLayout, mergedChart.margins, chartSettings?.marginMode, chartSettings?.margins])
+  // Use the new stable margins hook
+  const stableMargins = useStableMargins({
+    showXAxis: renderConfig.showXAxis,
+    showYAxis: renderConfig.showYAxis,
+    showTitle: renderConfig.showTitle,
+    showLegend: renderConfig.showLegend,
+    showXLabel: mergedChart.showXLabel ?? true,
+    showYLabel: mergedChart.showYLabel ?? true,
+    xAxisTicks: renderConfig.xAxisTicks,
+    yAxisTicks: renderConfig.yAxisTicks,
+    xAxisTickPrecision: renderConfig.xAxisTickPrecision,
+    yAxisTickPrecision: renderConfig.yAxisTickPrecision,
+    isCompactLayout: renderConfig.isCompactLayout,
+    marginMode: chartSettings?.marginMode || renderConfig.marginMode,
+    margins: chartSettings?.margins || mergedChart.margins,
+    debounceMs: 150
+  })
+  
+  // Update margins when dimensions change
+  useEffect(() => {
+    stableMargins.updateMargins(deferredDimensions.width, deferredDimensions.height)
+  }, [deferredDimensions.width, deferredDimensions.height, stableMargins.updateMargins])
+  
+  const computedMargins = stableMargins.margin
   
   // Initialize zoom functionality
   const {
@@ -646,15 +643,21 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     selectionState,
   } = useChartZoom({
     svgRef,
-    width: dimensions.width,
-    height: dimensions.height,
+    width: deferredDimensions.width,
+    height: deferredDimensions.height,
     minZoom: 0.5,
     maxZoom: 10,
-    enablePan,
-    enableZoom,
+    enablePan: renderConfig.enablePan,
+    enableZoom: renderConfig.enableZoom,
     onZoom: handleZoomTransform,
-    onZoomStart: startInteraction,
-    onZoomEnd: endInteraction,
+    onZoomStart: () => {
+      interactionActions.startZoom()
+      startInteraction()
+    },
+    onZoomEnd: () => {
+      interactionActions.endZoom()
+      endInteraction()
+    },
     margin: computedMargins,
     chartId: editingChart.id,
     enableRangeSelection: true,
@@ -1370,7 +1373,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           const height = dimensions.height - margin.top - margin.bottom
           
           // Set viewBox to ensure content stays within bounds
-          svg.attr("viewBox", `0 0 ${dimensions.width} ${dimensions.height}`)
+          svg.attr("viewBox", `0 0 ${deferredDimensions.width} ${deferredDimensions.height}`)
             .attr("preserveAspectRatio", "xMidYMid meet")
 
           // Main group with margin transform
@@ -1450,8 +1453,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               dataSourceStyles: memoizedDataSourceStyles, 
               canvas: canvasRef.current ?? undefined,
               plotStyles: mergedChart.plotStyles,
-              enableSampling: enableSampling,
-              disableTooltips: selectionState.isSelecting || isShiftPressed,
+              enableSampling: renderConfig.enableSampling,
+              disableTooltips: selectionState.isSelecting || isShiftPressed || isInteracting,
               labelPositions: Object.keys(labelPositions).length > 0 ? labelPositions : undefined
             })
 
@@ -1514,8 +1517,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
                 .attr("class", "selection-overlay")
                 .attr("x", 0)
                 .attr("y", 0)
-                .attr("width", dimensions.width)
-                .attr("height", dimensions.height)
+                .attr("width", deferredDimensions.width)
+                .attr("height", deferredDimensions.height)
                 .attr("fill", "transparent")
                 .style("cursor", "crosshair")
                 .style("pointer-events", "all");
@@ -1611,8 +1614,10 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
         }
       }
       
-      // Schedule render task with priority based on data size
-      const priority = memoizedChartData && memoizedChartData.length > 10000 
+      // Schedule render task with priority based on data size and interaction state
+      const priority = isInteracting 
+        ? IdleTaskPriority.HIGH  // High priority during interaction
+        : memoizedChartData && memoizedChartData.length > 10000 
         ? IdleTaskPriority.LOW 
         : memoizedChartData && memoizedChartData.length > 1000
         ? IdleTaskPriority.NORMAL
@@ -1627,9 +1632,9 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     if (process.env.NODE_ENV === 'development' && memoizedChartData?.length > 0) {
       const currentDeps = {
         chartData: memoizedChartData,
-        dimensions,
+        dimensions: deferredDimensions,
         isLoadingData,
-        enableSampling,
+        enableSampling: renderConfig.enableSampling,
         zoomVersion,
         samplingRate: qualityRenderOptions.samplingRate,
         enableMarkers: qualityRenderOptions.enableMarkers,
@@ -1688,9 +1693,9 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     }
   }, [
     memoizedChartData, 
-    dimensions, 
+    deferredDimensions, 
     isLoadingData, 
-    enableSampling, 
+    renderConfig.enableSampling, 
     zoomVersion,
     // Extract individual properties from qualityRenderOptions to avoid object reference changes
     qualityRenderOptions.samplingRate,
@@ -1720,6 +1725,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     selectionState.endY,
     isShiftPressed,
     computedMargins,
+    isInteracting,
   ])
   
 
@@ -1835,8 +1841,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
       <div className="relative w-full h-full overflow-hidden">
         <svg 
           ref={svgRef} 
-          width={dimensions.width} 
-          height={dimensions.height} 
+          width={deferredDimensions.width} 
+          height={deferredDimensions.height} 
           className="absolute inset-0" 
           style={{ 
             visibility: isLoadingData ? 'hidden' : 'visible',
@@ -1872,7 +1878,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               editingChart={mergedChart}
               setEditingChart={setEditingChart}
               scalesRef={availableScalesRef}
-              dimensions={dimensions}
+              dimensions={deferredDimensions}
               margins={computedMargins}
               zoomVersion={zoomVersion}
             />
@@ -1902,7 +1908,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
                 showZoomLevel={false}
                 isRangeSelectionMode={isRangeSelectionMode}
                 onToggleRangeSelection={() => setIsRangeSelectionMode(!isRangeSelectionMode)}
-                variant={isCompactLayout ? "ultra-compact" : "default"}
+                variant={renderConfig.isCompactLayout ? "ultra-compact" : "default"}
                 position="static"
                 orientation="horizontal"
               />
@@ -1937,7 +1943,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
               {isRangeSelectionMode ? '範囲選択モード - ドラッグで範囲を選択' : 'Range selection mode - Drag to select area'}
             </div>
           )}
-          {qualityState.isTransitioning && qualityState.level !== 'high' && !chartSettings && (
+          {(qualityState.isTransitioning && qualityState.level !== 'high' && !chartSettings) || (isInteracting && !chartSettings) && (
             <div className="absolute bottom-20 right-4 bg-yellow-500/90 text-white px-2 py-1 rounded text-xs font-medium shadow-sm backdrop-blur-sm">
               Performance mode
             </div>
