@@ -46,7 +46,7 @@ export const DEFAULT_PERFORMANCE_SETTINGS: PerformanceSettings = {
     autoCleanupInterval: 300
   },
   dataProcessing: {
-    defaultSamplingPoints: 500,
+    defaultSamplingPoints: 300,
     samplingMethod: 'auto',
     enableSampling: true,
     batchSize: 10,

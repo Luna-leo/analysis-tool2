@@ -15,6 +15,7 @@ interface UseOptimizedChartProps {
   editingChart: ChartComponent
   selectedDataSourceItems: EventInfo[]
   maxDataPoints?: number
+  zoomLevel?: number
 }
 
 interface OptimizedChartData {
@@ -38,7 +39,8 @@ interface ChartDataPoint {
 export function useOptimizedChart({
   editingChart,
   selectedDataSourceItems,
-  maxDataPoints
+  maxDataPoints,
+  zoomLevel = 1
 }: UseOptimizedChartProps): OptimizedChartData {
   const { getParameterData } = useCSVDataStore()
   const dataCache = useSharedDataCache()
@@ -67,8 +69,10 @@ export function useOptimizedChart({
   const defaultSamplingPoints = settings.performanceSettings.dataProcessing.defaultSamplingPoints
   
   // Use settings to determine default max data points
+  // Adjust sampling points based on zoom level for better performance
+  const adjustedSamplingPoints = Math.round(defaultSamplingPoints * Math.sqrt(zoomLevel))
   const defaultMaxDataPoints = enableSampling
-    ? defaultSamplingPoints
+    ? adjustedSamplingPoints
     : Number.MAX_SAFE_INTEGER
   const effectiveMaxDataPoints = maxDataPoints ?? defaultMaxDataPoints
   
@@ -342,7 +346,7 @@ export function useOptimizedChart({
         setIsLoading(false)
       }
     },
-    [selectedDataSourceItems, allParameters, xAxisType, xParameter, yAxisParamsKey, effectiveMaxDataPoints, enableSampling, editingChart.id]
+    [selectedDataSourceItems, allParameters, xAxisType, xParameter, yAxisParamsKey, effectiveMaxDataPoints, enableSampling, editingChart.id, zoomLevel]
   )
 
   // Create debounced version of loadData
