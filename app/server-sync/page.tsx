@@ -18,8 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { apiClient } from '@/utils/api/client';
-import { DataUpload } from '@/components/server-sync/DataUpload';
-import { IndexedDBSync } from '@/components/server-sync/IndexedDBSync';
+import { DataManager } from '@/components/server-sync/DataManager';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -98,30 +97,32 @@ export default function ServerSyncPage() {
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.push('/')}
-            title="メインアプリケーションに戻る"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="text-3xl font-bold">サーバー連携</h1>
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-muted-foreground">
-            ログイン中: {user?.username}
-          </span>
-          <Button variant="outline" onClick={handleLogout}>
-            ログアウト
-          </Button>
+    <div className="h-screen flex flex-col">
+      <div className="container mx-auto p-6 flex-shrink-0">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.push('/')}
+              title="メインアプリケーションに戻る"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-3xl font-bold">サーバー連携</h1>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">
+              ログイン中: {user?.username}
+            </span>
+            <Button variant="outline" onClick={handleLogout}>
+              ログアウト
+            </Button>
+          </div>
         </div>
       </div>
 
-      <Tabs defaultValue="status" className="space-y-4">
+      <Tabs defaultValue="status" className="flex-1 flex flex-col container mx-auto px-6 pb-6 overflow-hidden">
         <TabsList>
           <TabsTrigger value="status">ステータス</TabsTrigger>
           <TabsTrigger value="upload">アップロード</TabsTrigger>
@@ -156,11 +157,8 @@ export default function ServerSyncPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="upload">
-          <div className="space-y-4">
-            <DataUpload />
-            <IndexedDBSync />
-          </div>
+        <TabsContent value="upload" className="flex-1 overflow-hidden">
+          <DataManager />
         </TabsContent>
 
         <TabsContent value="download">
