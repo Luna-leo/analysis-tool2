@@ -11,6 +11,8 @@ import {
 import { ChartLegend } from "./ChartLegend"
 import { NoDataDisplay } from "./NoDataDisplay"
 import { useOptimizedChart } from "@/hooks/useOptimizedChart"
+import { ProgressIndicator } from "@/components/ui/progress-indicator"
+import { ChartErrorBoundary, useChartErrorRecovery } from "./ChartErrorBoundary"
 import { hideAllTooltips } from "@/utils/chartTooltip"
 import { useThrottle } from "@/hooks/useDebounce"
 import { useSettingsStore } from "@/stores/useSettingsStore"
@@ -163,6 +165,7 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   const [isRangeSelectionMode, setIsRangeSelectionMode] = React.useState(false)
   const { settings } = useSettingsStore()
   const { registerRendering, unregisterRendering } = useChartLoadingStore()
+  const { error: recoveryError, recover, reportError } = useChartErrorRecovery()
   
   // Try to use ChartScalesContext if available
   const scalesContext = React.useContext(ChartScalesContext)
@@ -528,12 +531,22 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   const [currentZoomLevel, setCurrentZoomLevel] = React.useState(1)
   
   // Use optimized data loading hook
-  const { data: chartData, isLoading: isLoadingData, error } = useOptimizedChart({
+  const { data: chartData, isLoading: isLoadingData, error: dataError, progress } = useOptimizedChart({
     editingChart: mergedChart,
     selectedDataSourceItems,
     maxDataPoints: effectiveMaxDataPoints,
     zoomLevel: currentZoomLevel
   })
+  
+  // Combine errors
+  const error = dataError || recoveryError
+  
+  // Report data errors to recovery hook
+  useEffect(() => {
+    if (dataError) {
+      reportError(dataError)
+    }
+  }, [dataError, reportError])
   
   
   // Memoize chartData to prevent unnecessary re-renders
@@ -1774,7 +1787,8 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
   }, [cleanupQuality, editingChart.id, unregisterRendering])
 
   return (
-    <div 
+    <ChartErrorBoundary onReset={() => recover()}>
+      <div 
       ref={containerRef} 
       className="w-full h-full relative overflow-hidden"
       onMouseEnter={() => setIsMouseOver(true)}
@@ -1785,12 +1799,37 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
     >
       {isLoadingData && (
         <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
-          <div className="text-sm text-muted-foreground">Loading data...</div>
+          <div className="flex flex-col items-center gap-4">
+            <div className="text-sm text-muted-foreground">Loading data...</div>
+            {chartData && chartData.length > 10000 && progress > 0 && progress < 100 && (
+              <div className="w-64">
+                <ProgressIndicator 
+                  progress={progress} 
+                  size="md" 
+                  variant="gradient"
+                  showPercentage={true}
+                />
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  Processing {chartData.length.toLocaleString()} data points
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       )}
       {error && (
         <div className="absolute inset-0 flex items-center justify-center bg-white z-10">
-          <div className="text-sm text-destructive">Error loading data</div>
+          <div className="text-center space-y-3">
+            <div className="text-sm text-destructive">
+              {error.message || 'Error loading data'}
+            </div>
+            <button
+              onClick={() => recover()}
+              className="text-sm text-primary hover:underline cursor-pointer"
+            >
+              再試行
+            </button>
+          </div>
         </div>
       )}
       <div className="relative w-full h-full overflow-hidden">
@@ -1905,6 +1944,27 @@ export const ChartPreviewGraph = React.memo(({ editingChart, selectedDataSourceI
           )}
         </>
       )}
+      {!isLoadingData && progress > 0 && progress < 100 && memoizedChartData && memoizedChartData.length > 10000 && (
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 bg-white/95 p-6 rounded-lg shadow-lg backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-4">
+            <div className="text-sm font-medium text-gray-700">
+              Processing {memoizedChartData.length.toLocaleString()} data points
+            </div>
+            <div className="w-64">
+              <ProgressIndicator 
+                progress={progress} 
+                size="md" 
+                variant="gradient"
+                showPercentage={true}
+              />
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Using Web Worker for optimal performance
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+    </ChartErrorBoundary>
   )
 }, chartPreviewGraphPropsAreEqual)

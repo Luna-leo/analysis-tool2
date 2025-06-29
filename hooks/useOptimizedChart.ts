@@ -7,6 +7,7 @@ import { sampleMultipleSeries, SamplingOptions, SamplingMethod } from '@/utils/s
 import { useSettingsStore } from '@/stores/useSettingsStore'
 import { useChartLoadingStore } from '@/stores/useChartLoadingStore'
 import { filterDataByDateRange } from '@/utils/plantMachineDataUtils'
+import { useWebWorker } from './useWebWorker'
 
 // Constants
 const DATA_LOAD_DEBOUNCE_MS = 300
@@ -22,6 +23,7 @@ interface OptimizedChartData {
   data: ChartDataPoint[]
   isLoading: boolean
   error: Error | null
+  progress: number
 }
 
 interface ChartDataPoint {
@@ -49,7 +51,13 @@ export function useOptimizedChart({
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState<Error | null>(null)
   const [data, setData] = React.useState<ChartDataPoint[]>([])
-  // loadingRef removed - debounce handles duplicate request prevention
+  const [progress, setProgress] = React.useState(0)
+  
+  // Web Worker hook
+  const { processData, isWorkerAvailable } = useWebWorker({
+    onProgress: setProgress,
+    onError: (err) => setError(new Error(err))
+  })
   
   // Use refs to maintain stable references
   const getParameterDataRef = useRef(getParameterData)
@@ -77,7 +85,7 @@ export function useOptimizedChart({
   const effectiveMaxDataPoints = maxDataPoints ?? defaultMaxDataPoints
   
   // Extract only data-relevant properties from editingChart
-  const xAxisType = editingChart.xAxisType
+  const xAxisType = editingChart.xAxisType || 'datetime'
   const xParameter = editingChart.xParameter
   const yAxisParams = editingChart.yAxisParams
   
@@ -153,6 +161,7 @@ export function useOptimizedChart({
       if (selectedDataSourceItems.length === 0) {
         setData([])
         setIsLoading(false)
+        setProgress(0)
         return
       }
       
@@ -163,12 +172,14 @@ export function useOptimizedChart({
       }
         setData([])
         setIsLoading(false)
+        setProgress(0)
         return
       }
       
       // Set loading state
       setIsLoading(true)
       setError(null)
+      setProgress(0) // Reset progress at start
       
       const allData: ChartDataPoint[] = []
       
@@ -294,56 +305,102 @@ export function useOptimizedChart({
         let sampledData = allData
         if (settings.performanceSettings.dataProcessing.enableSampling && allData.length > effectiveMaxDataPoints) {
           
-          // Group by series for batch sampling
-          const seriesMap = new Map<string, ChartDataPoint[]>()
-          allData.forEach(point => {
-            const series = seriesMap.get(point.series) || []
-            series.push(point)
-            seriesMap.set(point.series, series)
-          })
+          // Use Web Worker if available and data is large enough
+          let useWorker = isWorkerAvailable() && allData.length > 10000
           
-          // Prepare sampling options
-          let samplingMethod: SamplingMethod = 'adaptive' // default
-          if (settings.performanceSettings.dataProcessing.samplingMethod === 'none') {
-            samplingMethod = 'none'
-          } else if (settings.performanceSettings.dataProcessing.samplingMethod === 'auto') {
-            // Pass 'auto' through to let the sampling module handle it with adaptive sampling
-            samplingMethod = 'auto'
-          } else if (['lttb', 'nth-point', 'adaptive', 'douglas-peucker'].includes(settings.performanceSettings.dataProcessing.samplingMethod)) {
-            samplingMethod = settings.performanceSettings.dataProcessing.samplingMethod as SamplingMethod
+          if (useWorker) {
+            // Prepare sampling method
+            let samplingMethod: SamplingMethod = 'adaptive' // default
+            if (settings.performanceSettings.dataProcessing.samplingMethod === 'none') {
+              samplingMethod = 'none'
+            } else if (settings.performanceSettings.dataProcessing.samplingMethod === 'auto') {
+              samplingMethod = 'auto'
+            } else if (['lttb', 'nth-point', 'adaptive', 'douglas-peucker'].includes(settings.performanceSettings.dataProcessing.samplingMethod)) {
+              samplingMethod = settings.performanceSettings.dataProcessing.samplingMethod as SamplingMethod
+            }
+            
+            try {
+              // Use worker for sampling
+              sampledData = await processData(
+                allData,
+                {
+                  xAxisType,
+                  xParameter,
+                  yParams: yAxisParams || [],
+                  dataSourceInfo: selectedDataSourceItems
+                },
+                {
+                  enableSampling: true,
+                  samplingMethod,
+                  targetPoints: effectiveMaxDataPoints,
+                  chartType: editingChart.type === 'scatter' ? 'scatter' : 'line'
+                },
+                setProgress // Pass progress callback
+              )
+            } catch (workerError) {
+              console.warn('Worker sampling failed, falling back to main thread:', workerError)
+              // Fall back to main thread processing
+              useWorker = false
+            }
           }
           
-          const samplingOptions: SamplingOptions = {
-            method: samplingMethod,
-            targetPoints: effectiveMaxDataPoints,
-            chartType: editingChart.type === 'scatter' ? 'scatter' : 'line',
-            isTimeSeries: xAxisType === 'datetime'
-          }
-          
-          // Use batch sampling for better performance
-          const sampledSeriesMap = sampleMultipleSeries(seriesMap, samplingOptions)
-          
-          sampledData = []
-          sampledSeriesMap.forEach((result) => {
-            sampledData.push(...result.data)
-          })
-          
-          // Sort final data by x value if needed
-          if (xAxisType === 'datetime') {
-            sampledData.sort((a, b) => {
-              const aTime = a.x instanceof Date ? a.x.getTime() : new Date(a.x).getTime()
-              const bTime = b.x instanceof Date ? b.x.getTime() : new Date(b.x).getTime()
-              return aTime - bTime
+          // Main thread fallback
+          if (!useWorker) {
+            // Group by series for batch sampling
+            const seriesMap = new Map<string, ChartDataPoint[]>()
+            allData.forEach(point => {
+              const series = seriesMap.get(point.series) || []
+              series.push(point)
+              seriesMap.set(point.series, series)
             })
+            
+            // Prepare sampling options
+            let samplingMethod: SamplingMethod = 'adaptive' // default
+            if (settings.performanceSettings.dataProcessing.samplingMethod === 'none') {
+              samplingMethod = 'none'
+            } else if (settings.performanceSettings.dataProcessing.samplingMethod === 'auto') {
+              // Pass 'auto' through to let the sampling module handle it with adaptive sampling
+              samplingMethod = 'auto'
+            } else if (['lttb', 'nth-point', 'adaptive', 'douglas-peucker'].includes(settings.performanceSettings.dataProcessing.samplingMethod)) {
+              samplingMethod = settings.performanceSettings.dataProcessing.samplingMethod as SamplingMethod
+            }
+            
+            const samplingOptions: SamplingOptions = {
+              method: samplingMethod,
+              targetPoints: effectiveMaxDataPoints,
+              chartType: editingChart.type === 'scatter' ? 'scatter' : 'line',
+              isTimeSeries: xAxisType === 'datetime'
+            }
+            
+            // Use batch sampling for better performance
+            const sampledSeriesMap = sampleMultipleSeries(seriesMap, samplingOptions)
+            
+            sampledData = []
+            sampledSeriesMap.forEach((result) => {
+              sampledData.push(...result.data)
+            })
+            
+            // Sort final data by x value if needed
+            if (xAxisType === 'datetime') {
+              sampledData.sort((a, b) => {
+                const aTime = a.x instanceof Date ? a.x.getTime() : new Date(a.x).getTime()
+                const bTime = b.x instanceof Date ? b.x.getTime() : new Date(b.x).getTime()
+                return aTime - bTime
+              })
+            }
           }
         }
         
         setData(sampledData)
+        setProgress(100) // Set to 100% when complete
       } catch (error) {
         console.error('Error loading chart data:', error)
         setError(error as Error)
+        setProgress(0) // Reset on error
       } finally {
         setIsLoading(false)
+        // Reset progress after a short delay to allow UI to show completion
+        setTimeout(() => setProgress(0), 500)
       }
     },
     [selectedDataSourceItems, allParameters, xAxisType, xParameter, yAxisParamsKey, effectiveMaxDataPoints, enableSampling, editingChart.id, zoomLevel]
@@ -387,6 +444,7 @@ export function useOptimizedChart({
   return {
     data,
     isLoading,
-    error
+    error,
+    progress
   }
 }
