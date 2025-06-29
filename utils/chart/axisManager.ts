@@ -131,8 +131,15 @@ export class AxisManager {
           let roundedMax: Date
           
           if (rangeMs <= msPerHour) {
-            // Less than 1 hour: round to 5 or 15 minutes
-            const roundTo = rangeMs <= 30 * msPerMinute ? 5 : 15
+            // Less than 1 hour: use finer rounding for better fit
+            let roundTo: number
+            if (rangeMs <= 10 * msPerMinute) {
+              roundTo = 1 // 1 minute for very short ranges
+            } else if (rangeMs <= 30 * msPerMinute) {
+              roundTo = 5 // 5 minutes for short ranges
+            } else {
+              roundTo = 10 // 10 minutes for medium ranges
+            }
             roundedMin = new Date(Math.floor(extent[0].getTime() / (roundTo * msPerMinute)) * (roundTo * msPerMinute))
             roundedMax = new Date(Math.ceil(extent[1].getTime() / (roundTo * msPerMinute)) * (roundTo * msPerMinute))
           } else if (rangeMs <= 6 * msPerHour) {
