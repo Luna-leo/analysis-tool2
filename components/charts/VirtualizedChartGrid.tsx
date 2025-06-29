@@ -544,14 +544,13 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
                 )}
                 style={{
                   gridTemplateColumns: `repeat(${currentSettings.columns}, 1fr)`,
-                  gridTemplateRows: currentSettings.pagination
-                    ? `repeat(${currentSettings.rows}, 1fr)`
-                    : `repeat(${currentSettings.rows}, ${chartSizes.cardMinHeight}px)`,
+                  // ページネーションON時のみgridTemplateRowsを設定
+                  ...(currentSettings.pagination ? {
+                    gridTemplateRows: `repeat(${currentSettings.rows}, 1fr)`
+                  } : {}),
+                  // ページネーションOFF時は自動行追加
                   gridAutoRows: currentSettings.pagination ? undefined : `${chartSizes.cardMinHeight}px`,
                   gap: chartSizes.isCompactLayout ? "2px" : "4px",
-                  ...(currentSettings.pagination ? {} : {
-                    maxHeight: `${chartSizes.cardMinHeight * currentSettings.rows + (currentSettings.rows - 1) * (chartSizes.isCompactLayout ? 2 : 4)}px`
-                  }),
                   overflow: "hidden", // Changed from visible to prevent overflow
                 }}
                 onDragOver={(e) => e.preventDefault()}
