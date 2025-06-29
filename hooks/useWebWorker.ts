@@ -28,11 +28,11 @@ export function useWebWorker(options: UseWebWorkerOptions = {}) {
     if (typeof window === 'undefined') return // Skip in SSR
 
     try {
-      // Create worker with Next.js compatible path
-      const workerUrl = new URL('../workers/chartDataProcessor.worker.ts', import.meta.url)
-      console.log('Creating Web Worker from URL:', workerUrl.href)
+      // Create worker from public directory for Next.js compatibility
+      const workerUrl = '/chartDataProcessor.worker.js'
+      console.log('Creating Web Worker from public URL:', workerUrl)
       
-      workerRef.current = new Worker(workerUrl, { type: 'module' })
+      workerRef.current = new Worker(workerUrl)
 
       // Handle worker messages
       workerRef.current.onmessage = (event: MessageEvent<WorkerResponse>) => {
