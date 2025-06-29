@@ -18,8 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { apiClient } from '@/utils/api/client';
-import { DataUpload } from '@/components/server-sync/DataUpload';
-import { IndexedDBSync } from '@/components/server-sync/IndexedDBSync';
+import { DataManager } from '@/components/server-sync/DataManager';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -157,10 +156,7 @@ export default function ServerSyncPage() {
         </TabsContent>
 
         <TabsContent value="upload">
-          <div className="space-y-4">
-            <DataUpload />
-            <IndexedDBSync />
-          </div>
+          <DataManager />
         </TabsContent>
 
         <TabsContent value="download">

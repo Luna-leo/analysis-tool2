@@ -8,8 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { apiClient } from '@/utils/api/client';
-import { DataUpload } from '@/components/server-sync/DataUpload';
-import { IndexedDBSync } from '@/components/server-sync/IndexedDBSync';
+import { DataManager } from '@/components/server-sync/DataManager';
 
 export function ServerSyncTab() {
   const { user, isAuthenticated, logout } = useAuthStore();
@@ -124,10 +123,7 @@ export function ServerSyncTab() {
         </TabsContent>
 
         <TabsContent value="upload">
-          <div className="space-y-4">
-            <DataUpload />
-            <IndexedDBSync />
-          </div>
+          <DataManager />
         </TabsContent>
 
         <TabsContent value="download">
