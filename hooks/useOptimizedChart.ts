@@ -6,6 +6,7 @@ import { useSharedDataCache } from './useSharedDataCache'
 import { sampleMultipleSeries, SamplingOptions, SamplingMethod } from '@/utils/sampling'
 import { useSettingsStore } from '@/stores/useSettingsStore'
 import { useChartLoadingStore } from '@/stores/useChartLoadingStore'
+import { filterDataByDateRange } from '@/utils/plantMachineDataUtils'
 
 // Constants
 const DATA_LOAD_DEBOUNCE_MS = 300
@@ -195,7 +196,23 @@ export function useOptimizedChart({
             // })
             
             if (csvData && csvData.length > 0) {
-              csvData.forEach(point => {
+              // Apply date filtering based on data source's start and end dates
+              const filteredData = filterDataByDateRange(
+                csvData,
+                dataSource.start,
+                dataSource.end
+              )
+              
+              if (process.env.NODE_ENV === 'development') {
+                console.log(`[useOptimizedChart ${editingChart.id}] Date filtering for ${dataSource.id}:`, {
+                  originalCount: csvData.length,
+                  filteredCount: filteredData.length,
+                  startDate: dataSource.start,
+                  endDate: dataSource.end
+                })
+              }
+              
+              filteredData.forEach(point => {
                 const cleanXParam = xParameter?.includes('|') 
                   ? xParameter.split('|')[0] 
                   : xParameter
