@@ -76,13 +76,18 @@ const VirtualizedChartCard = React.memo(({
   const hasRenderedRef = useRef(false)
   
   useEffect(() => {
-    if (isVisible && !hasRenderedRef.current) {
-      hasRenderedRef.current = true
-      // Small delay to ensure DOM is ready
-      const timer = setTimeout(() => {
+    if (isVisible) {
+      if (!hasRenderedRef.current) {
+        hasRenderedRef.current = true
+        // Small delay to ensure DOM is ready
+        const timer = setTimeout(() => {
+          setShouldRender(true)
+        }, 10)
+        return () => clearTimeout(timer)
+      } else {
+        // If already rendered once, update immediately when visibility changes
         setShouldRender(true)
-      }, 10)
-      return () => clearTimeout(timer)
+      }
     }
   }, [isVisible])
   
@@ -449,6 +454,9 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
   useEffect(() => {
     if (!contentRef.current) return
     
+    // Skip scroll handling when pagination is OFF - all charts should be visible
+    if (!currentSettings.pagination) return
+    
     let lastScrollTime = 0
     let rafId: number | null = null
     
@@ -479,7 +487,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
       if (rafId) cancelAnimationFrame(rafId)
       container.removeEventListener('scroll', handleScroll)
     }
-  }, [updateVisibleRange])
+  }, [updateVisibleRange, currentSettings.pagination])
   
   const charts = paginatedCharts
   const totalRows = currentSettings.pagination 
@@ -489,22 +497,23 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
     ? chartSizes.cardMinHeight * currentSettings.rows + (currentSettings.rows - 1) * (chartSizes.isCompactLayout ? 2 : 4)
     : totalRows * (chartSizes.cardMinHeight + (chartSizes.isCompactLayout ? 2 : 4))
   
-  // Create placeholder array for virtualization
+  // Create chart array with visibility info
+  // When pagination is OFF, all charts are marked as visible to ensure immediate data loading
   const visibleCharts = useMemo(() => {
     const result = []
+    const isPaginationOff = !currentSettings.pagination
+    
     for (let i = 0; i < charts.length; i++) {
-      // For pagination mode, all charts are visible (no virtualization needed)
-      const isInRange = currentSettings.pagination 
-        ? true 
-        : i >= visibleRange.start && i < visibleRange.end
+      // When pagination is OFF, all charts must be visible
+      // This prevents issues where charts at the bottom of the page don't load
       result.push({
         chart: charts[i],
         index: i,
-        isVisible: isInRange
+        isVisible: isPaginationOff ? true : true // Always true for now to ensure data loads
       })
     }
     return result
-  }, [charts, visibleRange, currentSettings.pagination])
+  }, [charts, currentSettings.pagination])
   
   // Memoize dataSourceStyles to prevent unnecessary re-renders
   const memoizedDataSourceStyles = useMemo(() => {
@@ -568,7 +577,7 @@ export const VirtualizedChartGrid = React.memo(function VirtualizedChartGrid({ f
                 ) : (
                   visibleCharts.map(({ chart, index, isVisible }) => (
                     <VirtualizedChartCard
-                      key={`${chart.id}-${JSON.stringify(chart.yAxisParams?.map(p => p.parameter))}`}
+                      key={`${chart.id}-${JSON.stringify(chart.yAxisParams?.map(p => p.parameter))}-${currentSettings.pagination}`}
                       chart={chart}
                       isCompactLayout={chartSizes.isCompactLayout}
                       cardMinHeight={chartSizes.cardMinHeight}
