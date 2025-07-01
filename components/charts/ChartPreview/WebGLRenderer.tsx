@@ -236,19 +236,16 @@ export function getRenderMethodWithWebGL(
   dataPointCount: number,
   viewportSize: { width: number; height: number }
 ): 'svg' | 'canvas' | 'webgl' {
-  // Use WebGL for very large datasets
-  if (dataPointCount > 10000 && isWebGLSupported()) {
+  // Use WebGL for datasets over 1,000 points (10x lower threshold for better performance)
+  if (dataPointCount >= 1000 && isWebGLSupported()) {
     return 'webgl'
   }
   
-  const pixelCount = viewportSize.width * viewportSize.height
-  const pointDensity = dataPointCount / pixelCount
-  
-  // Use canvas for medium datasets
-  if (pointDensity > 0.01 || dataPointCount > 100) {
+  // Use canvas for medium datasets (100-999 points)
+  if (dataPointCount >= 100) {
     return 'canvas'
   }
   
-  // Use SVG for small datasets
+  // Use SVG only for small datasets (under 100 points)
   return 'svg'
 }
