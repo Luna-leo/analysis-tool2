@@ -21,6 +21,10 @@ export class ApiClient {
 
   constructor(baseUrl: string = '') {
     this.baseUrl = baseUrl || process.env.NEXT_PUBLIC_API_URL || '';
+    // APIが同じオリジンにある場合は相対パスを使用
+    if (typeof window !== 'undefined' && !this.baseUrl) {
+      this.baseUrl = '';
+    }
     this.defaultHeaders = {
       'Content-Type': 'application/json',
     };
